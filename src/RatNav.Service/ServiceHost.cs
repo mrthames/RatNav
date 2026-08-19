@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RatNav.Core;
 using RatNav.Core.Data;
 using RatNav.Core.Progress;
+using RatNav.Core.Sharing;
 using RatNav.Core.Tracking;
 
 namespace RatNav.Service;
@@ -65,13 +67,49 @@ public static class ServiceHost
         });
 
         builder.Services.AddSingleton<RatNavState>();
+        builder.Services.AddSingleton(_ => new PlanStore(dataDirectory));
+        builder.Services.AddSingleton(_ => RatNavSettings.Load(dataDirectory));
+        builder.Services.AddSingleton<RaidHub>();
+
+        builder.Services.AddSingleton(sp =>
+        {
+            var session = new RaidSession(
+                sp.GetRequiredService<RatNavState>(),
+                sp.GetRequiredService<ProgressStore>());
+
+            // Every change reaches every surface, so the overlay and the browser cannot disagree.
+            var hub = sp.GetRequiredService<RaidHub>();
+            session.Changed += (_, view) => hub.Broadcast(view);
+
+            return session;
+        });
+
+        builder.Services.AddSingleton<RaidHost>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<RaidHost>());
 
         var app = builder.Build();
 
+        app.UseWebSockets();
         app.UseDefaultFiles();
         app.UseStaticFiles();
 
         app.MapRatNavApi();
+
+        // Live raid state, pushed. Loopback only, like everything else here.
+        app.Map("/ws/raid", async context =>
+        {
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            var hub = context.RequestServices.GetRequiredService<RaidHub>();
+            var session = context.RequestServices.GetRequiredService<RaidSession>();
+
+            using var socket = await context.WebSockets.AcceptWebSocketAsync();
+            await hub.AcceptAsync(socket, session, context.RequestAborted);
+        });
 
         // Anything not an API route falls through to the SPA, so client-side routes survive a
         // refresh. Harmless when wwwroot is empty, which it is until the web app is built.

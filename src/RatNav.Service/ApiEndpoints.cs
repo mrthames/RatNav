@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Routing;
 using RatNav.Core.Data;
 using RatNav.Core.Maps;
 using RatNav.Core.Model;
+using RatNav.Core.Planning;
 using RatNav.Core.Progress;
+using RatNav.Core.Sharing;
 using RatNav.Core.Tracking;
 
 namespace RatNav.Service;
@@ -149,6 +151,142 @@ public static class ApiEndpoints
             return task is null ? Results.NotFound() : Results.Ok(task);
         });
 
+        // ---- the live raid
+
+        api.MapGet("/raid", (RaidSession session) => Results.Ok(session.View()));
+
+        api.MapPost("/raid/objectives/{id}", (RaidSession session, string id, DoneRequest request) =>
+        {
+            session.Complete(id, request.Done);
+            return Results.Ok(session.View());
+        });
+
+        // ---- plans
+
+        api.MapGet("/plans", (PlanStore plans) =>
+            Results.Ok(plans.All().Select(p => new
+            {
+                p.Id,
+                p.Document.MapId,
+                p.Document.MapName,
+                p.Document.Owner,
+                p.Document.CreatedAt,
+                stops = p.Document.Stops.Count,
+                keys = p.Document.RequiredKeyItemIds.Count,
+            })));
+
+        api.MapGet("/plans/{id}", (PlanStore plans, string id) =>
+        {
+            var saved = plans.Get(id);
+            return saved is null ? Results.NotFound() : Results.Ok(saved.Document);
+        });
+
+        // Builds a route from the objectives you ticked, and saves it.
+        api.MapPost("/plans", (
+            RatNavState state, PlanStore plans, RatNavSettings settings, BuildPlanRequest request) =>
+        {
+            var map = FindMap(state, request.MapId);
+            if (map is null) return Results.NotFound(new { error = $"No map called '{request.MapId}'." });
+
+            var chosen = new HashSet<string>(request.ObjectiveIds, StringComparer.OrdinalIgnoreCase);
+            var data = state.Cache.Current;
+
+            var waypoints =
+                (from task in data?.Tasks ?? []
+                 from objective in task.Objectives
+                 where chosen.Contains(objective.Id) && objective.Position is not null
+                 select new Waypoint
+                 {
+                     ObjectiveId = objective.Id,
+                     TaskId = task.Id,
+                     TaskName = task.Name,
+                     Description = objective.Description,
+                     Position = objective.Position.GetValueOrDefault(),
+                     TraderName = task.TraderName,
+                     Optional = objective.Optional,
+                     NeededKeyItemIds = objective.NeededKeyItemIds,
+                 }).ToList();
+
+            if (waypoints.Count == 0)
+                return Results.BadRequest(new { error = "None of those objectives have a position on this map." });
+
+            var plan = RaidPlanner.Plan(map, waypoints);
+            var document = PlanDocument.From(plan, settings.Owner, request.ShoppingListItemIds);
+
+            return Results.Ok(new { id = plans.Save(document), plan = document });
+        });
+
+        // Makes a saved plan the one the overlay follows.
+        api.MapPost("/plans/{id}/activate", (RatNavState state, PlanStore plans, RaidSession session, string id) =>
+        {
+            var saved = plans.Get(id);
+            if (saved is null) return Results.NotFound();
+
+            var map = FindMap(state, saved.Document.MapId);
+            if (map is null) return Results.NotFound(new { error = "That plan's map is not loaded." });
+
+            session.UsePlan(ToPlan(saved.Document, map, state.Cache.Current), map);
+            return Results.Ok(session.View());
+        });
+
+        api.MapDelete("/plans/{id}", (PlanStore plans, string id) =>
+        {
+            plans.Delete(id);
+            return Results.NoContent();
+        });
+
+        // Exports exactly what is stored, so sharing cannot drift from saving.
+        api.MapGet("/plans/{id}/export", (PlanStore plans, string id) =>
+        {
+            var saved = plans.Get(id);
+            return saved is null
+                ? Results.NotFound()
+                : Results.Text(saved.Document.ToJson(), "application/json");
+        });
+
+        api.MapPost("/plans/import", (PlanStore plans, ImportRequest request) =>
+        {
+            var document = PlanDocument.FromJson(request.Json, out var problem);
+            return document is null
+                ? Results.BadRequest(new { error = problem })
+                : Results.Ok(new { id = plans.Save(document), plan = document });
+        });
+
+        // Combines saved plans into one squad plan. Nothing is dropped; what it adds is the
+        // overlap — shared objectives, contested items, keys only one of you needs to carry.
+        api.MapPost("/plans/merge", (RatNavState state, PlanStore plans, RaidSession session, MergeRequest request) =>
+        {
+            var documents = request.PlanIds
+                .Select(plans.Get)
+                .Where(p => p is not null)
+                .Select(p => p!.Document)
+                .ToList();
+
+            if (documents.Count < 2)
+                return Results.BadRequest(new { error = "Merging needs at least two plans." });
+
+            var map = FindMap(state, documents[0].MapId);
+            if (map is null) return Results.NotFound(new { error = "That plan's map is not loaded." });
+
+            if (documents.Any(d => !string.Equals(d.MapId, map.Id, StringComparison.OrdinalIgnoreCase)))
+                return Results.BadRequest(new { error = "Those plans are for different maps." });
+
+            var itemsByTask = (state.Cache.Current?.Tasks ?? []).ToDictionary(
+                t => t.Id,
+                t => (IReadOnlyList<string>)[.. t.Objectives.SelectMany(o => o.Items).Select(i => i.ItemId).Distinct()],
+                StringComparer.OrdinalIgnoreCase);
+
+            var squad = PlanMerger.Merge(map, documents, itemsByTask);
+            session.UsePlan(squad.Plan, map);
+
+            return Results.Ok(new
+            {
+                squad.Owners,
+                squad.Overlap,
+                raid = session.View(),
+            });
+        });
+
         // ---- maps
 
         api.MapGet("/maps", (RatNavState state) =>
@@ -261,6 +399,45 @@ public static class ApiEndpoints
             ?? maps.FirstOrDefault(m => string.Equals(m.NormalizedName, id, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Rebuilds a route from a shared document.
+    ///
+    /// Positions travel with the document so a route can be drawn even for an objective this copy
+    /// of the game data no longer knows about — but names are resolved from local data, so a plan
+    /// shows what the quests are called <i>now</i> rather than what they were called when it was
+    /// made, and a plan from a friend reads in your own language.
+    /// </summary>
+    private static RaidPlan ToPlan(PlanDocument document, MapDef map, GameData? data)
+    {
+        var tasks = (data?.Tasks ?? []).ToDictionary(t => t.Id, t => t, StringComparer.OrdinalIgnoreCase);
+
+        var objectives = (data?.Tasks ?? [])
+            .SelectMany(t => t.Objectives)
+            .GroupBy(o => o.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        return RaidPlanner.Plan(map,
+        [
+            .. document.Stops.Select(s =>
+            {
+                var task = tasks.GetValueOrDefault(s.TaskId);
+                var objective = objectives.GetValueOrDefault(s.ObjectiveId);
+
+                return new Waypoint
+                {
+                    ObjectiveId = s.ObjectiveId,
+                    TaskId = s.TaskId,
+                    TaskName = task?.Name ?? "(unknown quest)",
+                    Description = objective?.Description ?? "",
+                    Position = new GamePosition(s.X, s.Y, s.Z),
+                    TraderName = task?.TraderName,
+                    Owner = s.Owner,
+                    NeededKeyItemIds = s.NeededKeyItemIds,
+                };
+            })
+        ]);
+    }
+
     private static ItemDef Unknown(string itemId) => new() { Id = itemId, Name = "Unknown item" };
 
     private static object? Track(RatNavState state, ItemTracker tracker, ProgressStore progress, string itemId)
@@ -285,6 +462,14 @@ public static class ApiEndpoints
 // ---- React table and an XAML canvas, not to round-trip.
 
 public sealed record LocateRequest(string Filename);
+public sealed record DoneRequest(bool Done);
+public sealed record ImportRequest(string Json);
+public sealed record MergeRequest(IReadOnlyList<string> PlanIds);
+
+public sealed record BuildPlanRequest(
+    string MapId,
+    IReadOnlyList<string> ObjectiveIds,
+    IReadOnlyList<string>? ShoppingListItemIds = null);
 
 /// <summary>Either an absolute count or a nudge. The +/- buttons send a delta.</summary>
 public sealed record HaveRequest(int? Count, int? Delta);
