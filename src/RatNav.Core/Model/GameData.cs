@@ -112,6 +112,38 @@ public sealed record MapDef
     public MapImage? Image { get; init; }
 
     public IReadOnlyList<MapExtract> Extracts { get; init; } = [];
+
+    /// <summary>Named places on this map, for naming route stops the way a player would.</summary>
+    public IReadOnlyList<MapLabel> Labels { get; init; } = [];
+
+    /// <summary>
+    /// The floor a given elevation falls on, or null when the map has no levels or none matches.
+    /// This is what lets a position fix choose the floor without anyone touching a control.
+    /// </summary>
+    public MapFloor? FloorAt(double height) =>
+        Image?.Floors.LastOrDefault(f => f.Covers(height));
+
+    /// <summary>The nearest named place to a position, for describing a stop in words.</summary>
+    public MapLabel? NearestLabel(GamePosition position, double withinMetres = 120)
+    {
+        MapLabel? best = null;
+        var bestDistance = withinMetres;
+
+        foreach (var label in Labels)
+        {
+            var dx = label.Position.X - position.X;
+            var dz = label.Position.Z - position.Z;
+            var distance = Math.Sqrt(dx * dx + dz * dz);
+
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = label;
+            }
+        }
+
+        return best;
+    }
 }
 
 /// <summary>
@@ -144,12 +176,56 @@ public sealed record MapImage
     public int PixelWidth { get; init; }
     public int PixelHeight { get; init; }
 
+    /// <summary>The SVG group drawn by default — the ground level on most maps.</summary>
+    public string? DefaultFloor { get; init; }
+
+    /// <summary>
+    /// Levels of a multi-storey map, bottom to top, each with the world height band it covers.
+    /// Seven of ten maps have more than one, and Streets has seven.
+    /// </summary>
+    public IReadOnlyList<MapFloor> Floors { get; init; } = [];
+
+    /// <summary>Who drew this map. Shown in the credits — these are community mapmakers' work.</summary>
+    public string? Author { get; init; }
+    public string? AuthorLink { get; init; }
+
     /// <summary>
     /// Whether pins on this map can be trusted. Surfaced rather than hidden: a pin that might be
     /// wrong should say so, and a map nobody has confirmed is exactly where a silent error hides.
     /// </summary>
     public bool CalibrationVerified =>
         Confidence is CalibrationConfidence.Verified or CalibrationConfidence.Derived;
+}
+
+/// <summary>One level of a multi-storey map.</summary>
+public sealed record MapFloor
+{
+    public required string Name { get; init; }
+
+    /// <summary>Id of the group inside the map's SVG that draws this level.</summary>
+    public required string Layer { get; init; }
+
+    /// <summary>World height band this level covers, when known.</summary>
+    public double? MinHeight { get; init; }
+    public double? MaxHeight { get; init; }
+
+    /// <summary>Whether a player at this elevation is on this floor.</summary>
+    public bool Covers(double height) =>
+        (MinHeight is null || height >= MinHeight) && (MaxHeight is null || height < MaxHeight);
+}
+
+/// <summary>
+/// A named place on a map — "Big Red", "Dorms", "Resort". What players actually call parts of a
+/// map, so a route can read as somewhere to go rather than a pair of coordinates.
+/// </summary>
+public sealed record MapLabel
+{
+    public required string Text { get; init; }
+    public required GamePosition Position { get; init; }
+
+    /// <summary>Height band this label belongs to, for maps whose levels have different names.</summary>
+    public double? MinHeight { get; init; }
+    public double? MaxHeight { get; init; }
 }
 
 public sealed record MapExtract

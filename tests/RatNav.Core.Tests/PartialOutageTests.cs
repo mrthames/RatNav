@@ -35,46 +35,53 @@ public class PartialOutageTests : IDisposable
 
         // The map came from the source that was up, and it is calibrated enough to plot on.
         var map = Assert.Single(result.Data.Maps);
-        Assert.Equal("Customs", map.Name);
+        Assert.Equal("customs", map.Name);
         Assert.NotNull(map.Image);
         Assert.Equal(180, map.Image.CoordinateRotation);
     }
 
     [Fact]
-    public async Task A_map_with_no_tarkov_dev_id_is_still_offered()
+    public async Task Named_places_and_floors_survive_the_outage_too()
     {
-        var http = new HttpClient(new TarkovDevDownHandler(includeTarkovDevId: false));
+        // Map metadata carries more than geometry — landmark names and floor definitions come
+        // with it, and they are just as usable without the game-data half.
+        var http = new HttpClient(new TarkovDevDownHandler());
         var cache = new GameDataCache(new TarkovDevClient(http), new MapAssets(http, _dir), _dir);
 
-        var result = await cache.RefreshAsync();
+        var map = Assert.Single((await cache.RefreshAsync()).Data.Maps);
 
-        var map = Assert.Single(result.Data.Maps);
         Assert.Equal("customs", map.Id);
-        Assert.Equal("customs", map.NormalizedName);
+        Assert.Equal("Big Red", Assert.Single(map.Labels).Text);
+        Assert.Equal("Shebuka", map.Image?.Author);
+        Assert.Equal("Ground_Level", map.Image?.DefaultFloor);
     }
 
     /// <summary>tarkov.dev errors exactly as it does in production; GitHub serves normally.</summary>
-    private sealed class TarkovDevDownHandler(bool includeTarkovDevId = true) : HttpMessageHandler
+    private sealed class TarkovDevDownHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             var isGitHub = request.RequestUri!.Host.Contains("githubusercontent");
 
-            var tdevId = includeTarkovDevId ? """ "tdevId": "56f40101d2720b2a4d8b45d6", """ : "";
-
             var body = isGitHub
-                ? $$"""
-                    {
-                      "customs": {
-                        {{tdevId}}
-                        "locale": { "en": "Customs" },
-                        "svg": {
-                          "file": "Customs.svg",
-                          "coordinateRotation": 180,
-                          "bounds": [[698, -307], [-371, 237]]
-                        }
+                ? """
+                    [
+                      {
+                        "normalizedName": "customs",
+                        "maps": [
+                          {
+                            "key": "customs",
+                            "projection": "interactive",
+                            "svgPath": "https://assets.tarkov.dev/maps/svg/Customs.svg",
+                            "svgLayer": "Ground_Level",
+                            "coordinateRotation": 180,
+                            "bounds": [[698, -307], [-372, 237]],
+                            "author": "Shebuka",
+                            "labels": [{ "text": "Big Red", "position": [10, 20] }]
+                          }
+                        ]
                       }
-                    }
+                    ]
                     """
                 : """{"errors":["GraphQL server unavailable. Try again later."]}""";
 

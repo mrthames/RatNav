@@ -14,24 +14,26 @@ public class CalibrationSolverTests
     private static GamePosition At(double x, double z) => new(x, 0, z);
 
     [Fact]
-    public void A_map_confirmed_in_game_short_circuits_everything_else()
+    public void No_map_needs_a_hand_verified_override_any_more()
     {
-        // Deliberately hand it nonsense evidence: a verified answer must win anyway.
-        var solved = CalibrationSolver.Solve("customs", CustomsBounds, 1, 1, []);
-
-        Assert.Equal(CalibrationConfidence.Verified, solved.Confidence);
-        Assert.Equal(CalibrationSolver.VerifiedMappings["customs"], solved.Mapping);
+        // The overrides that used to live here were compensating for a different data source's
+        // bad bounds, not describing the maps. Against tarkov.dev's own numbers every map solves
+        // on the evidence, so an empty table is the correct state rather than an oversight.
+        Assert.Empty(CalibrationSolver.VerifiedMappings);
     }
 
     [Fact]
-    public void Factory_keeps_the_swapped_mapping_its_marked_positions_proved()
+    public void An_unknown_map_falls_through_to_the_evidence()
     {
-        var solved = CalibrationSolver.Solve("factory", FactoryBounds, 131, 142, []);
+        GamePosition[] extracts =
+        [
+            At(650, -280), At(-340, 200), At(200, -153), At(-100, 100), At(400, 50), At(0, -250),
+        ];
 
-        Assert.Equal(CalibrationConfidence.Verified, solved.Confidence);
-        Assert.True(solved.Mapping.Swapped);
-        Assert.Equal(-1, solved.Mapping.SignU);
-        Assert.Equal(1, solved.Mapping.SignV);
+        var solved = CalibrationSolver.Solve("some-new-map", CustomsBounds, 1062, 535, extracts);
+
+        Assert.NotEqual(CalibrationConfidence.Verified, solved.Confidence);
+        Assert.False(solved.Mapping.Swapped);
     }
 
     [Fact]

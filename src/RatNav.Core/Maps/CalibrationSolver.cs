@@ -35,35 +35,19 @@ public sealed record SolvedCalibration
 public static class CalibrationSolver
 {
     /// <summary>
-    /// Mappings confirmed against a real in-game position. Keyed by tarkovdata's own map key.
+    /// Mappings confirmed against a real in-game position, keyed by normalized map name.
     ///
-    /// Customs: a screenshot at world (-14.44, -139.32) marked at 66.7%, 30.9% of the image;
-    /// the direct mapping puts it at 66.6%, 30.8%.
+    /// <para>Deliberately empty. The entries that used to live here — Factory as swapped axes,
+    /// Customs as direct — were derived against TarkovTracker/tarkovdata's bounds, and were
+    /// compensating for that source's inconsistencies rather than describing the maps. Against
+    /// tarkov.dev's own bounds every map solves to a plain <c>(x, z)</c> mapping, agreed by both
+    /// the aspect-ratio check and the extract positions, so there is nothing left to override.</para>
     ///
-    /// Factory: two marked positions, settled by the bearing between them — 146° measured
-    /// against 148° predicted, where the rival candidate predicted 115°.
-    ///
-    /// Lighthouse: a screenshot at the Northern Checkpoint extract, marked on the image. The
-    /// direct mapping missed by 0.3 percentage points and the runner-up by 21.6.
-    ///
-    /// Woods: a screenshot at the South V-Ex extract. The click alone was not decisive — Woods is
-    /// nearly square, so the transposed mapping lands only 1.4pp away and that is within a click's
-    /// slip. The 20 published extract positions break the tie 25 to 1 in favour of direct, and
-    /// both signals agree.
-    ///
-    /// Interchange: a marked position at the NW Exfil, 1.2pp against a runner-up at 6.1pp. This
-    /// one could only ever be settled by hand — Interchange's image is exactly square, so the
-    /// aspect-ratio test has nothing to say about which axis runs which way.
+    /// <para>Kept because it is the right escape hatch: if a future map defeats both signals, one
+    /// player marking their position settles it and the answer ships here so nobody repeats it.</para>
     /// </summary>
     public static IReadOnlyDictionary<string, AxisMapping> VerifiedMappings { get; } =
-        new Dictionary<string, AxisMapping>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["customs"] = new(Swapped: false, SignU: 1, SignV: 1),
-            ["factory"] = new(Swapped: true, SignU: -1, SignV: 1),
-            ["woods"] = new(Swapped: false, SignU: 1, SignV: 1),
-            ["lighthouse"] = new(Swapped: false, SignU: 1, SignV: 1),
-            ["interchange"] = new(Swapped: false, SignU: 1, SignV: 1),
-        };
+        new Dictionary<string, AxisMapping>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Below this ratio between best and runner-up, the evidence is not worth trusting.</summary>
     private const double DecisiveRatio = 3.0;

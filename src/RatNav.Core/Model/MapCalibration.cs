@@ -15,8 +15,14 @@ public sealed record MapCalibration
 
     public required string Name { get; init; }
 
-    /// <summary>The matching tarkov.dev map id, when tarkovdata knows it. Used to join the two sources.</summary>
+    /// <summary>
+    /// The matching tarkov.dev map id, when known. Now usually null: the map metadata and the game
+    /// data come from the same project, so they join on normalized name instead.
+    /// </summary>
     public string? TarkovDevId { get; init; }
 
     public required MapImage Image { get; init; }
+
+    /// <summary>Named places on this map.</summary>
+    public IReadOnlyList<MapLabel> Labels { get; init; } = [];
 }
