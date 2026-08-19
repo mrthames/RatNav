@@ -46,24 +46,51 @@ by the modification time of their newest log session directory.
 `nameId` joins straight to tarkov.dev's map records, so a raid start resolves to a map with no
 guessing. Verified live: `Locations:bigmap` while playing Customs.
 
-## Quest events — `notifications` log, not `application`
+## Quest events — the notifications log, not `application`
 
 This is the part worth knowing, and it is not where you would first look.
 
-Quest state changes arrive as **chat notifications** in `notifications_000.log`, one JSON object
-per line. The shape that matters:
+Quest state changes arrive as **chat notifications**, and the file has been renamed:
+`notifications.log` on 0.16, `push-notifications_000.log` on 1.1.0. Matching on the word
+`notifications` covers both.
+
+**They are pretty-printed across many lines, not one object per line.** Verbatim from a live
+client:
 
 ```
-message.type        an enum; the range TaskStarted..TaskFinished marks a quest event
+2025-01-15 07:57:15.224 -08:00|Info|push-notifications|Got notification | ChatMessageReceived
+{
+  "type": "new_message",
+  "dialogId": "54cb50c76803fa8b248b4571",
+  "message": {
+    "type": 10,
+    "text": "",
+    "templateId": "657315df034d76585f032e01 description",
+    "hasRewards": false
+  }
+}
+```
+
+A line-at-a-time parser reads this file forever and finds nothing, which looks exactly like "the
+game doesn't log quests". RatNav accumulates text and extracts brace-balanced objects, keeping any
+partial one for the next poll — catching an object mid-print is normal, not exceptional.
+
+```
+message.type        10 = accepted. 11 and 12 are believed to be failed and finished
 message.templateId  "<taskId> <suffix>" — the task id is everything before the first space
 ```
 
-So the task id joins directly to tarkov.dev task ids, and the status comes from the message type:
-started, failed, or finished. The same file carries flea market events, distinguished by
-`templateId` (`5bdabfb886f7743e152e867e 0` for a sale, `5bdabfe486f7743e1665df6e 0` for an
-expiry), which is a plausible later feature.
+The task id joins directly to tarkov.dev task ids. Only type 10 has been observed here; 11 and 12
+come from TarkovMonitor's reading of the game's enum, where the quest types are contiguous.
 
-Player chat messages appear in the same stream and must be skipped.
+The same stream carries flea market events, distinguished by `templateId`
+(`5bdabfb886f7743e152e867e 0` for a sale, `5bdabfe486f7743e1665df6e 0` for an expiry), plus player
+chat and group invitations. All of it must be skipped.
+
+**A caution on what "no events" means.** A session of offline raids produces a notifications log
+with no quest entries at all, because nothing changed. That is indistinguishable from a parser
+that cannot read the format, which is why the parser has a test built from a real captured
+notification rather than a hand-written one.
 
 ## Known gaps
 
