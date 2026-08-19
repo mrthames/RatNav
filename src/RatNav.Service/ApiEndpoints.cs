@@ -142,8 +142,74 @@ public static class ApiEndpoints
 
         // ---- tasks
 
-        api.MapGet("/tasks", (RatNavState state) =>
-            Results.Ok((state.Cache.Current?.Tasks ?? []).Select(TaskSummary.From)));
+        api.MapGet("/tasks", (RatNavState state, ProgressStore progress, string? filter, string? q) =>
+        {
+            var tasks = state.Cache.Current?.Tasks ?? [];
+
+            var available = progress.AvailableNow(tasks)
+                .Select(t => t.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var rows = tasks.Select(t => TaskSummary.From(t, progress.StateOf(t.Id), available.Contains(t.Id)));
+
+            rows = filter?.ToLowerInvariant() switch
+            {
+                "active" => rows.Where(t => t.State == nameof(QuestState.Active)),
+                "available" => rows.Where(t => t.Available),
+                "completed" => rows.Where(t => t.State == nameof(QuestState.Completed)),
+                "todo" => rows.Where(t => t.State != nameof(QuestState.Completed)),
+                _ => rows,
+            };
+
+            if (q is { Length: > 0 })
+            {
+                rows = rows.Where(t =>
+                    t.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    (t.TraderName?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            // Active first — those are the ones with items worth picking up tonight — then what
+            // is unlocked, then the rest, each alphabetical inside its group.
+            return Results.Ok(rows
+                .OrderByDescending(t => t.State == nameof(QuestState.Active))
+                .ThenByDescending(t => t.Available)
+                .ThenBy(t => t.TraderName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase));
+        });
+
+        // Objectives of the quests you have active on a given map — what the plan builder offers.
+        api.MapGet("/maps/{id}/plannable", (RatNavState state, ProgressStore progress, string id) =>
+        {
+            var data = state.Cache.Current;
+            var map = FindMap(state, id);
+            if (data is null || map?.Image is null) return Results.NotFound();
+
+            var transform = new CoordinateTransform(map.Image);
+
+            var rows =
+                from task in data.Tasks
+                where progress.StateOf(task.Id) == QuestState.Active
+                from objective in task.Objectives
+                where objective.Position is not null && objective.MapIds.Contains(map.Id)
+                let position = objective.Position.GetValueOrDefault()
+                let point = transform.ToNormalized(position)
+                select new
+                {
+                    objectiveId = objective.Id,
+                    taskId = task.Id,
+                    taskName = task.Name,
+                    traderName = task.TraderName,
+                    description = objective.Description,
+                    optional = objective.Optional,
+                    x = point.X,
+                    y = point.Y,
+                    place = map.NearestLabel(position)?.Text,
+                    neededKeyItemIds = objective.NeededKeyItemIds,
+                    itemIds = objective.Items.Select(i => i.ItemId),
+                };
+
+            return Results.Ok(rows);
+        });
 
         api.MapGet("/tasks/{id}", (RatNavState state, string id) =>
         {
@@ -608,7 +674,15 @@ public sealed record TaskSummary
     public int ObjectiveCount { get; init; }
     public IReadOnlyList<string> MapIds { get; init; } = [];
 
-    public static TaskSummary From(TaskDef task) => new()
+    public required string State { get; init; }
+
+    /// <summary>Not started, but every prerequisite is done — the quests you could pick up now.</summary>
+    public bool Available { get; init; }
+
+    /// <summary>Objectives that can be pinned, which is what makes a quest worth planning around.</summary>
+    public int PositionedObjectiveCount { get; init; }
+
+    public static TaskSummary From(TaskDef task, QuestState state, bool available) => new()
     {
         Id = task.Id,
         Name = task.Name,
@@ -618,6 +692,9 @@ public sealed record TaskSummary
         WikiUrl = task.WikiUrl,
         ObjectiveCount = task.Objectives.Count,
         MapIds = [.. task.Objectives.SelectMany(o => o.MapIds).Distinct()],
+        State = state.ToString(),
+        Available = available,
+        PositionedObjectiveCount = task.Objectives.Count(o => o.Position is not null),
     };
 }
 

@@ -66,6 +66,62 @@ export interface ProgressSummary {
   availableNow: number
 }
 
+export interface TaskSummary {
+  id: string
+  name: string
+  traderName: string | null
+  minPlayerLevel: number | null
+  kappa: boolean
+  wikiUrl: string | null
+  objectiveCount: number
+  mapIds: string[]
+  state: string
+  available: boolean
+  positionedObjectiveCount: number
+}
+
+export interface PlannableObjective {
+  objectiveId: string
+  taskId: string
+  taskName: string
+  traderName: string | null
+  description: string
+  optional: boolean
+  x: number
+  y: number
+  place: string | null
+  neededKeyItemIds: string[]
+  itemIds: string[]
+}
+
+export interface RaidStop {
+  objectiveId: string
+  taskName: string
+  description: string
+  x: number
+  y: number
+  owner: string | null
+  place: string | null
+  done: boolean
+}
+
+export interface RaidView {
+  inRaid: boolean
+  mapId: string | null
+  mapName: string | null
+  x: number | null
+  y: number | null
+  headingDegrees: number | null
+  fixedAt: string | null
+  floor: string | null
+  stops: RaidStop[]
+  completedObjectiveIds: string[]
+  nextStopName: string | null
+  nextStopMetres: number | null
+  nextStopRelativeBearing: number | null
+  trail: { x: number; y: number }[]
+}
+
 export type InkLevel = 'full' | 'structure' | 'outline'
 
 async function get<T>(path: string): Promise<T> {
@@ -105,6 +161,62 @@ export const api = {
     post<TrackedItem>(`/api/items/${encodeURIComponent(itemId)}/watch`, { watch, note, target }),
 
   progress: () => get<ProgressSummary>('/api/progress'),
+
+  tasks: (filter?: string, q?: string) => {
+    const params = new URLSearchParams()
+    if (filter) params.set('filter', filter)
+    if (q) params.set('q', q)
+    return get<TaskSummary[]>(`/api/tasks?${params}`)
+  },
+
+  plannable: (mapId: string) =>
+    get<PlannableObjective[]>(`/api/maps/${encodeURIComponent(mapId)}/plannable`),
+
+  buildPlan: (mapId: string, objectiveIds: string[], shoppingListItemIds?: string[]) =>
+    post<{ id: string; plan: { stops: unknown[] } }>('/api/plans', {
+      mapId, objectiveIds, shoppingListItemIds,
+    }),
+
+  activatePlan: (id: string) =>
+    post<RaidView>(`/api/plans/${encodeURIComponent(id)}/activate`, {}),
+
+  raid: () => get<RaidView>('/api/raid'),
+
+  completeObjective: (objectiveId: string, done: boolean) =>
+    post<RaidView>(`/api/raid/objectives/${encodeURIComponent(objectiveId)}`, { done }),
+
+  /**
+   * Live raid state. Pushed rather than polled, so a position fix reaches every surface at once
+   * and the overlay never shows something the browser has already moved past.
+   */
+  watchRaid(onChange: (view: RaidView) => void): () => void {
+    let socket: WebSocket | null = null
+    let retry: ReturnType<typeof setTimeout> | null = null
+    let closed = false
+
+    const connect = () => {
+      if (closed) return
+      const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/raid`
+      socket = new WebSocket(url)
+
+      socket.onmessage = (event) => {
+        try { onChange(JSON.parse(event.data) as RaidView) } catch { /* ignore a bad frame */ }
+      }
+
+      // The service restarts during development and after an update; reconnecting quietly beats
+      // making someone reload the page.
+      socket.onclose = () => { if (!closed) retry = setTimeout(connect, 1500) }
+      socket.onerror = () => socket?.close()
+    }
+
+    connect()
+
+    return () => {
+      closed = true
+      if (retry) clearTimeout(retry)
+      socket?.close()
+    }
+  },
 
   setTaskState: (taskId: string, state: string) =>
     post<{ id: string; state: string }>(`/api/progress/tasks/${encodeURIComponent(taskId)}`, { state }),

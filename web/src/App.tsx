@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
-import { ago, api, type DataStatus, type MapSummary } from './api'
+import { ago, api, type DataStatus, type MapSummary, type RaidView } from './api'
 import { MapView } from './MapView'
 import { ItemsView } from './ItemsView'
+import { QuestsView } from './QuestsView'
+import { PlanView } from './PlanView'
 
-type View = 'items' | 'maps'
+type View = 'plan' | 'items' | 'quests' | 'maps'
 
 export default function App() {
-  const [view, setView] = useState<View>('items')
+  const [view, setView] = useState<View>('plan')
   const [status, setStatus] = useState<DataStatus | null>(null)
   const [maps, setMaps] = useState<MapSummary[]>([])
   const [selected, setSelected] = useState<MapSummary | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [raid, setRaid] = useState<RaidView | null>(null)
+
+  // One subscription for the whole app: every view reads the same live state.
+  useEffect(() => api.watchRaid(setRaid), [])
 
   useEffect(() => {
     api.status().then(setStatus).catch(() => setStatus(null))
@@ -39,7 +45,7 @@ export default function App() {
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">RatNav</p>
           <div className="flex items-baseline gap-4">
-            {(['items', 'maps'] as View[]).map((id) => (
+            {(['plan', 'items', 'quests', 'maps'] as View[]).map((id) => (
               <button
                 key={id}
                 type="button"
@@ -85,7 +91,9 @@ export default function App() {
         </p>
       )}
 
+      {view === 'plan' && <PlanView maps={maps} raid={raid} />}
       {view === 'items' && <ItemsView />}
+      {view === 'quests' && <QuestsView />}
 
       {view === 'maps' && <div className="flex flex-wrap gap-px">
         {maps.map((map) => (
