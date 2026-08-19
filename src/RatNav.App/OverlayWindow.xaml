@@ -192,7 +192,36 @@
                             Background="#33141b21"
                             BorderBrush="{StaticResource Line}"
                             BorderThickness="1">
-                        <Canvas x:Name="MapCanvas" ClipToBounds="True" />
+                        <Grid ClipToBounds="True">
+                            <Canvas x:Name="MapCanvas" ClipToBounds="True" />
+
+                            <!--
+                                What the cursor is over, drawn rather than popped.
+
+                                A WPF ToolTip is a popup owned by a window that never activates —
+                                this one is Topmost with WS_EX_NOACTIVATE — so it opened and was
+                                dismissed in the same instant, which is exactly what a hover here
+                                looked like. Drawn into the scene it simply stays.
+
+                                Its own layer above the map so redrawing the map does not take it
+                                with it, and hit-test invisible so it cannot get between the cursor
+                                and the thing being hovered.
+                            -->
+                            <Border x:Name="HoverCard"
+                                    Visibility="Collapsed"
+                                    IsHitTestVisible="False"
+                                    HorizontalAlignment="Left" VerticalAlignment="Top"
+                                    Background="#f00b0f13"
+                                    BorderBrush="{StaticResource Line}"
+                                    BorderThickness="1"
+                                    CornerRadius="2"
+                                    Padding="6,3">
+                                <TextBlock x:Name="HoverText"
+                                           FontFamily="Segoe UI" FontSize="11"
+                                           Foreground="{StaticResource Ink}"
+                                           MaxWidth="240" TextWrapping="Wrap" />
+                            </Border>
+                        </Grid>
                     </Border>
 
                     <!-- Grab the edge to give the list more room, or take it back. -->

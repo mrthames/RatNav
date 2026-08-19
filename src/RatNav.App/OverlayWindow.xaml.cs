@@ -129,6 +129,17 @@ public partial class OverlayWindow : Window
     /// <summary>Spots marked by hand. Not part of any plan, so they outlive every plan.</summary>
     private IReadOnlyList<CustomWaypoint> _marks = [];
 
+    /// <summary>
+    /// What each thing on the map is, and where it is, so hovering can say so.
+    ///
+    /// <para>Recorded while drawing rather than derived after: the scene already knows where every
+    /// marker went, and working it out a second time is how the label and the marker end up
+    /// disagreeing.</para>
+    ///
+    /// <para>Drawn last is on top, so this is searched from the end.</para>
+    /// </summary>
+    private readonly List<(Rect Bounds, string Text)> _hoverTargets = [];
+
     /// <summary>Named places on the current map, fetched once per map.</summary>
     private IReadOnlyList<PlaceLabel> _places = [];
 
@@ -166,6 +177,11 @@ public partial class OverlayWindow : Window
         MouseRightButtonDown += OnPanStart;
         MouseRightButtonUp += OnPanEnd;
         MouseMove += OnPanMove;
+        MapCanvas.MouseMove += OnHoverMove;
+
+        // Leaving the map takes the label with it. Without this it stays showing whatever was last
+        // under the cursor, which reads as the map claiming something about wherever you moved to.
+        MapCanvas.MouseLeave += (_, _) => HoverCard.Visibility = Visibility.Collapsed;
 
         FloorUp.Click += (_, _) => StepFloor(+1);
         FloorDown.Click += (_, _) => StepFloor(-1);
@@ -1294,7 +1310,13 @@ public partial class OverlayWindow : Window
     private void Draw()
     {
         var view = _view;
+
         MapCanvas.Children.Clear();
+
+        // Cleared with the scene they describe. A hover target left pointing at a marker that is
+        // no longer there is worse than none — it names the wrong thing rather than nothing.
+        _hoverTargets.Clear();
+        HoverCard.Visibility = Visibility.Collapsed;
 
         // Drawn whenever there is a map, not only in a raid. The overlay used to go blank while a
         // raid was still loading and while looking a map over beforehand — the two times you most
@@ -1609,6 +1631,53 @@ public partial class OverlayWindow : Window
         return element;
     }
 
+    /// <summary>Records that something at a point can be hovered, and what it would say.</summary>
+    private void Hoverable(Point at, double radius, string text)
+    {
+        // A floor under the size, because a marker drawn small is still something you are trying
+        // to point at — and a target smaller than the cursor is one nobody can hit.
+        var reach = Math.Max(8, radius);
+
+        _hoverTargets.Add((new Rect(at.X - reach, at.Y - reach, reach * 2, reach * 2), text));
+    }
+
+    /// <summary>
+    /// Shows what the cursor is over, drawn into the scene rather than popped.
+    ///
+    /// <para>The window is Topmost with WS_EX_NOACTIVATE, and a WPF ToolTip is a popup owned by a
+    /// window that never activates — so it opened and was dismissed in the same instant, which is
+    /// exactly what hovering a waypoint looked like.</para>
+    /// </summary>
+    private void OnHoverMove(object sender, MouseEventArgs e)
+    {
+        var at = e.GetPosition(MapCanvas);
+
+        // Searched from the end because that is drawing order: a stop drawn over an extract is
+        // the thing you are pointing at.
+        for (var i = _hoverTargets.Count - 1; i >= 0; i--)
+        {
+            if (!_hoverTargets[i].Bounds.Contains(at)) continue;
+
+            HoverText.Text = _hoverTargets[i].Text;
+            HoverCard.Visibility = Visibility.Visible;
+
+            // Offset from the cursor, and folded back inside the map when it would run off the
+            // right or bottom edge — a label you have to move the mouse away to read is no label.
+            HoverCard.UpdateLayout();
+
+            var width = HoverCard.ActualWidth;
+            var height = HoverCard.ActualHeight;
+
+            var left = at.X + 14 + width > MapCanvas.ActualWidth ? at.X - 14 - width : at.X + 14;
+            var top = at.Y + 12 + height > MapCanvas.ActualHeight ? at.Y - 12 - height : at.Y + 12;
+
+            HoverCard.Margin = new Thickness(Math.Max(0, left), Math.Max(0, top), 0, 0);
+            return;
+        }
+
+        HoverCard.Visibility = Visibility.Collapsed;
+    }
+
     private Point ToCanvas(RaidView view, double x, double y, double width, double height)
     {
         var fit = FitScale(width, height);
@@ -1920,10 +1989,13 @@ public partial class OverlayWindow : Window
                         StrokeDashArray = [3, 3],
                         Fill = colour,
                         Opacity = 0.14,
-                        ToolTip = $"{(scav ? "Scav" : "PMC")} spawn area · {spawn.Points} spawn points",
                     },
                     at.X - radius,
                     at.Y - radius));
+
+                Hoverable(
+                    at, radius,
+                    $"{(scav ? "Scav" : "PMC")} spawn area · {spawn.Points} spawn points");
             }
         }
 
@@ -1953,7 +2025,6 @@ public partial class OverlayWindow : Window
                 Fill = (Brush)FindResource("Ground"),
                 Opacity = 0.95,
                 RenderTransform = new ScaleTransform(scale, scale),
-                ToolTip = $"{extract.Name} · {extract.Faction} extract",
             };
 
             Canvas.SetLeft(mark, at.X);
@@ -1961,6 +2032,7 @@ public partial class OverlayWindow : Window
             MapCanvas.Children.Add(mark);
 
             Label(extract.Name, at.X, at.Y + 9 * scale, colour, 9 * textScale);
+            Hoverable(at, 8 * scale, $"{extract.Name} · {extract.Faction} extract");
         }
 
         // Marks of your own, in their own colour.
@@ -1990,12 +2062,12 @@ public partial class OverlayWindow : Window
                     Fill = (Brush)FindResource("Ground"),
                     Opacity = 0.95,
                     RenderTransform = new ScaleTransform(scale, scale),
-                    ToolTip = $"{mark.Label} · your mark",
                 },
                 at.X,
                 at.Y));
 
             Label(mark.Label, at.X, at.Y + 9 * scale, colour, 9 * textScale);
+            Hoverable(at, 8 * scale, $"{mark.Label} · your mark");
         }
 
         // No line between stops. A dashed path across a map implies a route through walls and
@@ -2030,15 +2102,14 @@ public partial class OverlayWindow : Window
                 StrokeThickness = 1.5,
                 Opacity = stop.Done ? 0.45 : 1,
                 RenderTransform = new ScaleTransform(scale, scale),
-
-                // Shown on hover while the overlay takes the mouse. Named the way the planner
-                // does — the quest first, because "which quest is this for" is the question.
-                ToolTip = Describe(stop),
             };
 
             Canvas.SetLeft(pin, at.X);
             Canvas.SetTop(pin, at.Y);
             MapCanvas.Children.Add(pin);
+
+            // The pin hangs above its point, so the reach does too.
+            Hoverable(new Point(at.X, at.Y - 8 * scale), 9 * scale, Describe(stop));
 
             if (stop.Done) continue;
 
