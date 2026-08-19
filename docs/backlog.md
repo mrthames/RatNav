@@ -331,6 +331,21 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Graphical maps
+
+- [x] **Maps can now be drawn in their own colours.** Asked for as "a graphical base layer instead
+  of the vector"; the answer turned out to need no raster at all.
+  - **There is no calibrated raster to use.** tarkov.dev serves no map imagery — the maps document
+    has no image field, `assets.tarkov.dev/maps/*.png|webp|jpg` all 404, and `tarkov.dev/maps/woods.jpg`
+    returns the site's HTML shell rather than a picture. Community rasters exist but are not
+    calibrated to these bounds, so each would need aligning by hand.
+  - **The vector already carries the imagery.** Each map ships a stylesheet of ~15 colours —
+    `.trees { fill:#144043 }`, `.water { fill:#4a6b96 }` — and RatNav was discarding all of it and
+    recolouring every shape by role. Woods has 481 shapes across forest, water, rock and road; it
+    looked minimal because most of it had been thrown away, not because it was not drawn.
+  - A fourth ink level, **graphical**, draws the map in its own palette and line weights. The
+    role-based levels stay: they read better over a firefight, this reads better as a map.
+
 ### Overlay layout, third pass
 
 - [x] **A collapsed items drawer still reserved its width**, so with the list set to the left the

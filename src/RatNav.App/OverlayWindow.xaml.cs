@@ -98,7 +98,18 @@ public partial class OverlayWindow : Window
     private string? _floorOverride;
     private DateTimeOffset? _overrodeAt;
 
-    private static readonly string[] InkLevels = ["full", "structure", "outline"];
+    /// <summary>
+    /// How much of the map to draw, and in whose colours.
+    ///
+    /// <para><c>graphical</c> uses the map's own palette — the fifteen colours it was drawn with,
+    /// saying what is forest, water, rock and road. The others recolour by role, which reads
+    /// better over a firefight but throws away everything that makes a map look like a place.</para>
+    /// </summary>
+    private static readonly string[] InkLevels = ["graphical", "full", "structure", "outline"];
+
+    /// <summary>The current map's own stylesheet, for the graphical ink level.</summary>
+    private IReadOnlyDictionary<string, MapStyle> _palette =
+        new Dictionary<string, MapStyle>(StringComparer.OrdinalIgnoreCase);
     private static readonly string[] ExtractModes = ["pmc", "scav", "both", "off"];
 
     /// <summary>Extracts for the current map, fetched once per map alongside its floors.</summary>
@@ -455,6 +466,7 @@ public partial class OverlayWindow : Window
             var svg = await _http.GetStringAsync(url);
 
             _mapViewBox = MapGeometry.ViewBoxOf(svg);
+            _palette = MapPalette.Read(svg, mapId);
             _mapShapes = MapGeometry.Parse(svg, floor, key);
 
             // The floors below, kept for drawing faintly underneath. A single floor in isolation
@@ -1111,6 +1123,26 @@ public partial class OverlayWindow : Window
             if (shape.Role == MapShapeRole.Decoration) continue;
             if (!ShownAt(ink, shape.Role)) continue;
 
+            // The map as it was drawn: its own colours, its own line weights. Everything below
+            // recolours by role, which is right over a dark scene and wrong when you want to read
+            // the map as a place rather than as a diagram.
+            if (ink == "graphical" && MapPalette.For(_palette, shape.Classes) is { } styled)
+            {
+                MapCanvas.Children.Add(new Path
+                {
+                    Data = shape.Geometry,
+                    RenderTransform = transform,
+                    Fill = styled.Fill,
+                    Stroke = styled.Stroke,
+                    StrokeThickness = (styled.StrokeWidth > 0 ? styled.StrokeWidth : 1)
+                        * _settings.Overlay.LineWeight,
+                    Opacity = opacity,
+                    IsHitTestVisible = false,
+                });
+
+                continue;
+            }
+
             var (stroke, fill, thickness) = shape.Role switch
             {
                 MapShapeRole.Terrain => ((Brush?)null, (Brush?)FindResource("Terrain"), 0.0),
@@ -1211,6 +1243,8 @@ public partial class OverlayWindow : Window
     {
         "outline" => role is MapShapeRole.Structure or MapShapeRole.Boundary or MapShapeRole.Hazard,
         "structure" => role is not MapShapeRole.Terrain and not MapShapeRole.Other,
+
+        // Graphical and full both draw everything; the difference is whose colours.
         _ => true,
     };
 

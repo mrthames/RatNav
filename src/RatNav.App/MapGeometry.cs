@@ -9,8 +9,11 @@ using Size = System.Windows.Size;
 
 namespace RatNav.App;
 
-/// <summary>One drawn shape from a map, with the role its class gives it.</summary>
-public sealed record MapShape(Geometry Geometry, MapShapeRole Role);
+/// <summary>
+/// One drawn shape from a map: its outline, the role its class gives it, and the classes
+/// themselves — kept so the map's own stylesheet can be applied when drawing it in full colour.
+/// </summary>
+public sealed record MapShape(Geometry Geometry, MapShapeRole Role, string Classes = "");
 
 /// <summary>
 /// What a shape is, taken from the semantic classes the map SVGs carry — <c>.building</c>,
@@ -120,7 +123,9 @@ public static partial class MapGeometry
             geometry.Freeze();
 
             var own = Attribute(text, "class");
-            shapes.Add(new MapShape(geometry, RoleOf(own.Length > 0 ? own : Inherited(groups))));
+            var classes = own.Length > 0 ? own : Inherited(groups);
+
+            shapes.Add(new MapShape(geometry, RoleOf(classes), classes));
         }
 
         lock (Gate) Cache[key] = shapes;
