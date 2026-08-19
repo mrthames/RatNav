@@ -331,6 +331,16 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Overlay layout, third pass
+
+- [x] **A collapsed items drawer still reserved its width**, so with the list set to the left the
+  map sat 259px off-centre with nothing in the gap. A collapsed drawer costs nothing now.
+- [x] **The F6 grab bar and the map controls overlapped.** Both were anchored to the top-left of
+  the same grid, so the bar's text ran under the first control. They get a row each.
+- [x] **The Share section did not notice a plan being built.** It kept its own copy of the saved
+  plans and had no way to hear a new one existed — so building a Woods plan and then being told
+  there was none to share was the next thing to happen.
+
 ### Sharing, per map
 
 - [x] **The Share section offered whichever plan happened to be first**, so it read "get code for

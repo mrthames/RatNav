@@ -265,19 +265,31 @@
         -->
         <Grid x:Name="EditChrome" Visibility="Collapsed">
             <!--
+                Rows rather than a pile. The grab bar and the controls were both anchored to the
+                top-left and overlapped each other, so the bar's text ran under the first control.
+                A row each means neither has to guess how tall the other is.
+            -->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--
                 A visible edge and something to grab, in both presentations. The centred map draws
                 no frame of its own, so without this there was nothing on screen to take hold of.
             -->
-            <Border Background="#140b0f13"
+            <Border Grid.RowSpan="2"
+                    Background="#140b0f13"
                     BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="2"
                     IsHitTestVisible="False" />
 
-            <Border x:Name="DragHandle"
-                    Height="22" VerticalAlignment="Top"
+            <Border x:Name="DragHandle" Grid.Row="0"
+                    Height="22"
                     Background="#cc8ec8ff" CornerRadius="2,2,0,0"
                     Cursor="SizeAll">
-                <TextBlock Text="  drag to move  ·  wheel to zoom  ·  corner to resize"
+                <TextBlock Text="  drag to move  ·  wheel to zoom  ·  right-drag the map  ·  corner to resize"
                            FontFamily="Consolas" FontSize="10"
+                           TextTrimming="CharacterEllipsis"
                            Foreground="#0b0f13" VerticalAlignment="Center" />
             </Border>
 
@@ -292,9 +304,9 @@
                 Grouped in the order you reach for them: what to draw, how hard to draw it, where
                 the map sits, then the list.
             -->
-            <Border x:Name="ControlStack"
+            <Border x:Name="ControlStack" Grid.Row="1"
                     HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                    Margin="6,26,0,26" Padding="5,4"
+                    Margin="6,6,0,26" Padding="5,4"
                     Background="#e60b0f13"
                     BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
                 <DockPanel>
@@ -387,13 +399,13 @@
             </Border>
 
             <!-- What is left when the stack is folded: one button to bring it back. -->
-            <Button x:Name="ExpandControls" Style="{StaticResource Chip}"
+            <Button x:Name="ExpandControls" Grid.Row="1" Style="{StaticResource Chip}"
                     HorizontalAlignment="Left" VerticalAlignment="Top"
-                    Margin="6,26,0,0" Content="»"
+                    Margin="6,6,0,0" Content="»"
                     ToolTip="Show the map controls"
                     Visibility="Collapsed" />
 
-            <Thumb x:Name="ResizeGrip"
+            <Thumb x:Name="ResizeGrip" Grid.Row="1"
                    Width="16" Height="16"
                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
                    Cursor="SizeNWSE">

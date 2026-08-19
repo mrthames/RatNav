@@ -19,6 +19,11 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
+  // Bumped whenever a plan is built, so the Share section reloads. It keeps its own copy of the
+  // saved plans and had no way to hear that a new one existed — so building a plan and then being
+  // told there was none to share was the obvious next thing to happen.
+  const [planned, setPlanned] = useState(0)
+
   const calibrated = useMemo(() => maps.filter((m) => m.calibrated), [maps])
 
   useEffect(() => {
@@ -69,6 +74,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       const built = await api.buildPlan(mapId, [...chosen])
       await api.activatePlan(built.id)
       setNote(`Plan active — ${built.plan.stops.length} stops.`)
+      setPlanned((n) => n + 1)
     } catch {
       setNote('Could not build that plan.')
     } finally {
@@ -111,7 +117,13 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       */}
       {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
       <TurnIns />
-      {mapId && <Sharing mapId={mapId} mapName={maps.find((m) => m.id === mapId)?.name ?? ''} />}
+      {mapId && (
+        <Sharing
+          mapId={mapId}
+          mapName={maps.find((m) => m.id === mapId)?.name ?? ''}
+          planned={planned}
+        />
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
         <div className="flex flex-col gap-3">
@@ -197,15 +209,24 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
  * send it, save it, import it" is four steps where one will do. The code carries the plan itself,
  * so there is no server involved and nothing to be up or down.
  */
-function Sharing({ mapId, mapName }: { mapId: string; mapName: string }) {
+function Sharing({
+  mapId, mapName, planned,
+}: {
+  mapId: string
+  mapName: string
+  /** Changes when a plan is built, which is the signal to go and look for it. */
+  planned: number
+}) {
   const [plans, setPlans] = useState<SavedPlan[]>([])
   const [code, setCode] = useState<string | null>(null)
   const [paste, setPaste] = useState('')
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const load = () => api.savedPlans().then(setPlans).catch(() => setPlans([]))
-  useEffect(() => { void load() }, [])
+  const load = useCallback(
+    () => api.savedPlans().then(setPlans).catch(() => setPlans([])), [])
+
+  useEffect(() => { void load() }, [load, planned])
 
   // A Customs code left on screen while Streets is selected is an invitation to send the wrong one.
   useEffect(() => { setCode(null); setNote(null) }, [mapId])

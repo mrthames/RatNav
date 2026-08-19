@@ -771,11 +771,18 @@ public partial class OverlayWindow : Window
         ApplyItemsWidth();
     }
 
-    /// <summary>Puts the stored width onto whichever column the list is in.</summary>
+    /// <summary>
+    /// Gives the items column its width, or takes it away.
+    ///
+    /// <para>The column kept its width whether or not anything was in it, so folding the list away
+    /// left a stripe of empty space down one side and the map sitting off-centre in the window.
+    /// A collapsed drawer should cost nothing.</para>
+    /// </summary>
     private void ApplyItemsWidth()
     {
+        var shown = ItemsPanel.Visibility == Visibility.Visible;
         var onLeft = _settings.Overlay.ItemsSide == "left";
-        var width = new GridLength(_settings.Overlay.ItemsWidth);
+        var width = shown ? new GridLength(_settings.Overlay.ItemsWidth) : new GridLength(0);
 
         LeftSlot.Width = onLeft ? width : new GridLength(0);
         RightSlot.Width = onLeft ? new GridLength(0) : width;
