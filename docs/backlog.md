@@ -269,6 +269,22 @@ them separately.
   - Note: "barters being tracked" depends on the barter-tracking feature, which is still open. The
     other two do not.
 
+### Sharing by code
+
+- [x] **Share a plan as a pasteable code rather than a file.** A real 4-stop Streets plan comes to
+  556 characters. Deflate then base64url — no `+`, `/` or `=`, so URLs and chat clients leave it
+  alone — and tolerant of the whitespace and line wrapping that pasted text picks up. The buddy app
+  gained a Share section: get a code, copy it, paste a friend's, and it imports **and merges** in
+  one step. The `.ratnav` file export stays. Paste it in and RatNav imports and
+  merges exactly as the `.ratnav` file does today.
+  - Note on wording: a *hash* is one-way and cannot be turned back into a plan. What is wanted is
+    an encoded plan — compressed and text-safe — which is what makes pasting it work.
+  - Must round-trip into the same document the file produces, so import and merge stay one path
+    rather than two that can disagree.
+  - Keep the file export as well: a code is for chat, a file is for keeping.
+  - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
+    Names are already resolved locally at import, so they need not travel.
+
 ### Quest log pane
 
 - [ ] **A quest log on the overlay**, listing the active quests being worked in this raid.

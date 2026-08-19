@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, type MapSummary, type PlannableObjective, type RaidView, type TurnIn } from './api'
+import {
+  api,
+  type MapSummary,
+  type PlannableObjective,
+  type RaidView,
+  type SavedPlan,
+  type TurnIn,
+} from './api'
 
 /**
  * The pre-raid ritual, in the order it is actually done: pick a map, tick the objectives you are
@@ -104,6 +111,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       */}
       {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
       <TurnIns />
+      <Sharing />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
         <div className="flex flex-col gap-3">
@@ -179,6 +187,137 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         </aside>
       </div>
     </div>
+  )
+}
+
+/**
+ * Passing a plan to someone, and taking theirs.
+ *
+ * A code rather than a file. A file is for keeping; a code is for sending, and "download this,
+ * send it, save it, import it" is four steps where one will do. The code carries the plan itself,
+ * so there is no server involved and nothing to be up or down.
+ */
+function Sharing() {
+  const [plans, setPlans] = useState<SavedPlan[]>([])
+  const [code, setCode] = useState<string | null>(null)
+  const [paste, setPaste] = useState('')
+  const [note, setNote] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const load = () => api.savedPlans().then(setPlans).catch(() => setPlans([]))
+  useEffect(() => { void load() }, [])
+
+  const mine = plans[0]
+
+  async function show() {
+    if (!mine) return
+    setCode((await api.planCode(mine.id)).code)
+  }
+
+  async function take() {
+    setBusy(true)
+    setNote(null)
+
+    try {
+      const result = await api.importCode(paste)
+      setPaste('')
+      await load()
+
+      // Merging is the point of importing — you want both sets of objectives, attributed, not
+      // theirs instead of yours. Offered only when there is something of yours to merge with.
+      const theirs = result.id
+      const ours = plans.find((p) => p.mapId === result.plan.mapName && p.id !== theirs)?.id
+        ?? plans.find((p) => p.id !== theirs)?.id
+
+      if (!ours) {
+        setNote(`Imported ${result.plan.owner ?? 'their'} plan. Build one of your own to merge with it.`)
+        return
+      }
+
+      const merged = await api.mergePlans([ours, theirs])
+      const overlap = merged.overlap
+
+      setNote(
+        `Merged with ${merged.owners.join(' and ')}. `
+        + `${overlap.sharedObjectiveIds.length} shared, `
+        + `${overlap.contestedItemIds.length} contested, `
+        + `${overlap.redundantKeyItemIds.length} key${overlap.redundantKeyItemIds.length === 1 ? '' : 's'} only one of you needs.`)
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : 'That code could not be read.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3 border border-line bg-panel p-3">
+      <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Share a plan</h2>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          disabled={!mine}
+          onClick={() => void show()}
+          className="rounded-sm bg-panel-hi px-3 py-1.5 text-sm text-muted transition-colors
+                     hover:text-ink disabled:opacity-40
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          {mine ? `Get code for ${mine.mapName}` : 'Build a plan first'}
+        </button>
+
+        {code && (
+          <button
+            type="button"
+            onClick={() => void navigator.clipboard.writeText(code)}
+            className="rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase
+                       tracking-wider text-ground
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Copy
+          </button>
+        )}
+      </div>
+
+      {code && (
+        <textarea
+          readOnly
+          value={code}
+          rows={3}
+          onFocus={(e) => e.currentTarget.select()}
+          className="w-full resize-none break-all rounded-sm border border-line bg-ground p-2
+                     font-mono text-[11px] text-muted
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        />
+      )}
+
+      <label className="flex flex-col gap-1">
+        <span className="text-sm">Paste a friend's code</span>
+        <textarea
+          value={paste}
+          onChange={(e) => setPaste(e.target.value)}
+          rows={2}
+          placeholder="RATNAV1-…"
+          className="w-full resize-none break-all rounded-sm border border-line bg-ground p-2
+                     font-mono text-[11px] text-ink placeholder:text-muted/60
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        />
+      </label>
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          disabled={busy || paste.trim() === ''}
+          onClick={() => void take()}
+          className="rounded-sm bg-panel-hi px-3 py-1.5 text-sm text-muted transition-colors
+                     hover:text-ink disabled:opacity-40
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          {busy ? 'Importing…' : 'Import and merge'}
+        </button>
+
+        {note && <p className="text-xs text-muted">{note}</p>}
+      </div>
+    </section>
   )
 }
 

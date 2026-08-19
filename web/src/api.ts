@@ -153,6 +153,22 @@ export interface Trader {
   next: { id: string; name: string; minPlayerLevel: number | null; wikiUrl: string | null }[]
 }
 
+export interface SavedPlan {
+  id: string
+  mapId: string
+  mapName: string
+  owner: string | null
+  createdAt: string
+  stops: number
+}
+
+/** What merging two plans reveals: the things that change how you run the raid. */
+export interface MergeOverlap {
+  sharedObjectiveIds: string[]
+  contestedItemIds: string[]
+  redundantKeyItemIds: string[]
+}
+
 export interface ProgressSummary {
   notStarted: number
   active: number
@@ -314,6 +330,21 @@ export const api = {
 
   activatePlan: (id: string) =>
     post<RaidView>(`/api/plans/${encodeURIComponent(id)}/activate`, {}),
+
+  savedPlans: () => get<SavedPlan[]>('/api/plans'),
+
+  /** The plan as a line of text to paste wherever you are already talking. */
+  planCode: (id: string) =>
+    get<{ code: string }>(`/api/plans/${encodeURIComponent(id)}/code`),
+
+  importCode: (code: string) =>
+    post<{ id: string; plan: { mapName: string; owner: string | null; stops: unknown[] } }>(
+      '/api/plans/import-code', { code }),
+
+  /** Combines saved plans for the same map. Nothing is dropped; the overlap is what it adds. */
+  mergePlans: (planIds: string[]) =>
+    post<{ owners: string[]; overlap: MergeOverlap; raid: RaidView }>(
+      '/api/plans/merge', { planIds }),
 
   raid: () => get<RaidView>('/api/raid'),
 

@@ -829,6 +829,31 @@ public static class ApiEndpoints
                 : Results.Ok(new { id = plans.Save(document), plan = document });
         });
 
+        // The same plan as a line of text you can paste into a chat window.
+        //
+        // A file is for keeping; a code is for sending. "Download this, send it, save it, import
+        // it" is four steps where one will do, and the code carries the plan itself — there is no
+        // server to look anything up in, which is the point.
+        api.MapGet("/plans/{id}/code", (PlanStore plans, string id) =>
+        {
+            var saved = plans.Get(id);
+
+            return saved is null
+                ? Results.NotFound()
+                : Results.Ok(new { code = PlanCode.Encode(saved.Document) });
+        });
+
+        api.MapPost("/plans/import-code", (PlanStore plans, ImportCodeRequest request) =>
+        {
+            var document = PlanCode.Decode(request.Code, out var problem);
+
+            // Saved exactly as an imported file is, so importing and merging stay one path rather
+            // than two that can drift apart.
+            return document is null
+                ? Results.BadRequest(new { error = problem })
+                : Results.Ok(new { id = plans.Save(document), plan = document });
+        });
+
         // Combines saved plans into one squad plan. Nothing is dropped; what it adds is the
         // overlap — shared objectives, contested items, keys only one of you needs to carry.
         api.MapPost("/plans/merge", (RatNavState state, PlanStore plans, RaidSession session, MergeRequest request) =>
@@ -1159,6 +1184,9 @@ public sealed record HaveRequest(int? Count, int? Delta);
 /// it alone", so setting a target does not blank a note typed earlier.
 /// </summary>
 public sealed record WatchRequest(bool Watch, string? Note, int? Target, int? Have);
+
+/// <summary>A plan someone pasted in, as a share code.</summary>
+public sealed record ImportCodeRequest(string? Code);
 public sealed record TaskStateRequest(string State);
 public sealed record HideoutLevelRequest(int Level);
 
