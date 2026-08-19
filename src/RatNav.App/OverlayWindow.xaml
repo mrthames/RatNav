@@ -190,15 +190,18 @@
                             Margin="6,0,0,0" Padding="6,4"
                             Background="#33141b21" BorderBrush="{StaticResource Line}" BorderThickness="1">
                         <DockPanel>
-                            <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
-                                <Button x:Name="SwapSide" Style="{StaticResource Chip}"
-                                        HorizontalAlignment="Left" Content="⇄"
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4" LastChildFill="False">
+                                <Button x:Name="CollapseItems" DockPanel.Dock="Left"
+                                        Style="{StaticResource Chip}" Content="–"
+                                        ToolTip="Fold the list away" />
+                                <Button x:Name="SwapSide" DockPanel.Dock="Left" Margin="4,0,0,0"
+                                        Style="{StaticResource Chip}" Content="⇄"
                                         ToolTip="Move the list to the other side"
                                         Visibility="Collapsed" />
-                                <Button x:Name="DetachItems" Style="{StaticResource Chip}"
-                                        HorizontalAlignment="Right" Content="pop out"
+                                <Button x:Name="DetachItems" DockPanel.Dock="Right"
+                                        Style="{StaticResource Chip}" Content="pop out"
                                         Visibility="Collapsed" />
-                            </Grid>
+                            </DockPanel>
 
                             <!-- The colours mean something and nothing said what. -->
                             <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0"

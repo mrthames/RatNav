@@ -158,6 +158,7 @@ public partial class OverlayWindow : Window
         DetachItems.Click += (_, _) => DetachItemsPanel();
         SwapSide.Click += (_, _) => SwapItemsSide();
         ItemsSplitter.DragDelta += OnItemsResize;
+        CollapseItems.Click += (_, _) => ToggleItems();
     }
 
     public event EventHandler? ExpandRequested;
@@ -256,7 +257,9 @@ public partial class OverlayWindow : Window
             : RatNavSettings.OverlayMode.Box;
 
         Remember(_settings.Overlay with { Mode = mode });
+
         ApplyBounds();
+        ApplyItemsPanel();
         Draw();
     }
 
@@ -569,9 +572,24 @@ public partial class OverlayWindow : Window
     /// Switches between a map that holds still and one that keeps you centred. Persisted, because
     /// which of the two is right is a matter of how you read a map, not of what raid you are in.
     /// </summary>
-    /// <summary>Opens or closes the items list.</summary>
+    /// <summary>
+    /// Opens or closes the items list.
+    ///
+    /// <para>In the centred map view there is nothing to open it <i>into</i> — that view exists to
+    /// be a map and nothing else — so the button pops the list out instead. Attaching it there
+    /// would put a panel back over the middle of the screen, which is the one thing the view is
+    /// for avoiding.</para>
+    /// </summary>
     private void ToggleItems()
     {
+        if (_settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe)
+        {
+            if (_itemsWindow is null) DetachItemsPanel();
+            else _itemsWindow.Close();
+
+            return;
+        }
+
         Remember(_settings.Overlay with { ShowItems = !_settings.Overlay.ShowItems });
         ApplyItemsPanel();
         RefreshItems();
@@ -598,6 +616,7 @@ public partial class OverlayWindow : Window
             // there was no route back to the map at all.
             Remember(_settings.Overlay with { ShowItems = false });
             ApplyItemsPanel();
+            RefreshItems();
         };
 
         _itemsWindow.Show();
@@ -608,8 +627,13 @@ public partial class OverlayWindow : Window
 
     private void ApplyItemsPanel()
     {
-        // Hidden while torn off, so the same list is never in two places at once.
-        var inline = _settings.Overlay.ShowItems && _itemsWindow is null;
+        // Hidden while torn off, so the same list is never in two places at once — and never
+        // attached in the centred map view, which exists to be a map. A list popped out from the
+        // corner panel stays popped out across the switch, because it is its own window and the
+        // mode has nothing to do with it.
+        var inline = _settings.Overlay.ShowItems
+            && _itemsWindow is null
+            && _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box;
 
         ItemsPanel.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
 

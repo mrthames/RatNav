@@ -255,6 +255,14 @@ them separately.
 
 ### Items panel, second pass
 
+- [x] **The items list must never attach to the map in the F9 view.** That view exists to be a map;
+  a panel over the middle of the screen is the thing it is for avoiding. Attached is now F5 only,
+  and the button pops the list out instead when pressed in F9.
+- [x] **A list popped out from F5 stays popped out across a switch to F9.** It is its own window;
+  the presentation has nothing to do with it.
+- [x] **A collapse control on the list itself**, visible whenever the list is — folding it away is
+  an ordinary thing to want mid-raid, and reaching for `F6` first is not.
+
 - [x] **Scrolling over the items list scrolls the map instead.** The wheel handler is on the window,
   so it wins before the list's scroll viewer ever sees it.
 - [x] **The divider between map and list should be draggable.** First attempt used a GridSplitter
