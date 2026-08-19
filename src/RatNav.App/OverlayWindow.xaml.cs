@@ -112,11 +112,6 @@ public partial class OverlayWindow : Window
     /// </summary>
     private static readonly string[] InkLevels = ["graphical", "full", "structure", "outline"];
 
-    /// <summary>The drawn map beneath the vector, when the source has tiles for it.</summary>
-    private ImageSource? _raster;
-    private Rect _rasterAt;
-    private string? _rasterFor;
-
     /// <summary>The current map's own stylesheet, for the graphical ink level.</summary>
     private IReadOnlyDictionary<string, MapStyle> _palette =
         new Dictionary<string, MapStyle>(StringComparer.OrdinalIgnoreCase);
@@ -484,7 +479,6 @@ public partial class OverlayWindow : Window
         if (view.MapId is not { Length: > 0 } mapId) return;
 
         await EnsureFloorsAsync(mapId);
-        await EnsureRasterAsync(mapId);
 
         var floor = FloorFor(view);
         var key = $"{mapId}|{floor}";
@@ -540,66 +534,6 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>The map's levels, fetched once per map so the floor control has something to step through.</summary>
-    /// <summary>
-    /// Fetches and stitches the map's raster tiles, once per map.
-    ///
-    /// <para>A proper drawn map beneath the vector, which is what makes Woods look like woods
-    /// rather than roads through empty ground. Placed in the vector's own normalized space by the
-    /// service, so it lines up with every pin without a second coordinate system.</para>
-    /// </summary>
-    private async Task EnsureRasterAsync(string mapId)
-    {
-        if (_rasterFor == mapId) return;
-
-        _raster = null;
-
-        try
-        {
-            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/maps/{Uri.EscapeDataString(mapId)}/raster";
-            var view = await _http.GetFromJsonAsync<RasterView>(url);
-
-            if (view is null) return;
-
-            var built = await RasterLayer.BuildAsync(
-                new MapImage
-                {
-                    SourceUrl = view.TilePath,
-                    CoordinateRotation = 0,
-                    Bounds = [[0, 0], [1, 1]],
-                    TilePath = view.TilePath,
-                    TileTransform = [1, 0, 1, 0],
-                    MinZoom = view.MinZoom,
-                    MaxZoom = view.MaxZoom,
-                },
-                System.IO.Path.Combine(RatNavPaths.EnsureDataDirectory(), "tiles"),
-                _http);
-
-            if (built is null) return;
-
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.UriSource = new Uri(built.Path);
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.EndInit();
-            bitmap.Freeze();
-
-            _raster = bitmap;
-            _rasterAt = new Rect(
-                view.Left, view.Top, view.Right - view.Left, view.Bottom - view.Top);
-
-            // Only once it worked. Marking the map as done before fetching meant a single failed
-            // attempt — a slow first response, a dropped connection — was remembered as the
-            // answer and never retried.
-            _rasterFor = mapId;
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException
-            or JsonException or NotSupportedException or System.IO.IOException or UriFormatException)
-        {
-            // No picture this time. The vector still draws, which is most of the value.
-            _raster = null;
-        }
-    }
-
     private async Task EnsureFloorsAsync(string mapId)
     {
         if (_floorsFor == mapId) return;
@@ -968,12 +902,24 @@ public partial class OverlayWindow : Window
             ? new Thickness(0, 0, 6, 6)
             : new Thickness(6, 0, 0, 6);
 
-        if (ReferenceEquals(panel.Parent, target)) return;
-
         // Grid is a Panel, so one case covers both the starting grid and the other side's stack.
-        if (panel.Parent is Panel current) current.Children.Remove(panel);
+        if (!ReferenceEquals(panel.Parent, target))
+        {
+            if (panel.Parent is Panel current) current.Children.Remove(panel);
+            target.Children.Add(panel);
+        }
 
-        target.Children.Add(panel);
+        // Sharing a side, the quest log goes on top. It is the shorter of the two and the one you
+        // read rather than scan, so a long list above it buries it — and that has to hold however
+        // the two were swapped around to end up together.
+        foreach (var stack in new[] { LeftDrawers, RightDrawers })
+        {
+            if (!stack.Children.Contains(QuestPanel)) continue;
+            if (stack.Children.IndexOf(QuestPanel) == 0) continue;
+
+            stack.Children.Remove(QuestPanel);
+            stack.Children.Insert(0, QuestPanel);
+        }
     }
 
     /// <summary>Opens or folds the quest log.</summary>
@@ -1211,6 +1157,12 @@ public partial class OverlayWindow : Window
 
         ControlStack.Visibility = editing && open ? Visibility.Visible : Visibility.Collapsed;
         ExpandControls.Visibility = editing && !open ? Visibility.Visible : Visibility.Collapsed;
+
+        // The grab bar runs the width of the window across the row the drawer handles live in.
+        // Interact mode pushes the content clear by a full button height rather than a hair — a
+        // few pixels still reads as crowded, and a handle you can see but not press is worse than
+        // no handle at all.
+        Frame.Padding = editing ? new Thickness(0, 28, 0, 0) : new Thickness(0);
     }
 
     private void StepPlayer(double by)
@@ -1384,35 +1336,6 @@ public partial class OverlayWindow : Window
         var fit = FitScale(width, height);
 
         var transform = MapTransform(view, width, height);
-
-        // The drawn map, underneath everything. Only at the graphical level: the other levels
-        // exist to strip the map back, and a photograph under an outline defeats the point.
-        if (ink == "graphical" && _raster is not null)
-        {
-            var topLeft = ToCanvas(view, _rasterAt.Left, _rasterAt.Top, width, height);
-            var bottomRight = ToCanvas(view, _rasterAt.Right, _rasterAt.Bottom, width, height);
-
-            var picture = new Image
-            {
-                Source = _raster,
-                Width = Math.Max(1, bottomRight.X - topLeft.X),
-                Height = Math.Max(1, bottomRight.Y - topLeft.Y),
-
-                // Brighter than the fade dial alone would give. That dial decides how much of the
-                // game shows through a map drawn in thin lines; a photograph at 30% over a dark
-                // panel is simply muddy. It still responds — turning fade down dims the picture —
-                // it just does not start invisible.
-                Opacity = Math.Min(1, 0.25 + opacity * 1.8),
-                Stretch = Stretch.Fill,
-                IsHitTestVisible = false,
-            };
-
-            RenderOptions.SetBitmapScalingMode(picture, BitmapScalingMode.HighQuality);
-
-            Canvas.SetLeft(picture, topLeft.X);
-            Canvas.SetTop(picture, topLeft.Y);
-            MapCanvas.Children.Add(picture);
-        }
 
         if (_settings.Overlay.GhostOtherFloors)
         {

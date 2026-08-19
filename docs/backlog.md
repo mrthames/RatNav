@@ -370,7 +370,14 @@ them separately.
 - [x] **Ink is arrows, not a cycling button.** A single control reading "full" looks like a switch
   that is on — nothing said three other levels existed, or that the drawn map is on one of them.
 
-### Raster tiles as a base layer
+### Raster tiles as a base layer — built, then removed
+
+**Reverted at Justin's call.** The tiles extended well past the playable area and read as a
+photograph under a diagram; what the map is for is structures, landmarks and roads, and the vector
+says those precisely. The graphical ink level stays — that is the map's *own* palette, which is
+what made Woods legible — but the tile layer, its endpoint and its cache are gone.
+
+The research is kept below in case it is ever wanted again.
 
 - [~] **A real raster base under the vector.** Asked for after seeing Map Genie.
   - **Map Genie's maps cannot be used.** They are a commercial product sold behind a subscription;
@@ -454,6 +461,19 @@ them separately.
   - Placed by clicking the map, and/or by pasting coordinates. `[?]` Map Genie gives positions in
     its own coordinate space, not the game's, so clicking RatNav's own map is likely the only
     reliable route — worth confirming what Justin expects to do here.
+
+### Floors, third pass
+
+- [x] **Stack everything except where floors actually overlap** — already how it works: other
+  floors draw solid where nothing on yours sits above or below them, dashed and dimmed only where
+  they genuinely stack.
+- [x] **The floor follows your elevation automatically** — already how it works: a position fix
+  picks the floor from the height band your Y lands in, and a floor chosen by hand lasts only
+  until the next fix.
+- [ ] **More room-level detail inside structures**, where the source has it. `[?]` Measured
+  earlier: on Streets most buildings have no interior geometry at all in tarkov.dev's drawing —
+  only footprints on the ground floor and interiors for a handful of buildings one level up. Worth
+  checking whether other maps are better served before deciding this is achievable.
 
 ### Overlay chrome, fourth pass
 

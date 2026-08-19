@@ -1017,38 +1017,6 @@ public static class ApiEndpoints
                 });
         });
 
-        // Where a map's raster tiles live and what patch of the world they cover, so the overlay
-        // can draw a proper picture beneath the vector. Fetching and stitching happens in the
-        // desktop app, which is the only part of RatNav that can compose an image.
-        api.MapGet("/maps/{id}/raster", (RatNavState state, string id) =>
-        {
-            var map = FindMap(state, id);
-            if (map?.Image is not { } image) return Results.NotFound();
-
-            if (image.TilePath is not { Length: > 0 } || MapRaster.BoundsOf(image) is not { } bounds)
-                return Results.NotFound(new { error = "That map has no raster tiles." });
-
-            var transform = new CoordinateTransform(image);
-
-            // Handed over already placed in the vector's own normalized space, so the overlay does
-            // not need a second coordinate system that could drift from the verified one.
-            var a = transform.ToNormalized(new GamePosition(bounds[0][0], 0, bounds[0][1]));
-            var b = transform.ToNormalized(new GamePosition(bounds[1][0], 0, bounds[1][1]));
-
-            return Results.Ok(new RasterView
-            {
-                TilePath = image.TilePath,
-                MinZoom = image.MinZoom,
-                MaxZoom = image.MaxZoom,
-                Left = Math.Min(a.X, b.X),
-                Top = Math.Min(a.Y, b.Y),
-                Right = Math.Max(a.X, b.X),
-                Bottom = Math.Max(a.Y, b.Y),
-                Author = image.Author,
-                AuthorLink = image.AuthorLink,
-            });
-        });
-
         // The names players use for places — "Old Gas", "Dorms". Drawn on the map so it reads the
         // way people talk about it rather than as anonymous geometry.
         api.MapGet("/maps/{id}/places", (RatNavState state, string id) =>
@@ -1575,28 +1543,6 @@ public sealed record ItemDetail
         TotalNeeded = needs?.TotalNeeded ?? 0,
         AnyFoundInRaid = needs?.AnyFoundInRaid ?? false,
     };
-}
-
-/// <summary>
-/// A map's raster tiles, already placed in the vector's normalized space.
-///
-/// <para>The edges can fall outside 0..1, and should: the tile pyramid is square and covers more
-/// ground than the drawing does. Clipping is the overlay's business.</para>
-/// </summary>
-public sealed record RasterView
-{
-    public required string TilePath { get; init; }
-    public int MinZoom { get; init; }
-    public int MaxZoom { get; init; }
-
-    public required double Left { get; init; }
-    public required double Top { get; init; }
-    public required double Right { get; init; }
-    public required double Bottom { get; init; }
-
-    /// <summary>Whose work it is. Shown, because it is theirs.</summary>
-    public string? Author { get; init; }
-    public string? AuthorLink { get; init; }
 }
 
 /// <summary>A named place on the map image.</summary>

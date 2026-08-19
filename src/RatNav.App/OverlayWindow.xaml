@@ -151,16 +151,24 @@
                 -->
                 <StackPanel x:Name="Readout" Grid.Row="0">
                     <DockPanel>
-                        <Button x:Name="QuestDrawer" DockPanel.Dock="Left"
-                                Style="{StaticResource Chip}" Content="quests"
-                                ToolTip="The plan's quests, numbered as on the map" />
-                        <Button x:Name="ItemsDrawer" DockPanel.Dock="Left" Margin="4,0,0,0"
+                        <!--
+                            The name on the left and always there. Anyone glancing at a stranger's
+                            screen should be able to tell what this is, and a label that appears
+                            only in interact mode cannot do that.
+                        -->
+                        <TextBlock Text="RATNAV" DockPanel.Dock="Left" VerticalAlignment="Center"
+                                   FontFamily="Consolas" FontSize="13" FontWeight="Bold"
+                                   Foreground="{StaticResource Muted}" />
+
+                        <!-- The handles go to the other end, where they cannot crowd the name. -->
+                        <Button x:Name="ItemsDrawer" DockPanel.Dock="Right" Margin="4,0,0,0"
                                 Style="{StaticResource Chip}" Content="items"
                                 ToolTip="What to pick up" />
+                        <Button x:Name="QuestDrawer" DockPanel.Dock="Right"
+                                Style="{StaticResource Chip}" Content="quests"
+                                ToolTip="The plan's quests, numbered as on the map" />
 
-                        <TextBlock Text="RATNAV" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                   FontFamily="Consolas" FontSize="11"
-                                   Foreground="{StaticResource Muted}" />
+                        <TextBlock />
                     </DockPanel>
 
                     <TextBlock x:Name="BearingText" Margin="0,4,0,0"
