@@ -441,6 +441,16 @@ public sealed record RatNavSettings
         public double TextScale { get; init; } = 2.0;
 
         /// <summary>
+        /// How much markers and text shrink as the map is zoomed out, 0 to 1.
+        ///
+        /// <para>Markers sized for a zoomed-in view cover a zoomed-out one — pins and captions
+        /// tuned for reading a building become a mess of overlapping furniture across a whole map.
+        /// At 0 they stay one fixed size however far out you go; at 1 they scale with the map and
+        /// vanish. In between they ease off, which is what keeps both views readable.</para>
+        /// </summary>
+        public double ScaleWithZoom { get; init; } = 0.55;
+
+        /// <summary>
         /// Draw the floor above the ground together with it, rather than ghosted.
         ///
         /// <para>On Streets the ground level holds only building footprints — the interiors are one

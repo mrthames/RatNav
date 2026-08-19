@@ -331,6 +331,27 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Map labels
+
+- [x] **Place names are white**, not muted grey. At full ink the map's own roads and rock are pale
+  enough that a grey caption disappears into them.
+- [x] **Waypoints draw over place names**, not under. Labels were painted last and sat on top of
+  the thing you were navigating to.
+- [x] **Captions claim their space.** Extracts cluster along a map's edges and their names piled
+  into something unreadable; one that cannot find room is dropped, and off-view extracts are
+  shortened to their first word — "RAIL", "NORTH".
+- [x] **Markers and text ease off as you zoom out**, with a **Shrink** control (0 = fixed size,
+  1 = scales with the map, 0.55 default). Sized for reading a building they became a wall of
+  overlapping furniture across a whole map.
+- [ ] **Finer place names are not available to us.** `[?]` Map Genie shows "Warehouse 2", "Guard
+  House" and the like on Woods; tarkov.dev gives 16 area labels and no more, the SVG carries no
+  text elements at all, and Map Genie's are their own editorial work in a commercial product.
+  - What tarkov.dev *does* carry, positioned and unused: 428 loot containers, 387 loose loot
+    points, 327 spawns, 64 hazards, 8 BTR stops, 4 locked doors with their keys. Named by type
+    rather than by place, so they would give "Weapon box" and "sniper" rather than "Warehouse 2".
+  - The realistic answer is **custom waypoints**, already on this list: mark the spot yourself and
+    label it. Worth deciding whether that closes this or whether it is worth hunting further.
+
 ### Quick controls, and what fade means
 
 - [x] **Panel opacity is its own thing.** "Fade" was inking the map; how solid the *window* is —

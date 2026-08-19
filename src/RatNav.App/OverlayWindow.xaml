@@ -385,6 +385,16 @@
                                 <Button x:Name="TextUp" Style="{StaticResource Chip}" Content="+" />
                             </StackPanel>
 
+                            <TextBlock Style="{StaticResource Label}" Text="SHRINK" Margin="0,0,0,2"
+                                       ToolTip="How much pins and text shrink as you zoom out" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="ShrinkDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="ShrinkText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="0.55" />
+                                <Button x:Name="ShrinkUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
+
                             <TextBlock Style="{StaticResource Label}" Text="MAP" Margin="0,0,0,2" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <Button x:Name="ZoomReset" Style="{StaticResource Chip}" Content="1.0×" MinWidth="44" />

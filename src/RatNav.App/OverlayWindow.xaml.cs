@@ -176,6 +176,8 @@ public partial class OverlayWindow : Window
         MarkerDown.Click += (_, _) => StepMarker(-0.5);
         TextUp.Click += (_, _) => StepText(+0.5);
         TextDown.Click += (_, _) => StepText(-0.5);
+        ShrinkUp.Click += (_, _) => StepShrink(+0.1);
+        ShrinkDown.Click += (_, _) => StepShrink(-0.1);
         WeightUp.Click += (_, _) => StepWeight(+0.25);
         WeightDown.Click += (_, _) => StepWeight(-0.25);
         ItemsButton.Click += (_, _) => ToggleItems();
@@ -1056,6 +1058,16 @@ public partial class OverlayWindow : Window
         ExpandControls.Visibility = editing && !open ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void StepShrink(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            ScaleWithZoom = Math.Clamp(_settings.Overlay.ScaleWithZoom + by, 0, 1),
+        });
+
+        Draw();
+    }
+
     private void ToggleGhost()
     {
         Remember(_settings.Overlay with { GhostOtherFloors = !_settings.Overlay.GhostOtherFloors });
@@ -1187,6 +1199,7 @@ public partial class OverlayWindow : Window
         ExtractButton.Content = _settings.Overlay.Extracts;
         MarkerText.Text = $"{_settings.Overlay.MarkerScale:0.0}×";
         TextScaleText.Text = $"{_settings.Overlay.TextScale:0.0}×";
+        ShrinkText.Text = $"{_settings.Overlay.ScaleWithZoom:0.00}";
         HaloButton.Content = _settings.Overlay.Halo ? "halo on" : "halo off";
         GhostButton.Content = _settings.Overlay.GhostOtherFloors ? "ghost on" : "ghost off";
         PlacesButton.Content = _settings.Overlay.ShowPlaceNames ? "names on" : "names off";
@@ -1612,8 +1625,15 @@ public partial class OverlayWindow : Window
         MapCanvas.Children.Add(text);
     }
 
+    /// <summary>Where a caption has already been drawn this frame.</summary>
+    private readonly List<Rect> _labelled = [];
+
     /// <summary>
     /// A short caption on the map, with a dark backing so it survives whatever is behind it.
+    ///
+    /// <para>Captions claim their space. Extracts cluster along the edges of a map and their names
+    /// piled on top of each other into something unreadable; one that cannot find room is dropped
+    /// instead, because a legible half is worth more than an illegible whole.</para>
     /// </summary>
     private void Label(string text, double x, double y, Brush colour, double size)
     {
@@ -1638,9 +1658,33 @@ public partial class OverlayWindow : Window
 
         label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 
-        Canvas.SetLeft(label, x - label.DesiredSize.Width / 2);
-        Canvas.SetTop(label, y);
+        var at = new Rect(
+            x - label.DesiredSize.Width / 2, y,
+            label.DesiredSize.Width, label.DesiredSize.Height);
+
+        // A little breathing room, so two captions that merely touch are still treated as a clash.
+        var claim = Rect.Inflate(at, 2, 1);
+
+        if (_labelled.Any(taken => taken.IntersectsWith(claim))) return;
+
+        _labelled.Add(claim);
+
+        Canvas.SetLeft(label, at.X);
+        Canvas.SetTop(label, at.Y);
         MapCanvas.Children.Add(label);
+    }
+
+    /// <summary>
+    /// An extract's name, shortened for the edge of the map.
+    ///
+    /// <para>Off-view markers bunch along an edge, and full names — "Northern Checkpoint", "RUAF
+    /// Roadblock" — overrun each other there. The first word carries almost all the meaning:
+    /// "RAIL", "NORTH", "V-EX".</para>
+    /// </summary>
+    private static string Abbreviate(string name)
+    {
+        var first = name.Split([' ', '-', ','], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? name;
+        return (first.Length <= 6 ? first : first[..5] + "\u2026").ToUpperInvariant();
     }
 
     private void DrawRoute(RaidView view)
@@ -1651,8 +1695,33 @@ public partial class OverlayWindow : Window
 
         Point Place(double x, double y) => ToCanvas(view, x, y, width, height);
 
-        var scale = _settings.Overlay.MarkerScale;
-        var textScale = _settings.Overlay.TextScale;
+        // Markers ease off as the map zooms out.
+        //
+        // Sized for reading a building, they become a wall of overlapping furniture across a whole
+        // map. Held perfectly still they crowd; scaled with the map they vanish. The exponent is
+        // the compromise, and it is the player's to set.
+        var relative = Math.Pow(Placement.Zoom, -_settings.Overlay.ScaleWithZoom);
+
+        var scale = _settings.Overlay.MarkerScale * relative;
+        var textScale = _settings.Overlay.TextScale * relative;
+
+        // Cleared each draw, so a label that had room last frame is not blocked by a ghost of
+        // itself this one.
+        _labelled.Clear();
+
+        // Place names first — they are the backdrop. Drawn after the pins they sat on top of the
+        // thing you were navigating to, which is exactly backwards.
+        if (_settings.Overlay.ShowPlaceNames)
+        {
+            foreach (var place in _places)
+            {
+                var at = Place(place.X, place.Y);
+
+                // White. At full ink the map's own roads and rock are pale enough that a muted
+                // grey caption disappears into them.
+                Label(place.Text, at.X, at.Y, Brushes.White, 9 * textScale);
+            }
+        }
 
         foreach (var extract in _extracts.Where(ShowsExtract))
         {
@@ -1667,7 +1736,7 @@ public partial class OverlayWindow : Window
             // where it really is, so you can walk that way until it comes back into sight.
             if (OffView(at, width, height, out var edge, out var bearing))
             {
-                EdgeMarker(edge, bearing, colour, scale, extract.Name);
+                EdgeMarker(edge, bearing, colour, scale, Abbreviate(extract.Name));
                 continue;
             }
 
@@ -1756,17 +1825,6 @@ public partial class OverlayWindow : Window
             // because hover over a window that never takes focus is unreliable.
             if (_settings.Overlay.ShowPlaceNames)
                 Label(stop.TaskName, at.X, at.Y + 3, (Brush)FindResource("Need"), 9 * textScale);
-        }
-
-        // The names players use for places — "Old Gas", "Dorms". Off the map's own labels, so
-        // they read the way people actually talk about it.
-        if (_settings.Overlay.ShowPlaceNames)
-        {
-            foreach (var place in _places)
-            {
-                var at = Place(place.X, place.Y);
-                Label(place.Text, at.X, at.Y, (Brush)FindResource("Muted"), 9 * textScale);
-            }
         }
 
         // Breadcrumbs: where fixes were taken, so the gap since the last one is visible rather
