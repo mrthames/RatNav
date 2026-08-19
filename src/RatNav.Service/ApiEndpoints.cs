@@ -98,14 +98,39 @@ public static class ApiEndpoints
             return Results.Ok(Track(state, tracker, progress, id));
         });
 
-        api.MapGet("/items/{id}", (RatNavState state, string id) =>
+        api.MapGet("/items/{id}", (RatNavState state, ItemTracker tracker, string id) =>
         {
             if (state.Index is not { } index) return Results.NotFound();
 
             var item = index.GetItem(id);
-            return item is null
-                ? Results.NotFound()
-                : Results.Ok(ItemDetail.From(item, index.GetNeeds(id)));
+            if (item is null) return Results.NotFound();
+
+            return Results.Ok(Detail(index, tracker, item, null));
+        });
+
+        // Identifies an item from text read off the screen — the "what is this junk for?" question,
+        // answered without leaving the game.
+        //
+        // The text is supplied by the caller rather than captured here, which keeps every pixel
+        // that touches the screen in the desktop app and leaves this side testable with strings.
+        api.MapPost("/items/identify", (RatNavState state, ItemTracker tracker, IdentifyRequest request) =>
+        {
+            if (state.Index is not { } index) return Results.NotFound();
+
+            var lines = request.Lines is { Count: > 0 }
+                ? request.Lines
+                : (request.Text ?? "").Split(
+                    ['\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var matches = ItemMatcher.Identify(lines, state.Cache.Current?.Items ?? [], limit: 5);
+
+            return Results.Ok(new
+            {
+                // Every candidate, not just the winner. OCR misreads, and being able to say "no,
+                // the one below it" is the difference between a useful tool and a frustrating one.
+                matches = matches.Select(m => Detail(index, tracker, m.Item, m.Confidence)),
+                readText = lines,
+            });
         });
 
         // ---- progress
@@ -441,6 +466,30 @@ public static class ApiEndpoints
             return Results.Ok(pins);
         });
 
+        // Where you can leave from, in image coordinates. Faction is carried raw rather than
+        // filtered here — which extracts matter depends on what you queued as, and that is a
+        // choice each surface offers rather than one the service makes for it.
+        api.MapGet("/maps/{id}/extracts", (RatNavState state, string id) =>
+        {
+            var map = FindMap(state, id);
+            if (map?.Image is null) return Results.NotFound();
+
+            var transform = new CoordinateTransform(map.Image);
+
+            return Results.Ok(
+                from extract in map.Extracts
+                where extract.Position is not null
+                let point = transform.ToNormalized(extract.Position.GetValueOrDefault())
+                select new ExtractPin
+                {
+                    Name = extract.Name,
+                    Faction = extract.Faction ?? "shared",
+                    X = point.X,
+                    Y = point.Y,
+                    Elevation = extract.Position.GetValueOrDefault().Y,
+                });
+        });
+
         // Converting a raw screenshot filename into a map position. This is the Pass 1
         // checkpoint's endpoint, and it stays useful afterwards as the overlay's fix path.
         api.MapPost("/maps/{id}/locate", (RatNavState state, string id, LocateRequest request) =>
@@ -471,6 +520,20 @@ public static class ApiEndpoints
     /// tarkov.dev is down the only id a map has is its tarkovdata key — and a URL that stops
     /// working during someone else's outage is a URL that was wrong to begin with.
     /// </summary>
+    /// <summary>An item card with everything a player asks about it in one shape.</summary>
+    private static ItemDetail Detail(ItemIndex index, ItemTracker tracker, ItemDef item, double? confidence)
+    {
+        var watch = tracker.Watchlist.FirstOrDefault(w => w.ItemId == item.Id);
+
+        return ItemDetail.From(item, index.GetNeeds(item.Id)) with
+        {
+            Have = tracker.GetHave(item.Id),
+            Watched = watch is not null,
+            WatchNote = watch?.Note,
+            Confidence = confidence,
+        };
+    }
+
     private static MapDef? FindMap(RatNavState state, string id)
     {
         var maps = state.Cache.Current?.Maps;
@@ -658,14 +721,38 @@ public sealed record ItemSummary
     };
 }
 
+/// <summary>Text read off the screen, awaiting identification.</summary>
+public sealed record IdentifyRequest
+{
+    /// <summary>Lines as the reader found them. Preferred — line structure helps.</summary>
+    public IReadOnlyList<string>? Lines { get; init; }
+
+    /// <summary>The whole capture as one string, for callers that have no line breaks.</summary>
+    public string? Text { get; init; }
+}
+
 public sealed record ItemDetail
 {
     public required ItemDef Item { get; init; }
     public IReadOnlyList<QuestNeed> Quests { get; init; } = [];
     public IReadOnlyList<HideoutNeed> Hideout { get; init; } = [];
     public IReadOnlyList<QuestNeed> AsKey { get; init; } = [];
+
+    /// <summary>Trades that take this item — the reason plenty of worthless-looking loot is not.</summary>
+    public IReadOnlyList<BarterNeed> Barters { get; init; } = [];
+
     public int TotalNeeded { get; init; }
     public bool AnyFoundInRaid { get; init; }
+
+    /// <summary>How much of this you have said you hold, so the answer can be "you have enough".</summary>
+    public int Have { get; init; }
+
+    /// <summary>On the watchlist, with whatever note was left on it.</summary>
+    public bool Watched { get; init; }
+    public string? WatchNote { get; init; }
+
+    /// <summary>Set when this came from reading the screen: 0 to 1, so the UI can hedge honestly.</summary>
+    public double? Confidence { get; init; }
 
     public static ItemDetail From(ItemDef item, ItemNeeds? needs) => new()
     {
@@ -673,9 +760,23 @@ public sealed record ItemDetail
         Quests = needs?.Quests ?? [],
         Hideout = needs?.Hideout ?? [],
         AsKey = needs?.AsKey ?? [],
+        Barters = needs?.Barters ?? [],
         TotalNeeded = needs?.TotalNeeded ?? 0,
         AnyFoundInRaid = needs?.AnyFoundInRaid ?? false,
     };
+}
+
+/// <summary>An extract, placed on the map image.</summary>
+public sealed record ExtractPin
+{
+    public required string Name { get; init; }
+
+    /// <summary>"pmc", "scav", or "shared". Shared works whatever you queued as.</summary>
+    public required string Faction { get; init; }
+
+    public required double X { get; init; }
+    public required double Y { get; init; }
+    public double Elevation { get; init; }
 }
 
 public sealed record TaskSummary

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,6 +8,7 @@ using RatNav.Service;
 
 // WinForms is here only for the tray icon, and its Application type would otherwise shadow WPF's.
 using Application = System.Windows.Application;
+using MessageBox = System.Windows.MessageBox;
 
 namespace RatNav.App;
 
@@ -29,6 +31,38 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // OnStartup is async void, which means anything thrown after the first await is lost.
+        // Without these, a service that fails to start leaves an empty window on screen and no
+        // reason anywhere — which is exactly how it behaved when the published build could not
+        // find its web files.
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Report("RatNav hit an error", args.Exception);
+            args.Handled = true;
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            Report("RatNav hit an error", args.ExceptionObject as Exception);
+
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Report("RatNav hit a background error", args.Exception);
+            args.SetObserved();
+        };
+
+        try
+        {
+            await StartAsync(e);
+        }
+        catch (Exception ex)
+        {
+            Report("RatNav could not start", ex);
+            Shutdown(1);
+        }
+    }
+
+    private async Task StartAsync(StartupEventArgs e)
+    {
         _service = ServiceHost.Build(e.Args);
         await _service.StartAsync();
 
@@ -57,6 +91,36 @@ public partial class App : Application
             onOpenPanel: ToggleExpanded,
             onOpenBrowser: OpenInBrowser,
             onQuit: Shutdown);
+    }
+
+    /// <summary>
+    /// Says what went wrong, on screen and in a file.
+    ///
+    /// <para>The file matters more than the dialog: this is a tool other people download, and
+    /// "it opened and did nothing" is not a bug report anyone can act on.</para>
+    /// </summary>
+    private static void Report(string headline, Exception? error)
+    {
+        var detail = error?.ToString() ?? "No detail available.";
+        var path = "";
+
+        try
+        {
+            path = Path.Combine(RatNavPaths.EnsureDataDirectory(), "ratnav-error.log");
+            File.AppendAllText(path, $"{DateTimeOffset.Now:u}  {headline}{Environment.NewLine}{detail}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Nowhere to write. The dialog is still worth showing.
+        }
+
+        var where = path.Length > 0 ? $"{Environment.NewLine}{Environment.NewLine}Written to {path}" : "";
+
+        MessageBox.Show(
+            $"{error?.Message ?? "Unknown error."}{where}",
+            headline,
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
     }
 
     /// <summary>

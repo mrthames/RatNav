@@ -4,6 +4,9 @@ on:
   push:
     tags: ['v*']
 
+  # So a release build can be proven without cutting a tag first.
+  workflow_dispatch:
+
 jobs:
   release:
     runs-on: windows-latest
@@ -32,22 +35,64 @@ jobs:
       - name: Test before shipping
         run: dotnet test --configuration Release
 
-      # Self-contained so there is no runtime to install first. Someone downloading a Tarkov
-      # tool should be able to unzip it and run it.
+      # Self-contained, so there is no runtime to install first — someone downloading a Tarkov
+      # tool should not have to read about .NET before they can use it.
+      #
+      # Not single-file: WPF crashes on startup when packed that way, and the installer makes the
+      # file layout invisible regardless. The zip is here for people who would rather not install
+      # anything at all.
       - name: Publish
         run: >
           dotnet publish src/RatNav.App
           --configuration Release
           --runtime win-x64
           --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
           --output publish
 
-      - name: Package
-        run: Compress-Archive -Path publish/* -DestinationPath RatNav-${{ github.ref_name }}-win-x64.zip
+      - name: Check the web app shipped
+        shell: pwsh
+        run: |
+          if (-not (Test-Path publish/wwwroot/index.html)) {
+            throw "wwwroot is missing from the publish output — every page would 404."
+          }
+
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = if ($tag -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.0" }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "name=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+          }
+          & $iscc installer/RatNav.iss "/DAppVersion=${{ steps.version.outputs.version }}"
+
+      - name: Package the portable build
+        shell: pwsh
+        run: Compress-Archive -Path publish/* -DestinationPath "RatNav-${{ steps.version.outputs.name }}-win-x64.zip"
 
       - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: RatNav-${{ github.ref_name }}-win-x64.zip
+          files: |
+            installer-output/RatNav-${{ steps.version.outputs.version }}-setup.exe
+            RatNav-${{ steps.version.outputs.name }}-win-x64.zip
           generate_release_notes: true
+          body: |
+            **Install:** download `RatNav-${{ steps.version.outputs.version }}-setup.exe` and run it.
+            It installs for your user only — no administrator prompt — and puts RatNav in your
+            Start Menu. Nothing else needs installing; the .NET runtime is included.
+
+            **Portable:** `RatNav-${{ steps.version.outputs.name }}-win-x64.zip`, if you would
+            rather unzip it and run `RatNav.exe` yourself.
+
+            RatNav reads Escape from Tarkov's log files and the coordinates the game writes into
+            screenshot filenames. It does not read the game's memory, inject code, hook rendering,
+            modify game files, or send input to the game.

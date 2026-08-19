@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { api, type InkLevel, type MapSummary, type ObjectivePin } from './api'
+import { api, type ExtractPin, type InkLevel, type MapSummary, type ObjectivePin } from './api'
+
+/**
+ * Which extracts to draw. Nothing the game writes to disk says which side you queued as, so this
+ * is a choice rather than a guess — and shared extracts show under either, because they work
+ * whichever you are.
+ */
+type Faction = 'pmc' | 'scav' | 'off'
 
 /** Human labels for the group ids the map SVGs use for their levels. */
 const FLOOR_LABELS: Record<string, string> = {
@@ -33,6 +40,8 @@ export function MapView({ map }: { map: MapSummary }) {
   const [floors, setFloors] = useState<string[]>([])
   const [floor, setFloor] = useState<string | null>(null)
   const [ghost, setGhost] = useState(true)
+  const [extracts, setExtracts] = useState<ExtractPin[]>([])
+  const [faction, setFaction] = useState<Faction>('pmc')
   const host = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -63,6 +72,7 @@ export function MapView({ map }: { map: MapSummary }) {
 
   useEffect(() => {
     api.objectives(map.id).then(setPins).catch(() => setPins([]))
+    api.extracts(map.id).then(setExtracts).catch(() => setExtracts([]))
   }, [map.id])
 
   // Applying the active floor by class rather than re-rendering the SVG: these files run to
@@ -78,6 +88,14 @@ export function MapView({ map }: { map: MapSummary }) {
   }, [markup, floor, ghost])
 
   const positioned = useMemo(() => pins.filter((p) => p.x >= 0 && p.x <= 1), [pins])
+
+  const exits = useMemo(
+    () =>
+      faction === 'off'
+        ? []
+        : extracts.filter((e) => e.faction === 'shared' || e.faction === faction),
+    [extracts, faction],
+  )
 
   return (
     <div className="flex flex-col gap-3">
@@ -109,6 +127,15 @@ export function MapView({ map }: { map: MapSummary }) {
           </>
         )}
 
+        {extracts.length > 0 && (
+          <Segment
+            label="Exits"
+            options={[['pmc', 'PMC'], ['scav', 'Scav'], ['off', 'Off']]}
+            value={faction}
+            onChange={(v) => setFaction(v as Faction)}
+          />
+        )}
+
         {!map.calibrationVerified && (
           <span className="rounded-sm border border-warn/40 px-2 py-1 font-mono text-[11px] tracking-wide text-warn">
             calibration unverified · {map.coordinateRotation}°
@@ -127,6 +154,21 @@ export function MapView({ map }: { map: MapSummary }) {
           />
         )}
 
+        {/*
+          Extracts are diamonds and objectives are circles. The shapes carry the difference on
+          their own, so the two are still tellable apart without relying on colour.
+        */}
+        {exits.map((exit) => (
+          <div
+            key={`${exit.name}-${exit.x}-${exit.y}`}
+            title={`${exit.name} · ${exit.faction} extract`}
+            className={`absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border
+                        bg-ground shadow-[0_0_0_1px_var(--color-ground)]
+                        ${exit.faction === 'scav' ? 'border-route' : 'border-accent'}`}
+            style={{ left: `${exit.x * 100}%`, top: `${exit.y * 100}%` }}
+          />
+        ))}
+
         {positioned.map((pin) => (
           <div
             key={pin.objectiveId}
@@ -142,6 +184,7 @@ export function MapView({ map }: { map: MapSummary }) {
         {positioned.length > 0
           ? `${positioned.length} objective${positioned.length === 1 ? '' : 's'} on this map`
           : 'no objectives — quest data unavailable'}
+        {exits.length > 0 && ` · ${exits.length} exit${exits.length === 1 ? '' : 's'}`}
       </p>
     </div>
   )

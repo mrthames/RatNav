@@ -9,9 +9,34 @@
     <ProjectReference Include="..\RatNav.Service\RatNav.Service.csproj" />
   </ItemGroup>
 
+  <!--
+    The built web app, linked in from the service that serves it.
+
+    Content from a referenced project reaches this project's *build* output but not its *publish*
+    output, so without this the developer build serves every page and the release download 404s on
+    all of them — the exact bug, shipped only to strangers. Linked here explicitly so both paths
+    carry it.
+  -->
+  <ItemGroup>
+    <Content Include="..\RatNav.Service\wwwroot\**\*"
+             Link="wwwroot\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!--
+      The Windows 10 target unlocks Windows.Media.Ocr, which reads the item tooltip off the
+      screen. It ships with Windows, so identification costs no download, no native binaries, and
+      no network — and SupportedOSPlatformVersion keeps the app running on older Windows 10, where
+      it simply reports that reading is unavailable.
+    -->
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+
+    <!-- What people download and double-click. "RatNav.App.exe" reads like a build artefact. -->
+    <AssemblyName>RatNav</AssemblyName>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>

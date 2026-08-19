@@ -7,8 +7,17 @@ obj/
 *.suo
 .vs/
 
-# Runtime data — caches, map images, plans, tracking, settings
-data/
+# Runtime data — caches, map images, plans, tracking, settings.
+#
+# Anchored to the repository root. Unanchored, this matched src/RatNav.Core/Data/ as well —
+# Git matches ignore patterns case-insensitively on Windows — and silently kept the entire data
+# layer out of the repository, so a fresh clone did not build.
+/data/
+
+# Local publish output
+/publish/
+/publish-*/
+/installer-output/
 
 # Web
 node_modules/

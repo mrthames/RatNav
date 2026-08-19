@@ -152,6 +152,16 @@ public sealed record RatNavSettings
 
         /// <summary>Switch between the corner panel and the centred wireframe map.</summary>
         public string ToggleMode { get; init; } = "F9";
+
+        /// <summary>
+        /// Identify whatever the mouse is hovering, by reading the tooltip off the screen.
+        ///
+        /// <para>A key rather than shift-click, deliberately. Catching a mouse click over another
+        /// application needs a system-wide mouse hook, which is the same machinery RatNav refuses
+        /// to use for the keyboard and for the same reason. A hotkey is registered with Windows
+        /// the ordinary way and touches nothing.</para>
+        /// </summary>
+        public string IdentifyItem { get; init; } = "F10";
     }
 
     /// <summary>How the overlay presents itself.</summary>
@@ -199,6 +209,30 @@ public sealed record RatNavSettings
         /// everything equally, which is what keeps a dense map readable over a dark scene.
         /// </summary>
         public string Ink { get; init; } = "structure";
+
+        /// <summary>
+        /// Whether the map slides to keep you centred, or holds still while your marker moves
+        /// across it.
+        ///
+        /// <para>Still is the default. A map that re-centres on every fix means the same building
+        /// is somewhere new each time you look, and rebuilding your sense of where you are costs
+        /// more than the marker drifting toward a corner. Following earns its place when zoomed
+        /// in far enough that you would otherwise lose yourself off the edge.</para>
+        /// </summary>
+        public bool FollowPlayer { get; init; }
+
+        /// <summary>
+        /// Which extracts to draw: "pmc", "scav", or "off". Shared extracts show for either
+        /// faction, because they work whatever you queued as.
+        ///
+        /// <para>This is a setting rather than something read from the game, because nothing the
+        /// game writes to disk says which side you queued as. Getting it wrong shows extracts you
+        /// cannot use, which is why it is one visible control rather than a guess.</para>
+        /// </summary>
+        public string Extracts { get; init; } = "pmc";
+
+        /// <summary>Whether the items panel is open. Collapsed by default — the map comes first.</summary>
+        public bool ShowItems { get; init; }
     }
 
     public static RatNavSettings Load(string dataDirectory)

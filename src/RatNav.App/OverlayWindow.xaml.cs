@@ -16,6 +16,7 @@ using Point = System.Windows.Point;
 using Size = System.Windows.Size;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
+using FontFamily = System.Windows.Media.FontFamily;
 
 namespace RatNav.App;
 
@@ -57,6 +58,13 @@ public partial class OverlayWindow : Window
     private DateTimeOffset? _overrodeAt;
 
     private static readonly string[] InkLevels = ["full", "structure", "outline"];
+    private static readonly string[] ExtractModes = ["pmc", "scav", "off"];
+
+    /// <summary>Extracts for the current map, fetched once per map alongside its floors.</summary>
+    private IReadOnlyList<ExtractPin> _extracts = [];
+
+    /// <summary>The torn-off items window, while one is open.</summary>
+    private ItemsWindow? _itemsWindow;
 
     public OverlayWindow(RatNavSettings settings, Action<RatNavSettings> saveSettings)
     {
@@ -66,6 +74,7 @@ public partial class OverlayWindow : Window
         _saveSettings = saveSettings;
 
         ApplyBounds();
+        ApplyItemsPanel();
 
         SourceInitialized += (_, _) => OverlayWindowStyles.Apply(this, _clickThrough);
         SizeChanged += (_, _) => Draw();
@@ -80,6 +89,10 @@ public partial class OverlayWindow : Window
         FadeUp.Click += (_, _) => StepFade(+0.1);
         FadeDown.Click += (_, _) => StepFade(-0.1);
         ZoomReset.Click += (_, _) => SetZoom(1);
+        FollowButton.Click += (_, _) => ToggleFollow();
+        ExtractButton.Click += (_, _) => CycleExtracts();
+        ItemsButton.Click += (_, _) => ToggleItems();
+        DetachItems.Click += (_, _) => DetachItemsPanel();
     }
 
     public event EventHandler? ExpandRequested;
@@ -96,6 +109,7 @@ public partial class OverlayWindow : Window
         Bind(keys.ExpandPanel, "Open panel", () => ExpandRequested?.Invoke(this, EventArgs.Empty));
         Bind(keys.CompleteObjective, "Tick objective off", () => CompleteRequested?.Invoke(this, EventArgs.Empty));
         Bind(keys.ToggleMode, "Switch overlay style", ToggleMode);
+        Bind(keys.IdentifyItem, "Identify item under cursor", IdentifyUnderCursor);
 
         void Bind(string text, string what, Action action)
         {
@@ -140,6 +154,7 @@ public partial class OverlayWindow : Window
         OverlayWindowStyles.Apply(this, _clickThrough);
 
         EditChrome.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
+        ApplyItemsPanel();
 
         if (interactive)
         {
@@ -172,6 +187,7 @@ public partial class OverlayWindow : Window
         {
             await EnsureMapAsync(view);
             Draw();
+            RefreshItems();
         });
     }
 
@@ -274,16 +290,34 @@ public partial class OverlayWindow : Window
 
         try
         {
-            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/maps";
-            var maps = await _http.GetFromJsonAsync<List<MapSummary>>(url);
+            var root = $"http://localhost:{ServiceHost.DefaultPort}/api";
 
+            var maps = await _http.GetFromJsonAsync<List<MapSummary>>($"{root}/maps");
             _floors = maps?.FirstOrDefault(m => m.Id == mapId)?.Floors ?? [];
+
+            _extracts = await _http.GetFromJsonAsync<List<ExtractPin>>(
+                $"{root}/maps/{Uri.EscapeDataString(mapId)}/extracts") ?? [];
+
             _floorsFor = mapId;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
             _floors = [];
+            _extracts = [];
         }
+    }
+
+    /// <summary>
+    /// Whether an extract is worth drawing. Shared ones always are — they work for either faction
+    /// — so the choice only ever hides the ones the other side uses.
+    /// </summary>
+    private bool ShowsExtract(ExtractPin extract)
+    {
+        var mode = _settings.Overlay.Extracts;
+        if (mode == "off") return false;
+
+        return extract.Faction.Equals("shared", StringComparison.OrdinalIgnoreCase)
+            || extract.Faction.Equals(mode, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -326,6 +360,216 @@ public partial class OverlayWindow : Window
     private void StepFade(double by)
     {
         Remember(_settings.Overlay with { MapOpacity = Math.Clamp(_settings.Overlay.MapOpacity + by, 0.1, 1.0) });
+        Draw();
+    }
+
+    /// <summary>
+    /// Switches between a map that holds still and one that keeps you centred. Persisted, because
+    /// which of the two is right is a matter of how you read a map, not of what raid you are in.
+    /// </summary>
+    /// <summary>Opens or closes the items list.</summary>
+    private void ToggleItems()
+    {
+        Remember(_settings.Overlay with { ShowItems = !_settings.Overlay.ShowItems });
+        ApplyItemsPanel();
+        RefreshItems();
+    }
+
+    /// <summary>
+    /// Moves the list into a window of its own, for a second monitor. The overlay's copy closes
+    /// when it does — two lists of the same thing in view at once is clutter, not choice.
+    /// </summary>
+    private void DetachItemsPanel()
+    {
+        if (_itemsWindow is not null)
+        {
+            _itemsWindow.Activate();
+            return;
+        }
+
+        _itemsWindow = new ItemsWindow();
+        _itemsWindow.Closed += (_, _) =>
+        {
+            _itemsWindow = null;
+            ApplyItemsPanel();
+        };
+
+        _itemsWindow.Show();
+
+        ApplyItemsPanel();
+        RefreshItems();
+    }
+
+    private void ApplyItemsPanel()
+    {
+        // Hidden while torn off, so the same list is never in two places at once.
+        var inline = _settings.Overlay.ShowItems && _itemsWindow is null;
+
+        ItemsPanel.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
+
+        // Tearing off is a deliberate act, offered only while the overlay accepts the mouse.
+        DetachItems.Visibility = inline && !_clickThrough ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Fills the items list: the watchlist first, then anything active quests and hideout modules
+    /// still want. Fetched only when a list is actually on screen — during a raid with the panel
+    /// closed this costs nothing at all.
+    /// </summary>
+    private void RefreshItems()
+    {
+        if (!_settings.Overlay.ShowItems && _itemsWindow is null) return;
+
+        _ = Dispatcher.InvokeAsync(async () =>
+        {
+            var rows = await LoadItemsAsync();
+
+            ItemsList.ItemsSource = rows;
+            ItemsHeading.Text = rows.Count == 0 ? "NOTHING WANTED" : $"WANTED · {rows.Count}";
+
+            _itemsWindow?.Show(rows);
+        });
+    }
+
+    private async Task<IReadOnlyList<ItemRow>> LoadItemsAsync()
+    {
+        try
+        {
+            var root = $"http://localhost:{ServiceHost.DefaultPort}/api";
+
+            var watchlist = await _http.GetFromJsonAsync<List<TrackedItemView>>($"{root}/items/watchlist") ?? [];
+            var needed = await _http.GetFromJsonAsync<List<TrackedItemView>>($"{root}/items/needed") ?? [];
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var rows = new List<ItemRow>();
+
+            // Watchlist first. It is the shorter list and the one you chose deliberately, so it
+            // should not be buried under forty quest items.
+            foreach (var entry in watchlist.Concat(needed))
+            {
+                if (!seen.Add(entry.Id)) continue;
+                rows.Add(ItemRow.From(entry));
+            }
+
+            return rows;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Reads whatever the mouse is hovering and says what it is for.
+    ///
+    /// <para>The capture is of the desktop, the same pixels a screenshot tool sees, and the OCR is
+    /// Windows' own. Nothing is read from the game, injected into it, or asked of it — this is
+    /// looking at the screen, which is what the player is already doing.</para>
+    ///
+    /// <para>Pressing the key again puts the card away, so one key both asks and dismisses.</para>
+    /// </summary>
+    private void IdentifyUnderCursor()
+    {
+        if (IdentifyCardPanelVisible)
+        {
+            HideIdentifyCard();
+            return;
+        }
+
+        // Reading the screen needs Windows 10 2004 or later. RatNav itself runs further back than
+        // that, so this is checked rather than assumed — the rest of the app is unaffected.
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041) || !ScreenTextReader.Available)
+        {
+            ShowIdentifyCard(
+                "Reading is unavailable",
+                "Needs Windows 10 version 2004 or later, with an OCR language installed.",
+                []);
+            return;
+        }
+
+        var (x, y) = ScreenTextReader.CursorPosition();
+
+        // Shown before the work starts. OCR takes a moment, and a key that appears to do nothing
+        // gets pressed again.
+        ShowIdentifyCard("Reading…", "", []);
+
+        _ = Dispatcher.InvokeAsync(async () =>
+        {
+            var lines = await ScreenTextReader.ReadAroundAsync(x, y);
+
+            if (lines.Count == 0)
+            {
+                ShowIdentifyCard("Nothing legible there", "Hover the item so its tooltip is showing.", []);
+                return;
+            }
+
+            var match = await IdentifyAsync(lines);
+
+            if (match is null)
+            {
+                ShowIdentifyCard(
+                    "No item matched",
+                    $"Read: {string.Join(" · ", lines.Take(3))}",
+                    []);
+                return;
+            }
+
+            // A hedge rather than silent confidence. OCR is wrong often enough that presenting a
+            // guess as fact would eventually cost someone a quest item.
+            var hedge = match.Confidence is { } confidence && confidence < 0.85
+                ? $"best guess · {confidence * 100:F0}% sure"
+                : null;
+
+            ShowIdentifyCard(match.Item.Name, hedge, IdentifyCard.Reasons(match));
+        });
+    }
+
+    private async Task<ItemDetail?> IdentifyAsync(IReadOnlyList<string> lines)
+    {
+        try
+        {
+            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/items/identify";
+            var response = await _http.PostAsJsonAsync(url, new { lines });
+
+            if (!response.IsSuccessStatusCode) return null;
+
+            var result = await response.Content.ReadFromJsonAsync<IdentifyResponse>();
+            return result?.Matches?.FirstOrDefault();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return null;
+        }
+    }
+
+    private bool IdentifyCardPanelVisible => IdentifyCardPanel.Visibility == Visibility.Visible;
+
+    private void ShowIdentifyCard(string name, string? hedge, IReadOnlyList<IdentifyReason> reasons)
+    {
+        IdentifyName.Text = name;
+        IdentifyHedge.Text = hedge ?? "";
+        IdentifyHedge.Visibility = string.IsNullOrEmpty(hedge) ? Visibility.Collapsed : Visibility.Visible;
+        IdentifyReasons.ItemsSource = reasons;
+
+        IdentifyCardPanel.Visibility = Visibility.Visible;
+        Show();
+    }
+
+    private void HideIdentifyCard() => IdentifyCardPanel.Visibility = Visibility.Collapsed;
+
+    /// <summary>What the identify endpoint returns.</summary>
+    private sealed record IdentifyResponse(List<ItemDetail>? Matches, List<string>? ReadText);
+
+    private void CycleExtracts()
+    {
+        var at = Array.IndexOf(ExtractModes, _settings.Overlay.Extracts);
+        Remember(_settings.Overlay with { Extracts = ExtractModes[(at + 1 + ExtractModes.Length) % ExtractModes.Length] });
+        Draw();
+    }
+
+    private void ToggleFollow()
+    {
+        Remember(_settings.Overlay with { FollowPlayer = !_settings.Overlay.FollowPlayer });
         Draw();
     }
 
@@ -402,11 +646,14 @@ public partial class OverlayWindow : Window
         InkButton.Content = _settings.Overlay.Ink;
         FadeText.Text = $"{_settings.Overlay.MapOpacity * 100:F0}%";
         ZoomReset.Content = $"{_settings.Overlay.Zoom:0.0}×";
+        FollowButton.Content = _settings.Overlay.FollowPlayer ? "follows you" : "still";
+        ExtractButton.Content = _settings.Overlay.Extracts;
+        ItemsButton.Content = _settings.Overlay.ShowItems ? "items ▾" : "items ▸";
     }
 
     /// <summary>
-    /// Draws the map itself: terrain as a whisper, structure and roads carrying it. Zoom keeps the
-    /// player centred, because a zoomed map that does not follow you is a picture, not a tool.
+    /// Draws the map itself: terrain as a whisper, structure and roads carrying it. Whether zoom
+    /// holds the map still or keeps you centred is <see cref="RatNavSettings.OverlayBounds.FollowPlayer"/>.
     /// </summary>
     private void DrawMap(RaidView view)
     {
@@ -416,22 +663,11 @@ public partial class OverlayWindow : Window
         var height = MapCanvas.ActualHeight;
         if (width <= 0 || height <= 0) return;
 
-        var zoom = _settings.Overlay.Zoom;
         var opacity = _settings.Overlay.MapOpacity;
         var ink = _settings.Overlay.Ink;
+        var fit = FitScale(width, height);
 
-        // Fit the drawing to the canvas, then zoom about wherever the player is.
-        var fit = Math.Min(width / _mapViewBox.Width, height / _mapViewBox.Height) * zoom;
-
-        var focusX = (view.X ?? 0.5) * _mapViewBox.Width;
-        var focusY = (view.Y ?? 0.5) * _mapViewBox.Height;
-
-        var transform = new TransformGroup();
-        transform.Children.Add(new ScaleTransform(fit, fit));
-        transform.Children.Add(new TranslateTransform(
-            width / 2 - focusX * fit,
-            height / 2 - focusY * fit));
-        transform.Freeze();
+        var transform = MapTransform(view, width, height);
 
         foreach (var shape in _mapShapes)
         {
@@ -487,53 +723,130 @@ public partial class OverlayWindow : Window
         _ => true,
     };
 
+    /// <summary>
+    /// Where the map sits inside the canvas.
+    ///
+    /// <para>Two behaviours, and the choice is the player's. <b>Still</b> anchors the map's centre
+    /// to the canvas and lets the marker travel across it, so a building stays where you last saw
+    /// it. <b>Follow</b> keeps you centred and slides the map underneath, which is what you want
+    /// once zoomed in far enough to walk off the edge.</para>
+    ///
+    /// <para>Built once per draw and shared by every layer, so the map, the route, and the marker
+    /// cannot disagree about where anything is.</para>
+    /// </summary>
+    private Transform MapTransform(RaidView view, double width, double height)
+    {
+        var fit = FitScale(width, height);
+        var (focusX, focusY) = Focus(view);
+
+        var transform = new TransformGroup();
+        transform.Children.Add(new ScaleTransform(fit, fit));
+        transform.Children.Add(new TranslateTransform(
+            width / 2 - focusX * _mapViewBox.Width * fit,
+            height / 2 - focusY * _mapViewBox.Height * fit));
+
+        transform.Freeze();
+        return transform;
+    }
+
+    /// <summary>
+    /// A point in map space (0 to 1 across the image) placed on the canvas.
+    ///
+    /// <para>Derived from the same fit and focus the map itself uses. It has to be: the previous
+    /// version stretched to the canvas aspect while the map scaled uniformly, which put every pin
+    /// off the building it belonged to on any overlay that was not square.</para>
+    /// </summary>
+    private Point ToCanvas(RaidView view, double x, double y, double width, double height)
+    {
+        var fit = FitScale(width, height);
+        var (focusX, focusY) = Focus(view);
+
+        return new Point(
+            width / 2 + (x - focusX) * _mapViewBox.Width * fit,
+            height / 2 + (y - focusY) * _mapViewBox.Height * fit);
+    }
+
+    private double FitScale(double width, double height) =>
+        Math.Min(width / _mapViewBox.Width, height / _mapViewBox.Height) * _settings.Overlay.Zoom;
+
+    /// <summary>What sits at the centre of the canvas: you, or the middle of the map.</summary>
+    private (double X, double Y) Focus(RaidView view) =>
+        _settings.Overlay.FollowPlayer ? (view.X ?? 0.5, view.Y ?? 0.5) : (0.5, 0.5);
+
     private void DrawRoute(RaidView view)
     {
         var width = MapCanvas.ActualWidth;
         var height = MapCanvas.ActualHeight;
         if (width <= 0 || height <= 0) return;
 
-        var zoom = _settings.Overlay.Zoom;
-        var focusX = view.X ?? 0.5;
-        var focusY = view.Y ?? 0.5;
+        Point Place(double x, double y) => ToCanvas(view, x, y, width, height);
 
-        // Route and pins follow the same zoom as the map, so they stay on top of it.
-        Point Place(double x, double y) => new(
-            width / 2 + (x - focusX) * width * zoom,
-            height / 2 + (y - focusY) * height * zoom);
-
-        var remaining = view.Stops.Where(s => !s.Done).ToList();
-
-        if (remaining.Count > 1)
+        foreach (var extract in _extracts.Where(ShowsExtract))
         {
-            var line = new Polyline
+            var at = Place(extract.X, extract.Y);
+
+            // A different shape as well as a different colour, so the two kinds of marker are
+            // still tellable apart by anyone who cannot rely on hue.
+            var mark = new Path
             {
-                Stroke = (Brush)FindResource("Route"),
-                StrokeThickness = 1.5,
-                StrokeDashArray = [4, 3],
-                Opacity = 0.9,
-                IsHitTestVisible = false,
+                Data = Geometry.Parse("M 0,-5 L 5,0 L 0,5 L -5,0 Z"),
+                Fill = (Brush)FindResource("Ground"),
+                Stroke = (Brush)FindResource(
+                    extract.Faction.Equals("scav", StringComparison.OrdinalIgnoreCase) ? "Route" : "Accent"),
+                StrokeThickness = 1.6,
+                Opacity = 0.85,
+                ToolTip = $"{extract.Name} · {extract.Faction} extract",
             };
 
-            foreach (var stop in remaining) line.Points.Add(Place(stop.X, stop.Y));
-            MapCanvas.Children.Add(line);
+            Canvas.SetLeft(mark, at.X);
+            Canvas.SetTop(mark, at.Y);
+            MapCanvas.Children.Add(mark);
         }
+
+        // No line between stops. A dashed path across a map implies a route through walls and
+        // buildings that does not exist, and the order is already carried by the numbers.
+        var order = 0;
 
         foreach (var stop in view.Stops)
         {
+            if (!stop.Done) order++;
+
             var pin = new Ellipse
             {
-                Width = stop.Done ? 5 : 8,
-                Height = stop.Done ? 5 : 8,
+                Width = stop.Done ? 6 : 11,
+                Height = stop.Done ? 6 : 11,
                 Fill = (Brush)FindResource(stop.Done ? "Muted" : "Need"),
-                Opacity = stop.Done ? 0.5 : 1,
-                ToolTip = $"{stop.TaskName} — {stop.Description}",
+                Stroke = (Brush)FindResource("Ground"),
+                StrokeThickness = 1.5,
+                Opacity = stop.Done ? 0.45 : 1,
+
+                // Shown on hover while the overlay takes the mouse. Named the way the planner
+                // does — the quest first, because "which quest is this for" is the question.
+                ToolTip = Describe(stop),
             };
 
             var at = Place(stop.X, stop.Y);
             Canvas.SetLeft(pin, at.X - pin.Width / 2);
             Canvas.SetTop(pin, at.Y - pin.Height / 2);
             MapCanvas.Children.Add(pin);
+
+            if (stop.Done) continue;
+
+            // The number is the route order, so the sequence reads off the map without a line
+            // drawn through terrain nobody can walk.
+            var label = new TextBlock
+            {
+                Text = order.ToString(),
+                FontFamily = new FontFamily("Consolas"),
+                FontSize = 9,
+                FontWeight = FontWeights.Bold,
+                Foreground = (Brush)FindResource("Ground"),
+                IsHitTestVisible = false,
+            };
+
+            Canvas.SetLeft(label, at.X - 3);
+            Canvas.SetTop(label, at.Y - 7);
+            MapCanvas.Children.Add(label);
         }
 
         // Breadcrumbs: where fixes were taken, so the gap since the last one is visible rather
@@ -556,7 +869,9 @@ public partial class OverlayWindow : Window
 
         if (view.X is null || view.Y is null) return;
 
-        var centre = new Point(width / 2, height / 2);
+        // Placed like everything else. Pinning this to the canvas centre is what made a still map
+        // impossible: the marker could not move, so the map had to.
+        var centre = Place(view.X.Value, view.Y.Value);
 
         if (view.HeadingDegrees is { } heading)
         {
@@ -585,6 +900,15 @@ public partial class OverlayWindow : Window
         Canvas.SetLeft(you, centre.X - 4.5);
         Canvas.SetTop(you, centre.Y - 4.5);
         MapCanvas.Children.Add(you);
+    }
+
+    /// <summary>A stop in one line: which quest, and what it wants there.</summary>
+    private static string Describe(RaidStop stop)
+    {
+        var where = stop.Place is { Length: > 0 } place ? $"{place} · " : "";
+        var owner = stop.Owner is { Length: > 0 } who ? $" ({who})" : "";
+
+        return $"{where}{stop.TaskName}{owner}{Environment.NewLine}{stop.Description}";
     }
 
     private static string Age(TimeSpan since) =>

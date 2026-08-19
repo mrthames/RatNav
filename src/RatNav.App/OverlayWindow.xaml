@@ -84,6 +84,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- Where you are going, which is the one thing worth reading mid-raid. -->
@@ -106,11 +107,90 @@
                     <Canvas x:Name="MapCanvas" ClipToBounds="True" />
                 </Border>
 
-                <Grid Grid.Row="2">
+                <!--
+                    What to pick up, when you want it. Collapsed by default: during a raid the map
+                    is the point, and a list of thirty items over the screen is the opposite of
+                    glanceable. Opened from the controls, or torn off into its own window for a
+                    second monitor.
+                -->
+                <Border x:Name="ItemsPanel" Grid.Row="2" Visibility="Collapsed"
+                        MaxHeight="190" Margin="0,0,0,6" Padding="6,4"
+                        Background="#33141b21" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
+                            <TextBlock x:Name="ItemsHeading" Style="{StaticResource Label}"
+                                       HorizontalAlignment="Left" Text="WATCHLIST" />
+                            <Button x:Name="DetachItems" Style="{StaticResource Chip}"
+                                    HorizontalAlignment="Right" Content="open window"
+                                    Visibility="Collapsed" />
+                        </Grid>
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="ItemsList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0"
+                                                       FontFamily="Segoe UI" FontSize="11"
+                                                       Foreground="{StaticResource Ink}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Text="{Binding Name}"
+                                                       ToolTip="{Binding Reason}" />
+
+                                            <TextBlock Grid.Column="1" Margin="8,0,0,0"
+                                                       FontFamily="Consolas" FontSize="11"
+                                                       Foreground="{Binding Colour}"
+                                                       Text="{Binding Count}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <Grid Grid.Row="3">
                     <TextBlock x:Name="ProgressText" Style="{StaticResource Label}" HorizontalAlignment="Left" />
                     <TextBlock x:Name="FixAgeText" Style="{StaticResource Label}" HorizontalAlignment="Right" />
                 </Grid>
             </Grid>
+        </Border>
+
+        <!--
+            The answer to "what is this for?", shown after the identify key is pressed and
+            dismissed on the next press or the next fix. Sits over the readout rather than beside
+            it: while you are reading this you are standing in your stash, not navigating.
+        -->
+        <Border x:Name="IdentifyCardPanel" Visibility="Collapsed"
+                VerticalAlignment="Top" Margin="8"
+                Padding="10,8"
+                Background="#f20b0f13"
+                BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="2">
+            <StackPanel>
+                <TextBlock x:Name="IdentifyName"
+                           FontFamily="Segoe UI" FontSize="14" FontWeight="SemiBold"
+                           Foreground="{StaticResource Ink}"
+                           TextWrapping="Wrap" />
+
+                <TextBlock x:Name="IdentifyHedge" Style="{StaticResource Label}" Margin="0,1,0,0" />
+
+                <ItemsControl x:Name="IdentifyReasons" Margin="0,6,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock FontFamily="Consolas" FontSize="11"
+                                       Foreground="{Binding Colour}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,1"
+                                       Text="{Binding Text}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Border>
 
         <!--
@@ -164,6 +244,20 @@
 
                     <TextBlock Style="{StaticResource Label}" Text="ZOOM" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <Button x:Name="ZoomReset" Style="{StaticResource Chip}" Content="1.0×" MinWidth="44" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="MAP" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button x:Name="FollowButton" Style="{StaticResource Chip}" Content="still" MinWidth="62" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="EXITS" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button x:Name="ExtractButton" Style="{StaticResource Chip}" Content="pmc" MinWidth="44" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <Button x:Name="ItemsButton" Style="{StaticResource Chip}" Content="items ▸" MinWidth="62" />
                 </StackPanel>
             </Border>
 

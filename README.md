@@ -7,7 +7,16 @@ builds a route with the keys you need to bring and the items you're hunting. In 
 overlay shows that route on the map, tells you the bearing and distance to your next stop, and re-plans from
 wherever you actually are.
 
-**Status: working, and rough. Not yet released.**
+**Status: working, and rough.**
+
+## Installing
+
+Download the latest [release](https://github.com/mrthames/RatNav/releases) and run
+`RatNav-<version>-setup.exe`. It installs for your user only — no administrator prompt — and puts
+RatNav in your Start Menu. Nothing else needs installing; the .NET runtime is included.
+
+There is a portable zip on the same page if you would rather unzip it and run `RatNav.exe`
+yourself.
 
 ![Plan a raid, then navigate it](docs/screenshot-plan.png)
 
@@ -93,13 +102,45 @@ guessing:
 | | |
 |---|---|
 | *your in-game screenshot key* | take a position fix |
-| `Alt` + `` ` `` | show or hide the overlay |
-| `Alt` + `Shift` + `` ` `` | open the full panel |
-| `Alt` + `I` | let the mouse reach the overlay, to pan or tick something off |
-| `Alt` + `\` | tick the current objective off |
+| `F5` | show or hide the overlay |
+| `F6` | let the mouse reach the overlay — move, resize, zoom, and the map controls |
+| `F7` | open the full panel |
+| `F8` | tick the current objective off |
+| `F9` | switch between the corner box and the centred map |
+| `F10` | say what the item under your cursor is for |
 
 All rebindable. RatNav registers each combination with Windows rather than watching the keyboard,
 and tells you if another application already owns one.
+
+### Identifying an item
+
+Hover an item so its tooltip is showing and press `F10`. RatNav reads the tooltip **off the
+screen** — the same pixels a screenshot tool sees, using the OCR built into Windows — and tells you
+which quests want it, which hideout station and level needs it, whether it opens a door, and which
+traders will take it in trade.
+
+It is a key rather than shift-click on purpose. Catching a mouse click over another application
+needs a system-wide mouse hook, which is the same machinery RatNav refuses to use for the keyboard,
+and for the same reason. A hotkey is registered with Windows the ordinary way and touches nothing.
+
+OCR misreads, so RatNav says how sure it is rather than presenting a guess as fact.
+
+## The map
+
+The overlay draws the real map, and how it draws is yours to set. Press `F6` and the controls
+appear along the bottom:
+
+| | |
+|---|---|
+| **Floor** | Steps through the map's levels, bottom to top. A fix picks the floor on its own from the height you are at; choosing one by hand lasts until your next fix, and the name turns amber while you are looking at a level you are not standing on. |
+| **Ink** | `full`, `structure`, or `outline`. Drops whole categories of detail rather than fading everything — hazards and boundaries survive every level. |
+| **Fade** | How strongly the map is drawn over the game. |
+| **Zoom** | Click to reset. |
+| **Map** | `still` holds the map in place and lets your marker travel across it; `follows you` keeps you centred and slides the map underneath. |
+| **Exits** | `pmc`, `scav`, or `off`. Shared extracts show under either. |
+| **Items** | Opens the watchlist and what quests and the hideout still want. Can be torn off into its own window for a second monitor. |
+
+Everything here is remembered, along with where you put the overlay and how big it is.
 
 ## Building it
 

@@ -17,7 +17,14 @@
     serves 404 for every page while the API works fine.
   -->
   <ItemGroup>
-    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+    <!--
+      Both attributes are needed and they are not the same switch. CopyToOutputDirectory covers
+      `dotnet build`; CopyToPublishDirectory covers `dotnet publish`. With only the first, every
+      developer build serves the web app and every release download 404s on it.
+    -->
+    <Content Update="wwwroot\**"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

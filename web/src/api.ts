@@ -24,6 +24,15 @@ export interface MapSummary {
   calibrationVerified: boolean
 }
 
+export interface ExtractPin {
+  name: string
+  /** "pmc", "scav", or "shared" — shared works whichever you queued as. */
+  faction: string
+  x: number
+  y: number
+  elevation: number
+}
+
 export interface ObjectivePin {
   taskId: string
   taskName: string
@@ -188,6 +197,10 @@ export const api = {
     post<RaidView>(`/api/plans/${encodeURIComponent(id)}/activate`, {}),
 
   raid: () => get<RaidView>('/api/raid'),
+
+  /** Where you can leave from. Faction comes back raw so the view decides what to show. */
+  extracts: (mapId: string) =>
+    get<ExtractPin[]>(`/api/maps/${encodeURIComponent(mapId)}/extracts`),
   diagnostics: () => get<Diagnostics>('/api/diagnostics'),
 
   completeObjective: (objectiveId: string, done: boolean) =>

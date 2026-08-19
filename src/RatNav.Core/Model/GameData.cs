@@ -16,7 +16,33 @@ public sealed record GameData
     public IReadOnlyList<ItemDef> Items { get; init; } = [];
     public IReadOnlyList<HideoutStation> HideoutStations { get; init; } = [];
     public IReadOnlyList<MapDef> Maps { get; init; } = [];
+    public IReadOnlyList<BarterDef> Barters { get; init; } = [];
 }
+
+/// <summary>
+/// One trader barter: what you hand over, and what you get for it.
+///
+/// <para>This is the answer to "is this junk worth keeping?" for a large part of the loot table.
+/// Plenty of items are worthless on the flea and worth a great deal to a barter, and that is not
+/// something a price tag can tell you.</para>
+/// </summary>
+public sealed record BarterDef
+{
+    public required string Id { get; init; }
+    public required string TraderId { get; init; }
+    public string? TraderName { get; init; }
+
+    /// <summary>Loyalty level the trader must be at before this trade appears.</summary>
+    public int MinTraderLevel { get; init; }
+
+    /// <summary>Task that unlocks this barter, when one does.</summary>
+    public string? TaskUnlockId { get; init; }
+
+    public IReadOnlyList<BarterItem> RequiredItems { get; init; } = [];
+    public BarterItem? OfferedItem { get; init; }
+}
+
+public readonly record struct BarterItem(string ItemId, int Count);
 
 /// <summary>A quest, as tarkov.dev models it.</summary>
 public sealed record TaskDef

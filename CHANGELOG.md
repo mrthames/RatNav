@@ -30,6 +30,29 @@ First working version.
   re-run later starts with them already crossed out. There is an **End raid** button for the times
   the game's logs do not make the ending obvious.
 
+### Know what your loot is for
+
+- Hover an item in game and press `F10`: RatNav reads the tooltip off the screen with the OCR
+  built into Windows and says which quests want it, which hideout station **and level** needs it,
+  whether it opens a door, and which traders will take it in trade.
+- A key rather than shift-click, deliberately — catching a click over another application needs a
+  system-wide mouse hook, which is the machinery RatNav will not use.
+- It says how sure it is. OCR misreads, and a guess presented as fact would eventually cost
+  someone a quest item.
+
+### Read the map
+
+- Extracts, with a **PMC / Scav** switch. Shared extracts show under either, because they work
+  whichever you queued as. Drawn as diamonds against the objectives' circles, so the two are
+  tellable apart without relying on colour.
+- The map can **hold still** while your marker travels across it, or follow you and slide
+  underneath. Still is the default: a map that re-centres on every fix puts the same building
+  somewhere new each time you look.
+- No line drawn between stops. It implied a route through walls that does not exist; the order is
+  carried by numbered pins instead, and hovering one says which quest it is for.
+- An items panel on the overlay — the watchlist first, then what quests and the hideout still
+  want — which collapses, and can be torn off into its own window for a second monitor.
+
 ### Make it yours
 
 - Bindable hotkeys — `F5` shows and hides the overlay, `F6` lets you drag, resize, and zoom it,
@@ -66,3 +89,11 @@ First working version.
   you planning around quests the game no longer has.
 - Starting RatNav while already in a raid picks the raid up from the log rather than waiting for
   the next one — and does not replay old raids over your current position.
+- When something does go wrong at startup, RatNav says so and writes the detail to a file. "It
+  opened and did nothing" is not a bug report anyone can act on.
+
+### Installing it
+
+- An installer, so nothing needs a command line. It installs for your user only — no
+  administrator prompt — and puts RatNav in your Start Menu. The .NET runtime is included.
+- A portable zip alongside it, for anyone who would rather not install anything.
