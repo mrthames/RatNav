@@ -45,6 +45,7 @@ public sealed class RaidHost(
 
         _logs = new LogWatcher(settings.GameDirectory);
         _logs.RaidStarted += (_, raid) => session.OnRaidStarted(raid.LocationId);
+        _logs.RaidEnded += (_, _) => session.OnRaidEnded();
         _logs.QuestChanged += (_, change) => session.OnQuestChanged(change);
         _logs.Start();
 
@@ -191,6 +192,13 @@ public sealed record RatNavSettings
 
         /// <summary>Wireframe covers this fraction of the screen when centred.</summary>
         public double WireframeScale { get; init; } = 0.7;
+
+        /// <summary>
+        /// How much of the map to draw at all: "full", "structure", or "outline". Distinct from
+        /// <see cref="MapOpacity"/> — this drops whole categories of detail rather than fading
+        /// everything equally, which is what keeps a dense map readable over a dark scene.
+        /// </summary>
+        public string Ink { get; init; } = "structure";
     }
 
     public static RatNavSettings Load(string dataDirectory)

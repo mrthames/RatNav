@@ -13,6 +13,18 @@ public sealed record RaidStarted
     public DateTimeOffset At { get; init; } = DateTimeOffset.Now;
 }
 
+/// <summary>
+/// A raid finishing — extracted, killed, or backed out of. The game does not say which in
+/// <c>application.log</c>; it says only that you are back at the profile screen, which is enough
+/// to know the plan no longer applies.
+/// </summary>
+public sealed record RaidEnded
+{
+    /// <summary>The map that was being played, for a surface that wants to say what just ended.</summary>
+    public string? LocationId { get; init; }
+    public DateTimeOffset At { get; init; } = DateTimeOffset.Now;
+}
+
 /// <summary>A quest changing state, as the game reported it.</summary>
 public sealed record QuestEvent
 {
@@ -58,6 +70,7 @@ public sealed partial class LogWatcher : IDisposable
     private string? _session;
 
     public event EventHandler<RaidStarted>? RaidStarted;
+    public event EventHandler<RaidEnded>? RaidEnded;
     public event EventHandler<QuestEvent>? QuestChanged;
 
     /// <summary>The game version from the current log session, which is how a patch is detected.</summary>
@@ -163,6 +176,15 @@ public sealed partial class LogWatcher : IDisposable
                 }
             }
 
+            // Re-selecting the profile means the game is back at the menu. It is also the first
+            // thing that happens at launch, which is why this only counts while a raid is running
+            // — otherwise starting the game would "end" a raid that never began.
+            if (BackToMenuLine().IsMatch(line) && CurrentLocationId is { } ending)
+            {
+                CurrentLocationId = null;
+                RaidEnded?.Invoke(this, new RaidEnded { LocationId = ending });
+            }
+
             var version = VersionLine().Match(line);
             if (version.Success) GameVersion = version.Groups["version"].Value;
         }
@@ -185,8 +207,16 @@ public sealed partial class LogWatcher : IDisposable
             var matches = LocationLine().Matches(existing);
             if (matches.Count == 0) return null;
 
-            var last = matches[^1].Groups["location"].Value.Trim();
-            return last.Length > 0 ? last : null;
+            var last = matches[^1];
+
+            // A raid that has already finished is not one to resume. If the game went back to the
+            // menu after the last map loaded, there is nothing live to pick up — and announcing
+            // one would put the overlay in a raid the player left an hour ago.
+            var after = existing[(last.Index + last.Length)..];
+            if (BackToMenuLine().IsMatch(after)) return null;
+
+            var id = last.Groups["location"].Value.Trim();
+            return id.Length > 0 ? id : null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -388,4 +418,12 @@ public sealed partial class LogWatcher : IDisposable
 
     [GeneratedRegex(@"pstrGameVersion:\s*(?<version>[\d.]+)", RegexOptions.IgnoreCase)]
     private static partial Regex VersionLine();
+
+    /// <summary>
+    /// Back at the profile screen. The game writes no "raid over" line of its own — what it writes
+    /// is that it is re-preparing your profile, which happens on the way back to the menu however
+    /// the raid finished, and at launch.
+    /// </summary>
+    [GeneratedRegex(@"(PrepareSelectedProfileLocally|CompleteSelectedProfile)\s+ProfileId:", RegexOptions.IgnoreCase)]
+    private static partial Regex BackToMenuLine();
 }

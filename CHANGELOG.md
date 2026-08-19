@@ -22,6 +22,13 @@ First working version.
   are, and the screenshot is archived so the folder never fills up.
 - Nothing animates between fixes, and the overlay says how old your last one is rather than
   implying the marker is current.
+- The map picks its own floor from the height your fix lands at, so walking upstairs and taking a
+  screenshot switches levels without touching anything. Looking at another floor by hand lasts
+  until your next fix, then the map comes back to where you are standing.
+- The raid ends when the game returns to the menu: the overlay goes idle and the plan is put away.
+  Objectives you ticked off are kept — walking to a stop is a fact worth remembering, and a plan
+  re-run later starts with them already crossed out. There is an **End raid** button for the times
+  the game's logs do not make the ending obvious.
 
 ### Make it yours
 

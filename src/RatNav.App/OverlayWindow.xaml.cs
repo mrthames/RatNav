@@ -1,4 +1,6 @@
 using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -42,6 +44,20 @@ public partial class OverlayWindow : Window
     private IReadOnlyList<MapShape> _mapShapes = [];
     private Size _mapViewBox = new(1000, 1000);
 
+    /// <summary>The map's levels, so the floor control knows what there is to look at.</summary>
+    private IReadOnlyList<MapFloorSummary> _floors = [];
+    private string? _floorsFor;
+
+    /// <summary>
+    /// A level chosen by hand, which outranks the one the fix implies — but only until the next
+    /// fix. Looking at the floor above is a question you ask once; walking somewhere is an answer,
+    /// and the map should follow you rather than stay where you last poked it.
+    /// </summary>
+    private string? _floorOverride;
+    private DateTimeOffset? _overrodeAt;
+
+    private static readonly string[] InkLevels = ["full", "structure", "outline"];
+
     public OverlayWindow(RatNavSettings settings, Action<RatNavSettings> saveSettings)
     {
         InitializeComponent();
@@ -57,6 +73,13 @@ public partial class OverlayWindow : Window
         DragHandle.MouseLeftButtonDown += (_, _) => DragMove();
         ResizeGrip.DragDelta += OnResize;
         MouseWheel += OnWheel;
+
+        FloorUp.Click += (_, _) => StepFloor(+1);
+        FloorDown.Click += (_, _) => StepFloor(-1);
+        InkButton.Click += (_, _) => CycleInk();
+        FadeUp.Click += (_, _) => StepFade(+0.1);
+        FadeDown.Click += (_, _) => StepFade(-0.1);
+        ZoomReset.Click += (_, _) => SetZoom(1);
     }
 
     public event EventHandler? ExpandRequested;
@@ -219,16 +242,22 @@ public partial class OverlayWindow : Window
     {
         if (view.MapId is not { Length: > 0 } mapId) return;
 
-        var key = $"{mapId}|{view.Floor}";
+        await EnsureFloorsAsync(mapId);
+
+        var floor = FloorFor(view);
+        var key = $"{mapId}|{floor}";
         if (key == _mapShapesFor) return;
 
         try
         {
-            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/maps/{Uri.EscapeDataString(mapId)}/image?ink=structure";
+            // Always the unabridged map. The ink level is applied when drawing, so changing it is
+            // instant rather than a round trip — and the shapes are only parsed once either way.
+            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/maps/{Uri.EscapeDataString(mapId)}/image?ink=full";
+
             var svg = await _http.GetStringAsync(url);
 
             _mapViewBox = MapGeometry.ViewBoxOf(svg);
-            _mapShapes = MapGeometry.Parse(svg, view.Floor, mapId);
+            _mapShapes = MapGeometry.Parse(svg, floor, key);
             _mapShapesFor = key;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -237,6 +266,81 @@ public partial class OverlayWindow : Window
             _mapShapes = [];
         }
     }
+
+    /// <summary>The map's levels, fetched once per map so the floor control has something to step through.</summary>
+    private async Task EnsureFloorsAsync(string mapId)
+    {
+        if (_floorsFor == mapId) return;
+
+        try
+        {
+            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/maps";
+            var maps = await _http.GetFromJsonAsync<List<MapSummary>>(url);
+
+            _floors = maps?.FirstOrDefault(m => m.Id == mapId)?.Floors ?? [];
+            _floorsFor = mapId;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            _floors = [];
+        }
+    }
+
+    /// <summary>
+    /// Which level to draw. A hand-picked floor wins, but a fix taken since you picked it wins
+    /// back — the map following where you actually are is the whole point of taking a fix.
+    /// </summary>
+    private string? FloorFor(RaidView view)
+    {
+        if (_floorOverride is not null && (view.FixedAt is null || _overrodeAt is null || view.FixedAt <= _overrodeAt))
+            return _floorOverride;
+
+        _floorOverride = null;
+        _overrodeAt = null;
+        return view.Floor;
+    }
+
+    private void StepFloor(int direction)
+    {
+        if (_floors.Count == 0 || _view is null) return;
+
+        var current = FloorFor(_view);
+        var at = _floors.ToList().FindIndex(f => f.Layer == current);
+
+        // An unknown current level starts from the bottom rather than doing nothing.
+        var next = Math.Clamp(at < 0 ? 0 : at + direction, 0, _floors.Count - 1);
+
+        _floorOverride = _floors[next].Layer;
+        _overrodeAt = DateTimeOffset.Now;
+
+        Redraw();
+    }
+
+    private void CycleInk()
+    {
+        var at = Array.IndexOf(InkLevels, _settings.Overlay.Ink);
+        Remember(_settings.Overlay with { Ink = InkLevels[(at + 1 + InkLevels.Length) % InkLevels.Length] });
+        Redraw();
+    }
+
+    private void StepFade(double by)
+    {
+        Remember(_settings.Overlay with { MapOpacity = Math.Clamp(_settings.Overlay.MapOpacity + by, 0.1, 1.0) });
+        Draw();
+    }
+
+    private void SetZoom(double zoom)
+    {
+        Remember(_settings.Overlay with { Zoom = Math.Clamp(zoom, 1, 8) });
+        Draw();
+    }
+
+    /// <summary>Re-fetches the map when something about how it is drawn has changed.</summary>
+    private void Redraw() => Dispatcher.InvokeAsync(async () =>
+    {
+        if (_view is not null) await EnsureMapAsync(_view);
+        Draw();
+    });
 
     private void Draw()
     {
@@ -250,6 +354,7 @@ public partial class OverlayWindow : Window
             BearingText.Text = "";
             ProgressText.Text = "";
             FixAgeText.Text = "";
+            UpdateControls(null);
             return;
         }
 
@@ -272,6 +377,31 @@ public partial class OverlayWindow : Window
 
         DrawMap(view);
         DrawRoute(view);
+        UpdateControls(view);
+    }
+
+    /// <summary>
+    /// Makes the controls report the state they are editing. They live behind interact mode, so
+    /// this costs nothing during a raid — but a control that shows a stale value is worse than none.
+    /// </summary>
+    private void UpdateControls(RaidView? view)
+    {
+        var floor = view is null ? null : FloorFor(view);
+        var named = _floors.FirstOrDefault(f => f.Layer == floor);
+
+        FloorText.Text = named?.Name ?? floor ?? "—";
+
+        // Say when you are looking somewhere other than where you stand, because forgetting that
+        // is how you plan a route across a floor you are not on.
+        FloorText.Foreground = (Brush)FindResource(_floorOverride is null ? "Ink" : "Route");
+
+        var at = _floors.ToList().FindIndex(f => f.Layer == floor);
+        FloorUp.IsEnabled = _floors.Count > 0 && at < _floors.Count - 1;
+        FloorDown.IsEnabled = _floors.Count > 0 && at > 0;
+
+        InkButton.Content = _settings.Overlay.Ink;
+        FadeText.Text = $"{_settings.Overlay.MapOpacity * 100:F0}%";
+        ZoomReset.Content = $"{_settings.Overlay.Zoom:0.0}×";
     }
 
     /// <summary>
@@ -288,6 +418,7 @@ public partial class OverlayWindow : Window
 
         var zoom = _settings.Overlay.Zoom;
         var opacity = _settings.Overlay.MapOpacity;
+        var ink = _settings.Overlay.Ink;
 
         // Fit the drawing to the canvas, then zoom about wherever the player is.
         var fit = Math.Min(width / _mapViewBox.Width, height / _mapViewBox.Height) * zoom;
@@ -304,6 +435,10 @@ public partial class OverlayWindow : Window
 
         foreach (var shape in _mapShapes)
         {
+            // Drop shadows are real in the source and noise on a translucent overlay.
+            if (shape.Role == MapShapeRole.Decoration) continue;
+            if (!ShownAt(ink, shape.Role)) continue;
+
             var (stroke, fill, thickness) = shape.Role switch
             {
                 MapShapeRole.Terrain => ((Brush?)null, (Brush?)FindResource("Terrain"), 0.0),
@@ -311,10 +446,11 @@ public partial class OverlayWindow : Window
                 MapShapeRole.Boundary => ((Brush?)FindResource("Accent"), null, 0.8),
                 MapShapeRole.Route => ((Brush?)FindResource("Route"), null, 1.2),
                 MapShapeRole.Hazard => ((Brush?)FindResource("Need"), (Brush?)FindResource("Need"), 0.8),
-                _ => (null, null, 0.0),
-            };
 
-            if (stroke is null && fill is null) continue;
+                // Something the vocabulary does not name yet. Drawn thin rather than dropped: a map
+                // RatNav has not learnt should look sparse, never blank.
+                _ => ((Brush?)FindResource("Terrain"), null, 0.6),
+            };
 
             var path = new Path
             {
@@ -322,12 +458,14 @@ public partial class OverlayWindow : Window
                 RenderTransform = transform,
                 Stroke = stroke,
                 StrokeThickness = thickness / fit,   // constant on screen however far you zoom
-                Fill = fill,
+                // Outline draws edges only, so a busy map reduces to the shapes you navigate by.
+                Fill = ink == "outline" ? null : fill,
                 Opacity = opacity * shape.Role switch
                 {
                     MapShapeRole.Terrain => 0.10,
                     MapShapeRole.Structure => 0.30,
                     MapShapeRole.Hazard => 0.35,
+                    MapShapeRole.Other => 0.22,
                     _ => 0.85,
                 },
                 IsHitTestVisible = false,
@@ -336,6 +474,18 @@ public partial class OverlayWindow : Window
             MapCanvas.Children.Add(path);
         }
     }
+
+    /// <summary>
+    /// The ink dial, in one place. It drops whole categories rather than fading everything, which
+    /// is the difference between a map you can read over a firefight and a grey wash. Hazards and
+    /// boundaries survive every level: a minefield is not detail.
+    /// </summary>
+    private static bool ShownAt(string ink, MapShapeRole role) => ink switch
+    {
+        "outline" => role is MapShapeRole.Structure or MapShapeRole.Boundary or MapShapeRole.Hazard,
+        "structure" => role is not MapShapeRole.Terrain and not MapShapeRole.Other,
+        _ => true,
+    };
 
     private void DrawRoute(RaidView view)
     {

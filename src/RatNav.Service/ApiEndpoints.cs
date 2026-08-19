@@ -232,6 +232,16 @@ public static class ApiEndpoints
             return Results.Ok(session.View());
         });
 
+        // Ends the raid by hand. The log watcher normally does this on its own, but the game does
+        // not write a "raid over" line — it writes that it is re-preparing your profile — and a
+        // log that rolls over or a launcher cache wipe can lose the moment. A raid you cannot
+        // dismiss is worse than one RatNav never noticed.
+        api.MapPost("/raid/end", (RaidSession session) =>
+        {
+            session.OnRaidEnded();
+            return Results.Ok(session.View());
+        });
+
         // ---- plans
 
         api.MapGet("/plans", (PlanStore plans) =>
@@ -728,6 +738,15 @@ public sealed record MapSummary
     /// <summary>The solved mapping itself, e.g. "(-z, x)".</summary>
     public string? Mapping { get; init; }
 
+    /// <summary>
+    /// The map's levels, bottom to top. A position fix picks one on its own; this is what lets a
+    /// surface offer to look at another without guessing what the map contains.
+    /// </summary>
+    public IReadOnlyList<MapFloorSummary> Floors { get; init; } = [];
+
+    /// <summary>The level drawn when nothing has chosen one.</summary>
+    public string? DefaultFloor { get; init; }
+
     public static MapSummary From(MapDef map) => new()
     {
         Id = map.Id,
@@ -741,5 +760,29 @@ public sealed record MapSummary
         ImageUrl = map.Image?.SourceUrl,
         CoordinateRotation = map.Image?.CoordinateRotation ?? 0,
         ExtractCount = map.Extracts.Count,
+        DefaultFloor = map.Image?.DefaultFloor,
+        // Bottom to top, by the elevation each level actually covers. The source order is a
+        // drawing order — it puts Underground last on most maps — and a floor control that steps
+        // "up" into the basement is worse than no floor control. Sorted here rather than in the
+        // model, because MapDef.FloorAt relies on that drawing order to resolve overlapping bands.
+        Floors = [.. (map.Image?.Floors ?? [])
+            .OrderBy(f => f.MinHeight ?? double.NegativeInfinity)
+            .ThenBy(f => f.MaxHeight ?? double.PositiveInfinity)
+            .Select(f => new MapFloorSummary
+            {
+                Name = f.Name,
+                Layer = f.Layer,
+                MinHeight = f.MinHeight,
+                MaxHeight = f.MaxHeight,
+            })],
     };
+}
+
+/// <summary>One level of a multi-storey map, named the way a player would say it.</summary>
+public sealed record MapFloorSummary
+{
+    public required string Name { get; init; }
+    public required string Layer { get; init; }
+    public double? MinHeight { get; init; }
+    public double? MaxHeight { get; init; }
 }

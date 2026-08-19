@@ -114,6 +114,39 @@ public sealed class RaidSession
         Publish();
     }
 
+    /// <summary>
+    /// The raid is over — extracted, killed, or backed out of.
+    ///
+    /// <para><b>What you finished is banked before anything is cleared.</b> Objectives ticked off
+    /// mid-raid are the whole record of what the raid was for, and losing them on the way back to
+    /// the menu would mean re-walking to a stop you already cleared. They go into the progress
+    /// store, which outlives the session.</para>
+    ///
+    /// <para>Everything else raid-scoped goes: the map, the fix, the trail, and the plan. The
+    /// overlay returns to idle rather than showing a route through a raid that has ended.</para>
+    /// </summary>
+    public void OnRaidEnded()
+    {
+        string[] finished;
+
+        lock (_gate)
+        {
+            finished = [.. _completed];
+
+            _locationId = null;
+            _chosenMap = null;
+            _plan = null;
+            _fix = null;
+            _trail.Clear();
+            _completed.Clear();
+        }
+
+        foreach (var objectiveId in finished)
+            _progress.CompleteObjective(objectiveId);
+
+        Publish();
+    }
+
     /// <summary>The map in play: whichever a plan was activated for, else whatever the game loaded.</summary>
     private MapDef? Map =>
         _chosenMap ?? (_locationId is null
@@ -162,7 +195,15 @@ public sealed class RaidSession
         {
             _plan = plan;
             _chosenMap = map;
+
+            // Anything cleared in an earlier raid starts ticked, so re-running a plan does not
+            // route you back through stops you already finished.
             _completed.Clear();
+            foreach (var waypoint in plan.Waypoints)
+            {
+                if (_progress.IsObjectiveComplete(waypoint.ObjectiveId))
+                    _completed.Add(waypoint.ObjectiveId);
+            }
         }
 
         Publish();
@@ -179,6 +220,10 @@ public sealed class RaidSession
             if (_plan is not null && _fix is not null)
                 _plan = RaidPlanner.Reroute(_plan, _fix.Position, _completed);
         }
+
+        // Written through immediately rather than at raid end: the game can close on you, and a
+        // stop you walked to should not depend on RatNav seeing a clean exit.
+        _progress.CompleteObjective(objectiveId, done);
 
         Publish();
     }

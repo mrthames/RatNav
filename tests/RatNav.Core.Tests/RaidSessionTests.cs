@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using RatNav.Core.Data;
 using RatNav.Core.Model;
+using RatNav.Core.Planning;
 using RatNav.Core.Progress;
 using RatNav.Service;
 
@@ -114,6 +115,78 @@ public class RaidSessionTests : IDisposable
 
         Assert.False(session.View().InRaid);
     }
+
+    [Fact]
+    public async Task Ending_a_raid_returns_the_overlay_to_idle()
+    {
+        var cache = CacheFor(Streets());
+        await cache.EnsureFreshAsync("1.0.0");
+
+        var session = new RaidSession(new RatNavState(cache), new ProgressStore(_dir));
+        session.OnRaidStarted("TarkovStreets");
+        Assert.True(session.View().InRaid);
+
+        session.OnRaidEnded();
+
+        var view = session.View();
+        Assert.False(view.InRaid);
+        Assert.Null(view.X);
+        Assert.Empty(view.Trail);
+    }
+
+    [Fact]
+    public async Task Objectives_cleared_in_a_raid_survive_the_raid()
+    {
+        var cache = CacheFor(Streets());
+        await cache.EnsureFreshAsync("1.0.0");
+
+        var progress = new ProgressStore(_dir);
+        var session = new RaidSession(new RatNavState(cache), progress);
+
+        session.OnRaidStarted("TarkovStreets");
+        session.Complete("objective-1");
+        session.OnRaidEnded();
+
+        // Walking to a stop is a fact about the world. Losing it on the way back to the menu
+        // would send the player there again next raid.
+        Assert.True(progress.IsObjectiveComplete("objective-1"));
+    }
+
+    [Fact]
+    public async Task An_objective_finished_last_raid_starts_ticked_off()
+    {
+        var cache = CacheFor(Streets());
+        await cache.EnsureFreshAsync("1.0.0");
+
+        var progress = new ProgressStore(_dir);
+        progress.CompleteObjective("objective-1");
+
+        var session = new RaidSession(new RatNavState(cache), progress);
+        var map = cache.Current!.Maps[0];
+
+        session.OnRaidStarted("TarkovStreets");
+        session.UsePlan(PlanWith("objective-1", "objective-2"), map);
+
+        Assert.Contains("objective-1", session.View().CompletedObjectiveIds);
+        Assert.DoesNotContain("objective-2", session.View().CompletedObjectiveIds);
+    }
+
+    private static RaidPlan PlanWith(params string[] objectiveIds) => new()
+    {
+        MapId = "streets",
+        MapName = "Streets of Tarkov",
+        Waypoints =
+        [
+            .. objectiveIds.Select((id, i) => new Waypoint
+            {
+                ObjectiveId = id,
+                TaskId = $"task-{i}",
+                TaskName = $"Task {i}",
+                Description = $"Objective {i}",
+                Position = new GamePosition(i * 10, 0, i * 10),
+            }),
+        ],
+    };
 
     private sealed class UnreachableHandler : HttpMessageHandler
     {

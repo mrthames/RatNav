@@ -192,6 +192,66 @@ public class LogWatcherTests : IDisposable
     }
 
     [Fact]
+    public void Going_back_to_the_menu_ends_the_raid()
+    {
+        Append("application", "Locations:bigmap ->");
+
+        using var watcher = new LogWatcher(_install);
+        RaidEnded? ended = null;
+        watcher.RaidEnded += (_, e) => ended = e;
+
+        watcher.Poll();
+
+        // The game writes no "raid over" line. What it writes is that it is re-preparing your
+        // profile, which is what happens on the way back to the menu however the raid finished.
+        Append("application",
+            "2026-08-19 00:01:52.024|1.1.0.1.46777|Info|application|" +
+            "PrepareSelectedProfileLocally ProfileId:6a73aed57233ed3aa206e778 AccountId:633603");
+
+        watcher.Poll();
+
+        Assert.NotNull(ended);
+        Assert.Equal("bigmap", ended.LocationId);
+        Assert.Null(watcher.CurrentLocationId);
+    }
+
+    [Fact]
+    public void Launching_the_game_does_not_end_a_raid_that_never_started()
+    {
+        // The same line appears at launch, before any raid. Treating it as an ending there would
+        // fire a raid-over for a raid that never happened.
+        Append("application", "PrepareSelectedProfileLocally ProfileId:abc AccountId:1");
+
+        using var watcher = new LogWatcher(_install);
+        var ended = 0;
+        watcher.RaidEnded += (_, _) => ended++;
+
+        watcher.Poll();
+        Append("application", "CompleteSelectedProfile ProfileId:abc AccountId:1");
+        watcher.Poll();
+
+        Assert.Equal(0, ended);
+    }
+
+    [Fact]
+    public void A_raid_that_already_finished_is_not_resumed_on_startup()
+    {
+        // Launching RatNav after playing should not drop you into the raid you left. The map
+        // load is in the log, but so is the trip back to the menu that followed it.
+        Append("application", "Locations:bigmap ->");
+        Append("application", "PrepareSelectedProfileLocally ProfileId:abc AccountId:1");
+
+        using var watcher = new LogWatcher(_install);
+        var seen = new List<string>();
+        watcher.RaidStarted += (_, e) => seen.Add(e.LocationId);
+
+        watcher.Poll();
+
+        Assert.Empty(seen);
+        Assert.Null(watcher.CurrentLocationId);
+    }
+
+    [Fact]
     public void Quests_already_in_the_log_are_not_re_announced()
     {
         // A quest accepted an hour ago is not news, and re-announcing it on every launch would

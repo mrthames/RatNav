@@ -96,6 +96,48 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
         Save();
     }
 
+    /// <summary>
+    /// Records an objective as done, permanently.
+    ///
+    /// <para>Objectives are tracked separately from quests on purpose. Ticking one off in a raid
+    /// is a real fact worth keeping — you cleared it, you should not walk there again — but it is
+    /// not the same as finishing the quest, which may have objectives you never selected. Marking
+    /// the quest complete off a partial plan would retire item needs you still have.</para>
+    /// </summary>
+    public void CompleteObjective(string objectiveId, bool done = true)
+    {
+        lock (_gate)
+        {
+            if (done) _state.CompletedObjectives.Add(objectiveId);
+            else _state.CompletedObjectives.Remove(objectiveId);
+        }
+        Save();
+    }
+
+    public bool IsObjectiveComplete(string objectiveId)
+    {
+        lock (_gate) return _state.CompletedObjectives.Contains(objectiveId);
+    }
+
+    /// <summary>Every objective cleared so far, for the planner to leave out of the next route.</summary>
+    public IReadOnlySet<string> CompletedObjectives
+    {
+        get { lock (_gate) return _state.CompletedObjectives.ToHashSet(StringComparer.OrdinalIgnoreCase); }
+    }
+
+    /// <summary>
+    /// Forgets objective progress for a quest, so a re-taken or reset quest starts clean rather
+    /// than looking half-done forever.
+    /// </summary>
+    public void ClearObjectives(IEnumerable<string> objectiveIds)
+    {
+        lock (_gate)
+        {
+            foreach (var id in objectiveIds) _state.CompletedObjectives.Remove(id);
+        }
+        Save();
+    }
+
     public bool IsHideoutLevelBuilt(string stationId, int level)
     {
         lock (_gate) return _state.HideoutLevels.GetValueOrDefault(stationId, 0) >= level;
@@ -171,5 +213,8 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
 
         /// <summary>Highest built level per hideout station.</summary>
         public Dictionary<string, int> HideoutLevels { get; init; } = [];
+
+        /// <summary>Objectives cleared in a raid, kept once the raid is over.</summary>
+        public HashSet<string> CompletedObjectives { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     }
 }

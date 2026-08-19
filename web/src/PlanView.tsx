@@ -191,6 +191,19 @@ function RaidPanel({ raid }: { raid: RaidView }) {
         {raid.completedObjectiveIds.length}/{raid.stops.length} done
         {raid.fixedAt && ` · fix ${age(raid.fixedAt)}`}
       </span>
+
+      {/*
+        RatNav ends the raid on its own when the game goes back to the menu. This is here for
+        when it does not — the game writes no "raid over" line, so detection reads a proxy, and a
+        proxy can be missed. Ticked objectives are kept either way.
+      */}
+      <button
+        type="button"
+        onClick={() => void api.endRaid()}
+        className="ml-auto font-mono text-[11px] uppercase tracking-wider text-muted underline-offset-4 hover:text-ink hover:underline"
+      >
+        End raid
+      </button>
     </div>
   )
 }

@@ -194,6 +194,13 @@ export const api = {
     post<RaidView>(`/api/raid/objectives/${encodeURIComponent(objectiveId)}`, { done }),
 
   /**
+   * Ends the raid by hand. The log watcher does this on its own when the game returns to the
+   * menu, so this is the fallback for when it misses — a raid you cannot dismiss is worse than
+   * one that was never noticed.
+   */
+  endRaid: () => post<RaidView>('/api/raid/end', {}),
+
+  /**
    * Live raid state. Pushed rather than polled, so a position fix reaches every surface at once
    * and the overlay never shows something the browser has already moved past.
    */

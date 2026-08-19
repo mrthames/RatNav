@@ -38,6 +38,38 @@
             <Setter Property="FontSize" Value="10" />
             <Setter Property="Foreground" Value="{StaticResource Muted}" />
         </Style>
+
+        <!--
+            Controls exist only in interact mode, so they are styled for a moment of deliberate
+            fiddling rather than for glanceability. Flat, square, and quiet until hovered.
+        -->
+        <Style x:Key="Chip" TargetType="Button">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Padding" Value="7,2" />
+            <Setter Property="MinWidth" Value="22" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="#33ffffff"
+                                BorderBrush="{StaticResource Line}"
+                                BorderThickness="1"
+                                CornerRadius="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#668ec8ff" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -95,6 +127,44 @@
                 <TextBlock Text="  drag to move  ·  wheel to zoom  ·  corner to resize"
                            FontFamily="Consolas" FontSize="10"
                            Foreground="#0b0f13" VerticalAlignment="Center" />
+            </Border>
+
+            <!--
+                One row, in the order you reach for things: which level you are looking at, how
+                much map to draw, how bright it is, and how far in. Every control writes straight
+                to settings, so what you set is what you get next raid.
+            -->
+            <Border VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                    Margin="0,0,0,10" Padding="8,6"
+                    Background="#e60b0f13"
+                    BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="3">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Label}" Text="FLOOR" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button x:Name="FloorDown" Style="{StaticResource Chip}" Content="▼" />
+                    <TextBlock x:Name="FloorText" Style="{StaticResource Label}"
+                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                               MinWidth="86" TextAlignment="Center" Text="—" />
+                    <Button x:Name="FloorUp" Style="{StaticResource Chip}" Content="▲" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="INK" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button x:Name="InkButton" Style="{StaticResource Chip}" Content="structure" MinWidth="66" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="FADE" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button x:Name="FadeDown" Style="{StaticResource Chip}" Content="−" />
+                    <TextBlock x:Name="FadeText" Style="{StaticResource Label}"
+                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                               MinWidth="38" TextAlignment="Center" Text="55%" />
+                    <Button x:Name="FadeUp" Style="{StaticResource Chip}" Content="+" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="ZOOM" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button x:Name="ZoomReset" Style="{StaticResource Chip}" Content="1.0×" MinWidth="44" />
+                </StackPanel>
             </Border>
 
             <Thumb x:Name="ResizeGrip"
