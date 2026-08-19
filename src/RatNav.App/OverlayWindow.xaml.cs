@@ -981,7 +981,10 @@ public partial class OverlayWindow : Window
         var view = _view;
         MapCanvas.Children.Clear();
 
-        if (view is null || !view.InRaid)
+        // Drawn whenever there is a map, not only in a raid. The overlay used to go blank while a
+        // raid was still loading and while looking a map over beforehand — the two times you most
+        // want to see one.
+        if (view is null || !view.HasMap)
         {
             MapNameText.Text = "RATNAV";
             NextStopText.Text = "No plan";
@@ -993,7 +996,8 @@ public partial class OverlayWindow : Window
         }
 
         MapNameText.Text = view.MapName?.ToUpperInvariant() ?? "";
-        NextStopText.Text = view.NextStopName ?? "Plan complete";
+        NextStopText.Text = view.NextStopName
+            ?? (view.HasPlan ? "Plan complete" : view.InRaid ? "No plan" : "Map only");
 
         BearingText.Text = view.NextStopMetres is { } metres && view.NextStopRelativeBearing is { } bearing
             ? $"{metres:F0} m · {Math.Abs(bearing):F0}° {(bearing > 0 ? "right" : "left")}"
@@ -1007,7 +1011,12 @@ public partial class OverlayWindow : Window
         // button makes the marker appear.
         FixAgeText.Text = view.FixedAt is { } at
             ? $"FIX {Age(DateTimeOffset.Now - at)}"
-            : $"TAP {_settings.ScreenshotKey.ToUpperInvariant()}";
+            : view.InRaid
+                ? $"TAP {_settings.ScreenshotKey.ToUpperInvariant()}"
+
+                // Said plainly rather than telling someone to press a key that will do nothing:
+                // outside a raid the game writes no position for RatNav to read.
+                : "NOT IN RAID";
 
         DrawMap(view);
         DrawRoute(view);

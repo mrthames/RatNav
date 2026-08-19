@@ -269,6 +269,14 @@ them separately.
   - Note: "barters being tracked" depends on the barter-tracking feature, which is still open. The
     other two do not.
 
+### Show a map without a raid
+
+- [x] **The overlay went blank with no plan and no raid.** It drew only when in a raid, so there
+  was nothing on screen while a raid was loading — the game writes its `Locations:` line only once
+  the map has loaded — or while looking a map over beforehand. Any calibrated map can now be put on
+  the overlay from the buddy app's Maps tab, no plan required. The game's map still wins when a
+  raid starts.
+
 ### Sharing by code
 
 - [x] **Share a plan as a pasteable code rather than a file.** A real 4-stop Streets plan comes to

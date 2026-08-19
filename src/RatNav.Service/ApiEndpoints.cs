@@ -680,6 +680,17 @@ public static class ApiEndpoints
             return Results.Ok(session.View());
         });
 
+        // Draw a map without a plan and without waiting for the game to say which raid you are
+        // in — for looking one over between raids, or while a raid is still loading.
+        api.MapPost("/raid/map/{id}", (RatNavState state, RaidSession session, string id) =>
+        {
+            var map = FindMap(state, id);
+            if (map?.Image is null) return Results.NotFound(new { error = "No calibrated map by that name." });
+
+            session.ShowMap(map);
+            return Results.Ok(session.View());
+        });
+
         api.MapDelete("/raid/plan", (RaidSession session, RatNavSettings settings) =>
         {
             session.ClearPlan();

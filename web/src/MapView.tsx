@@ -152,6 +152,16 @@ export function MapView({ map }: { map: MapSummary }) {
           />
         )}
 
+        {/* Straight onto the overlay, no plan required — for a look before you queue. */}
+        <button
+          type="button"
+          onClick={() => void api.showMap(map.id)}
+          className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Show on overlay
+        </button>
+
         {!map.calibrationVerified && (
           <span className="rounded-sm border border-warn/40 px-2 py-1 font-mono text-[11px] tracking-wide text-warn">
             calibration unverified · {map.coordinateRotation}°

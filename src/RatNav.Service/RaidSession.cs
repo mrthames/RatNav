@@ -29,6 +29,15 @@ public sealed record RaidView
     /// <summary>True when a plan is loaded, whether or not you are in the raid it was built for.</summary>
     public bool HasPlan { get; init; }
 
+    /// <summary>
+    /// True when there is a map to draw, raid or no raid.
+    ///
+    /// <para>Distinct from <see cref="InRaid"/> on purpose: a map picked by hand is worth drawing,
+    /// and a raid is worth reporting, and conflating them left the overlay blank whenever you had
+    /// one without the other.</para>
+    /// </summary>
+    public bool HasMap { get; init; }
+
     /// <summary>Set when the active plan is for a different map than the one on screen.</summary>
     public string? PlanMapName { get; init; }
 
@@ -207,6 +216,20 @@ public sealed class RaidSession
         Publish();
     }
 
+    /// <summary>
+    /// Shows a map without a plan.
+    ///
+    /// <para>The overlay used to need a raid or a plan before it would draw anything, which left
+    /// nothing on screen in the two places you most want a map: loading into a raid before the
+    /// game has written which map it is, and looking one over between raids. Neither needs
+    /// objectives — sometimes you just want to see the map.</para>
+    /// </summary>
+    public void ShowMap(MapDef map)
+    {
+        lock (_gate) _chosenMap = map;
+        Publish();
+    }
+
     /// <summary>Activates a plan, which the overlay then follows.</summary>
     public void UsePlan(RaidPlan plan, MapDef map)
     {
@@ -288,6 +311,7 @@ public sealed class RaidSession
 
             return new RaidView
             {
+                HasMap = true,
                 // In a raid means the game says so, not that there is a map on screen. Between
                 // raids the plan still draws, and calling that "in raid" would have the overlay
                 // reporting a fix age for a raid that ended an hour ago.

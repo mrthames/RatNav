@@ -222,6 +222,8 @@ export interface RaidView {
   inRaid: boolean
   /** True when a plan is loaded, whether or not you are in the raid it was built for. */
   hasPlan: boolean
+  /** True when there is a map to draw, raid or not. */
+  hasMap: boolean
   /** Set when the active plan is for a different map than the one on screen. */
   planMapName: string | null
   mapId: string | null
@@ -347,6 +349,10 @@ export const api = {
       '/api/plans/merge', { planIds }),
 
   raid: () => get<RaidView>('/api/raid'),
+
+  /** Draws a map on the overlay with no plan and without waiting for the game. */
+  showMap: (mapId: string) =>
+    post<RaidView>(`/api/raid/map/${encodeURIComponent(mapId)}`, {}),
 
   traders: () => get<Trader[]>('/api/traders'),
 
