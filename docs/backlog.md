@@ -269,6 +269,14 @@ them separately.
   - Note: "barters being tracked" depends on the barter-tracking feature, which is still open. The
     other two do not.
 
+### Floors, overlap only
+
+- [x] **Other floors are only faded where they actually overlap the one you are on.** Ghosting a
+  whole floor treats every part of it as a conflict, but floors only conflict where they stack — a
+  stairwell above a corridor is ambiguous, a warehouse at the other end of the map is not, and
+  fading that too turned the map to frosted glass for the sake of a few square metres. Anything
+  with nothing above or below it now draws in full, solid rather than dashed.
+
 ### Raid detection
 
 - [x] **Raid detection only worked for transit raids.** `Locations:` comes from a `[Transit]` line,

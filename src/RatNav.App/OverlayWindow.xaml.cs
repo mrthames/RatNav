@@ -57,6 +57,9 @@ public partial class OverlayWindow : Window
     /// without pretending to be where you are standing.</para>
     /// </summary>
     private IReadOnlyList<MapShape> _aboveShapes = [];
+
+    /// <summary>Where the floor you are on sits, so other floors are only faded where they clash.</summary>
+    private FloorOverlap? _overlap;
     private Size _mapViewBox = new(1000, 1000);
 
     /// <summary>
@@ -464,6 +467,10 @@ public partial class OverlayWindow : Window
 
             _ghostShapes = [.. below.SelectMany(shapes => shapes)];
 
+            // Worked out once per floor rather than per draw: it walks every shape, and the answer
+            // only changes when the floor does.
+            _overlap = FloorOverlap.Of(_mapShapes, _mapViewBox);
+
             // On Streets the ground level is building *footprints* — what interiors exist live one
             // floor up. Standing inside a building at street level resolves to the ground floor,
             // which has nothing indoors on it, so the floor above is worth showing alongside.
@@ -483,6 +490,7 @@ public partial class OverlayWindow : Window
             _mapShapes = [];
             _ghostShapes = [];
             _aboveShapes = [];
+            _overlap = null;
         }
     }
 
@@ -1080,9 +1088,12 @@ public partial class OverlayWindow : Window
 
         if (_settings.Overlay.GhostOtherFloors)
         {
-            // Two ghost layers, and the difference matters. Below you is context — where you came
-            // from. Above you is somewhere you can walk into from where you are standing, so it is
-            // drawn harder, but still clearly not the floor you are on.
+            // Floors conflict only where they overlap. A stairwell drawn directly above a
+            // corridor is ambiguous; a warehouse at the other end of the map is not — and fading
+            // that too turned the whole map to frosted glass for the sake of a few square metres.
+            //
+            // So anything with nothing above or below it is drawn in full, and only the parts that
+            // actually clash are held back.
             Ghost(_ghostShapes, transform, fit, opacity * 0.40, "Muted");
             Ghost(_aboveShapes, transform, fit, opacity * 0.75, "Terrain");
         }
@@ -1163,17 +1174,22 @@ public partial class OverlayWindow : Window
         {
             if (shape.Role is MapShapeRole.Decoration or MapShapeRole.Terrain) continue;
 
+            // Nothing on your floor is above or below this, so there is nothing to be confused
+            // about — draw it properly. Only where the two genuinely stack does it need holding
+            // back, and only then is a dashed line worth the loss of clarity.
+            var clashes = _overlap?.Conflicts(shape) ?? true;
+
             MapCanvas.Children.Add(new Path
             {
                 Data = shape.Geometry,
                 RenderTransform = transform,
-                Stroke = (Brush)FindResource(brush),
+                Stroke = (Brush)FindResource(clashes ? brush : "Accent"),
 
-                // Dashed, so another floor is tellable from this one without relying on how bright
-                // it happens to look against whatever the game is showing underneath.
-                StrokeDashArray = [3, 2],
-                StrokeThickness = 0.9 * _settings.Overlay.LineWeight / fit,
-                Opacity = opacity,
+                // Dashed only where it competes. A dashed line everywhere reads as "none of this
+                // is real", which is the opposite of what a map with no conflict should say.
+                StrokeDashArray = clashes ? [3, 2] : null,
+                StrokeThickness = (clashes ? 0.9 : 1.0) * _settings.Overlay.LineWeight / fit,
+                Opacity = clashes ? opacity : Math.Min(1, opacity * 1.9),
                 IsHitTestVisible = false,
             });
         }
