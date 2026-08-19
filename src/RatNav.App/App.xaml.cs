@@ -76,6 +76,10 @@ public partial class App : Application
         // Hotkeys need a window handle, so they are bound after the first show.
         _overlay.BindHotKeys(problem => _tray?.Warn(problem));
 
+        // Changing a hotkey in Setup rebinds it here rather than asking for a restart.
+        ApiEndpoints.HotkeysChanged += updated =>
+            _overlay?.Apply(updated, problem => _tray?.Warn(problem));
+
         _overlay.ExpandRequested += (_, _) => ToggleExpanded();
         _overlay.CompleteRequested += (_, _) => CompleteCurrentStop(session);
 

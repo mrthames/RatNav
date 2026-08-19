@@ -112,7 +112,16 @@ public static partial class GameInstallFinder
         }
     }
 
-    /// <summary>The newest <c>log_&lt;date&gt;_&lt;version&gt;</c> session directory, or null.</summary>
+    /// <summary>
+    /// The newest <c>log_&lt;date&gt;_&lt;version&gt;</c> session directory, or null.
+    ///
+    /// <para>Ordered by the timestamp in the name first, and only then by the filesystem's. The
+    /// name is written by the game and never changes; a write time is set by whatever last
+    /// touched the folder, so copying an install or restoring a backup rewrites all of them and
+    /// makes an ancient session look like tonight's. Getting this wrong reports the wrong game
+    /// version, which makes RatNav refresh data it did not need to or — worse — not refresh data
+    /// it did.</para>
+    /// </summary>
     public static string? NewestSession(string logsDirectory)
     {
         if (!Directory.Exists(logsDirectory)) return null;
@@ -120,13 +129,25 @@ public static partial class GameInstallFinder
         try
         {
             return Directory.EnumerateDirectories(logsDirectory, "log_*")
-                .OrderByDescending(Directory.GetLastWriteTimeUtc)
+                // By the date in the name first. The date part is fixed-width so it sorts
+                // correctly as text; the time is not — the game writes "8-25-33", which would sort
+                // after "23-01-52" — so same-day sessions fall through to the write time, where
+                // that ambiguity does not exist.
+                .OrderByDescending(d => DateFrom(Path.GetFileName(d)), StringComparer.Ordinal)
+                .ThenByDescending(Directory.GetLastWriteTimeUtc)
                 .FirstOrDefault();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return null;
         }
+    }
+
+    /// <summary>The <c>YYYY.MM.DD</c> out of a session name, or empty when it is not one.</summary>
+    private static string DateFrom(string sessionDirectoryName)
+    {
+        var match = SessionDate().Match(sessionDirectoryName ?? "");
+        return match.Success ? match.Groups["date"].Value : "";
     }
 
     /// <summary>
@@ -166,6 +187,19 @@ public static partial class GameInstallFinder
         }
     }
 
-    [GeneratedRegex(@"^log_\d{4}\.\d{2}\.\d{2}_\d{2}-\d{2}-\d{2}_(?<version>[\d.]+)$")]
+    /// <summary>
+    /// A log session directory name.
+    ///
+    /// <para>The hour is <b>not</b> zero-padded — the game writes
+    /// <c>log_2026.08.19_8-25-33_1.1.0.1.46777</c> before 10am and
+    /// <c>log_2026.08.18_23-01-52_...</c> after. Requiring two digits meant that for ten hours a
+    /// day RatNav could not read the game version out of the newest session, so patch detection
+    /// quietly stopped working and Setup reported "no log sessions yet" over a folder full of
+    /// them.</para>
+    /// </summary>
+    [GeneratedRegex(@"^log_\d{4}\.\d{2}\.\d{2}_\d{1,2}-\d{1,2}-\d{1,2}_(?<version>[\d.]+)$")]
     private static partial Regex SessionName();
+
+    [GeneratedRegex(@"^log_(?<date>\d{4}\.\d{2}\.\d{2})_")]
+    private static partial Regex SessionDate();
 }

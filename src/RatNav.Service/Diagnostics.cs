@@ -56,7 +56,8 @@ public sealed record Diagnostics
                     Name = "Game found",
                     Ok = chosen is not null,
                     Detail = chosen?.Directory ?? "No Escape from Tarkov install found.",
-                    Fix = "Set the game folder in settings if it is somewhere unusual.",
+                    Fix = "Set the Escape from Tarkov folder below — the one containing "
+                          + "EscapeFromTarkov.exe.",
                     Required = true,
                 },
                 new Check
@@ -76,7 +77,8 @@ public sealed record Diagnostics
                     Detail = shotCount is { } n
                         ? $"{screenshots} ({n} waiting)"
                         : $"{screenshots} — not created yet",
-                    Fix = "It appears the first time you take a screenshot in game.",
+                    Fix = "It appears the first time you take a screenshot in game. If your Documents "
+                          + "folder has moved — OneDrive does this — set the folder below.",
                     Required = true,
                 },
                 new Check

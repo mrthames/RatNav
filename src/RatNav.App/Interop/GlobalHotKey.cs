@@ -70,11 +70,20 @@ public sealed class GlobalHotKey : IDisposable
         return IntPtr.Zero;
     }
 
-    public void Dispose()
+    /// <summary>
+    /// Drops every binding, keeping the hook. Used when hotkeys are changed in Setup: Windows owns
+    /// the old combination until it is released, so rebinding without this leaks it and the new
+    /// key silently fails to register.
+    /// </summary>
+    public void UnregisterAll()
     {
         foreach (var id in _actions.Keys) UnregisterHotKey(_handle, id);
-
         _actions.Clear();
+    }
+
+    public void Dispose()
+    {
+        UnregisterAll();
         _source.RemoveHook(OnMessage);
     }
 }

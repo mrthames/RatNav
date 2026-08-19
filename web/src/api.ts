@@ -115,6 +115,29 @@ export interface TurnIn {
   wikiUrl: string | null
 }
 
+export interface HotKeys {
+  toggleOverlay: string
+  toggleInteract: string
+  expandPanel: string
+  completeObjective: string
+  toggleMode: string
+  identifyItem: string
+}
+
+export interface Settings {
+  gameDirectory: string | null
+  screenshotDirectory: string | null
+  screenshotKey: string
+  screenshotDisposal: string
+  owner: string | null
+  hotkeys: HotKeys
+  /** The install in use, whether set by hand or found. */
+  resolvedGameDirectory: string | null
+  resolvedScreenshotDirectory: string
+  /** True when the folder in use was detected rather than chosen. */
+  gameDirectoryDetected: boolean
+}
+
 export interface ProgressSummary {
   notStarted: number
   active: number
@@ -267,6 +290,12 @@ export const api = {
     post<RaidView>(`/api/plans/${encodeURIComponent(id)}/activate`, {}),
 
   raid: () => get<RaidView>('/api/raid'),
+
+  settings: () => get<Settings>('/api/settings'),
+
+  /** Absent fields are left alone; an empty string clears a path back to being detected. */
+  saveSettings: (update: Partial<Omit<Settings, 'resolvedGameDirectory' | 'resolvedScreenshotDirectory' | 'gameDirectoryDetected'>>) =>
+    post<Settings>('/api/settings', update),
 
   hideout: (lookAhead?: number) =>
     get<HideoutState>(`/api/hideout${lookAhead ? `?lookAhead=${lookAhead}` : ''}`),

@@ -100,6 +100,34 @@ public sealed class RaidHost(
         session.UsePlan(PlanConversion.ToPlan(saved.Document, map, data), map);
     }
 
+    /// <summary>
+    /// Points the watchers at wherever the game now is.
+    ///
+    /// <para>Changing the install folder in Setup and then being told to restart the app would be
+    /// a poor answer to "RatNav cannot see my game" — that is the moment someone is least willing
+    /// to be patient with it.</para>
+    /// </summary>
+    public void Rewatch()
+    {
+        _screenshots?.Stop();
+        _logs?.Dispose();
+
+        _screenshots = new ScreenshotWatcher(settings.ScreenshotDirectory)
+        {
+            Disposal = settings.ScreenshotDisposal,
+        };
+
+        _screenshots.PositionFixed += (_, fix) => session.OnPositionFixed(fix);
+        _screenshots.Start();
+        _screenshots.ReadLatestExisting();
+
+        _logs = new LogWatcher(settings.GameDirectory);
+        _logs.RaidStarted += (_, raid) => session.OnRaidStarted(raid.LocationId);
+        _logs.RaidEnded += (_, _) => session.OnRaidEnded();
+        _logs.QuestChanged += (_, change) => session.OnQuestChanged(change);
+        _logs.Start();
+    }
+
     public Task StopAsync(CancellationToken ct)
     {
         _screenshots?.Stop();
@@ -124,20 +152,29 @@ public sealed class RaidHost(
 /// </summary>
 public sealed record RatNavSettings
 {
-    /// <summary>Game install. Null means detect it.</summary>
-    public string? GameDirectory { get; init; }
+    /// <summary>
+    /// Where Escape from Tarkov is installed. Null means detect it.
+    ///
+    /// <para>Detection is a convenience, not a guarantee: the launcher can be pointed anywhere,
+    /// an old copy can sit on another drive, and a wrong guess looks exactly like RatNav being
+    /// broken. So this is editable, and Setup says which install it settled on and why.</para>
+    /// </summary>
+    public string? GameDirectory { get; set; }
 
-    /// <summary>Screenshot folder. Null means the default under Documents.</summary>
-    public string? ScreenshotDirectory { get; init; }
+    /// <summary>
+    /// Screenshot folder. Null means the default under Documents — which OneDrive moves, so this
+    /// has to be settable rather than assumed.
+    /// </summary>
+    public string? ScreenshotDirectory { get; set; }
 
     /// <summary>
     /// What to do with a screenshot once its position has been read. Archiving by default:
     /// leaving them to accumulate is what makes this technique feel slow.
     /// </summary>
-    public ScreenshotDisposal ScreenshotDisposal { get; init; } = ScreenshotDisposal.Archive;
+    public ScreenshotDisposal ScreenshotDisposal { get; set; } = ScreenshotDisposal.Archive;
 
     /// <summary>The handle put on plans you share.</summary>
-    public string? Owner { get; init; }
+    public string? Owner { get; set; }
 
     /// <summary>
     /// The key bound to Screenshot <i>inside Escape from Tarkov</i> — middle mouse by default,
@@ -148,16 +185,16 @@ public sealed record RatNavSettings
     /// and RatNav only reads the file that pressing it produces. This setting exists so every
     /// prompt in the UI names the key you actually use instead of guessing.</para>
     /// </summary>
-    public string ScreenshotKey { get; init; } = "Middle Mouse";
+    public string ScreenshotKey { get; set; } = "Middle Mouse";
 
     /// <summary>
     /// Hotkeys, written as text so settings.json stays editable by hand. Defaults are function
     /// keys because they are unmodified, easy to reach mid-raid, and rarely bound by the game.
     /// </summary>
-    public HotKeySettings Hotkeys { get; init; } = new();
+    public HotKeySettings Hotkeys { get; set; } = new();
 
     /// <summary>Where the overlay sits and how big it is. Remembered so it is arranged once.</summary>
-    public OverlayBounds Overlay { get; init; } = new();
+    public OverlayBounds Overlay { get; set; } = new();
 
     /// <summary>Bindable hotkeys. Anything <see cref="string"/> here is parsed at startup.</summary>
     /// <summary>
@@ -194,22 +231,22 @@ public sealed record RatNavSettings
     public sealed record HotKeySettings
     {
         /// <summary>Show or hide the overlay.</summary>
-        public string ToggleOverlay { get; init; } = "F5";
+        public string ToggleOverlay { get; set; } = "F5";
 
         /// <summary>
         /// Let the mouse reach the overlay, so it can be moved, resized and zoomed. Off by
         /// default in raid: an overlay that swallows a click is worse than one you cannot drag.
         /// </summary>
-        public string ToggleInteract { get; init; } = "F6";
+        public string ToggleInteract { get; set; } = "F6";
 
         /// <summary>Open the full management panel over the game.</summary>
-        public string ExpandPanel { get; init; } = "F7";
+        public string ExpandPanel { get; set; } = "F7";
 
         /// <summary>Tick the current objective off without leaving the game.</summary>
-        public string CompleteObjective { get; init; } = "F8";
+        public string CompleteObjective { get; set; } = "F8";
 
         /// <summary>Switch between the corner panel and the centred wireframe map.</summary>
-        public string ToggleMode { get; init; } = "F9";
+        public string ToggleMode { get; set; } = "F9";
 
         /// <summary>
         /// Identify whatever the mouse is hovering, by reading the tooltip off the screen.
@@ -219,7 +256,7 @@ public sealed record RatNavSettings
         /// to use for the keyboard and for the same reason. A hotkey is registered with Windows
         /// the ordinary way and touches nothing.</para>
         /// </summary>
-        public string IdentifyItem { get; init; } = "F10";
+        public string IdentifyItem { get; set; } = "F10";
     }
 
     /// <summary>How the overlay presents itself.</summary>

@@ -9,16 +9,41 @@ wherever you actually are.
 
 **Status: working, and rough.**
 
-## Installing
+## Install
 
-Download the latest [release](https://github.com/mrthames/RatNav/releases) and run
-`RatNav-<version>-setup.exe`. It installs for your user only — no administrator prompt — and puts
-RatNav in your Start Menu. Nothing else needs installing; the .NET runtime is included.
+1. Download **`RatNav-<version>-setup.exe`** from the
+   [latest release](https://github.com/mrthames/RatNav/releases) and run it.
 
-There is a portable zip on the same page if you would rather unzip it and run `RatNav.exe`
-yourself.
+   It installs for your user only — no administrator prompt — and adds RatNav to your Start Menu.
+   Nothing else needs installing; the .NET runtime is included. There is a portable `.zip` on the
+   same page if you would rather unzip it and run `RatNav.exe` yourself.
 
-![Plan a raid, then navigate it](docs/screenshot-plan.png)
+2. Start RatNav, then open **Setup** (the tray icon's *Open panel*, or
+   `http://localhost:8722/` in any browser).
+
+3. Work down the checks. Each one that is not green says what to do about it. Then set:
+
+   - **Escape from Tarkov folder** — the folder containing `EscapeFromTarkov.exe`. RatNav tries to
+     find this for you, and Setup shows what it found. Override it if that is wrong: RatNav has no
+     idea where you installed the game, an old copy on another drive looks the same as a live one,
+     and a wrong folder shows up as an overlay that never reports a raid.
+   - **Screenshot folder** — where the game saves screenshots. Defaults to
+     `Documents\Escape from Tarkov\Screenshots`, which is right unless OneDrive has moved your
+     Documents folder — a common cause of RatNav seeing nothing.
+   - **Your in-game screenshot key** — whatever you bound in Tarkov. RatNav never presses it; this
+     is so every prompt names the key *you* use. See [How position works](#how-position-works).
+   - **Hotkeys** — review them and change any that clash. Defaults are `F5`–`F10`. Changes take
+     effect immediately, and RatNav tells you if another application already owns a combination.
+   - **Your name on shared plans** — only matters if you swap plans with someone.
+
+4. In Tarkov, bind a **Screenshot** key under *Settings → Controls*, and set the game to
+   **Borderless** or **Windowed**. Exclusive fullscreen renders above every overlay; that is an
+   operating system limit, not something any tool can work around.
+
+Setup re-checks itself every few seconds, so you can leave it open, launch the game, and watch the
+checks go green.
+
+Nothing is hardcoded. Every path is either detected or set by you, and RatNav says which.
 
 ## Is this safe to use?
 
@@ -59,8 +84,14 @@ bearing to your next stop: *Dorms · 140 m · 30° right*. Tap your screenshot k
 snaps, the route re-orders from where you actually are, and the screenshot is archived so the
 folder never fills up.
 
-**Between raids.** What every active quest and un-built hideout module needs, minus what you have,
-with a watchlist for anything else worth remembering.
+**Between raids.** What every active quest needs, minus what you have, with a watchlist for
+anything else worth remembering.
+
+**The hideout, as a build order.** Tell RatNav where each station is and it works out what that
+makes reachable next, following the game's own prerequisites. A **Look ahead** control decides how
+far: 1 is what you could build tonight, 3 is what to stop vendoring. On a fresh hideout that is
+about 17 items rather than the several hundred an un-filtered list would give you. Star the
+upgrades you actually want and the list narrows to those.
 
 **With a friend.** Export a plan, merge it with theirs. Nothing is dropped — every objective
 survives carrying its owner — and it flags what actually changes the raid: objectives to do
@@ -71,11 +102,13 @@ together, items you are both hunting, and keys only one of you needs to carry.
 Escape from Tarkov writes your coordinates into the filename of every screenshot you take. So your
 screenshot key **is** RatNav's "where am I" key:
 
-1. Bind a screenshot key in **Tarkov → Settings → Controls → Screenshot** (a mouse thumb button works well;
-   Steam users should avoid F12).
-2. Tap it in raid.
-3. RatNav parses the filename, snaps your marker to that spot with your facing, re-plans the remaining route
-   from where you now stand, and tells you the bearing and distance to your next objective.
+1. Bind a screenshot key in **Tarkov → Settings → Controls → Screenshot**. A mouse thumb button
+   works well — it is reachable without letting go of movement. Steam users should avoid `F12`.
+2. Tell RatNav which key that is, in Setup. It never presses it; it just names it in prompts.
+3. Tap it in raid.
+4. RatNav parses the filename, snaps your marker to that spot with your facing, re-plans the
+   remaining route from where you now stand, and tells you the bearing and distance to your next
+   objective.
 
 Position updates when you tap, and only when you tap. There is no continuous tracking, because reading
 position continuously would require reading game memory — which is what anti-cheat exists to catch. Every
@@ -150,9 +183,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: `npm run build` in `web/`
 
 ## Requirements
 
-- Windows 10/11
-- Escape from Tarkov running in **Borderless** or **Windowed** mode. Exclusive fullscreen renders above all
+- **Windows 10 version 1809 or later.** Identifying an item under your cursor additionally needs
+  Windows 10 version 2004, and says so plainly when it is unavailable.
+- **Escape from Tarkov in Borderless or Windowed mode.** Exclusive fullscreen renders above all
   overlays; that is an operating system limitation, not something any tool can work around.
+- A screenshot key bound in game. Everything else RatNav needs, it reads or asks for.
+
+Nothing needs to be installed alongside it — no .NET runtime, no OCR download, no account.
 
 ## Credits
 

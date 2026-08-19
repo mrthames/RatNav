@@ -4,6 +4,26 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
+### Setup
+
+- **Setup can now set things**, not just report them. The Escape from Tarkov folder, the
+  screenshot folder, your in-game screenshot key, your hotkeys, and the name on shared plans are
+  all editable, and every change takes effect immediately — including hotkeys, which rebind
+  without a restart.
+- The game folder is **detected, not assumed**. Setup says whether the path came from detection or
+  from you, refuses a folder that is not an install rather than accepting it quietly, and takes an
+  empty box as "go back to detecting it". A wrong folder used to look exactly like RatNav being
+  broken.
+
+### Fixed
+
+- **The game version could not be read for ten hours a day.** Escape from Tarkov writes log folders
+  with a non-padded hour — `log_2026.08.19_8-25-33` before 10am, `log_2026.08.18_23-01-52` after —
+  and RatNav's parser required two digits. Any morning session failed to match, so patch detection
+  quietly stopped working and Setup reported "no log sessions yet" over a folder full of them.
+- Log sessions are ordered by the date in their own name rather than by filesystem timestamps,
+  which copying an install or restoring a backup rewrites.
+
 ### The hideout
 
 - A **Hideout** view: set where each station is, and see what that makes reachable next.

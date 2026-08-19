@@ -1,21 +1,31 @@
 import { useEffect, useState } from 'react'
-import { api, type Diagnostics } from './api'
+import { api, type Diagnostics, type HotKeys, type Settings } from './api'
 
 /**
- * Whether RatNav can see the game.
+ * Everything RatNav needs to know about your machine, and whether it has it.
  *
- * Setup fails in four ways that all look identical from the player's side — an overlay showing
- * nothing — so each is reported separately with what to do about it.
+ * Two halves, in the order a new install needs them. **What is wrong** comes first, because
+ * setup fails in several ways that all look identical from the player's side — an overlay showing
+ * nothing. **What to change** comes second: the game folder, the screenshot folder, the key you
+ * press in game, and the hotkeys.
+ *
+ * Nothing here is assumed. Detection is a convenience and it can be wrong — the launcher points
+ * anywhere, old copies sit on other drives, OneDrive moves Documents — so every path is shown
+ * with where it came from and can be overridden.
  */
 export function SetupView() {
   const [state, setState] = useState<Diagnostics | null>(null)
+  const [settings, setSettings] = useState<Settings | null>(null)
 
-  const load = () => api.diagnostics().then(setState).catch(() => setState(null))
+  const load = () => {
+    api.diagnostics().then(setState).catch(() => setState(null))
+    api.settings().then(setSettings).catch(() => setSettings(null))
+  }
 
   useEffect(() => {
     load()
-    // Setup is the one screen where things change underneath you — you launch the game, or take
-    // your first screenshot — so this is the one screen that re-checks on its own.
+    // The one screen where things change underneath you — you launch the game, or take your
+    // first screenshot — so the one screen that re-checks on its own.
     const timer = setInterval(load, 5000)
     return () => clearInterval(timer)
   }, [])
@@ -52,6 +62,8 @@ export function SetupView() {
         ))}
       </ul>
 
+      {settings && <SettingsForm settings={settings} onSaved={(s) => { setSettings(s); load() }} />}
+
       {state.installs.length > 1 && (
         <div className="border border-line">
           <p className="border-b border-line bg-panel px-3 py-1.5 font-mono text-[11px]
@@ -74,7 +86,8 @@ export function SetupView() {
           </ul>
           <p className="px-3 py-2 text-xs text-muted">
             RatNav watches whichever install was played most recently. An old copy on another
-            drive would otherwise be read forever, reporting no raids and never saying why.
+            drive would otherwise be read forever, reporting no raids and never saying why. Set
+            the folder above to override that.
           </p>
         </div>
       )}
@@ -96,6 +109,165 @@ export function SetupView() {
         </p>
       </div>
     </div>
+  )
+}
+
+function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: Settings) => void }) {
+  const [draft, setDraft] = useState(settings)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  // Re-checks every five seconds would otherwise overwrite what someone is halfway through
+  // typing, so the form only takes a new copy when it is not being edited.
+  const dirty = JSON.stringify(draft) !== JSON.stringify(settings)
+  useEffect(() => { if (!dirty) setDraft(settings) }, [settings, dirty])
+
+  async function save() {
+    setSaving(true)
+    setError(null)
+
+    try {
+      onSaved(await api.saveSettings({
+        gameDirectory: draft.gameDirectory ?? '',
+        screenshotDirectory: draft.screenshotDirectory ?? '',
+        screenshotKey: draft.screenshotKey,
+        owner: draft.owner ?? '',
+        hotkeys: draft.hotkeys,
+      }))
+    } catch (e) {
+      // The service explains what is wrong with a path far better than the browser can.
+      setError(e instanceof Error ? e.message : 'Could not save.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-4 border border-line bg-panel p-4">
+      <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Settings</h2>
+
+      <Field
+        label="Escape from Tarkov folder"
+        hint={draft.gameDirectory
+          ? 'RatNav reads the Logs folder inside this one.'
+          : `Detected: ${settings.resolvedGameDirectory ?? 'nothing found — set it here'}`}
+        value={draft.gameDirectory ?? ''}
+        placeholder={settings.resolvedGameDirectory ?? 'C:\\Battlestate Games\\EFT'}
+        onChange={(gameDirectory) => setDraft({ ...draft, gameDirectory })}
+      />
+
+      <Field
+        label="Screenshot folder"
+        hint={draft.screenshotDirectory
+          ? 'Where the game saves screenshots.'
+          : `Using: ${settings.resolvedScreenshotDirectory}`}
+        value={draft.screenshotDirectory ?? ''}
+        placeholder={settings.resolvedScreenshotDirectory}
+        onChange={(screenshotDirectory) => setDraft({ ...draft, screenshotDirectory })}
+      />
+
+      <Field
+        label="Your in-game screenshot key"
+        hint="Set this to whatever you bound in Tarkov → Settings → Controls → Screenshot. RatNav
+              never presses it — this is so every prompt names the key you actually use."
+        value={draft.screenshotKey}
+        onChange={(screenshotKey) => setDraft({ ...draft, screenshotKey })}
+      />
+
+      <Field
+        label="Your name on shared plans"
+        hint="Used when you export a plan, so a friend can tell whose objectives are whose."
+        value={draft.owner ?? ''}
+        placeholder="unset"
+        onChange={(owner) => setDraft({ ...draft, owner })}
+      />
+
+      <div className="flex flex-col gap-2">
+        <p className="font-mono text-[11px] uppercase tracking-wider text-muted">Hotkeys</p>
+        <p className="text-xs text-muted">
+          Written as text — <code className="font-mono">F5</code>,{' '}
+          <code className="font-mono">Alt+F6</code>,{' '}
+          <code className="font-mono">Ctrl+Shift+M</code>. Changes apply immediately, and RatNav
+          says if another application already owns one.
+        </p>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {HOTKEYS.map(([key, label]) => (
+            <label key={key} className="flex items-center justify-between gap-3">
+              <span className="text-sm">{label}</span>
+              <input
+                value={draft.hotkeys[key]}
+                onChange={(e) => setDraft({ ...draft, hotkeys: { ...draft.hotkeys, [key]: e.target.value } })}
+                className="w-32 border border-line bg-ground px-2 py-1 font-mono text-xs text-ink
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {error && <p className="text-xs text-need">{error}</p>}
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          disabled={!dirty || saving}
+          onClick={() => void save()}
+          className="rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider
+                     text-ground transition-opacity disabled:opacity-40
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+
+        {dirty && (
+          <button
+            type="button"
+            onClick={() => setDraft(settings)}
+            className="font-mono text-[11px] uppercase tracking-wider text-muted
+                       underline-offset-4 hover:text-ink hover:underline"
+          >
+            Discard
+          </button>
+        )}
+
+        <p className="font-mono text-[11px] text-muted">Leave a folder empty to go back to detecting it.</p>
+      </div>
+    </section>
+  )
+}
+
+const HOTKEYS: [keyof HotKeys, string][] = [
+  ['toggleOverlay', 'Show / hide overlay'],
+  ['toggleInteract', 'Interact with overlay'],
+  ['expandPanel', 'Open full panel'],
+  ['completeObjective', 'Tick objective off'],
+  ['toggleMode', 'Switch overlay style'],
+  ['identifyItem', 'Identify item under cursor'],
+]
+
+function Field({
+  label, hint, value, placeholder, onChange,
+}: {
+  label: string
+  hint: string
+  value: string
+  placeholder?: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-sm">{label}</span>
+      <input
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        spellCheck={false}
+        className="border border-line bg-ground px-2 py-1.5 font-mono text-xs text-ink
+                   placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
+      />
+      <span className="text-xs text-muted">{hint}</span>
+    </label>
   )
 }
 

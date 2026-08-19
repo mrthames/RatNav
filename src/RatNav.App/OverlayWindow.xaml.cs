@@ -98,10 +98,16 @@ public partial class OverlayWindow : Window
     public event EventHandler? ExpandRequested;
     public event EventHandler? CompleteRequested;
 
-    /// <summary>Binds the configured hotkeys, reporting any that could not be set.</summary>
+    /// <summary>
+    /// Binds the configured hotkeys, reporting any that could not be set. Safe to call again
+    /// after they are changed in Setup — the previous bindings are released first, because
+    /// Windows keeps a combination reserved until it is.
+    /// </summary>
     public void BindHotKeys(Action<string> onProblem)
     {
-        _hotkeys = new GlobalHotKey(this);
+        _hotkeys ??= new GlobalHotKey(this);
+        _hotkeys.UnregisterAll();
+
         var keys = _settings.Hotkeys;
 
         Bind(keys.ToggleOverlay, "Show/hide overlay", ToggleVisible);
@@ -178,6 +184,19 @@ public partial class OverlayWindow : Window
         Remember(_settings.Overlay with { Mode = mode });
         ApplyBounds();
         Draw();
+    }
+
+    /// <summary>Takes settings changed elsewhere — Setup, in practice — and applies them.</summary>
+    public void Apply(RatNavSettings settings, Action<string> onProblem)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            _settings = settings;
+
+            BindHotKeys(onProblem);
+            ApplyBounds();
+            Draw();
+        });
     }
 
     public void Update(RaidView view)

@@ -1,18 +1,27 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using RatNav.Core;
 using RatNav.Core.Data;
+using RatNav.Core.Game;
 using RatNav.Core.Maps;
 using RatNav.Core.Model;
 using RatNav.Core.Planning;
 using RatNav.Core.Progress;
 using RatNav.Core.Sharing;
 using RatNav.Core.Tracking;
+using RatNav.Core.Watchers;
 
 namespace RatNav.Service;
 
 public static class ApiEndpoints
 {
+    /// <summary>
+    /// Raised when hotkeys change, so the desktop app can rebind them without a restart. An event
+    /// rather than a dependency, because the service knows nothing about windows.
+    /// </summary>
+    public static event Action<RatNavSettings>? HotkeysChanged;
+
     public static void MapRatNavApi(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api");
@@ -333,6 +342,75 @@ public static class ApiEndpoints
         {
             var task = state.Cache.Current?.Tasks.FirstOrDefault(t => t.Id == id);
             return task is null ? Results.NotFound() : Results.Ok(task);
+        });
+
+        // ---- settings
+
+        // What Setup edits. Everything here is either detected or chosen by a person — none of it
+        // is baked in, because someone else's install is not going to look like the developer's.
+        api.MapGet("/settings", (RatNavSettings settings) => Results.Ok(SettingsView.From(settings)));
+
+        api.MapPost("/settings", (RatNavSettings settings, RaidHost host, SettingsUpdate update) =>
+        {
+            // A folder that is not an install is worth refusing rather than accepting quietly:
+            // the symptom of a wrong path is an overlay that shows nothing, which looks identical
+            // to RatNav being broken.
+            if (update.GameDirectory is { Length: > 0 } directory
+                && GameInstallFinder.Describe(directory) is null)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "That folder does not look like an Escape from Tarkov install — "
+                          + "there is no Logs folder inside it. Pick the folder containing "
+                          + "EscapeFromTarkov.exe.",
+                });
+            }
+
+            var watchersAffected =
+                update.GameDirectory != settings.GameDirectory
+                || update.ScreenshotDirectory != settings.ScreenshotDirectory
+                || (update.ScreenshotDisposal is { Length: > 0 } d
+                    && !string.Equals(d, settings.ScreenshotDisposal.ToString(), StringComparison.OrdinalIgnoreCase));
+
+            settings.Remember(current =>
+            {
+                // Empty means "go back to detecting it", which is a different answer from "leave
+                // it alone" — so blank clears rather than being ignored.
+                if (update.GameDirectory is not null)
+                    current.GameDirectory = Blank(update.GameDirectory);
+
+                if (update.ScreenshotDirectory is not null)
+                    current.ScreenshotDirectory = Blank(update.ScreenshotDirectory);
+
+                if (update.ScreenshotKey is { Length: > 0 } key) current.ScreenshotKey = key;
+                if (update.Owner is not null) current.Owner = Blank(update.Owner);
+
+                if (update.ScreenshotDisposal is { Length: > 0 } disposal
+                    && Enum.TryParse<ScreenshotDisposal>(disposal, ignoreCase: true, out var parsed))
+                {
+                    current.ScreenshotDisposal = parsed;
+                }
+
+                if (update.Hotkeys is { } keys)
+                {
+                    current.Hotkeys = new RatNavSettings.HotKeySettings
+                    {
+                        ToggleOverlay = keys.ToggleOverlay ?? current.Hotkeys.ToggleOverlay,
+                        ToggleInteract = keys.ToggleInteract ?? current.Hotkeys.ToggleInteract,
+                        ExpandPanel = keys.ExpandPanel ?? current.Hotkeys.ExpandPanel,
+                        CompleteObjective = keys.CompleteObjective ?? current.Hotkeys.CompleteObjective,
+                        ToggleMode = keys.ToggleMode ?? current.Hotkeys.ToggleMode,
+                        IdentifyItem = keys.IdentifyItem ?? current.Hotkeys.IdentifyItem,
+                    };
+                }
+            });
+
+            // Applied immediately. Being told to restart the app is a poor answer to "RatNav
+            // cannot see my game" — that is the moment someone is least willing to be patient.
+            if (watchersAffected) host.Rewatch();
+            if (update.Hotkeys is not null) HotkeysChanged?.Invoke(settings);
+
+            return Results.Ok(SettingsView.From(settings));
         });
 
         // ---- setup
@@ -692,6 +770,9 @@ public static class ApiEndpoints
             ?? maps.FirstOrDefault(m => string.Equals(m.NormalizedName, id, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>Empty is a real answer — it means "detect it" — so it is stored as null, not "".</summary>
+    private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static ItemDef Unknown(string itemId) => new() { Id = itemId, Name = "Unknown item" };
 
     private static object? Track(
@@ -841,6 +922,72 @@ public sealed record ItemSummary
         HideoutCount = needs?.Hideout.Count ?? 0,
         IsKey = needs?.AsKey.Count > 0,
     };
+}
+
+/// <summary>What Setup can change. Every field is optional; absent means "leave it alone".</summary>
+public sealed record SettingsUpdate
+{
+    public string? GameDirectory { get; init; }
+    public string? ScreenshotDirectory { get; init; }
+    public string? ScreenshotKey { get; init; }
+    public string? ScreenshotDisposal { get; init; }
+    public string? Owner { get; init; }
+    public HotKeyUpdate? Hotkeys { get; init; }
+}
+
+public sealed record HotKeyUpdate
+{
+    public string? ToggleOverlay { get; init; }
+    public string? ToggleInteract { get; init; }
+    public string? ExpandPanel { get; init; }
+    public string? CompleteObjective { get; init; }
+    public string? ToggleMode { get; init; }
+    public string? IdentifyItem { get; init; }
+}
+
+/// <summary>
+/// Settings as Setup shows them: what is set, and what RatNav is actually using.
+///
+/// <para>Those are different when a field is left to detection, and the difference is the whole
+/// point of the screen — "detected: F:\Escape From Tarkov" tells you something that an empty box
+/// does not.</para>
+/// </summary>
+public sealed record SettingsView
+{
+    public string? GameDirectory { get; init; }
+    public string? ScreenshotDirectory { get; init; }
+    public required string ScreenshotKey { get; init; }
+    public required string ScreenshotDisposal { get; init; }
+    public string? Owner { get; init; }
+    public required RatNavSettings.HotKeySettings Hotkeys { get; init; }
+
+    /// <summary>The install in use, whether set by hand or detected.</summary>
+    public string? ResolvedGameDirectory { get; init; }
+
+    /// <summary>The screenshot folder in use.</summary>
+    public required string ResolvedScreenshotDirectory { get; init; }
+
+    /// <summary>True when the folder in use was found rather than chosen.</summary>
+    public bool GameDirectoryDetected { get; init; }
+
+    public static SettingsView From(RatNavSettings settings)
+    {
+        var resolved = settings.GameDirectory ?? GameInstallFinder.Find()?.Directory;
+
+        return new SettingsView
+        {
+            GameDirectory = settings.GameDirectory,
+            ScreenshotDirectory = settings.ScreenshotDirectory,
+            ScreenshotKey = settings.ScreenshotKey,
+            ScreenshotDisposal = settings.ScreenshotDisposal.ToString(),
+            Owner = settings.Owner,
+            Hotkeys = settings.Hotkeys,
+            ResolvedGameDirectory = resolved,
+            ResolvedScreenshotDirectory =
+                settings.ScreenshotDirectory ?? RatNavPaths.DefaultScreenshotDirectory,
+            GameDirectoryDetected = settings.GameDirectory is null && resolved is not null,
+        };
+    }
 }
 
 /// <summary>How many hideout upgrades deep the items list should reach.</summary>
