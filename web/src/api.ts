@@ -122,6 +122,13 @@ export interface RaidView {
   trail: { x: number; y: number }[]
 }
 
+export interface Diagnostics {
+  ready: boolean
+  openInBrowserUrl: string
+  checks: { name: string; ok: boolean; detail: string; fix: string; required: boolean }[]
+  installs: { directory: string; version: string | null; lastPlayed: string | null; chosen: boolean }[]
+}
+
 export type InkLevel = 'full' | 'structure' | 'outline'
 
 async function get<T>(path: string): Promise<T> {
@@ -181,6 +188,7 @@ export const api = {
     post<RaidView>(`/api/plans/${encodeURIComponent(id)}/activate`, {}),
 
   raid: () => get<RaidView>('/api/raid'),
+  diagnostics: () => get<Diagnostics>('/api/diagnostics'),
 
   completeObjective: (objectiveId: string, done: boolean) =>
     post<RaidView>(`/api/raid/objectives/${encodeURIComponent(objectiveId)}`, { done }),

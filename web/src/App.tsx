@@ -4,8 +4,9 @@ import { MapView } from './MapView'
 import { ItemsView } from './ItemsView'
 import { QuestsView } from './QuestsView'
 import { PlanView } from './PlanView'
+import { SetupView } from './SetupView'
 
-type View = 'plan' | 'items' | 'quests' | 'maps'
+type View = 'plan' | 'items' | 'quests' | 'maps' | 'setup'
 
 export default function App() {
   const [view, setView] = useState<View>('plan')
@@ -45,7 +46,7 @@ export default function App() {
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">RatNav</p>
           <div className="flex items-baseline gap-4">
-            {(['plan', 'items', 'quests', 'maps'] as View[]).map((id) => (
+            {(['plan', 'items', 'quests', 'maps', 'setup'] as View[]).map((id) => (
               <button
                 key={id}
                 type="button"
@@ -94,6 +95,7 @@ export default function App() {
       {view === 'plan' && <PlanView maps={maps} raid={raid} />}
       {view === 'items' && <ItemsView />}
       {view === 'quests' && <QuestsView />}
+      {view === 'setup' && <SetupView />}
 
       {view === 'maps' && <div className="flex flex-wrap gap-px">
         {maps.map((map) => (

@@ -217,6 +217,11 @@ public static class ApiEndpoints
             return task is null ? Results.NotFound() : Results.Ok(task);
         });
 
+        // ---- setup
+
+        api.MapGet("/diagnostics", (RatNavSettings settings) =>
+            Results.Ok(Diagnostics.Build(settings, ServiceHost.DefaultPort)));
+
         // ---- the live raid
 
         api.MapGet("/raid", (RaidSession session) => Results.Ok(session.View()));
