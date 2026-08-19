@@ -211,6 +211,7 @@ export interface PlannableObjective {
 
 export interface RaidStop {
   objectiveId: string
+  taskId: string
   taskName: string
   description: string
   x: number

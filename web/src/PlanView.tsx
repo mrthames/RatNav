@@ -15,7 +15,14 @@ import {
 export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | null }) {
   const [mapId, setMapId] = useState<string | null>(null)
   const [objectives, setObjectives] = useState<PlannableObjective[]>([])
-  const [chosen, setChosen] = useState<Set<string>>(new Set())
+  /**
+   * The objectives picked, in the order they were picked.
+   *
+   * <p>An ordered list rather than a set, because the order is the plan. The planner walks the
+   * stops as given, so what you tick first is where you go first — and a set would have handed it
+   * whatever order the objectives happened to load in.</p>
+   */
+  const [chosen, setChosen] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
@@ -44,15 +51,24 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
     } catch {
       setObjectives([])
     }
-    setChosen(new Set())
+    setChosen([])
   }, [mapId])
 
   useEffect(() => { load() }, [load])
 
   const toggle = (id: string) =>
+    setChosen((current) =>
+      current.includes(id) ? current.filter((c) => c !== id) : [...current, id])
+
+  /** Move one stop to another position, keeping everything else in order around it. */
+  const move = (from: number, to: number) =>
     setChosen((current) => {
-      const next = new Set(current)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (from === to || to < 0 || to >= current.length) return current
+
+      const next = [...current]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+
       return next
     })
 
@@ -61,17 +77,24 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const keys = useMemo(() => {
     const ids = new Set<string>()
     for (const o of objectives) {
-      if (chosen.has(o.objectiveId)) o.neededKeyItemIds.forEach((k) => ids.add(k))
+      if (chosen.includes(o.objectiveId)) o.neededKeyItemIds.forEach((k) => ids.add(k))
     }
     return [...ids]
   }, [objectives, chosen])
 
+  /** The picked objectives themselves, in plan order — what the route panel lists. */
+  const route = useMemo(
+    () => chosen
+      .map((id) => objectives.find((o) => o.objectiveId === id))
+      .filter((o): o is PlannableObjective => o !== undefined),
+    [chosen, objectives])
+
   async function build() {
-    if (!mapId || chosen.size === 0) return
+    if (!mapId || chosen.length === 0) return
     setBusy(true)
     setNote(null)
     try {
-      const built = await api.buildPlan(mapId, [...chosen])
+      const built = await api.buildPlan(mapId, chosen)
       await api.activatePlan(built.id)
       setNote(`Plan active — ${built.plan.stops.length} stops.`)
       setPlanned((n) => n + 1)
@@ -145,10 +168,22 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                       <label className="flex cursor-pointer items-start gap-2.5 px-3 py-2 hover:bg-panel/60">
                         <input
                           type="checkbox"
-                          checked={chosen.has(o.objectiveId)}
+                          checked={chosen.includes(o.objectiveId)}
                           onChange={() => toggle(o.objectiveId)}
                           className="mt-1 accent-accent"
                         />
+
+                        {/*
+                          The number this stop will carry on the map. Ticking a box and having no
+                          idea where it landed in the order is the thing the route panel fixes;
+                          this is the same answer where you are looking when you tick.
+                        */}
+                        {chosen.includes(o.objectiveId) && (
+                          <span className="mt-0.5 font-mono text-[11px] tabular-nums text-accent">
+                            {chosen.indexOf(o.objectiveId) + 1}
+                          </span>
+                        )}
+
                         <span className="min-w-0">
                           <span className="block text-sm">{o.description || o.taskName}</span>
                           <span className="font-mono text-[11px] text-muted">
@@ -170,8 +205,10 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted">This raid</p>
 
           <p className="font-mono text-sm tabular-nums">
-            {chosen.size} objective{chosen.size === 1 ? '' : 's'}
+            {chosen.length} objective{chosen.length === 1 ? '' : 's'}
           </p>
+
+          {route.length > 0 && <Route stops={route} onMove={move} onRemove={toggle} />}
 
           {keys.length > 0 && (
             <p className="font-mono text-xs text-route">
@@ -182,7 +219,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
           <button
             type="button"
             onClick={build}
-            disabled={busy || chosen.size === 0}
+            disabled={busy || chosen.length === 0}
             className="rounded-sm border border-accent bg-accent px-3 py-2 text-sm font-medium
                        text-ground transition-opacity hover:opacity-90 disabled:opacity-30
                        focus-visible:outline-2 focus-visible:outline-accent"
@@ -193,12 +230,99 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
           {note && <p className="font-mono text-xs text-have">{note}</p>}
 
           <p className="text-xs leading-relaxed text-muted">
-            The route is ordered for you, and re-orders itself around wherever you actually spawn
-            the first time you take a position fix in game.
+            Stops run in the order you ticked them. Drag to change it. Once you are in raid, the
+            stops you have not reached re-order around wherever you actually are, the first time
+            you take a position fix.
           </p>
         </aside>
       </div>
     </div>
+  )
+}
+
+/**
+ * The stops in the order they will be run, and the place to change that order.
+ *
+ * <p>Drag to move, and arrows to move — both, because drag is what people reach for and arrows are
+ * what works with a keyboard, a trackpad someone finds fiddly, or a screen reader. The drag is
+ * plain HTML5 rather than a library: reordering a list of a dozen rows is not worth a dependency,
+ * and the native API already handles the pointer capture that makes hand-rolled dragging go
+ * wrong.</p>
+ */
+function Route({
+  stops, onMove, onRemove,
+}: {
+  stops: PlannableObjective[]
+  onMove: (from: number, to: number) => void
+  onRemove: (objectiveId: string) => void
+}) {
+  const [dragging, setDragging] = useState<number | null>(null)
+  const [over, setOver] = useState<number | null>(null)
+
+  return (
+    <ol className="flex flex-col gap-px border-t border-line pt-2">
+      {stops.map((stop, index) => (
+        <li
+          key={stop.objectiveId}
+          draggable
+          onDragStart={() => setDragging(index)}
+          onDragEnd={() => { setDragging(null); setOver(null) }}
+          onDragOver={(e) => { e.preventDefault(); setOver(index) }}
+          onDrop={(e) => {
+            e.preventDefault()
+            if (dragging !== null) onMove(dragging, index)
+            setDragging(null)
+            setOver(null)
+          }}
+          className={`flex cursor-grab items-start gap-2 rounded-sm px-1 py-1 active:cursor-grabbing
+                      ${over === index && dragging !== index ? 'bg-accent/15' : ''}
+                      ${dragging === index ? 'opacity-40' : ''}`}
+        >
+          <span className="font-mono text-[11px] tabular-nums text-accent">{index + 1}</span>
+
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-xs" title={stop.description || stop.taskName}>
+              {stop.place ?? stop.description ?? stop.taskName}
+            </span>
+            <span className="block truncate font-mono text-[10px] text-muted">{stop.taskName}</span>
+          </span>
+
+          {/* The keyboard route to the same thing the drag does. */}
+          <span className="flex flex-col">
+            <button
+              type="button"
+              disabled={index === 0}
+              onClick={() => onMove(index, index - 1)}
+              aria-label={`Move ${stop.taskName} earlier`}
+              className="font-mono text-[9px] leading-tight text-muted hover:text-ink disabled:opacity-20
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              disabled={index === stops.length - 1}
+              onClick={() => onMove(index, index + 1)}
+              aria-label={`Move ${stop.taskName} later`}
+              className="font-mono text-[9px] leading-tight text-muted hover:text-ink disabled:opacity-20
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              ▼
+            </button>
+          </span>
+
+          <button
+            type="button"
+            onClick={() => onRemove(stop.objectiveId)}
+            aria-label={`Drop ${stop.taskName} from the plan`}
+            className="font-mono text-[11px] text-muted hover:text-need
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            ✕
+          </button>
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -509,7 +633,7 @@ function RaidPanel({ raid }: { raid: RaidView }) {
 
       <span className="font-mono text-xs text-muted tabular-nums">
         {raid.completedObjectiveIds.length}/{raid.stops.length} done
-        {raid.fixedAt && ` · fix ${age(raid.fixedAt)}`}
+        {raid.fixedAt && ` · position ${age(raid.fixedAt)}`}
       </span>
 
       {/*
@@ -543,27 +667,97 @@ function RaidPanel({ raid }: { raid: RaidView }) {
       {/* Stops are strikeable between raids, which is what makes a plan worth keeping. */}
       {raid.stops.length > 0 && (
         <ul className="flex flex-col gap-px">
-          {raid.stops.map((stop) => (
+          {raid.stops.map((stop, index) => (
             <li key={stop.objectiveId} className="flex items-center gap-3 py-0.5">
+              {/*
+                The same number the overlay draws on the map. Reading "go to 3" on the overlay and
+                then hunting for which line that is here was work the number could do itself.
+              */}
+              <span className="font-mono text-[11px] tabular-nums text-accent">{index + 1}</span>
+
+              <input
+                type="checkbox"
+                checked={stop.done}
+                onChange={() => void api.completeObjective(stop.objectiveId, !stop.done)}
+                aria-label={`Mark ${stop.taskName} done`}
+                className="accent-accent"
+              />
+
               <span className={`text-sm ${stop.done ? 'text-muted line-through' : ''}`}>
                 {stop.place ?? stop.taskName}
               </span>
               <span className="truncate font-mono text-[11px] text-muted">{stop.taskName}</span>
 
-              <button
-                type="button"
-                onClick={() => void api.removeStop(stop.objectiveId)}
-                aria-label={`Remove ${stop.taskName}`}
-                className="ml-auto font-mono text-xs text-muted hover:text-need
-                           focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                ✕
-              </button>
+              <span className="ml-auto flex items-center gap-3">
+                <CompleteQuest taskId={stop.taskId} taskName={stop.taskName} />
+
+                <button
+                  type="button"
+                  onClick={() => void api.removeStop(stop.objectiveId)}
+                  aria-label={`Remove ${stop.taskName}`}
+                  className="font-mono text-xs text-muted hover:text-need
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  ✕
+                </button>
+              </span>
             </li>
           ))}
         </ul>
       )}
     </div>
+  )
+}
+
+/**
+ * Marking a quest complete from where you are looking at it.
+ *
+ * <p>The turn-in prompt above only appears once every planned objective is ticked, which is the
+ * common path and not the only one — a quest can finish on a step you never planned, or off the
+ * back of one you did. This is the way out of that without a trip to the Quests view.</p>
+ *
+ * <p>It asks first. Completing a quest retires its item needs, so a misclick quietly deletes part
+ * of a shopping list — and the click that would undo it is on another screen.</p>
+ */
+function CompleteQuest({ taskId, taskName }: { taskId: string; taskName: string }) {
+  const [asking, setAsking] = useState(false)
+  const [done, setDone] = useState(false)
+
+  if (done) return <span className="font-mono text-[11px] text-have">complete</span>
+
+  if (asking) {
+    return (
+      <span className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={async () => { await api.markTaskState(taskId, 'Completed'); setDone(true) }}
+          className="font-mono text-[11px] uppercase tracking-wider text-have underline-offset-4
+                     hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Yes, complete
+        </button>
+        <button
+          type="button"
+          onClick={() => setAsking(false)}
+          className="font-mono text-[11px] text-muted hover:text-ink
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          no
+        </button>
+      </span>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setAsking(true)}
+      aria-label={`Mark ${taskName} complete`}
+      className="font-mono text-[11px] uppercase tracking-wider text-muted underline-offset-4
+                 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+    >
+      Quest done
+    </button>
   )
 }
 

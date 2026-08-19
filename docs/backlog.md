@@ -509,7 +509,7 @@ The research is kept below in case it is ever wanted again.
   undoing an arrangement seconds after it was made and moving the numbers while you walked to one.
 - [x] **A merged plan keeps both orders, yours first**, with a shared objective holding *your*
   place for it rather than moving to theirs.
-- [ ] **Drag to reorder in the buddy app**, with the number shown on each row — the same number the
+- [x] **Drag to reorder in the buddy app**, with the number shown on each row — the same number the
   map and overlay use.
 - [x] **The F5 title shows one quest name of several**, picked because it happened to be first,
   which says less than it implies. Replace with just "RATNAV", set to the right so the drawer
@@ -520,7 +520,7 @@ The research is kept below in case it is ever wanted again.
   - Same machinery as the items list: left or right of the map, swappable, poppable out, closing
     the popped-out window reattaches it.
   - A quick toggle for the items view too, alongside it.
-- [ ] **A shortcut on the Plan page to complete a quest**, updating quest state without going to
+- [x] **A shortcut on the Plan page to complete a quest**, updating quest state without going to
   the Quests tab.
 
 ### Extracts actually available to you
