@@ -160,14 +160,6 @@
                                    FontFamily="Consolas" FontSize="13" FontWeight="Bold"
                                    Foreground="{StaticResource Muted}" />
 
-                        <!-- The handles go to the other end, where they cannot crowd the name. -->
-                        <Button x:Name="ItemsDrawer" DockPanel.Dock="Right" Margin="4,0,0,0"
-                                Style="{StaticResource Chip}" Content="items"
-                                ToolTip="What to pick up" />
-                        <Button x:Name="QuestDrawer" DockPanel.Dock="Right"
-                                Style="{StaticResource Chip}" Content="quests"
-                                ToolTip="The plan's quests, numbered as on the map" />
-
                         <TextBlock />
                     </DockPanel>
 
@@ -291,6 +283,18 @@
                                 Content="⚙" Margin="0,0,6,0"
                                 ToolTip="Show the map controls"
                                 Visibility="Collapsed" />
+
+                        <!--
+                            The drawer handles live down here. In the header they shared a row with
+                            the quick controls, which float over the top of the window and reach
+                            far enough left to swallow them.
+                        -->
+                        <Button x:Name="QuestDrawer" Style="{StaticResource Chip}"
+                                Content="quests" Margin="0,0,4,0"
+                                ToolTip="The plan's quests, numbered as on the map" />
+                        <Button x:Name="ItemsDrawer" Style="{StaticResource Chip}"
+                                Content="items" Margin="0,0,8,0"
+                                ToolTip="What to pick up" />
 
                         <TextBlock x:Name="ProgressText" Style="{StaticResource Label}"
                                    VerticalAlignment="Center" />
@@ -492,10 +496,14 @@
 
                             <TextBlock Style="{StaticResource Label}" Text="EXITS" Margin="0,0,0,2" />
                             <Button x:Name="ExtractButton" Style="{StaticResource Chip}"
-                                    Content="pmc" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
+                                    Content="pmc" HorizontalAlignment="Stretch" />
 
-                            <Button x:Name="ItemsButton" Style="{StaticResource Chip}"
-                                    Content="items ▸" HorizontalAlignment="Stretch" />
+                            <!--
+                                No items toggle here. The drawer handles sit at the bottom of the
+                                window whenever interact mode is on, which is exactly when this
+                                stack is open — two controls for one drawer, and the one you can
+                                always see wins.
+                            -->
                         </StackPanel>
                     </ScrollViewer>
                 </DockPanel>

@@ -181,7 +181,6 @@ public partial class OverlayWindow : Window
         YouDown.Click += (_, _) => StepPlayer(-0.5);
         WeightUp.Click += (_, _) => StepWeight(+0.25);
         WeightDown.Click += (_, _) => StepWeight(-0.25);
-        ItemsButton.Click += (_, _) => ToggleItems();
         DetachItems.Click += (_, _) => DetachItemsPanel();
         SwapSide.Click += (_, _) => SwapItemsSide();
         ItemsSplitter.DragDelta += OnItemsResize;
@@ -1254,20 +1253,24 @@ public partial class OverlayWindow : Window
             ? $"{metres:F0} m · {Math.Abs(bearing):F0}° {(bearing > 0 ? "right" : "left")}"
             : "";
 
-        ProgressText.Text = $"{view.CompletedObjectiveIds.Count}/{view.Stops.Count} DONE";
+        ProgressText.Text = view.Stops.Count > 0
+            ? $"{view.CompletedObjectiveIds.Count}/{view.Stops.Count} done"
+            : "";
 
-        // Said plainly. The marker moves when you take a fix and at no other time, and pretending
-        // otherwise is how an overlay gets someone killed.
-        // Naming the key beats "no fix yet": the first thing anyone needs to know is which
-        // button makes the marker appear.
+        // How old the marker is, in words rather than jargon. It used to read "FIX 58S AGO" — a
+        // fix is what RatNav calls a position reading internally and not something anyone else
+        // would call it, and the number is only there to say how much to trust the marker.
+        //
+        // Nothing animates between readings, so saying when the last one was is the honest way to
+        // convey that rather than letting a stale marker imply it is current.
         FixAgeText.Text = view.FixedAt is { } at
-            ? $"FIX {Age(DateTimeOffset.Now - at)}"
+            ? $"position {Age(DateTimeOffset.Now - at)}"
             : view.InRaid
-                ? $"TAP {_settings.ScreenshotKey.ToUpperInvariant()}"
+                ? $"tap {_settings.ScreenshotKey.ToLowerInvariant()} for position"
 
-                // Said plainly rather than telling someone to press a key that will do nothing:
-                // outside a raid the game writes no position for RatNav to read.
-                : "NOT IN RAID";
+                // Rather than telling someone to press a key that will do nothing: outside a raid
+                // the game writes no position for RatNav to read.
+                : "not in raid";
 
         DrawMap(view);
         DrawRoute(view);
@@ -1316,7 +1319,6 @@ public partial class OverlayWindow : Window
         GhostButton.Content = _settings.Overlay.GhostOtherFloors ? "ghost on" : "ghost off";
         PlacesButton.Content = _settings.Overlay.ShowPlaceNames ? "names on" : "names off";
         WeightText.Text = $"{_settings.Overlay.LineWeight:0.00}×";
-        ItemsButton.Content = _settings.Overlay.ShowItems ? "items ▾" : "items ▸";
     }
 
     /// <summary>
@@ -1997,7 +1999,7 @@ public partial class OverlayWindow : Window
     }
 
     private static string Age(TimeSpan since) =>
-        since.TotalSeconds < 60 ? $"{since.TotalSeconds:F0}S AGO" : $"{since.TotalMinutes:F0}M AGO";
+        since.TotalSeconds < 60 ? $"{since.TotalSeconds:F0}s ago" : $"{since.TotalMinutes:F0}m ago";
 
     protected override void OnClosed(EventArgs e)
     {
