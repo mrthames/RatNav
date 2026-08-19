@@ -72,6 +72,16 @@ public static class ServiceHost
             return tracker;
         });
 
+        // Its own client: the wiki is a different host from tarkov.dev, and a tool that identifies
+        // itself is one a wiki can talk to about rate limits rather than simply block.
+        builder.Services.AddHttpClient<WikiImages>(http =>
+        {
+            http.Timeout = TimeSpan.FromSeconds(20);
+            http.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "RatNav/1.0 (+https://github.com/mrthames/RatNav)");
+        })
+        .AddTypedClient((http, _) => new WikiImages(http, dataDirectory));
+
         builder.Services.AddSingleton(_ =>
         {
             var marks = new CustomWaypointStore(dataDirectory);

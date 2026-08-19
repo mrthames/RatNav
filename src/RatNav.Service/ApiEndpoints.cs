@@ -1160,6 +1160,24 @@ public static class ApiEndpoints
                 });
         });
 
+        // The pictures on a quest's wiki article — which building, which door.
+        //
+        // Fetched rather than shipped: they are other people's work under CC BY-SA, so RatNav
+        // links to them and credits the wiki rather than redistributing them in a release.
+        api.MapGet("/tasks/{id}/images", async (
+            RatNavState state, WikiImages wiki, string id, CancellationToken ct) =>
+        {
+            var task = state.Cache.Current?.Tasks.FirstOrDefault(t => t.Id == id);
+            if (task is null) return Results.NotFound();
+
+            return Results.Ok(new
+            {
+                taskName = task.Name,
+                wikiUrl = task.WikiUrl,
+                images = await wiki.ForAsync(id, task.WikiUrl, ct),
+            });
+        });
+
         // ---- marks of your own
 
         // Spots someone marked by hand, with a short name for each.

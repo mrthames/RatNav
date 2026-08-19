@@ -214,6 +214,13 @@ export interface PlannableObjective {
   itemIds: string[]
 }
 
+export interface WikiImage {
+  title: string
+  url: string
+  width: number
+  height: number
+}
+
 export interface PlaceLabel {
   text: string
   x: number
@@ -456,6 +463,16 @@ export const api = {
     del<RaidView>(`/api/raid/stops/${encodeURIComponent(objectiveId)}`),
 
   clearPlan: () => del<RaidView>('/api/raid/plan'),
+
+  /**
+   * The pictures on a quest's wiki article — which building, which door.
+   *
+   * Fetched from the wiki and credited to it, never redistributed: they are other people's work
+   * under CC BY-SA.
+   */
+  taskImages: (taskId: string) =>
+    get<{ taskName: string; wikiUrl: string | null; images: WikiImage[] }>(
+      `/api/tasks/${encodeURIComponent(taskId)}/images`),
 
   /** One item, with everything anyone asks about it: why it is needed, and how many you have. */
   item: (id: string) =>

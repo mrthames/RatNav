@@ -157,11 +157,17 @@ them separately.
     mean every existing install served a cache missing it until the six-hour age check happened to
     fire — so a new layer read as broken rather than pending, for exactly the person who had just
     updated and gone looking for it.
-- [ ] **Quest images from the wiki, reachable from the waypoint hover.** For a quest like *Glory to
-  CPSU*, the wiki has screenshots showing the building and the room to look for; those are what
-  turn "walk to this pin" into "find this door".
-  - Wanted: a clickable action opening a **carousel** of the quest's wiki images, with the
-    descriptions that accompany them.
+- [x] **Quest images from the wiki.** A `photos` button on any quest row opens a carousel of the
+  wiki article's screenshots, arrow keys and all.
+  - Verified on *Glory to CPSU* itself: it returns `CPSUPart2Outside`, `CPSUPart2Inside`,
+    `CPSUPart2RoomDoor` and the marked-up map — exactly the shots that turn "walk to this pin" into
+    "find this door". Banners, icons and anything under 600px wide are filtered out as furniture.
+  - **Fetched, never redistributed.** They are other people's work under CC BY-SA, so the page
+    shows them from the wiki and credits it. Cached for a month — wiki articles change on patch
+    days and not otherwise, and a tool that re-asks on every hover is one the wiki would be right
+    to block.
+  - Buddy app only for now. On the overlay a modal over a live raid is the wrong shape; the
+    pre-raid read is where these actually get used.
   - **Settled:** fetch through **Fandom's API** and cache locally, with CC-BY-SA attribution
     shown. The API is a supported route rather than HTML scraping, which is what makes this sit
     acceptably against the no-scraping principle.

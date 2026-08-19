@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, type TaskSummary, type Trader } from './api'
+import { api, type TaskSummary, type Trader, type WikiImage } from './api'
 
 /**
  * Three groups, because those are the three that are true.
@@ -30,6 +30,9 @@ const STATES: [string, string][] = [
 
 export function QuestsView() {
   const [filter, setFilter] = useState<Filter>('active')
+
+  /** The quest whose wiki pictures are open, if any. */
+  const [showing, setShowing] = useState<TaskSummary | null>(null)
   const [traders, setTraders] = useState<Trader[]>([])
   const [trader, setTrader] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -77,6 +80,8 @@ export function QuestsView() {
 
   return (
     <div className="flex flex-col gap-4">
+      {showing && <Photos task={showing} onClose={() => setShowing(null)} />}
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-px">
           {FILTERS.map(([id, label]) => (
@@ -233,6 +238,18 @@ export function QuestsView() {
               </div>
 
               {task.wikiUrl && (
+                <button
+                  type="button"
+                  onClick={() => setShowing(task)}
+                  title="Screenshots from the wiki: which building, which door"
+                  className="font-mono text-xs text-muted hover:text-accent
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  photos
+                </button>
+              )}
+
+              {task.wikiUrl && (
                 <a
                   href={task.wikiUrl}
                   target="_blank"
@@ -248,6 +265,129 @@ export function QuestsView() {
           ))}
         </ul>
       )}
+    </div>
+  )
+}
+
+/**
+ * The wiki's screenshots for a quest, one at a time.
+ *
+ * <p>A pin says where to walk; a picture of the door says which door. The wiki has these for most
+ * quests and RatNav had no way to reach them, so the answer to "which of these six identical
+ * buildings" was a browser tab and a lost place in the list.</p>
+ *
+ * <p>Loaded from the wiki and credited to it. They are other people's work under CC BY-SA and are
+ * never redistributed — the page shows them from where they live, and links back.</p>
+ */
+function Photos({ task, onClose }: { task: TaskSummary; onClose: () => void }) {
+  const [images, setImages] = useState<WikiImage[] | null>(null)
+  const [at, setAt] = useState(0)
+
+  useEffect(() => {
+    setImages(null)
+    setAt(0)
+
+    api.taskImages(task.id).then((r) => setImages(r.images)).catch(() => setImages([]))
+  }, [task.id])
+
+  // Arrow keys, because a carousel you have to aim at is one you stop using.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowRight') setAt((n) => n + 1)
+      if (e.key === 'ArrowLeft') setAt((n) => n - 1)
+    }
+
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [onClose])
+
+  const count = images?.length ?? 0
+  const index = count === 0 ? 0 : ((at % count) + count) % count
+  const image = images?.[index]
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Wiki pictures for ${task.name}`}
+      onClick={onClose}
+      className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-full w-full max-w-4xl flex-col gap-3 border border-line bg-panel p-4"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">
+            {task.name}
+            {count > 0 && <span className="text-ink"> · {index + 1} of {count}</span>}
+          </h2>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="font-mono text-sm text-muted hover:text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            ✕
+          </button>
+        </div>
+
+        {images === null && <Empty>asking the wiki…</Empty>}
+
+        {images !== null && count === 0 && (
+          <Empty>The wiki article for this quest has no screenshots.</Empty>
+        )}
+
+        {image && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAt(at - 1)}
+              aria-label="Previous picture"
+              disabled={count < 2}
+              className="shrink-0 px-2 py-6 font-mono text-lg text-muted hover:text-ink
+                         disabled:opacity-20 focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              ‹
+            </button>
+
+            <img
+              src={image.url}
+              alt={image.title}
+              className="max-h-[65vh] min-h-0 w-full flex-1 object-contain"
+            />
+
+            <button
+              type="button"
+              onClick={() => setAt(at + 1)}
+              aria-label="Next picture"
+              disabled={count < 2}
+              className="shrink-0 px-2 py-6 font-mono text-lg text-muted hover:text-ink
+                         disabled:opacity-20 focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              ›
+            </button>
+          </div>
+        )}
+
+        {/* Credit where it is due, and where the licence requires it. */}
+        <p className="text-xs text-muted">
+          {image && <span className="font-mono">{image.title} · </span>}
+          From the{' '}
+          <a
+            href={task.wikiUrl ?? '#'}
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent hover:underline"
+          >
+            Escape from Tarkov Wiki
+          </a>
+          , licensed CC BY-SA. RatNav shows them from the wiki and never redistributes them.
+        </p>
+      </div>
     </div>
   )
 }
