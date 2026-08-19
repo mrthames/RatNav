@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using RatNav.Core;
+using RatNav.Core.Data;
 using RatNav.Core.Game;
 
 namespace RatNav.Service;
@@ -22,7 +23,7 @@ public sealed record Diagnostics
 
     public bool Ready => Checks.All(c => c.Ok || !c.Required);
 
-    public static Diagnostics Build(RatNavSettings settings, int port)
+    public static Diagnostics Build(RatNavSettings settings, int port, DataStatus? data = null)
     {
         var installs = GameInstallFinder.FindAll();
         var chosen = settings.GameDirectory is { Length: > 0 } configured
@@ -83,9 +84,23 @@ public sealed record Diagnostics
                     Name = "Screenshot key bound",
                     Ok = shotCount is > 0 || HasArchive(screenshots),
                     Detail = shotCount is > 0 || HasArchive(screenshots)
-                        ? "RatNav has seen screenshots from this folder."
+                        ? $"RatNav has seen screenshots. Tap {settings.ScreenshotKey} in raid for a position fix."
                         : "No screenshots seen yet.",
-                    Fix = "Bind one in Tarkov: Settings, Controls, Screenshot. A mouse thumb button works well.",
+                    Fix = $"Bind one in Tarkov: Settings, Controls, Screenshot. RatNav expects "
+                        + $"{settings.ScreenshotKey} — change either to match the other.",
+                    Required = false,
+                },
+                new Check
+                {
+                    Name = "Game data",
+                    Ok = data is { Loaded: true, ServingStale: false },
+                    Detail = data is null
+                        ? "Not loaded."
+                        : data.ServingStale
+                            ? $"Serving cached data — {data.LastError}"
+                            : $"{data.TaskCount} quests, {data.ItemCount} items, "
+                              + $"{data.CalibratedMapCount} maps, checked {Ago(data.FetchedAt)}",
+                    Fix = "RatNav checks at launch and every six hours. Refresh forces it now.",
                     Required = false,
                 },
                 new Check

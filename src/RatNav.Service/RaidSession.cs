@@ -73,8 +73,18 @@ public sealed class RaidSession
     private readonly HashSet<string> _completed = new(StringComparer.OrdinalIgnoreCase);
 
     private RaidPlan? _plan;
-    private MapDef? _map;
     private PositionFix? _fix;
+
+    /// <summary>
+    /// The game's own name for the map — "TarkovStreets". Kept rather than the resolved map,
+    /// because a raid can start before the game data finishes loading: the watchers begin
+    /// immediately and the first refresh takes a moment. Resolving on demand means the map appears
+    /// as soon as the data does, instead of the session being permanently stuck on "no raid".
+    /// </summary>
+    private string? _locationId;
+
+    /// <summary>The map a plan was activated for, when one was chosen by hand.</summary>
+    private MapDef? _chosenMap;
 
     /// <summary>Raised whenever the view changes, so the surfaces can be pushed rather than poll.</summary>
     public event EventHandler<RaidView>? Changed;
@@ -88,12 +98,14 @@ public sealed class RaidSession
     /// <summary>The game loaded a map. Its own name for it — "bigmap" — is what we match on.</summary>
     public void OnRaidStarted(string locationId)
     {
-        var map = _state.Cache.Current?.Maps.FirstOrDefault(m =>
-            m.LogAliases.Contains(locationId, StringComparer.OrdinalIgnoreCase));
-
         lock (_gate)
         {
-            _map = map;
+            // Re-entering the same map is not a new raid — the log is scanned on startup, and
+            // treating that as a fresh raid would wipe the fix the player just took.
+            if (string.Equals(locationId, _locationId, StringComparison.OrdinalIgnoreCase)) return;
+
+            _locationId = locationId;
+            _chosenMap = null;
             _fix = null;
             _trail.Clear();
             _completed.Clear();
@@ -101,6 +113,13 @@ public sealed class RaidSession
 
         Publish();
     }
+
+    /// <summary>The map in play: whichever a plan was activated for, else whatever the game loaded.</summary>
+    private MapDef? Map =>
+        _chosenMap ?? (_locationId is null
+            ? null
+            : _state.Cache.Current?.Maps.FirstOrDefault(m =>
+                m.LogAliases.Contains(_locationId, StringComparer.OrdinalIgnoreCase)));
 
     /// <summary>A quest changed according to the game. Recorded under any manual correction.</summary>
     public void OnQuestChanged(QuestEvent change)
@@ -120,7 +139,7 @@ public sealed class RaidSession
         {
             _fix = fix;
 
-            if (_map?.Image is { } image)
+            if (Map?.Image is { } image)
             {
                 var point = new CoordinateTransform(image).ToNormalized(fix.Position);
                 _trail.Add(new Breadcrumb(point.X, point.Y));
@@ -142,7 +161,7 @@ public sealed class RaidSession
         lock (_gate)
         {
             _plan = plan;
-            _map = map;
+            _chosenMap = map;
             _completed.Clear();
         }
 
@@ -168,7 +187,9 @@ public sealed class RaidSession
     {
         lock (_gate)
         {
-            if (_map?.Image is not { } image)
+            var map = Map;
+
+            if (map?.Image is not { } image)
                 return new RaidView { InRaid = false };
 
             var transform = new CoordinateTransform(image);
@@ -186,7 +207,7 @@ public sealed class RaidSession
                     X = point.X,
                     Y = point.Y,
                     Owner = waypoint.Owner,
-                    Place = _map.NearestLabel(waypoint.Position)?.Text,
+                    Place = map.NearestLabel(waypoint.Position)?.Text,
                     Done = _completed.Contains(waypoint.ObjectiveId),
                 });
             }
@@ -197,17 +218,17 @@ public sealed class RaidSession
             return new RaidView
             {
                 InRaid = true,
-                MapId = _map.Id,
-                MapName = _map.Name,
+                MapId = map.Id,
+                MapName = map.Name,
                 X = here?.X,
                 Y = here?.Y,
                 HeadingDegrees = _fix is null ? null : transform.ToImageHeading(_fix.HeadingDegrees),
                 FixedAt = _fix?.TakenAt,
-                Floor = _fix is null ? image.DefaultFloor : _map.FloorAt(_fix.Position.Y)?.Layer ?? image.DefaultFloor,
+                Floor = _fix is null ? image.DefaultFloor : map.FloorAt(_fix.Position.Y)?.Layer ?? image.DefaultFloor,
                 Stops = stops,
                 CompletedObjectiveIds = [.. _completed],
                 Trail = [.. _trail],
-                NextStopName = next is null ? null : _map.NearestLabel(next.Position)?.Text ?? next.TaskName,
+                NextStopName = next is null ? null : map.NearestLabel(next.Position)?.Text ?? next.TaskName,
                 NextStopMetres = next is null || _fix is null
                     ? null
                     : CoordinateTransform.GroundDistance(_fix.Position, next.Position),

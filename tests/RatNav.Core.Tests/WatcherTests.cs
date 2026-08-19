@@ -155,6 +155,60 @@ public class LogWatcherTests : IDisposable
     }
 
     [Fact]
+    public void Starting_mid_raid_still_knows_which_map_you_are_in()
+    {
+        // The normal case for anyone who forgets to launch RatNav first. The raid start is
+        // already in the log by the time we look.
+        Append("application", "Locations:bigmap ->");
+        Append("application", "some other line");
+
+        using var watcher = new LogWatcher(_install);
+        var seen = new List<string>();
+        watcher.RaidStarted += (_, e) => seen.Add(e.LocationId);
+
+        watcher.Poll();
+
+        Assert.Equal(["bigmap"], seen);
+        Assert.Equal("bigmap", watcher.CurrentLocationId);
+    }
+
+    [Fact]
+    public void Only_the_most_recent_raid_in_the_log_counts()
+    {
+        // Earlier entries are raids already finished. Replaying them all would end on whichever
+        // happened to be last in the file and wipe the fix the player just took.
+        Append("application", "Locations:factory4_day ->");
+        Append("application", "Locations:bigmap ->");
+        Append("application", "Locations:TarkovStreets ->");
+
+        using var watcher = new LogWatcher(_install);
+        var seen = new List<string>();
+        watcher.RaidStarted += (_, e) => seen.Add(e.LocationId);
+
+        watcher.Poll();
+        watcher.Poll();
+
+        Assert.Equal(["TarkovStreets"], seen);
+    }
+
+    [Fact]
+    public void Quests_already_in_the_log_are_not_re_announced()
+    {
+        // A quest accepted an hour ago is not news, and re-announcing it on every launch would
+        // undo any correction made since.
+        Append("notifications",
+            """{"type":"new_message","message":{"type":10,"templateId":"old-task description"}}""");
+
+        using var watcher = new LogWatcher(_install);
+        var seen = new List<string>();
+        watcher.QuestChanged += (_, e) => seen.Add(e.TaskId);
+
+        watcher.Poll();
+
+        Assert.Empty(seen);
+    }
+
+    [Fact]
     public void The_game_version_is_read_from_the_session_folder()
     {
         using var watcher = new LogWatcher(_install);
@@ -172,12 +226,14 @@ public class LogWatcherTests : IDisposable
     {
         // Not application.log — quest state arrives as a chat notification, and the task id is
         // the first word of the message template.
-        Append("notifications",
-            $$$"""{"type":"new_message","message":{"type":{{{messageType}}},"templateId":"5967733e86f774602332fc84 successMessageText"}}""");
-
         using var watcher = new LogWatcher(_install);
         QuestEvent? change = null;
         watcher.QuestChanged += (_, e) => change = e;
+
+        watcher.Poll();   // catch up on what is already there
+
+        Append("notifications",
+            $$$"""{"type":"new_message","message":{"type":{{{messageType}}},"templateId":"5967733e86f774602332fc84 successMessageText"}}""");
 
         watcher.Poll();
 
@@ -190,12 +246,14 @@ public class LogWatcherTests : IDisposable
     public void Other_notifications_sharing_the_stream_are_ignored()
     {
         // Flea sales, player chat and group invites all arrive the same way.
-        Append("notifications", """{"type":"new_message","message":{"type":1,"templateId":"someone said hello"}}""");
-        Append("notifications", """{"type":"new_message","message":{"type":4,"templateId":"5bdabfb886f7743e152e867e 0"}}""");
-
         using var watcher = new LogWatcher(_install);
         var changes = 0;
         watcher.QuestChanged += (_, _) => changes++;
+
+        watcher.Poll();
+
+        Append("notifications", """{"type":"new_message","message":{"type":1,"templateId":"someone said hello"}}""");
+        Append("notifications", """{"type":"new_message","message":{"type":4,"templateId":"5bdabfb886f7743e152e867e 0"}}""");
 
         watcher.Poll();
 
@@ -205,12 +263,14 @@ public class LogWatcherTests : IDisposable
     [Fact]
     public void Only_new_lines_are_reported_on_a_second_look()
     {
-        Append("notifications",
-            """{"type":"new_message","message":{"type":10,"templateId":"task-one successMessageText"}}""");
-
         using var watcher = new LogWatcher(_install);
         var seen = new List<string>();
         watcher.QuestChanged += (_, e) => seen.Add(e.TaskId);
+
+        watcher.Poll();
+
+        Append("notifications",
+            """{"type":"new_message","message":{"type":10,"templateId":"task-one successMessageText"}}""");
 
         watcher.Poll();
         watcher.Poll();
@@ -229,6 +289,9 @@ public class LogWatcherTests : IDisposable
         // JSON object per line — it pretty-prints across a dozen — and a line-at-a-time parser
         // reads this file forever and finds nothing, which looks exactly like "the game doesn't
         // log quests".
+        using var catchUp = new LogWatcher(_install);
+        catchUp.Poll();
+
         Append("notifications", """
             2025-01-15 07:57:15.224 -08:00|Info|push-notifications|Got notification | ChatMessageReceived
             {
@@ -249,7 +312,7 @@ public class LogWatcherTests : IDisposable
             2025-01-15 07:57:15.224 -08:00|Info|push-notifications|NotificationManager.ProcessMessage
             """);
 
-        using var watcher = new LogWatcher(_install);
+        var watcher = catchUp;
         QuestEvent? change = null;
         watcher.QuestChanged += (_, e) => change = e;
 
@@ -265,16 +328,18 @@ public class LogWatcherTests : IDisposable
     {
         // The game is writing while we read, so catching an object mid-print is normal rather
         // than exceptional.
+        using var watcher = new LogWatcher(_install);
+        var seen = new List<string>();
+        watcher.QuestChanged += (_, e) => seen.Add(e.TaskId);
+
+        watcher.Poll();
+
         Append("notifications", """
             {
               "type": "new_message",
               "message": {
                 "type": 10,
             """);
-
-        using var watcher = new LogWatcher(_install);
-        var seen = new List<string>();
-        watcher.QuestChanged += (_, e) => seen.Add(e.TaskId);
 
         watcher.Poll();
         Assert.Empty(seen);
@@ -293,9 +358,11 @@ public class LogWatcherTests : IDisposable
     public void A_half_written_line_is_skipped_rather_than_fatal()
     {
         // The game is writing while we read, so a truncated final line is normal.
+        using var watcher = new LogWatcher(_install);
+        watcher.Poll();
+
         Append("notifications", """{"type":"new_message","message":{"type":10,"templ""");
 
-        using var watcher = new LogWatcher(_install);
         watcher.Poll();   // must not throw
     }
 

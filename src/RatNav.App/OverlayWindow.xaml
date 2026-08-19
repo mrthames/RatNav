@@ -8,30 +8,30 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        SizeToContent="Manual"
         Width="360" Height="240"
         Left="40" Top="40">
 
     <!--
-        The compact HUD. Deliberately thin: the map with the route, the current leg, and nothing
-        else. Everything more detailed lives in the expanded panel, which is the same web app the
-        browser serves.
+        Two presentations of the same state.
 
-        Nothing here animates. The scene is static between position fixes, so a visible overlay
-        costs no per-frame work at all — which is the whole reason it is native WPF rather than a
-        browser sitting on top of a game.
+        Box is a small panel in a corner: out of the way, never over the middle of the screen.
+        Wireframe draws the map itself, large and translucent over the centre — terrain dropped
+        away so the game still shows through it.
+
+        Nothing animates in either. The scene is redrawn when the raid state changes and at no
+        other time, so a visible overlay costs no per-frame work.
     -->
 
     <Window.Resources>
         <!-- Mirrors web/src/tokens.css. One palette, two renderers, one product. -->
         <SolidColorBrush x:Key="Ground" Color="#0b0f13" />
-        <SolidColorBrush x:Key="Panel" Color="#141b21" />
         <SolidColorBrush x:Key="Line" Color="#24313b" />
         <SolidColorBrush x:Key="Ink" Color="#c9d6df" />
         <SolidColorBrush x:Key="Muted" Color="#7b8c9b" />
         <SolidColorBrush x:Key="Accent" Color="#8ec8ff" />
         <SolidColorBrush x:Key="Route" Color="#e0c98a" />
         <SolidColorBrush x:Key="Need" Color="#ff5a3c" />
+        <SolidColorBrush x:Key="Terrain" Color="#9fb3c8" />
 
         <Style x:Key="Label" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Consolas" />
@@ -40,53 +40,73 @@
         </Style>
     </Window.Resources>
 
-    <!--
-        A scrim, not bare text on the game. Tarkov's backgrounds run from snow to unlit basement
-        and no single text colour survives both; a guaranteed ground underneath does.
-    -->
-    <Border Background="#e60b0f13"
-            BorderBrush="{StaticResource Line}"
-            BorderThickness="1"
-            CornerRadius="2">
-        <Grid Margin="10,8">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+    <Grid>
+        <!-- The map, drawn from the game's own map file. Sits behind the readout in both modes. -->
+        <Border x:Name="Frame"
+                Background="#e60b0f13"
+                BorderBrush="{StaticResource Line}"
+                BorderThickness="1"
+                CornerRadius="2">
+            <Grid Margin="10,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <!-- Where you are going, which is the one thing worth reading mid-raid. -->
-            <StackPanel Grid.Row="0">
-                <TextBlock x:Name="MapNameText"
-                           Style="{StaticResource Label}"
-                           Text="RATNAV" />
-                <TextBlock x:Name="NextStopText"
-                           FontFamily="Segoe UI"
-                           FontSize="17"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource Ink}"
-                           TextTrimming="CharacterEllipsis"
-                           Text="No plan" />
-                <TextBlock x:Name="BearingText"
-                           FontFamily="Consolas"
-                           FontSize="13"
-                           Foreground="{StaticResource Accent}"
-                           Text="" />
-            </StackPanel>
+                <!-- Where you are going, which is the one thing worth reading mid-raid. -->
+                <StackPanel x:Name="Readout" Grid.Row="0">
+                    <TextBlock x:Name="MapNameText" Style="{StaticResource Label}" Text="RATNAV" />
+                    <TextBlock x:Name="NextStopText"
+                               FontFamily="Segoe UI" FontSize="17" FontWeight="SemiBold"
+                               Foreground="{StaticResource Ink}"
+                               TextTrimming="CharacterEllipsis"
+                               Text="No plan" />
+                    <TextBlock x:Name="BearingText"
+                               FontFamily="Consolas" FontSize="13"
+                               Foreground="{StaticResource Accent}" Text="" />
+                </StackPanel>
 
-            <!-- The route, drawn as pins and a line. Populated in code from the live view. -->
-            <Border Grid.Row="1" Margin="0,8"
-                    Background="#33141b21"
-                    BorderBrush="{StaticResource Line}"
-                    BorderThickness="1">
-                <Canvas x:Name="MapCanvas" ClipToBounds="True" />
+                <Border x:Name="MapFrame" Grid.Row="1" Margin="0,8"
+                        Background="#33141b21"
+                        BorderBrush="{StaticResource Line}"
+                        BorderThickness="1">
+                    <Canvas x:Name="MapCanvas" ClipToBounds="True" />
+                </Border>
+
+                <Grid Grid.Row="2">
+                    <TextBlock x:Name="ProgressText" Style="{StaticResource Label}" HorizontalAlignment="Left" />
+                    <TextBlock x:Name="FixAgeText" Style="{StaticResource Label}" HorizontalAlignment="Right" />
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!--
+            Interaction furniture, shown only while the overlay accepts the mouse. Hidden the rest
+            of the time so nothing decorative sits over the game during a raid.
+        -->
+        <Grid x:Name="EditChrome" Visibility="Collapsed">
+            <Border BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="2" />
+
+            <Border x:Name="DragHandle"
+                    Height="22" VerticalAlignment="Top"
+                    Background="#cc8ec8ff" CornerRadius="2,2,0,0"
+                    Cursor="SizeAll">
+                <TextBlock Text="  drag to move  ·  wheel to zoom  ·  corner to resize"
+                           FontFamily="Consolas" FontSize="10"
+                           Foreground="#0b0f13" VerticalAlignment="Center" />
             </Border>
 
-            <!-- Staleness, stated rather than hidden: the marker only moves when you take a fix. -->
-            <Grid Grid.Row="2">
-                <TextBlock x:Name="ProgressText" Style="{StaticResource Label}" HorizontalAlignment="Left" />
-                <TextBlock x:Name="FixAgeText" Style="{StaticResource Label}" HorizontalAlignment="Right" />
-            </Grid>
+            <Thumb x:Name="ResizeGrip"
+                   Width="16" Height="16"
+                   HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                   Cursor="SizeNWSE">
+                <Thumb.Template>
+                    <ControlTemplate TargetType="Thumb">
+                        <Path Data="M 16,0 L 16,16 L 0,16 Z" Fill="#cc8ec8ff" />
+                    </ControlTemplate>
+                </Thumb.Template>
+            </Thumb>
         </Grid>
-    </Border>
+    </Grid>
 </Window>

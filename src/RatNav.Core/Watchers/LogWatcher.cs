@@ -44,6 +44,14 @@ public sealed partial class LogWatcher : IDisposable
 
     /// <summary>Text read but not yet parsed, because an object was still being written.</summary>
     private readonly Dictionary<string, string> _pending = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// True for the single poll that first sees a session, during which existing content is
+    /// skipped. Scoped to the poll rather than to each file: a log that appears later — the
+    /// notifications file is written only once something happens — is entirely new and must be
+    /// read in full.
+    /// </summary>
+    private bool _catchingUp;
     private readonly object _gate = new();
 
     private Timer? _timer;
@@ -58,8 +66,24 @@ public sealed partial class LogWatcher : IDisposable
     /// <summary>The map of the most recent raid, or null if none seen.</summary>
     public string? CurrentLocationId { get; private set; }
 
-    public LogWatcher(string? installDirectory = null)
-        => _installDirectory = installDirectory ?? GameInstallFinder.Find()?.Directory;
+    private readonly bool _replayHistory;
+
+    /// <param name="replayHistory">
+    /// Read what is already in the logs rather than only what arrives next. Off for live
+    /// watching; on for a deliberate import of past progress.
+    /// </param>
+    public LogWatcher(string? installDirectory = null, bool replayHistory = false)
+    {
+        _installDirectory = installDirectory ?? GameInstallFinder.Find()?.Directory;
+        _replayHistory = replayHistory;
+    }
+
+    /// <summary>
+    /// Reads the current session from the beginning, for importing quests accepted before RatNav
+    /// was running. Raid starts are ignored during a replay — they are history, not a raid you
+    /// are in.
+    /// </summary>
+    public static LogWatcher ForHistory(string? installDirectory = null) => new(installDirectory, replayHistory: true);
 
     public bool Available => _installDirectory is not null;
 
@@ -94,12 +118,15 @@ public sealed partial class LogWatcher : IDisposable
                     _session = session;
                     _offsets.Clear();
                     _pending.Clear();
+                    _catchingUp = true;
                     GameVersion = GameInstallFinder.VersionFrom(Path.GetFileName(session));
                 }
             }
 
             ReadApplicationLog(session);
             ReadNotificationsLog(session);
+
+            _catchingUp = false;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -111,6 +138,16 @@ public sealed partial class LogWatcher : IDisposable
     {
         var path = LogSession.FindLog(session, "application");
         if (path is null) return;
+
+        // Starting RatNav while already in a raid has to work — it is the normal case for anyone
+        // who forgets to launch it first. So the existing log is scanned once for the map most
+        // recently loaded, which is the raid you are in now. Only the last one counts: the
+        // earlier ones are raids you already finished.
+        if (_catchingUp && SeedFromHistory(path) is { } seeded)
+        {
+            CurrentLocationId = seeded;
+            RaidStarted?.Invoke(this, new RaidStarted { LocationId = seeded });
+        }
 
         foreach (var line in ReadNewLines(path))
         {
@@ -128,6 +165,32 @@ public sealed partial class LogWatcher : IDisposable
 
             var version = VersionLine().Match(line);
             if (version.Success) GameVersion = version.Groups["version"].Value;
+        }
+    }
+
+    /// <summary>
+    /// The map named by the last raid in a log we have not read before, or null once caught up.
+    ///
+    /// <para>This is deliberately narrow. Replaying a whole session would re-fire every raid start
+    /// in it and wipe the position fix the player just took, and would re-announce quests they
+    /// accepted an hour ago. One map name, once, is the only thing worth recovering.</para>
+    /// </summary>
+    private string? SeedFromHistory(string path)
+    {
+        try
+        {
+            var existing = LogSession.ReadAll(path);
+            if (existing.Length == 0) return null;
+
+            var matches = LocationLine().Matches(existing);
+            if (matches.Count == 0) return null;
+
+            var last = matches[^1].Groups["location"].Value.Trim();
+            return last.Length > 0 ? last : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
         }
     }
 
@@ -279,8 +342,32 @@ public sealed partial class LogWatcher : IDisposable
             : [];
 
     /// <summary>Everything appended since the last read, remembering where it got to.</summary>
+    /// <summary>
+    /// Everything appended since the last read, remembering where it got to.
+    ///
+    /// <para>The first look at a file <b>skips whatever is already there</b> and returns nothing.
+    /// Without that, starting RatNav mid-session replays the whole log: every raid start in it
+    /// fires again, the last one wins, and it wipes the position fix the player just took. What
+    /// happened an hour ago is history, not news.</para>
+    ///
+    /// <para><see cref="ReadHistory"/> is the deliberate way to ask for the past.</para>
+    /// </summary>
     private string ReadNewText(string path)
     {
+        if (_catchingUp && !_replayHistory)
+        {
+            try
+            {
+                var length = new FileInfo(path).Length;
+                lock (_gate) _offsets[path] = length;
+                return "";
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return "";
+            }
+        }
+
         long offset;
         lock (_gate) offset = _offsets.GetValueOrDefault(path);
 

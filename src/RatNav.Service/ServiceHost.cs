@@ -26,7 +26,20 @@ public static class ServiceHost
 
     public static WebApplication Build(string[]? args = null, int port = DefaultPort)
     {
-        var builder = WebApplication.CreateBuilder(args ?? []);
+        // The content root has to be the assembly's folder, not the working directory. `dotnet
+        // run` sets it to wherever it was invoked from, and the WPF app hosts this service
+        // in-process — so the default served 404 for every page while the API answered perfectly,
+        // which is a confusing way to fail.
+        //
+        // It is passed in at construction rather than assigned afterwards: the static file
+        // provider is built during CreateBuilder, so setting WebRootPath on the environment later
+        // changes a property nothing reads again.
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            Args = args ?? [],
+            ContentRootPath = AppContext.BaseDirectory,
+            WebRootPath = FindWebRoot(),
+        });
 
         builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
 
@@ -116,5 +129,30 @@ public static class ServiceHost
         app.MapFallbackToFile("index.html");
 
         return app;
+    }
+
+    /// <summary>
+    /// Looks for the built web app beside the assembly first, then in the service project — so a
+    /// published build and a developer running from source both work without configuration.
+    /// </summary>
+    private static string? FindWebRoot()
+    {
+        var candidates = new[]
+        {
+            // Published, or built with the web app copied alongside.
+            Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+
+            // Running from source before `npm run build` has copied anything across.
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "RatNav.Service", "wwwroot"),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "RatNav.Service", "wwwroot"),
+        };
+
+        foreach (var candidate in candidates)
+        {
+            var full = Path.GetFullPath(candidate);
+            if (Directory.Exists(full)) return full;
+        }
+
+        return null;
     }
 }

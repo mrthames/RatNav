@@ -17,7 +17,12 @@
     <UseWPF>true</UseWPF>
     <!-- The tray icon is WinForms; nothing else here is. -->
     <UseWindowsForms>true</UseWindowsForms>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!--
+      Per-monitor DPI, set here rather than in the manifest: WinForms warns (WFAC010) when a
+      manifest declares it, and this is the setting it honours. A 4K vertical second monitor
+      beside a gaming display is exactly the setup this is for.
+    -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
 </Project>

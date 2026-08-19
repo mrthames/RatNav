@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\RatNav.Core\RatNav.Core.csproj" />
+    <ProjectReference Include="..\..\src\RatNav.Service\RatNav.Service.csproj" />
   </ItemGroup>
 
 </Project>

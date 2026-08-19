@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Windows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using RatNav.Core;
 using RatNav.Service;
 
 // WinForms is here only for the tray icon, and its Application type would otherwise shadow WPF's.
@@ -32,8 +33,10 @@ public partial class App : Application
         await _service.StartAsync();
 
         var session = _service.Services.GetRequiredService<RaidSession>();
+        var settings = _service.Services.GetRequiredService<RatNavSettings>();
+        var dataDirectory = RatNavPaths.EnsureDataDirectory();
 
-        _overlay = new OverlayWindow();
+        _overlay = new OverlayWindow(settings, updated => updated.Save(dataDirectory));
         _overlay.Show();
 
         // Hotkeys need a window handle, so they are bound after the first show.
@@ -47,7 +50,10 @@ public partial class App : Application
         _overlay.Update(session.View());
 
         _tray = new TrayIcon(
+            hotkeys: settings.Hotkeys,
             onToggleOverlay: () => _overlay.ToggleVisible(),
+            onToggleInteract: () => _overlay.ToggleInteractive(),
+            onToggleMode: () => _overlay.ToggleMode(),
             onOpenPanel: ToggleExpanded,
             onOpenBrowser: OpenInBrowser,
             onQuit: Shutdown);

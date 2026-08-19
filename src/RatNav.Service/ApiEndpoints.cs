@@ -219,8 +219,8 @@ public static class ApiEndpoints
 
         // ---- setup
 
-        api.MapGet("/diagnostics", (RatNavSettings settings) =>
-            Results.Ok(Diagnostics.Build(settings, ServiceHost.DefaultPort)));
+        api.MapGet("/diagnostics", (RatNavSettings settings, RatNavState state, RaidHost host) =>
+            Results.Ok(Diagnostics.Build(settings, ServiceHost.DefaultPort, state.Status(host.LastRefresh))));
 
         // ---- the live raid
 

@@ -10,4 +10,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+
+  <!--
+    The built web app has to travel with whoever hosts the service. Without this it sits in the
+    service project's own output only, and the WPF app — which hosts the service in-process —
+    serves 404 for every page while the API works fine.
+  -->
+  <ItemGroup>
+    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
