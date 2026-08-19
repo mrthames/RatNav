@@ -457,6 +457,11 @@ export const api = {
 
   clearPlan: () => del<RaidView>('/api/raid/plan'),
 
+  /** One item, with everything anyone asks about it: why it is needed, and how many you have. */
+  item: (id: string) =>
+    get<{ item: { id: string; name: string; shortName: string | null }; have: number }>(
+      `/api/items/${encodeURIComponent(id)}`),
+
   /** The names players use for places — "Old Gas", "Dorms" — with where each one is. */
   places: (mapId: string) =>
     get<PlaceLabel[]>(`/api/maps/${encodeURIComponent(mapId)}/places`),

@@ -222,11 +222,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
           {route.length > 0 && <Route stops={route} onMove={move} onRemove={toggle} />}
 
-          {keys.length > 0 && (
-            <p className="font-mono text-xs text-route">
-              bring {keys.length} key{keys.length === 1 ? '' : 's'}
-            </p>
-          )}
+          {keys.length > 0 && <Keys itemIds={keys} />}
 
           <button
             type="button"
@@ -248,6 +244,68 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
           </p>
         </aside>
       </div>
+    </div>
+  )
+}
+
+/**
+ * The keys this plan needs, named, and whether you have each one.
+ *
+ * <p>"Bring 3 keys" was true and useless — the whole difficulty of keys is that you find out you
+ * are missing one from the wrong side of a locked door. Named and marked, it is a check you can
+ * actually run before you queue.</p>
+ *
+ * <p>Held means a have-count of at least one, the same count the Items view keeps. One number for
+ * "do I own this", not a second one that could disagree with it.</p>
+ */
+function Keys({ itemIds }: { itemIds: string[] }) {
+  const [keys, setKeys] = useState<{ id: string; name: string; have: number }[]>([])
+
+  const load = useCallback(async () => {
+    const found = await Promise.all(itemIds.map(async (id) => {
+      try {
+        const detail = await api.item(id)
+        return { id, name: detail.item.shortName || detail.item.name, have: detail.have }
+      } catch {
+        // An id the item index does not know — a patch dropped it, or the cache is behind.
+        // Better a row saying so than a key silently missing from the list.
+        return { id, name: 'unknown key', have: 0 }
+      }
+    }))
+
+    setKeys(found)
+  }, [itemIds])
+
+  useEffect(() => { void load() }, [load])
+
+  async function hold(id: string, held: boolean) {
+    await api.setHave(id, { count: held ? 1 : 0 })
+    setKeys((current) => current.map((k) => (k.id === id ? { ...k, have: held ? 1 : 0 } : k)))
+  }
+
+  const missing = keys.filter((k) => k.have === 0).length
+
+  return (
+    <div className="flex flex-col gap-1 border-t border-line pt-2">
+      <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
+        Keys
+        {missing > 0 && <span className="text-need"> · {missing} you do not have</span>}
+      </p>
+
+      {keys.map((key) => (
+        <label
+          key={key.id}
+          className="flex cursor-pointer items-center gap-2 text-xs hover:text-ink"
+        >
+          <input
+            type="checkbox"
+            checked={key.have > 0}
+            onChange={(e) => void hold(key.id, e.target.checked)}
+            className="accent-accent"
+          />
+          <span className={key.have > 0 ? 'text-muted' : 'text-need'}>{key.name}</span>
+        </label>
+      ))}
     </div>
   )
 }

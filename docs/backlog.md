@@ -706,8 +706,9 @@ The research is kept below in case it is ever wanted again.
 ### Buddy app
 
 - [x] **Map controls to match the overlay** — zoom, right-drag pan, layer control.
-- [ ] **Plan page: call out required keys.** Show which key each objective needs, in red when not
-  marked as held, and let it be marked found/held.
+- [x] **Plan page: call out required keys.** Named, red when you do not have one, with a tick to
+  say you do. "Held" reads the same have-count the Items view keeps, so there is one number for
+  "do I own this" rather than a second one that could disagree with it.
 - [x] **Character level**, configurable in Setup, and now filtering which quests count as
   available. **Cannot be read automatically** — nothing the game writes to disk reports it, and
   the only endpoint that does needs your account password. Setup suggests a floor from the quests
