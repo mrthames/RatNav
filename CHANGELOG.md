@@ -4,7 +4,9 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
-First working version.
+## 0.1.0 — 2026-08-19
+
+First release.
 
 ### Plan a raid
 
