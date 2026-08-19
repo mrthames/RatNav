@@ -111,7 +111,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       */}
       {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
       <TurnIns />
-      <Sharing />
+      {mapId && <Sharing mapId={mapId} mapName={maps.find((m) => m.id === mapId)?.name ?? ''} />}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
         <div className="flex flex-col gap-3">
@@ -197,7 +197,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
  * send it, save it, import it" is four steps where one will do. The code carries the plan itself,
  * so there is no server involved and nothing to be up or down.
  */
-function Sharing() {
+function Sharing({ mapId, mapName }: { mapId: string; mapName: string }) {
   const [plans, setPlans] = useState<SavedPlan[]>([])
   const [code, setCode] = useState<string | null>(null)
   const [paste, setPaste] = useState('')
@@ -207,7 +207,13 @@ function Sharing() {
   const load = () => api.savedPlans().then(setPlans).catch(() => setPlans([]))
   useEffect(() => { void load() }, [])
 
-  const mine = plans[0]
+  // A Customs code left on screen while Streets is selected is an invitation to send the wrong one.
+  useEffect(() => { setCode(null); setNote(null) }, [mapId])
+
+  // The plan for the map you are looking at, not whichever happens to be first. Sharing is a
+  // per-map act — a Customs code is no use to someone queueing Streets — and offering "get a code
+  // for Streets of Tarkov" while Customs is selected is offering the wrong plan.
+  const mine = plans.find((p) => p.mapId === mapId)
 
   async function show() {
     if (!mine) return
@@ -226,11 +232,16 @@ function Sharing() {
       // Merging is the point of importing — you want both sets of objectives, attributed, not
       // theirs instead of yours. Offered only when there is something of yours to merge with.
       const theirs = result.id
-      const ours = plans.find((p) => p.mapId === result.plan.mapName && p.id !== theirs)?.id
-        ?? plans.find((p) => p.id !== theirs)?.id
+
+      // Merged with your plan for the same map. Merging across maps is refused by the service
+      // anyway, and silently picking some other plan would be worse than saying there is none.
+      const ours = plans.find((p) => p.mapId === result.plan.mapId && p.id !== theirs)?.id
 
       if (!ours) {
-        setNote(`Imported ${result.plan.owner ?? 'their'} plan. Build one of your own to merge with it.`)
+        setNote(
+          `Imported ${result.plan.owner ?? 'their'} ${result.plan.mapName} plan. `
+          + `Build one of your own for ${result.plan.mapName} to merge with it.`)
+
         return
       }
 
@@ -262,7 +273,7 @@ function Sharing() {
                      hover:text-ink disabled:opacity-40
                      focus-visible:outline-2 focus-visible:outline-accent"
         >
-          {mine ? `Get code for ${mine.mapName}` : 'Build a plan first'}
+          {mine ? `Get code for ${mine.mapName}` : `No ${mapName} plan yet`}
         </button>
 
         {code && (

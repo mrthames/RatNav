@@ -342,8 +342,10 @@ export const api = {
     get<{ code: string }>(`/api/plans/${encodeURIComponent(id)}/code`),
 
   importCode: (code: string) =>
-    post<{ id: string; plan: { mapName: string; owner: string | null; stops: unknown[] } }>(
-      '/api/plans/import-code', { code }),
+    post<{
+      id: string
+      plan: { mapId: string; mapName: string; owner: string | null; stops: unknown[] }
+    }>('/api/plans/import-code', { code }),
 
   /** Combines saved plans for the same map. Nothing is dropped; the overlap is what it adds. */
   mergePlans: (planIds: string[]) =>

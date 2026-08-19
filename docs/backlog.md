@@ -331,14 +331,25 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Sharing, per map
+
+- [x] **The Share section offered whichever plan happened to be first**, so it read "get code for
+  Streets of Tarkov" while Customs was selected. Sharing is a per-map act — a Customs code is no
+  use to someone queueing Streets — so it now follows the map you have selected, clears a stale
+  code when you switch, and merges an imported plan with your own for **that** map rather than
+  picking some other one.
+
 ### Maps tab, and custom waypoints
 
-- [ ] **Drop the Maps tab from the buddy app.** Beyond the scope of this project — Map Genie and
-  friends already do detailed map exploration far better, and RatNav's map exists to serve the
-  overlay rather than to compete with them.
-  - Keep the map rendering itself: the overlay needs it, and the Plan view still places pins.
-  - Note: this removes where "Show on overlay" currently lives, so that control needs a new home —
-    probably the Plan view's map picker.
+- [ ] **Keep the Maps tab, but bring it up to the overlay's standard.** *(Revised — the first
+  instinct was to drop it.)* It is the weakest surface in the app: the overlay's map has had
+  several passes of work and this has had none, so it reads as unfinished beside it.
+  - **Not** aiming at Map Genie's level of detail. That is a different product and does it better;
+    the expected workflow is finding a spot there and marking it here.
+  - What it should be: a **rough wireframe** — the same ink treatment the overlay uses — with
+    **search for a named place**, and the ability to **mark a spot** from what you find.
+  - Concretely: the overlay's ink, halo, ghosting, place names and scale controls are all missing
+    here, and the map already knows 46 named places on Streets that nothing searches.
 - [ ] **Custom waypoints.** The expected workflow is finding a spot in Map Genie, then marking it in
   RatNav so it shows in raid.
   - A **short label** — "car batteries" — visible on the overlay.
