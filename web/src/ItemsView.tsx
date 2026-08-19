@@ -10,6 +10,10 @@ export function ItemsView() {
   // "next" leads with the hideout upgrades you are closest to finishing. The default leads with
   // quantity, which answers a different question: what to grab if you happen to see it.
   const [sort, setSort] = useState<'default' | 'next'>('default')
+
+  // How far into the hideout build order to count. The overlay has the same dial; without it this
+  // view is several hundred rows of things gated behind upgrades not yet started.
+  const [lookAhead, setLookAhead] = useState(2)
   const [rows, setRows] = useState<TrackedItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -20,7 +24,7 @@ export function ItemsView() {
         setRows(query.trim() ? await api.searchItems(query) : [])
       } else {
         setRows(tab === 'needed'
-          ? await api.neededItems({ sort: sort === 'next' ? 'next' : undefined })
+          ? await api.neededItems({ lookAhead, sort: sort === 'next' ? 'next' : undefined })
           : await api.watchlist())
       }
     } catch {
@@ -28,7 +32,7 @@ export function ItemsView() {
     } finally {
       setLoading(false)
     }
-  }, [tab, query, sort])
+  }, [tab, query, sort, lookAhead])
 
   // Search runs as you type, so it waits for a pause rather than firing per keystroke.
   useEffect(() => {
@@ -85,6 +89,22 @@ export function ItemsView() {
           </div>
         )}
 
+        {tab === 'needed' && (
+          <label className="flex items-center gap-2">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Look ahead</span>
+            <input
+              type="range"
+              min={1}
+              max={6}
+              value={lookAhead}
+              onChange={(e) => setLookAhead(Number(e.target.value))}
+              className="w-24 accent-accent"
+              aria-label="How many hideout upgrades ahead to include"
+            />
+            <span className="font-mono text-xs tabular-nums text-ink">{lookAhead}</span>
+          </label>
+        )}
+
         {tab === 'search' && (
           <input
             autoFocus
@@ -122,7 +142,6 @@ export function ItemsView() {
                 <Th align="right">Need</Th>
                 <Th align="center">Have</Th>
                 <Th align="right">Left</Th>
-                <Th align="right">Flea</Th>
                 <Th align="center">Watch</Th>
               </tr>
             </thead>
@@ -140,6 +159,19 @@ export function ItemsView() {
 
 function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem) => void }) {
   const [busy, setBusy] = useState(false)
+
+  async function setTarget(value: string) {
+    const target = value.trim() === '' ? null : Math.max(0, Number(value) || 0)
+
+    setBusy(true)
+    try {
+      // Setting a target is also how you put something on the watchlist — wanting four of a thing
+      // and watching it are the same statement.
+      onChange(await api.setWatch(row.id, true, row.watchNote ?? undefined, target ?? undefined))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const adjust = async (delta: number) => {
     setBusy(true)
@@ -167,7 +199,25 @@ function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem
             : <div className="size-7 flex-none rounded-xs bg-panel-hi" />}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="truncate">{row.name}</span>
+              {/*
+                Deep-linked rather than scraped, so the guidance stays current with zero
+                maintenance — the wiki page is where spawn locations actually live, and it is
+                kept up to date by people playing the game.
+              */}
+              {row.wikiUrl ? (
+                <a
+                  href={row.wikiUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`${row.name} on the wiki — spawns, uses, and barters`}
+                  className="truncate text-accent underline-offset-2 hover:underline
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  {row.name}
+                </a>
+              ) : (
+                <span className="truncate">{row.name}</span>
+              )}
               {/* Shape as well as colour: found-in-raid changes what you do with an item, and
                   it has to survive colour-blindness. */}
               {row.foundInRaid && <Tag className="border-need/50 text-need">◆ FIR</Tag>}
@@ -189,7 +239,27 @@ function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem
         </div>
       </Td>
 
-      <Td align="right" mono>{row.needed || '—'}</Td>
+      <Td align="right">
+        {/*
+          Quest and hideout needs are worked out; a watchlist target is not, so it is editable.
+          Showing a derived number in a box you can type in would be a lie about what it is.
+        */}
+        {row.questNeeded > 0 || row.hideoutNeeded > 0 ? (
+          <span className="font-mono text-xs tabular-nums">{row.needed}</span>
+        ) : (
+          <input
+            key={`t-${row.watchTarget}`}
+            defaultValue={row.watchTarget ?? ''}
+            placeholder="—"
+            onBlur={(e) => setTarget(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+            aria-label={`how many ${row.name} you want`}
+            className="w-12 rounded-sm border border-line bg-panel px-1 py-0.5 text-center font-mono
+                       text-xs tabular-nums placeholder:text-muted
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          />
+        )}
+      </Td>
 
       <Td align="center">
         <div className="flex items-center justify-center gap-1">
@@ -209,10 +279,6 @@ function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem
 
       <Td align="right" mono className={row.remaining === 0 ? 'text-have' : ''}>
         {row.remaining === 0 ? '✓' : row.remaining}
-      </Td>
-
-      <Td align="right" mono className="text-muted">
-        {row.avg24hPrice ? row.avg24hPrice.toLocaleString() : '—'}
       </Td>
 
       <Td align="center">

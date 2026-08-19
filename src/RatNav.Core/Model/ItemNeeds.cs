@@ -1,6 +1,30 @@
 
 namespace RatNav.Core.Model;
 
+/// <summary>
+/// Items that are money rather than loot.
+///
+/// <para>Quests and hideout upgrades cost roubles, and that cost is real — but it is not something
+/// you go looking for in a raid. It comes from selling what you found and from turning quests in,
+/// so listing "2,857,000 Roubles" beside three bolts and a screwdriver tells you nothing you can
+/// act on and buries the things that do.</para>
+///
+/// <para>Ids rather than names, because names are localised and RatNav is not only used in
+/// English.</para>
+/// </summary>
+public static class Currency
+{
+    private static readonly HashSet<string> Ids = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "5449016a4bdc2d6f028b456f",   // Roubles
+        "5696686a4bdc2da3298b456a",   // Dollars
+        "569668774bdc2da2298b4568",   // Euros
+        "5d235b4d86f7742e017bc88a",   // GP coin — a trade token rather than loot
+    };
+
+    public static bool Is(string itemId) => Ids.Contains(itemId);
+}
+
 /// <summary>Why an item matters: one quest that wants it.</summary>
 public sealed record QuestNeed
 {

@@ -277,26 +277,67 @@ public sealed record RatNavSettings
     }
 
     /// <summary>Overlay geometry, in device-independent pixels.</summary>
-    public sealed record OverlayBounds
+    /// <summary>
+    /// How one presentation of the overlay is arranged: where it sits, how big it is, and where
+    /// the map is inside it.
+    ///
+    /// <para>Kept per presentation rather than shared. The corner box and the centred map are
+    /// used for different things at different sizes, and arranging one then switching to the
+    /// other used to overwrite the first — so setting up the big map cost you the small one.</para>
+    /// </summary>
+    public sealed record OverlayPlacement
     {
-        public double Left { get; init; } = 40;
-        public double Top { get; init; } = 40;
-        public double Width { get; init; } = 360;
-        public double Height { get; init; } = 240;
+        public double Left { get; init; }
+        public double Top { get; init; }
+        public double Width { get; init; }
+        public double Height { get; init; }
 
         /// <summary>Map zoom, 1 = the whole map.</summary>
         public double Zoom { get; init; } = 1;
 
+        /// <summary>How far the map has been dragged, as a fraction of the map image.</summary>
+        public double PanX { get; init; }
+        public double PanY { get; init; }
+
+        /// <summary>Whether the map keeps you centred.</summary>
+        public bool Follow { get; init; }
+
+        /// <summary>True before anyone has arranged this presentation, so a sensible default can be used.</summary>
+        public bool Unplaced => Width <= 0 || Height <= 0;
+    }
+
+    public sealed record OverlayBounds
+    {
         public OverlayMode Mode { get; init; } = OverlayMode.Box;
+
+        /// <summary>
+        /// The small corner panel. Follows you by default: it is too small to hold a whole map
+        /// usefully, so its job is to show where you are and what is around you.
+        /// </summary>
+        public OverlayPlacement Box { get; init; } = new()
+        {
+            Left = 40,
+            Top = 40,
+            Width = 360,
+            Height = 240,
+            Follow = true,
+        };
+
+        /// <summary>
+        /// The large centred map. Holds still by default: it is big enough to read as a map, and
+        /// one that re-centres on every fix puts the same building somewhere new each time you
+        /// look. Left unplaced so it is first sized to the screen.
+        /// </summary>
+        public OverlayPlacement Wireframe { get; init; } = new();
+
+        /// <summary>Fraction of the screen the centred map covers before it is arranged by hand.</summary>
+        public double WireframeScale { get; init; } = 0.7;
 
         /// <summary>
         /// How strongly the map is drawn, 0 to 1. Lower is more of the game showing through; this
         /// is the dial that decides whether an overlay helps or gets in the way.
         /// </summary>
         public double MapOpacity { get; init; } = 0.55;
-
-        /// <summary>Wireframe covers this fraction of the screen when centred.</summary>
-        public double WireframeScale { get; init; } = 0.7;
 
         /// <summary>
         /// How much of the map to draw at all: "full", "structure", or "outline". Distinct from
@@ -306,27 +347,22 @@ public sealed record RatNavSettings
         public string Ink { get; init; } = "structure";
 
         /// <summary>
-        /// Whether the small corner map keeps you centred. On by default: it is too small to
-        /// hold a whole map usefully, so its job is to show where you are and what is around you.
-        /// </summary>
-        public bool FollowInBox { get; init; } = true;
-
-        /// <summary>
-        /// Whether the large centred map keeps you centred. Off by default: it is big enough to
-        /// read as a map, and one that re-centres on every fix puts the same building somewhere
-        /// new each time you look.
-        /// </summary>
-        public bool FollowInWireframe { get; init; }
-
-        /// <summary>
-        /// How far the map has been dragged from where it would otherwise sit, as a fraction of
-        /// the map image. Dragging is how you look at one corner while zoomed in.
+        /// Draw the floors below the one you are on, faintly, underneath it.
         ///
-        /// <para>Remembered, because setting up a view of Dorms and losing it on the next fix
-        /// would make the feature pointless.</para>
+        /// <para>A single floor in isolation is hard to place — walking off a street into a
+        /// building, the room you are in means nothing without the street it came off. Ghosting
+        /// keeps that context without letting it compete with the floor you are actually on.</para>
         /// </summary>
-        public double PanX { get; init; }
-        public double PanY { get; init; }
+        public bool GhostOtherFloors { get; init; } = true;
+
+        /// <summary>Draw the map's named places — "Old Gas", "Dorms" — on the map itself.</summary>
+        public bool ShowPlaceNames { get; init; } = true;
+
+        /// <summary>Which extracts to draw: "pmc", "scav", or "off".</summary>
+        public string Extracts { get; init; } = "pmc";
+
+        /// <summary>Whether the items panel is open. Collapsed by default — the map comes first.</summary>
+        public bool ShowItems { get; init; }
 
         /// <summary>Which side of the map the items list sits on — "left" or "right".</summary>
         public string ItemsSide { get; init; } = "right";
@@ -346,18 +382,12 @@ public sealed record RatNavSettings
         /// <summary>Line weight multiplier, for making the map heavier or lighter over the game.</summary>
         public double LineWeight { get; init; } = 1.0;
 
-        /// <summary>
-        /// Which extracts to draw: "pmc", "scav", or "off". Shared extracts show for either
-        /// faction, because they work whatever you queued as.
-        ///
-        /// <para>This is a setting rather than something read from the game, because nothing the
-        /// game writes to disk says which side you queued as. Getting it wrong shows extracts you
-        /// cannot use, which is why it is one visible control rather than a guess.</para>
-        /// </summary>
-        public string Extracts { get; init; } = "pmc";
+        /// <summary>The arrangement of whichever presentation is on screen.</summary>
+        public OverlayPlacement Current => Mode == OverlayMode.Wireframe ? Wireframe : Box;
 
-        /// <summary>Whether the items panel is open. Collapsed by default — the map comes first.</summary>
-        public bool ShowItems { get; init; }
+        /// <summary>Replaces the arrangement of whichever presentation is on screen.</summary>
+        public OverlayBounds WithCurrent(OverlayPlacement placement) =>
+            Mode == OverlayMode.Wireframe ? this with { Wireframe = placement } : this with { Box = placement };
     }
 
     public static RatNavSettings Load(string dataDirectory)

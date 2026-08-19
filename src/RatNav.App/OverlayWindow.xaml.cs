@@ -17,6 +17,7 @@ using Size = System.Windows.Size;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using FontFamily = System.Windows.Media.FontFamily;
+using Cursors = System.Windows.Input.Cursors;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
 namespace RatNav.App;
@@ -44,6 +45,9 @@ public partial class OverlayWindow : Window
     private bool _clickThrough = true;
     private string? _mapShapesFor;
     private IReadOnlyList<MapShape> _mapShapes = [];
+
+    /// <summary>The floors below the one in view, drawn faintly under it for context.</summary>
+    private IReadOnlyList<MapShape> _ghostShapes = [];
     private Size _mapViewBox = new(1000, 1000);
 
     /// <summary>The map's levels, so the floor control knows what there is to look at.</summary>
@@ -63,6 +67,9 @@ public partial class OverlayWindow : Window
 
     /// <summary>Extracts for the current map, fetched once per map alongside its floors.</summary>
     private IReadOnlyList<ExtractPin> _extracts = [];
+
+    /// <summary>Named places on the current map, fetched once per map.</summary>
+    private IReadOnlyList<PlaceLabel> _places = [];
 
     /// <summary>The torn-off items window, while one is open.</summary>
     private ItemsWindow? _itemsWindow;
@@ -84,6 +91,11 @@ public partial class OverlayWindow : Window
         ResizeGrip.DragDelta += OnResize;
         MouseWheel += OnWheel;
 
+        // The canvas is a bare drawing surface, so WPF leaves the cursor to whatever was last
+        // set — which over a transparent window is nothing at all. Stating it keeps the pointer
+        // visible while arranging, which is the one time it has to be.
+        MapCanvas.Cursor = Cursors.Arrow;
+
         MouseRightButtonDown += OnPanStart;
         MouseRightButtonUp += OnPanEnd;
         MouseMove += OnPanMove;
@@ -98,6 +110,8 @@ public partial class OverlayWindow : Window
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
         HaloButton.Click += (_, _) => ToggleHalo();
+        GhostButton.Click += (_, _) => ToggleGhost();
+        PlacesButton.Click += (_, _) => TogglePlaces();
         WeightUp.Click += (_, _) => StepWeight(+0.25);
         WeightDown.Click += (_, _) => StepWeight(-0.25);
         ItemsButton.Click += (_, _) => ToggleItems();
@@ -146,14 +160,21 @@ public partial class OverlayWindow : Window
     {
         // Hidden means hidden: the window draws nothing at all, rather than sitting at zero
         // opacity and still costing compositing work.
+        //
+        // Everything, including a list torn off into its own window — that is still an overlay
+        // component, and leaving it on screen after the overlay is hidden is not what "hide the
+        // overlay" means to anyone.
         if (IsVisible)
         {
             if (!_clickThrough) SetInteractive(false);
+
+            _itemsWindow?.Hide();
             Hide();
         }
         else
         {
             Show();
+            _itemsWindow?.Show();
         }
     }
 
@@ -170,6 +191,7 @@ public partial class OverlayWindow : Window
         OverlayWindowStyles.Apply(this, _clickThrough);
 
         EditChrome.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
+        Cursor = interactive ? Cursors.Arrow : Cursors.None;
         ApplyItemsPanel();
 
         if (interactive)
@@ -179,8 +201,8 @@ public partial class OverlayWindow : Window
         }
         else
         {
-            // Where it ended up is where it should be next time.
-            Remember(_settings.Overlay with { Left = Left, Top = Top, Width = Width, Height = Height });
+            // Where it ended up is where it should be next time — for this presentation only.
+            Place(p => p with { Left = Left, Top = Top, Width = Width, Height = Height });
         }
     }
 
@@ -223,16 +245,39 @@ public partial class OverlayWindow : Window
     private void ApplyBounds()
     {
         var bounds = _settings.Overlay;
+        var placement = bounds.Current;
+
+        if (placement.Unplaced)
+        {
+            // Never arranged. The corner panel gets a corner; the centred map gets most of the
+            // screen. Once either is moved, that arrangement is what comes back.
+            var screen = SystemParameters.WorkArea;
+
+            if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
+            {
+                Width = screen.Width * bounds.WireframeScale;
+                Height = screen.Height * bounds.WireframeScale;
+                Left = screen.Left + (screen.Width - Width) / 2;
+                Top = screen.Top + (screen.Height - Height) / 2;
+            }
+            else
+            {
+                Left = screen.Left + 40;
+                Top = screen.Top + 40;
+                Width = 360;
+                Height = 240;
+            }
+        }
+        else
+        {
+            Left = placement.Left;
+            Top = placement.Top;
+            Width = placement.Width;
+            Height = placement.Height;
+        }
 
         if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
         {
-            // Centred and large: the map is the point in this mode, not the readout.
-            var screen = SystemParameters.WorkArea;
-            Width = screen.Width * bounds.WireframeScale;
-            Height = screen.Height * bounds.WireframeScale;
-            Left = screen.Left + (screen.Width - Width) / 2;
-            Top = screen.Top + (screen.Height - Height) / 2;
-
             // Nothing but the map. In box mode the readout is the point and the map supports it;
             // here that is inverted, and a title and a timestamp floating in the corners of the
             // screen are just text over the game where no text should be.
@@ -246,11 +291,6 @@ public partial class OverlayWindow : Window
         }
         else
         {
-            Left = bounds.Left;
-            Top = bounds.Top;
-            Width = bounds.Width;
-            Height = bounds.Height;
-
             // A scrim, not bare text on the game: Tarkov's backgrounds run from snow to unlit
             // basement, and no single text colour survives both.
             Frame.Background = new SolidColorBrush(Color.FromArgb(0xe6, 0x0b, 0x0f, 0x13));
@@ -280,6 +320,7 @@ public partial class OverlayWindow : Window
         if (_clickThrough) return;
 
         _panFrom = e.GetPosition(this);
+        Cursor = Cursors.SizeAll;
         CaptureMouse();
         e.Handled = true;
     }
@@ -293,9 +334,7 @@ public partial class OverlayWindow : Window
 
         // Looking somewhere else is a decision. Leaving following on would snap the map back on
         // the next fix and undo the drag a second after it was made.
-        if (Following) Remember(_settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe
-            ? _settings.Overlay with { FollowInWireframe = false }
-            : _settings.Overlay with { FollowInBox = false });
+        if (Following) Place(p => p with { Follow = false });
 
         Pan(to.X - from.X, to.Y - from.Y);
     }
@@ -305,6 +344,7 @@ public partial class OverlayWindow : Window
         if (_panFrom is null) return;
 
         _panFrom = null;
+        Cursor = Cursors.Arrow;
         ReleaseMouseCapture();
         e.Handled = true;
     }
@@ -314,8 +354,8 @@ public partial class OverlayWindow : Window
         // Only while interactive, so a stray scroll mid-raid cannot move the map under you.
         if (_clickThrough) return;
 
-        var zoom = Math.Clamp(_settings.Overlay.Zoom * (e.Delta > 0 ? 1.15 : 1 / 1.15), 1, 8);
-        Remember(_settings.Overlay with { Zoom = zoom });
+        var zoom = Math.Clamp(Placement.Zoom * (e.Delta > 0 ? 1.15 : 1 / 1.15), 1, 8);
+        Place(p => p with { Zoom = zoom });
         Draw();
     }
 
@@ -324,6 +364,13 @@ public partial class OverlayWindow : Window
         _settings = _settings with { Overlay = bounds };
         _saveSettings(_settings);
     }
+
+    /// <summary>How the presentation on screen is arranged — its own copy, not the other one's.</summary>
+    private RatNavSettings.OverlayPlacement Placement => _settings.Overlay.Current;
+
+    /// <summary>Changes that arrangement, leaving the other presentation's untouched.</summary>
+    private void Place(Func<RatNavSettings.OverlayPlacement, RatNavSettings.OverlayPlacement> change) =>
+        Remember(_settings.Overlay.WithCurrent(change(Placement)));
 
     /// <summary>
     /// Fetches and parses the current map once, so the overlay can draw the real thing. The
@@ -349,12 +396,23 @@ public partial class OverlayWindow : Window
 
             _mapViewBox = MapGeometry.ViewBoxOf(svg);
             _mapShapes = MapGeometry.Parse(svg, floor, key);
+
+            // The floors below, kept for drawing faintly underneath. A single floor in isolation
+            // is hard to place: walk off a street into a building and the room means nothing
+            // without the street it came off, or the corridor on the level below it.
+            var below = _floors
+                .TakeWhile(f => f.Layer != floor)
+                .Select(f => MapGeometry.Parse(svg, f.Layer, $"{mapId}|{f.Layer}"))
+                .ToList();
+
+            _ghostShapes = [.. below.SelectMany(shapes => shapes)];
             _mapShapesFor = key;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             // No map drawing this time. The route and readout still work, which is most of the value.
             _mapShapes = [];
+            _ghostShapes = [];
         }
     }
 
@@ -373,12 +431,16 @@ public partial class OverlayWindow : Window
             _extracts = await _http.GetFromJsonAsync<List<ExtractPin>>(
                 $"{root}/maps/{Uri.EscapeDataString(mapId)}/extracts") ?? [];
 
+            _places = await _http.GetFromJsonAsync<List<PlaceLabel>>(
+                $"{root}/maps/{Uri.EscapeDataString(mapId)}/places") ?? [];
+
             _floorsFor = mapId;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
             _floors = [];
             _extracts = [];
+            _places = [];
         }
     }
 
@@ -679,6 +741,18 @@ public partial class OverlayWindow : Window
     /// <summary>What the identify endpoint returns.</summary>
     private sealed record IdentifyResponse(List<ItemDetail>? Matches, List<string>? ReadText);
 
+    private void ToggleGhost()
+    {
+        Remember(_settings.Overlay with { GhostOtherFloors = !_settings.Overlay.GhostOtherFloors });
+        Draw();
+    }
+
+    private void TogglePlaces()
+    {
+        Remember(_settings.Overlay with { ShowPlaceNames = !_settings.Overlay.ShowPlaceNames });
+        Draw();
+    }
+
     private void ToggleHalo()
     {
         Remember(_settings.Overlay with { Halo = !_settings.Overlay.Halo });
@@ -704,7 +778,7 @@ public partial class OverlayWindow : Window
 
     private void SetZoom(double zoom)
     {
-        Remember(_settings.Overlay with { Zoom = Math.Clamp(zoom, 1, 8) });
+        Place(p => p with { Zoom = Math.Clamp(zoom, 1, 8) });
         Draw();
     }
 
@@ -774,7 +848,7 @@ public partial class OverlayWindow : Window
 
         InkButton.Content = _settings.Overlay.Ink;
         FadeText.Text = $"{_settings.Overlay.MapOpacity * 100:F0}%";
-        ZoomReset.Content = $"{_settings.Overlay.Zoom:0.0}×";
+        ZoomReset.Content = $"{Placement.Zoom:0.0}×";
         FollowButton.Content = Following ? "follows you" : "still";
 
         // Only worth offering when it would do something. A crosshair that is always lit teaches
@@ -782,6 +856,8 @@ public partial class OverlayWindow : Window
         RecentreButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
         ExtractButton.Content = _settings.Overlay.Extracts;
         HaloButton.Content = _settings.Overlay.Halo ? "halo on" : "halo off";
+        GhostButton.Content = _settings.Overlay.GhostOtherFloors ? "ghost on" : "ghost off";
+        PlacesButton.Content = _settings.Overlay.ShowPlaceNames ? "names on" : "names off";
         WeightText.Text = $"{_settings.Overlay.LineWeight:0.00}×";
         ItemsButton.Content = _settings.Overlay.ShowItems ? "items ▾" : "items ▸";
     }
@@ -803,6 +879,24 @@ public partial class OverlayWindow : Window
         var fit = FitScale(width, height);
 
         var transform = MapTransform(view, width, height);
+
+        if (_settings.Overlay.GhostOtherFloors)
+        {
+            foreach (var ghost in _ghostShapes)
+            {
+                if (ghost.Role is MapShapeRole.Decoration or MapShapeRole.Terrain) continue;
+
+                MapCanvas.Children.Add(new Path
+                {
+                    Data = ghost.Geometry,
+                    RenderTransform = transform,
+                    Stroke = (Brush)FindResource("Muted"),
+                    StrokeThickness = 0.7 * _settings.Overlay.LineWeight / fit,
+                    Opacity = opacity * 0.22,
+                    IsHitTestVisible = false,
+                });
+            }
+        }
 
         foreach (var shape in _mapShapes)
         {
@@ -928,7 +1022,7 @@ public partial class OverlayWindow : Window
     }
 
     private double FitScale(double width, double height) =>
-        Math.Min(width / _mapViewBox.Width, height / _mapViewBox.Height) * _settings.Overlay.Zoom;
+        Math.Min(width / _mapViewBox.Width, height / _mapViewBox.Height) * Placement.Zoom;
 
     /// <summary>
     /// Whether the map keeps you centred, for whichever presentation is on screen.
@@ -938,12 +1032,10 @@ public partial class OverlayWindow : Window
     /// map, and one that re-centres on every fix puts the same building somewhere new each time
     /// you look.</para>
     /// </summary>
-    private bool Following => _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe
-        ? _settings.Overlay.FollowInWireframe
-        : _settings.Overlay.FollowInBox;
+    private bool Following => Placement.Follow;
 
     /// <summary>Whether the map has been dragged away from where it would otherwise sit.</summary>
-    private bool Panned => _settings.Overlay.PanX != 0 || _settings.Overlay.PanY != 0;
+    private bool Panned => Placement.PanX != 0 || Placement.PanY != 0;
 
     /// <summary>
     /// What sits at the centre of the canvas: you, or the middle of the map — plus however far it
@@ -952,7 +1044,7 @@ public partial class OverlayWindow : Window
     private (double X, double Y) Focus(RaidView view)
     {
         var (x, y) = Following ? (view.X ?? 0.5, view.Y ?? 0.5) : (0.5, 0.5);
-        return (x + _settings.Overlay.PanX, y + _settings.Overlay.PanY);
+        return (x + Placement.PanX, y + Placement.PanY);
     }
 
     /// <summary>
@@ -964,10 +1056,10 @@ public partial class OverlayWindow : Window
         var fit = FitScale(MapCanvas.ActualWidth, MapCanvas.ActualHeight);
         if (fit <= 0) return;
 
-        Remember(_settings.Overlay with
+        Place(p => p with
         {
-            PanX = _settings.Overlay.PanX - dxPixels / (fit * _mapViewBox.Width),
-            PanY = _settings.Overlay.PanY - dyPixels / (fit * _mapViewBox.Height),
+            PanX = p.PanX - dxPixels / (fit * _mapViewBox.Width),
+            PanY = p.PanY - dyPixels / (fit * _mapViewBox.Height),
         });
 
         Draw();
@@ -980,24 +1072,45 @@ public partial class OverlayWindow : Window
     /// </summary>
     private void Recentre()
     {
-        var bounds = _settings.Overlay with { PanX = 0, PanY = 0 };
-
-        Remember(_settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe
-            ? bounds with { FollowInWireframe = true }
-            : bounds with { FollowInBox = true });
-
+        Place(p => p with { PanX = 0, PanY = 0, Follow = true });
         Draw();
     }
 
     private void ToggleFollowing()
     {
-        var bounds = _settings.Overlay with { PanX = 0, PanY = 0 };
-
-        Remember(_settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe
-            ? bounds with { FollowInWireframe = !bounds.FollowInWireframe }
-            : bounds with { FollowInBox = !bounds.FollowInBox });
-
+        Place(p => p with { PanX = 0, PanY = 0, Follow = !p.Follow });
         Draw();
+    }
+
+    /// <summary>
+    /// A short caption on the map, with a dark backing so it survives whatever is behind it.
+    /// </summary>
+    private void Label(string text, double x, double y, Brush colour, double size)
+    {
+        var label = new TextBlock
+        {
+            Text = text,
+            FontFamily = new FontFamily("Segoe UI"),
+            FontSize = size,
+            Foreground = colour,
+            IsHitTestVisible = false,
+
+            // Cheaper than drawing the text twice, and the only way a caption stays legible over
+            // a snowfield and a basement without picking a different colour for each.
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = Colors.Black,
+                ShadowDepth = 0,
+                BlurRadius = 4,
+                Opacity = 1,
+            },
+        };
+
+        label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        Canvas.SetLeft(label, x - label.DesiredSize.Width / 2);
+        Canvas.SetTop(label, y);
+        MapCanvas.Children.Add(label);
     }
 
     private void DrawRoute(RaidView view)
@@ -1011,23 +1124,28 @@ public partial class OverlayWindow : Window
         foreach (var extract in _extracts.Where(ShowsExtract))
         {
             var at = Place(extract.X, extract.Y);
+            var scav = extract.Faction.Equals("scav", StringComparison.OrdinalIgnoreCase);
 
-            // A different shape as well as a different colour, so the two kinds of marker are
-            // still tellable apart by anyone who cannot rely on hue.
+            // Green for PMC, yellow for Scav, and the same shape for both — the colour carries
+            // the faction, the shape carries "this is a way out".
+            var colour = (Brush)FindResource(scav ? "ScavExit" : "PmcExit");
+
+            // A door with an arrow through it, drawn from the marker's own centre.
             var mark = new Path
             {
-                Data = Geometry.Parse("M 0,-5 L 5,0 L 0,5 L -5,0 Z"),
+                Data = Geometry.Parse("M -6,-7 L -6,7 L 6,7 L 6,-7 Z M -2,0 L 4,0 M 1,-3 L 4,0 L 1,3"),
+                Stroke = colour,
+                StrokeThickness = 1.8,
                 Fill = (Brush)FindResource("Ground"),
-                Stroke = (Brush)FindResource(
-                    extract.Faction.Equals("scav", StringComparison.OrdinalIgnoreCase) ? "Route" : "Accent"),
-                StrokeThickness = 1.6,
-                Opacity = 0.85,
+                Opacity = 0.95,
                 ToolTip = $"{extract.Name} · {extract.Faction} extract",
             };
 
             Canvas.SetLeft(mark, at.X);
             Canvas.SetTop(mark, at.Y);
             MapCanvas.Children.Add(mark);
+
+            Label(extract.Name, at.X, at.Y + 9, colour, 9);
         }
 
         // No line between stops. A dashed path across a map implies a route through walls and
@@ -1038,10 +1156,14 @@ public partial class OverlayWindow : Window
         {
             if (!stop.Done) order++;
 
-            var pin = new Ellipse
+            var at = Place(stop.X, stop.Y);
+
+            // A map pin, pointing at where the objective is rather than sitting on top of it —
+            // which is what lets a bigger marker stay precise.
+            var pin = new Path
             {
-                Width = stop.Done ? 6 : 11,
-                Height = stop.Done ? 6 : 11,
+                Data = Geometry.Parse(
+                    "M 0,0 C -3,-5 -7,-8 -7,-12 A 7,7 0 1 1 7,-12 C 7,-8 3,-5 0,0 Z"),
                 Fill = (Brush)FindResource(stop.Done ? "Muted" : "Need"),
                 Stroke = (Brush)FindResource("Ground"),
                 StrokeThickness = 1.5,
@@ -1052,9 +1174,8 @@ public partial class OverlayWindow : Window
                 ToolTip = Describe(stop),
             };
 
-            var at = Place(stop.X, stop.Y);
-            Canvas.SetLeft(pin, at.X - pin.Width / 2);
-            Canvas.SetTop(pin, at.Y - pin.Height / 2);
+            Canvas.SetLeft(pin, at.X);
+            Canvas.SetTop(pin, at.Y);
             MapCanvas.Children.Add(pin);
 
             if (stop.Done) continue;
@@ -1065,15 +1186,26 @@ public partial class OverlayWindow : Window
             {
                 Text = order.ToString(),
                 FontFamily = new FontFamily("Consolas"),
-                FontSize = 9,
+                FontSize = 10,
                 FontWeight = FontWeights.Bold,
                 Foreground = (Brush)FindResource("Ground"),
                 IsHitTestVisible = false,
             };
 
             Canvas.SetLeft(label, at.X - 3);
-            Canvas.SetTop(label, at.Y - 7);
+            Canvas.SetTop(label, at.Y - 19);
             MapCanvas.Children.Add(label);
+        }
+
+        // The names players use for places — "Old Gas", "Dorms". Off the map's own labels, so
+        // they read the way people actually talk about it.
+        if (_settings.Overlay.ShowPlaceNames)
+        {
+            foreach (var place in _places)
+            {
+                var at = Place(place.X, place.Y);
+                Label(place.Text, at.X, at.Y, (Brush)FindResource("Muted"), 9);
+            }
         }
 
         // Breadcrumbs: where fixes were taken, so the gap since the last one is visible rather

@@ -189,6 +189,10 @@ public static class HideoutPlanner
         {
             foreach (var requirement in upgrade.ItemRequirements)
             {
+                // Money is a cost, not something to find. It stays visible on the upgrade itself
+                // — where it is a fact about the upgrade — but never reaches a shopping list.
+                if (Currency.Is(requirement.ItemId)) continue;
+
                 if (demands.TryGetValue(requirement.ItemId, out var existing))
                 {
                     // Ordered by wave, so the first upgrade to want an item is the nearest one and

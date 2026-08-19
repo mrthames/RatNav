@@ -817,6 +817,26 @@ public static class ApiEndpoints
                 });
         });
 
+        // The names players use for places — "Old Gas", "Dorms". Drawn on the map so it reads the
+        // way people talk about it rather than as anonymous geometry.
+        api.MapGet("/maps/{id}/places", (RatNavState state, string id) =>
+        {
+            var map = FindMap(state, id);
+            if (map?.Image is null) return Results.NotFound();
+
+            var transform = new CoordinateTransform(map.Image);
+
+            return Results.Ok(
+                from label in map.Labels
+                let point = transform.ToNormalized(label.Position)
+                select new PlaceLabel
+                {
+                    Text = label.Text,
+                    X = point.X,
+                    Y = point.Y,
+                });
+        });
+
         // Converting a raw screenshot filename into a map position. This is the Pass 1
         // checkpoint's endpoint, and it stays useful afterwards as the overlay's fix path.
         api.MapPost("/maps/{id}/locate", (RatNavState state, string id, LocateRequest request) =>
@@ -1206,6 +1226,14 @@ public sealed record ItemDetail
         TotalNeeded = needs?.TotalNeeded ?? 0,
         AnyFoundInRaid = needs?.AnyFoundInRaid ?? false,
     };
+}
+
+/// <summary>A named place on the map image.</summary>
+public sealed record PlaceLabel
+{
+    public required string Text { get; init; }
+    public required double X { get; init; }
+    public required double Y { get; init; }
 }
 
 /// <summary>An extract, placed on the map image.</summary>

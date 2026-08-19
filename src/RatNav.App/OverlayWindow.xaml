@@ -33,6 +33,10 @@
         <SolidColorBrush x:Key="Need" Color="#ff5a3c" />
         <SolidColorBrush x:Key="Terrain" Color="#9fb3c8" />
 
+        <!-- Extracts. The colour carries the faction; the shape is the same for both. -->
+        <SolidColorBrush x:Key="PmcExit" Color="#5ee07a" />
+        <SolidColorBrush x:Key="ScavExit" Color="#f5cf4a" />
+
         <Style x:Key="Label" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Consolas" />
             <Setter Property="FontSize" Value="10" />
@@ -310,6 +314,14 @@
 
                     <TextBlock Style="{StaticResource Label}" Text="EXITS" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <Button x:Name="ExtractButton" Style="{StaticResource Chip}" Content="pmc" MinWidth="44" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <Button x:Name="GhostButton" Style="{StaticResource Chip}" Content="ghost on" MinWidth="66"
+                            ToolTip="Draw the floors below faintly underneath this one" />
+                    <Button x:Name="PlacesButton" Style="{StaticResource Chip}" Content="names on" MinWidth="70"
+                            Margin="6,0,0,0"
+                            ToolTip="Show the names players use for places" />
 
                     <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
 

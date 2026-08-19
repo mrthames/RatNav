@@ -138,7 +138,15 @@ public sealed class ItemIndex
     public ItemNeeds? GetNeeds(string itemId) => _needsByItemId.GetValueOrDefault(itemId);
 
     /// <summary>Everything anything wants, for the Items view's default listing.</summary>
-    public IEnumerable<ItemNeeds> AllNeeded() => _needsByItemId.Values;
+    /// <summary>
+    /// Everything anything wants, for the Items view's default listing.
+    ///
+    /// <para>Money is left out. Quests and hideout upgrades genuinely cost roubles, but that is
+    /// not something you go looking for in a raid — it comes from selling what you found — and a
+    /// line reading "2,857,000 Roubles" beside three bolts buries the things you can act on.</para>
+    /// </summary>
+    public IEnumerable<ItemNeeds> AllNeeded() =>
+        _needsByItemId.Values.Where(n => !Currency.Is(n.Item.Id));
 
     /// <summary>
     /// Name search, ranked so the obvious answer comes first: exact short-name match (how
