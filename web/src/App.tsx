@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ago, api, type DataStatus, type MapSummary } from './api'
 import { MapView } from './MapView'
+import { ItemsView } from './ItemsView'
+
+type View = 'items' | 'maps'
 
 export default function App() {
+  const [view, setView] = useState<View>('items')
   const [status, setStatus] = useState<DataStatus | null>(null)
   const [maps, setMaps] = useState<MapSummary[]>([])
   const [selected, setSelected] = useState<MapSummary | null>(null)
@@ -34,7 +38,21 @@ export default function App() {
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">RatNav</p>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Maps</h1>
+          <div className="flex items-baseline gap-4">
+            {(['items', 'maps'] as View[]).map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setView(id)}
+                aria-pressed={view === id}
+                className="font-display text-3xl font-bold tracking-tight capitalize text-muted
+                           transition-colors hover:text-ink aria-pressed:text-ink
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {id}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -67,7 +85,9 @@ export default function App() {
         </p>
       )}
 
-      <div className="flex flex-wrap gap-px">
+      {view === 'items' && <ItemsView />}
+
+      {view === 'maps' && <div className="flex flex-wrap gap-px">
         {maps.map((map) => (
           <button
             key={map.id}
@@ -81,11 +101,11 @@ export default function App() {
             {map.name}
           </button>
         ))}
-      </div>
+      </div>}
 
-      {selected
+      {view === 'maps' && (selected
         ? <MapView key={selected.id} map={selected} />
-        : <p className="font-mono text-xs text-muted">no maps loaded</p>}
+        : <p className="font-mono text-xs text-muted">no maps loaded</p>)}
     </div>
   )
 }

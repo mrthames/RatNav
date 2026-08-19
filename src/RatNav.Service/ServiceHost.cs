@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RatNav.Core;
 using RatNav.Core.Data;
+using RatNav.Core.Progress;
+using RatNav.Core.Tracking;
 
 namespace RatNav.Service;
 
@@ -47,6 +49,20 @@ public static class ServiceHost
             sp.GetRequiredService<TarkovDevClient>(),
             sp.GetRequiredService<MapAssets>(),
             dataDirectory));
+
+        builder.Services.AddSingleton(_ =>
+        {
+            var tracker = new ItemTracker(dataDirectory);
+            tracker.Load();
+            return tracker;
+        });
+
+        builder.Services.AddSingleton(_ =>
+        {
+            var progress = new ProgressStore(dataDirectory);
+            progress.Load();
+            return progress;
+        });
 
         builder.Services.AddSingleton<RatNavState>();
 

@@ -39,10 +39,47 @@ export interface ObjectivePin {
   neededKeyItemIds: string[]
 }
 
+export interface TrackedItem {
+  id: string
+  name: string
+  shortName: string | null
+  iconUrl: string | null
+  wikiUrl: string | null
+  avg24hPrice: number | null
+  questNeeded: number
+  hideoutNeeded: number
+  needed: number
+  have: number
+  remaining: number
+  foundInRaid: boolean
+  isKey: boolean
+  watched: boolean
+  watchNote: string | null
+  watchTarget: number | null
+}
+
+export interface ProgressSummary {
+  notStarted: number
+  active: number
+  completed: number
+  failed: number
+  availableNow: number
+}
+
 export type InkLevel = 'full' | 'structure' | 'outline'
 
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(path)
+  if (!response.ok) throw new Error(`${path} returned ${response.status}`)
+  return response.json() as Promise<T>
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
   if (!response.ok) throw new Error(`${path} returned ${response.status}`)
   return response.json() as Promise<T>
 }
@@ -55,6 +92,22 @@ export const api = {
     return response.json() as Promise<DataStatus>
   },
   maps: () => get<MapSummary[]>('/api/maps'),
+
+  neededItems: () => get<TrackedItem[]>('/api/items/needed'),
+  watchlist: () => get<TrackedItem[]>('/api/items/watchlist'),
+  searchItems: (query: string) =>
+    get<TrackedItem[]>(`/api/items/search?q=${encodeURIComponent(query)}&limit=40`),
+
+  setHave: (itemId: string, body: { count?: number; delta?: number }) =>
+    post<TrackedItem>(`/api/items/${encodeURIComponent(itemId)}/have`, body),
+
+  setWatch: (itemId: string, watch: boolean, note?: string, target?: number) =>
+    post<TrackedItem>(`/api/items/${encodeURIComponent(itemId)}/watch`, { watch, note, target }),
+
+  progress: () => get<ProgressSummary>('/api/progress'),
+
+  setTaskState: (taskId: string, state: string) =>
+    post<{ id: string; state: string }>(`/api/progress/tasks/${encodeURIComponent(taskId)}`, { state }),
   objectives: (mapId: string) => get<ObjectivePin[]>(`/api/maps/${encodeURIComponent(mapId)}/objectives`),
 
   /** The map image, restyled server-side so the overlay and this app cannot disagree. */

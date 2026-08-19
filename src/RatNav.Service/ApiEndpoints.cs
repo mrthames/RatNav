@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Routing;
 using RatNav.Core.Data;
 using RatNav.Core.Maps;
 using RatNav.Core.Model;
+using RatNav.Core.Progress;
+using RatNav.Core.Tracking;
 
 namespace RatNav.Service;
 
@@ -32,25 +34,66 @@ public static class ApiEndpoints
 
         // ---- items
 
-        api.MapGet("/items/search", (RatNavState state, string q, int? limit) =>
+        // Search returns the same shape as the needed and watchlist views, so one table
+        // component renders all three and a row behaves identically wherever you found it.
+        api.MapGet("/items/search", (
+            RatNavState state, ItemTracker tracker, ProgressStore progress, string q, int? limit) =>
         {
             if (state.Index is not { } index) return Results.Ok(Array.Empty<object>());
 
             var results = index.Search(q, limit ?? 25)
-                .Select(item => ItemSummary.From(item, index.GetNeeds(item.Id)));
+                .Select(item => index.GetNeeds(item.Id) ?? new ItemNeeds { Item = item })
+                .Select(needs => TrackedItemView.From(tracker.Track(needs, progress)));
 
             return Results.Ok(results);
         });
 
-        api.MapGet("/items/needed", (RatNavState state) =>
+        // What to actually pick up: only what active quests and un-built modules want, minus
+        // what you already have. The unfiltered version is every item the game will ever ask
+        // for, which is not a shopping list.
+        api.MapGet("/items/needed", (RatNavState state, ItemTracker tracker, ProgressStore progress) =>
         {
             if (state.Index is not { } index) return Results.Ok(Array.Empty<object>());
 
             var results = index.AllNeeded()
-                .OrderByDescending(n => n.TotalNeeded)
-                .Select(n => ItemSummary.From(n.Item, n));
+                .Select(n => tracker.Track(n, progress))
+                .Where(t => t.Remaining > 0)
+                .OrderByDescending(t => t.FoundInRaid)
+                .ThenByDescending(t => t.Remaining)
+                .Select(TrackedItemView.From);
 
             return Results.Ok(results);
+        });
+
+        api.MapGet("/items/watchlist", (RatNavState state, ItemTracker tracker, ProgressStore progress) =>
+        {
+            if (state.Index is not { } index) return Results.Ok(Array.Empty<object>());
+
+            var results = tracker.Watchlist
+                .Select(w => index.GetNeeds(w.ItemId)
+                    ?? new ItemNeeds { Item = index.GetItem(w.ItemId) ?? Unknown(w.ItemId) })
+                .Select(n => TrackedItemView.From(tracker.Track(n, progress)));
+
+            return Results.Ok(results);
+        });
+
+        api.MapPost("/items/{id}/have", (
+            RatNavState state, ItemTracker tracker, ProgressStore progress, string id, HaveRequest request) =>
+        {
+            if (request.Delta is { } delta) tracker.AdjustHave(id, delta);
+            else if (request.Count is { } count) tracker.SetHave(id, count);
+            else return Results.BadRequest(new { error = "Send either a count or a delta." });
+
+            return Results.Ok(Track(state, tracker, progress, id));
+        });
+
+        api.MapPost("/items/{id}/watch", (
+            RatNavState state, ItemTracker tracker, ProgressStore progress, string id, WatchRequest request) =>
+        {
+            if (request.Watch) tracker.Watch(id, request.Note, request.Target);
+            else tracker.Unwatch(id);
+
+            return Results.Ok(Track(state, tracker, progress, id));
         });
 
         api.MapGet("/items/{id}", (RatNavState state, string id) =>
@@ -61,6 +104,38 @@ public static class ApiEndpoints
             return item is null
                 ? Results.NotFound()
                 : Results.Ok(ItemDetail.From(item, index.GetNeeds(id)));
+        });
+
+        // ---- progress
+
+        api.MapGet("/progress", (RatNavState state, ProgressStore progress) =>
+        {
+            var tasks = state.Cache.Current?.Tasks ?? [];
+            var summary = progress.Summarize(tasks);
+
+            return Results.Ok(new
+            {
+                notStarted = summary[QuestState.NotStarted],
+                active = summary[QuestState.Active],
+                completed = summary[QuestState.Completed],
+                failed = summary[QuestState.Failed],
+                availableNow = progress.AvailableNow(tasks).Count(),
+            });
+        });
+
+        api.MapPost("/progress/tasks/{id}", (ProgressStore progress, string id, TaskStateRequest request) =>
+        {
+            if (!Enum.TryParse<QuestState>(request.State, ignoreCase: true, out var parsed))
+                return Results.BadRequest(new { error = $"Unknown quest state '{request.State}'." });
+
+            progress.SetManual(id, parsed);
+            return Results.Ok(new { id, state = parsed.ToString() });
+        });
+
+        api.MapPost("/progress/hideout/{id}", (ProgressStore progress, string id, HideoutLevelRequest request) =>
+        {
+            progress.SetHideoutLevel(id, request.Level);
+            return Results.Ok(new { id, level = progress.HideoutLevelOf(id) });
         });
 
         // ---- tasks
@@ -186,6 +261,18 @@ public static class ApiEndpoints
             ?? maps.FirstOrDefault(m => string.Equals(m.NormalizedName, id, StringComparison.OrdinalIgnoreCase));
     }
 
+    private static ItemDef Unknown(string itemId) => new() { Id = itemId, Name = "Unknown item" };
+
+    private static object? Track(RatNavState state, ItemTracker tracker, ProgressStore progress, string itemId)
+    {
+        if (state.Index is not { } index) return null;
+
+        var needs = index.GetNeeds(itemId)
+            ?? new ItemNeeds { Item = index.GetItem(itemId) ?? Unknown(itemId) };
+
+        return TrackedItemView.From(tracker.Track(needs, progress));
+    }
+
     private static MapInkLevel ParseInk(string? ink) => ink?.ToLowerInvariant() switch
     {
         "outline" => MapInkLevel.Outline,
@@ -198,6 +285,54 @@ public static class ApiEndpoints
 // ---- React table and an XAML canvas, not to round-trip.
 
 public sealed record LocateRequest(string Filename);
+
+/// <summary>Either an absolute count or a nudge. The +/- buttons send a delta.</summary>
+public sealed record HaveRequest(int? Count, int? Delta);
+
+public sealed record WatchRequest(bool Watch, string? Note, int? Target);
+public sealed record TaskStateRequest(string State);
+public sealed record HideoutLevelRequest(int Level);
+
+/// <summary>An item row with progress folded in — what the Items view renders.</summary>
+public sealed record TrackedItemView
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public string? ShortName { get; init; }
+    public string? IconUrl { get; init; }
+    public string? WikiUrl { get; init; }
+    public int? Avg24hPrice { get; init; }
+    public int QuestNeeded { get; init; }
+    public int HideoutNeeded { get; init; }
+    public int Needed { get; init; }
+    public int Have { get; init; }
+    public int Remaining { get; init; }
+    public bool FoundInRaid { get; init; }
+    public bool IsKey { get; init; }
+    public bool Watched { get; init; }
+    public string? WatchNote { get; init; }
+    public int? WatchTarget { get; init; }
+
+    public static TrackedItemView From(TrackedItem t) => new()
+    {
+        Id = t.Item.Id,
+        Name = t.Item.Name,
+        ShortName = t.Item.ShortName,
+        IconUrl = t.Item.IconUrl,
+        WikiUrl = t.Item.WikiUrl,
+        Avg24hPrice = t.Item.Avg24hPrice,
+        QuestNeeded = t.QuestNeeded,
+        HideoutNeeded = t.HideoutNeeded,
+        Needed = t.Needed,
+        Have = t.Have,
+        Remaining = t.Remaining,
+        FoundInRaid = t.FoundInRaid,
+        IsKey = t.IsKey,
+        Watched = t.Watched,
+        WatchNote = t.WatchNote,
+        WatchTarget = t.WatchTarget,
+    };
+}
 
 public sealed record LocateResponse
 {
