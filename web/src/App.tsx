@@ -3,12 +3,11 @@ import { ago, api, type DataStatus, type MapSummary, type RaidView } from './api
 import { MapView } from './MapView'
 import { HideoutView } from './HideoutView'
 import { ItemsView } from './ItemsView'
-import { TradersView } from './TradersView'
 import { QuestsView } from './QuestsView'
 import { PlanView } from './PlanView'
 import { SetupView } from './SetupView'
 
-type View = 'plan' | 'items' | 'hideout' | 'quests' | 'traders' | 'maps' | 'setup'
+type View = 'plan' | 'items' | 'hideout' | 'quests' | 'maps' | 'setup'
 
 export default function App() {
   const [view, setView] = useState<View>('plan')
@@ -48,7 +47,7 @@ export default function App() {
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">RatNav</p>
           <div className="flex items-baseline gap-4">
-            {(['plan', 'items', 'hideout', 'quests', 'traders', 'maps', 'setup'] as View[]).map((id) => (
+            {(['plan', 'items', 'hideout', 'quests', 'maps', 'setup'] as View[]).map((id) => (
               <button
                 key={id}
                 type="button"
@@ -98,7 +97,6 @@ export default function App() {
       {view === 'items' && <ItemsView />}
       {view === 'hideout' && <HideoutView />}
       {view === 'quests' && <QuestsView />}
-      {view === 'traders' && <TradersView />}
       {view === 'setup' && <SetupView />}
 
       {view === 'maps' && <div className="flex flex-wrap gap-px">

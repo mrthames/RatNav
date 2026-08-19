@@ -172,6 +172,8 @@ export interface TaskSummary {
   mapIds: string[]
   state: string
   available: boolean
+  /** Why it cannot be started yet — "needs level 20", "needs Debut". Empty when it can. */
+  blockers: string[]
   positionedObjectiveCount: number
 }
 

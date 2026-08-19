@@ -282,97 +282,116 @@
             </Border>
 
             <!--
-                One row, in the order you reach for things: which level you are looking at, how
-                much map to draw, how bright it is, and how far in. Every control writes straight
-                to settings, so what you set is what you get next raid.
+                The map controls, stacked down the side.
+
+                They were a single row, which meant reaching fade or zoom required widening the map
+                first — backwards, since the map is the thing you were trying to see. Stacked they
+                fit any width, they scroll when the overlay is short, and they collapse to a single
+                button so the items list can have the other edge without being pushed around.
+
+                Grouped in the order you reach for them: what to draw, how hard to draw it, where
+                the map sits, then the list.
             -->
-            <Border VerticalAlignment="Bottom" HorizontalAlignment="Center"
-                    Margin="0,0,0,10" Padding="8,6"
+            <Border x:Name="ControlStack"
+                    HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                    Margin="6,26,0,26" Padding="5,4"
                     Background="#e60b0f13"
-                    BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="3">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Style="{StaticResource Label}" Text="FLOOR" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="FloorDown" Style="{StaticResource Chip}" Content="▼" />
-                    <TextBlock x:Name="FloorText" Style="{StaticResource Label}"
-                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                               MinWidth="86" TextAlignment="Center" Text="—" />
-                    <Button x:Name="FloorUp" Style="{StaticResource Chip}" Content="▲" />
+                    BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
+                <DockPanel>
+                    <Button x:Name="CollapseControls" DockPanel.Dock="Top"
+                            Style="{StaticResource Chip}" Content="«"
+                            HorizontalAlignment="Right" Margin="0,0,0,4"
+                            ToolTip="Fold the controls away" />
 
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+                    <ScrollViewer x:Name="ControlScroll"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Label}" Text="FLOOR" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="FloorDown" Style="{StaticResource Chip}" Content="▼" />
+                                <TextBlock x:Name="FloorText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="72" TextAlignment="Center" Text="—" />
+                                <Button x:Name="FloorUp" Style="{StaticResource Chip}" Content="▲" />
+                            </StackPanel>
 
-                    <TextBlock Style="{StaticResource Label}" Text="INK" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="InkButton" Style="{StaticResource Chip}" Content="structure" MinWidth="66" />
+                            <TextBlock Style="{StaticResource Label}" Text="DRAW" Margin="0,0,0,2" />
+                            <StackPanel Margin="0,0,0,6">
+                                <Button x:Name="InkButton" Style="{StaticResource Chip}"
+                                        Content="structure" HorizontalAlignment="Stretch" Margin="0,0,0,2" />
+                                <Button x:Name="GhostButton" Style="{StaticResource Chip}"
+                                        Content="ghost on" HorizontalAlignment="Stretch" Margin="0,0,0,2" />
+                                <Button x:Name="PlacesButton" Style="{StaticResource Chip}"
+                                        Content="names on" HorizontalAlignment="Stretch" Margin="0,0,0,2" />
+                                <Button x:Name="HaloButton" Style="{StaticResource Chip}"
+                                        Content="halo on" HorizontalAlignment="Stretch" />
+                            </StackPanel>
 
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+                            <TextBlock Style="{StaticResource Label}" Text="FADE" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="FadeDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="FadeText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="55%" />
+                                <Button x:Name="FadeUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
 
-                    <TextBlock Style="{StaticResource Label}" Text="FADE" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="FadeDown" Style="{StaticResource Chip}" Content="−" />
-                    <TextBlock x:Name="FadeText" Style="{StaticResource Label}"
-                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                               MinWidth="38" TextAlignment="Center" Text="55%" />
-                    <Button x:Name="FadeUp" Style="{StaticResource Chip}" Content="+" />
+                            <TextBlock Style="{StaticResource Label}" Text="LINE" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="WeightDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="WeightText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="1.00×" />
+                                <Button x:Name="WeightUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
 
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+                            <TextBlock Style="{StaticResource Label}" Text="PINS" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="MarkerDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="MarkerText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="3.0×" />
+                                <Button x:Name="MarkerUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
 
-                    <TextBlock Style="{StaticResource Label}" Text="ZOOM" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="ZoomReset" Style="{StaticResource Chip}" Content="1.0×" MinWidth="44" />
+                            <TextBlock Style="{StaticResource Label}" Text="TEXT" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="TextDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="TextScaleText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="2.0×" />
+                                <Button x:Name="TextUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
 
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+                            <TextBlock Style="{StaticResource Label}" Text="MAP" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="ZoomReset" Style="{StaticResource Chip}" Content="1.0×" MinWidth="44" />
+                                <Button x:Name="FollowButton" Style="{StaticResource Chip}"
+                                        Content="still" MinWidth="62" Margin="2,0,0,0" />
+                                <Button x:Name="RecentreButton" Style="{StaticResource Chip}" Content="⌖"
+                                        Margin="2,0,0,0"
+                                        ToolTip="Recentre on you and follow again"
+                                        Visibility="Collapsed" />
+                            </StackPanel>
 
-                    <TextBlock Style="{StaticResource Label}" Text="MAP" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="FollowButton" Style="{StaticResource Chip}" Content="still" MinWidth="62" />
+                            <TextBlock Style="{StaticResource Label}" Text="EXITS" Margin="0,0,0,2" />
+                            <Button x:Name="ExtractButton" Style="{StaticResource Chip}"
+                                    Content="pmc" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
 
-                    <!-- The crosshair every mapping app has: put it back on me and lock it there. -->
-                    <Button x:Name="RecentreButton" Style="{StaticResource Chip}" Content="⌖"
-                            ToolTip="Recentre on you and follow again"
-                            Visibility="Collapsed" />
-
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
-
-                    <TextBlock Style="{StaticResource Label}" Text="LINE" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="WeightDown" Style="{StaticResource Chip}" Content="−" />
-                    <TextBlock x:Name="WeightText" Style="{StaticResource Label}"
-                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                               MinWidth="42" TextAlignment="Center" Text="1.00×" />
-                    <Button x:Name="WeightUp" Style="{StaticResource Chip}" Content="+" />
-                    <Button x:Name="HaloButton" Style="{StaticResource Chip}" Content="halo on"
-                            MinWidth="62" Margin="6,0,0,0"
-                            ToolTip="A dark edge behind every line, so the map reads on snow and in basements" />
-
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
-
-                    <TextBlock Style="{StaticResource Label}" Text="EXITS" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="ExtractButton" Style="{StaticResource Chip}" Content="pmc" MinWidth="52" />
-
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
-
-                    <TextBlock Style="{StaticResource Label}" Text="PINS" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="MarkerDown" Style="{StaticResource Chip}" Content="−" />
-                    <TextBlock x:Name="MarkerText" Style="{StaticResource Label}"
-                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                               MinWidth="38" TextAlignment="Center" Text="3.0×" />
-                    <Button x:Name="MarkerUp" Style="{StaticResource Chip}" Content="+" />
-
-                    <TextBlock Style="{StaticResource Label}" Text="TEXT" VerticalAlignment="Center" Margin="10,0,6,0" />
-                    <Button x:Name="TextDown" Style="{StaticResource Chip}" Content="−" />
-                    <TextBlock x:Name="TextScaleText" Style="{StaticResource Label}"
-                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                               MinWidth="38" TextAlignment="Center" Text="2.0×" />
-                    <Button x:Name="TextUp" Style="{StaticResource Chip}" Content="+" />
-
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
-
-                    <Button x:Name="GhostButton" Style="{StaticResource Chip}" Content="ghost on" MinWidth="66"
-                            ToolTip="Draw the floors below faintly underneath this one" />
-                    <Button x:Name="PlacesButton" Style="{StaticResource Chip}" Content="names on" MinWidth="70"
-                            Margin="6,0,0,0"
-                            ToolTip="Show the names players use for places" />
-
-                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
-
-                    <Button x:Name="ItemsButton" Style="{StaticResource Chip}" Content="items ▸" MinWidth="62" />
-                </StackPanel>
+                            <Button x:Name="ItemsButton" Style="{StaticResource Chip}"
+                                    Content="items ▸" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
+
+            <!-- What is left when the stack is folded: one button to bring it back. -->
+            <Button x:Name="ExpandControls" Style="{StaticResource Chip}"
+                    HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Margin="6,26,0,0" Content="»"
+                    ToolTip="Show the map controls"
+                    Visibility="Collapsed" />
 
             <Thumb x:Name="ResizeGrip"
                    Width="16" Height="16"

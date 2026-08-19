@@ -159,6 +159,8 @@ public partial class OverlayWindow : Window
         SwapSide.Click += (_, _) => SwapItemsSide();
         ItemsSplitter.DragDelta += OnItemsResize;
         CollapseItems.Click += (_, _) => ToggleItems();
+        CollapseControls.Click += (_, _) => ShowControls(false);
+        ExpandControls.Click += (_, _) => ShowControls(true);
     }
 
     public event EventHandler? ExpandRequested;
@@ -234,6 +236,8 @@ public partial class OverlayWindow : Window
 
         EditChrome.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
         Cursor = interactive ? Cursors.Arrow : Cursors.None;
+
+        ApplyControlStack();
         ApplyItemsPanel();
 
         if (interactive)
@@ -901,6 +905,29 @@ public partial class OverlayWindow : Window
         Draw();
     }
 
+    /// <summary>
+    /// Folds the control stack away, leaving one button to bring it back.
+    ///
+    /// <para>Remembered, because whether you want the controls visible is a preference about how
+    /// you work rather than something to re-decide every time interact mode is entered.</para>
+    /// </summary>
+    private void ShowControls(bool visible)
+    {
+        Remember(_settings.Overlay with { ShowControls = visible });
+        ApplyControlStack();
+    }
+
+    private void ApplyControlStack()
+    {
+        // Only ever while the overlay takes the mouse. Controls you cannot click have no business
+        // over the game.
+        var editing = !_clickThrough;
+        var open = _settings.Overlay.ShowControls;
+
+        ControlStack.Visibility = editing && open ? Visibility.Visible : Visibility.Collapsed;
+        ExpandControls.Visibility = editing && !open ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void ToggleGhost()
     {
         Remember(_settings.Overlay with { GhostOtherFloors = !_settings.Overlay.GhostOtherFloors });
@@ -1274,6 +1301,91 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
+    /// Whether a point has fallen outside the visible map, and if so where on the edge it should
+    /// be shown and which way it lies.
+    ///
+    /// <para>Zooming in or panning pushes things off the view, and something that simply vanishes
+    /// tells you nothing. Pinned to the edge on the line between the middle of the view and where
+    /// it really is, it still says "that way" — which is enough to walk on.</para>
+    /// </summary>
+    private static bool OffView(Point at, double width, double height, out Point edge, out double bearing)
+    {
+        const double inset = 12;
+
+        edge = at;
+        bearing = 0;
+
+        if (at.X >= inset && at.X <= width - inset && at.Y >= inset && at.Y <= height - inset)
+            return false;
+
+        var centre = new Point(width / 2, height / 2);
+        var dx = at.X - centre.X;
+        var dy = at.Y - centre.Y;
+
+        if (Math.Abs(dx) < 0.01 && Math.Abs(dy) < 0.01) return false;
+
+        // How far along the line from the centre the view's edge sits. The smaller of the two
+        // axis limits is the one actually hit first.
+        var limitX = dx == 0 ? double.PositiveInfinity : (width / 2 - inset) / Math.Abs(dx);
+        var limitY = dy == 0 ? double.PositiveInfinity : (height / 2 - inset) / Math.Abs(dy);
+        var scale = Math.Min(limitX, limitY);
+
+        edge = new Point(centre.X + dx * scale, centre.Y + dy * scale);
+
+        // Screen degrees, clockwise from up, matching how the facing cone is drawn.
+        bearing = Math.Atan2(dx, -dy) * 180 / Math.PI;
+        return true;
+    }
+
+    /// <summary>An arrow on the edge of the view, pointing at something you cannot currently see.</summary>
+    private void EdgeMarker(Point at, double bearing, Brush colour, double scale, string? label)
+    {
+        var arrow = new Path
+        {
+            Data = Geometry.Parse("M 0,-7 L 5,4 L 0,1 L -5,4 Z"),
+            Fill = colour,
+            Stroke = (Brush)FindResource("Ground"),
+            StrokeThickness = 1,
+
+            // Smaller than a real marker on purpose: it is a direction, not a position, and it
+            // should not be mistaken for something you have actually found.
+            RenderTransform = new TransformGroup
+            {
+                Children =
+                {
+                    new ScaleTransform(scale * 0.7, scale * 0.7),
+                    new RotateTransform(bearing),
+                },
+            },
+
+            IsHitTestVisible = false,
+        };
+
+        Canvas.SetLeft(arrow, at.X);
+        Canvas.SetTop(arrow, at.Y);
+        MapCanvas.Children.Add(arrow);
+
+        if (label is not { Length: > 0 }) return;
+
+        var text = new TextBlock
+        {
+            Text = label,
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 9 * _settings.Overlay.TextScale * 0.8,
+            FontWeight = FontWeights.Bold,
+            Foreground = colour,
+            IsHitTestVisible = false,
+        };
+
+        text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        // Nudged back toward the middle, so the label sits inside the view rather than half off it.
+        Canvas.SetLeft(text, at.X - text.DesiredSize.Width / 2);
+        Canvas.SetTop(text, at.Y + 6 * scale * 0.7);
+        MapCanvas.Children.Add(text);
+    }
+
+    /// <summary>
     /// A short caption on the map, with a dark backing so it survives whatever is behind it.
     /// </summary>
     private void Label(string text, double x, double y, Brush colour, double size)
@@ -1324,6 +1436,14 @@ public partial class OverlayWindow : Window
             // the faction, the shape carries "this is a way out".
             var colour = (Brush)FindResource(scav ? "ScavExit" : "PmcExit");
 
+            // Off the view entirely — zoomed in, or panned away. Pinned to the edge pointing at
+            // where it really is, so you can walk that way until it comes back into sight.
+            if (OffView(at, width, height, out var edge, out var bearing))
+            {
+                EdgeMarker(edge, bearing, colour, scale, extract.Name);
+                continue;
+            }
+
             // A door with an arrow through it, drawn from the marker's own centre.
             var mark = new Path
             {
@@ -1352,6 +1472,17 @@ public partial class OverlayWindow : Window
             if (!stop.Done) order++;
 
             var at = Place(stop.X, stop.Y);
+
+            if (OffView(at, width, height, out var stopEdge, out var stopBearing))
+            {
+                EdgeMarker(
+                    stopEdge, stopBearing,
+                    (Brush)FindResource(stop.Done ? "Muted" : "Need"),
+                    scale,
+                    stop.Done ? null : order.ToString());
+
+                continue;
+            }
 
             // A map pin, pointing at where the objective is rather than sitting on top of it —
             // which is what lets a bigger marker stay precise.

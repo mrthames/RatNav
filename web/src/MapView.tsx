@@ -42,6 +42,11 @@ export function MapView({ map }: { map: MapSummary }) {
   const [ghost, setGhost] = useState(true)
   const [extracts, setExtracts] = useState<ExtractPin[]>([])
   const [faction, setFaction] = useState<Faction>('pmc')
+
+  // Zoom and pan, to match the overlay. A map you can only see whole is not much use on Streets.
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const dragging = useRef<{ x: number; y: number } | null>(null)
   const host = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -127,6 +132,17 @@ export function MapView({ map }: { map: MapSummary }) {
           </>
         )}
 
+        {(zoom !== 1 || pan.x !== 0 || pan.y !== 0) && (
+          <button
+            type="button"
+            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }) }}
+            className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
+                       hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Reset view · {zoom.toFixed(1)}×
+          </button>
+        )}
+
         {extracts.length > 0 && (
           <Segment
             label="Exits"
@@ -143,7 +159,37 @@ export function MapView({ map }: { map: MapSummary }) {
         )}
       </div>
 
-      <div className="relative overflow-hidden border border-line bg-[#0e1317]">
+      <div
+        className="relative overflow-hidden border border-line bg-[#0e1317]"
+        onWheel={(e) => {
+          e.preventDefault()
+          setZoom((z) => Math.min(8, Math.max(1, z * (e.deltaY < 0 ? 1.15 : 1 / 1.15))))
+        }}
+        // Right-drag to pan, same as the overlay. The context menu would otherwise open on
+        // release and swallow the gesture.
+        onContextMenu={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          if (e.button !== 2) return
+          dragging.current = { x: e.clientX, y: e.clientY }
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }}
+        onPointerMove={(e) => {
+          const from = dragging.current
+          if (!from) return
+
+          setPan((p) => ({ x: p.x + e.clientX - from.x, y: p.y + e.clientY - from.y }))
+          dragging.current = { x: e.clientX, y: e.clientY }
+        }}
+        onPointerUp={(e) => {
+          dragging.current = null
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }}
+        style={{ cursor: dragging.current ? 'grabbing' : 'default' }}
+      >
+        <div
+          className="origin-top-left"
+          style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+        >
         {markup === null && <Placeholder>loading map…</Placeholder>}
         {markup === '' && <Placeholder>this map has no image yet</Placeholder>}
         {markup && (
@@ -178,6 +224,7 @@ export function MapView({ map }: { map: MapSummary }) {
             style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
           />
         ))}
+        </div>
       </div>
 
       <p className="font-mono text-xs text-muted">

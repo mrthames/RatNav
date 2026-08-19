@@ -380,6 +380,12 @@ public sealed record RatNavSettings
         /// <summary>Whether the items panel is open. Collapsed by default — the map comes first.</summary>
         public bool ShowItems { get; init; }
 
+        /// <summary>
+        /// Whether the map controls are showing while the overlay takes the mouse. Folding them
+        /// away leaves one button; how you like to work is worth remembering.
+        /// </summary>
+        public bool ShowControls { get; init; } = true;
+
         /// <summary>Which side of the map the items list sits on — "left" or "right".</summary>
         public string ItemsSide { get; init; } = "right";
 

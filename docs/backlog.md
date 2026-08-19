@@ -64,7 +64,7 @@ for the list, plan-page key warnings, and the quest wiki carousel.
   is not reaching it once it is off the map overlay. It needs the same easy drag and resize.
   - Note: it *was* given whole-surface `DragMove` and a resize grip, so either they are not
     working or they are not discoverable. Check before rewriting.
-- [ ] **The map settings strip is horizontal and too long.** Reaching fade, zoom and the rest means
+- [x] **The map settings strip is horizontal and too long.** Reaching fade, zoom and the rest means
   widening the map first, which is backwards.
   - Wanted: a **vertical stack**, shown by default on `F6`, with an option to **collapse** it.
   - It must live **inside the map overlay** so that the items list — left, right or bottom — is not
@@ -107,7 +107,7 @@ for the list, plan-page key warnings, and the quest wiki carousel.
 
 ### Off-screen markers
 
-- [ ] **Anything outside the visible area needs an edge indicator.** Zooming or panning pushes
+- [x] **Anything outside the visible area needs an edge indicator.** Zooming or panning pushes
   waypoints and extracts off the view, and they currently vanish with no trace.
   - Wanted: a marker pinned to the **edge of the map view**, positioned in the direction of the
     real thing as the crow flies, so you can walk that way until it comes into view.
@@ -215,14 +215,16 @@ them separately.
 
 ### Quests tab, rebuilt
 
-- [ ] **Traders belong on the Quests tab**, with their current level and up/down adjustment.
+- [x] **Traders belong on the Quests tab**, with their current level and up/down adjustment.
   - A separate Traders tab was just built (Round 5). This supersedes it — fold it into Quests
     rather than keeping both.
   - Auto-track if possible. Already established it is not: loyalty depends on rep, level and spend,
     none of which the game writes to disk. Manual stays.
-- [ ] **Locked section for quests not yet reachable** — held there until the level is reached or
+- [x] **Locked section for quests not yet reachable** — held there until the level is reached or
   the prerequisite quests are done.
-- [ ] **Cut the tabs down to Active / Done / All.**
+- [x] **Cut the tabs down to Active / Ready / Done / Locked / All.** Locked earns its place: it is
+  where a quest goes when it is waiting on something, and each row names what — "needs level 20",
+  "needs Debut" — rather than showing a padlock that says nothing you can act on.
   - Remove **Available** — redundant.
   - Remove **To-do** — redundant to Active.
   - **All** shows everything: active, completed, and not started.
@@ -401,7 +403,7 @@ them separately.
 
 ### Buddy app
 
-- [ ] **Map controls to match the overlay** — zoom, right-drag pan, layer control.
+- [x] **Map controls to match the overlay** — zoom, right-drag pan, layer control.
 - [ ] **Plan page: call out required keys.** Show which key each objective needs, in red when not
   marked as held, and let it be marked found/held.
 - [x] **Character level**, configurable in Setup, and now filtering which quests count as

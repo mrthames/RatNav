@@ -490,14 +490,32 @@ public static class ApiEndpoints
                 .Select(t => t.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            var rows = tasks.Select(t => TaskSummary.From(t, progress.StateOf(t.Id), available.Contains(t.Id)));
+            var names = tasks
+                .GroupBy(t => t.Id, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Name, StringComparer.OrdinalIgnoreCase);
 
+            var rows = tasks.Select(t => TaskSummary.From(
+                t, progress.StateOf(t.Id), available.Contains(t.Id),
+                settings.PlayerLevel, names, progress.StateOf));
+
+            // Four groups, and each answers a different question.
+            //
+            // "Available" was not redundant with "active", it was badly named: one is what you
+            // accepted, the other is what you could accept. Renamed to "ready", which is what it
+            // always meant, and "todo" is gone because it genuinely was redundant.
             rows = filter?.ToLowerInvariant() switch
             {
                 "active" => rows.Where(t => t.State == nameof(QuestState.Active)),
-                "available" => rows.Where(t => t.Available),
-                "completed" => rows.Where(t => t.State == nameof(QuestState.Completed)),
-                "todo" => rows.Where(t => t.State != nameof(QuestState.Completed)),
+                "ready" => rows.Where(t => t.Available),
+
+                // Failed sits with done because both are finished — but it stays distinguishable,
+                // so a wipe's failures can be seen rather than quietly folded into successes.
+                "done" => rows.Where(t =>
+                    t.State is nameof(QuestState.Completed) or nameof(QuestState.Failed)),
+
+                // Neither started, nor reachable: waiting on a level or on another quest.
+                "locked" => rows.Where(t => t.State == nameof(QuestState.NotStarted) && !t.Available),
+
                 _ => rows,
             };
 
@@ -1468,6 +1486,25 @@ public sealed record ExtractPin
 
 public sealed record TaskSummary
 {
+    /// <summary>Why a quest cannot be started yet, in words rather than a padlock.</summary>
+    private static IEnumerable<string> Reasons(
+        TaskDef task,
+        int? playerLevel,
+        IReadOnlyDictionary<string, string>? taskNames,
+        Func<string, QuestState>? stateOf)
+    {
+        if (playerLevel is { } level && task.MinPlayerLevel is { } needed && needed > level)
+            yield return $"needs level {needed}";
+
+        if (stateOf is null) yield break;
+
+        foreach (var id in task.PrerequisiteTaskIds)
+        {
+            if (stateOf(id) == QuestState.Completed) continue;
+            yield return $"needs {taskNames?.GetValueOrDefault(id) ?? "an earlier quest"}";
+        }
+    }
+
     public required string Id { get; init; }
     public required string Name { get; init; }
     public string? TraderName { get; init; }
@@ -1482,11 +1519,29 @@ public sealed record TaskSummary
     /// <summary>Not started, but every prerequisite is done — the quests you could pick up now.</summary>
     public bool Available { get; init; }
 
+    /// <summary>
+    /// What is standing in the way, when something is. Named rather than implied: "locked" tells
+    /// you nothing you can act on, "needs level 20" and "needs Debut" both do.
+    /// </summary>
+    public IReadOnlyList<string> Blockers { get; init; } = [];
+
     /// <summary>Objectives that can be pinned, which is what makes a quest worth planning around.</summary>
     public int PositionedObjectiveCount { get; init; }
 
-    public static TaskSummary From(TaskDef task, QuestState state, bool available) => new()
+    public static TaskSummary From(
+        TaskDef task,
+        QuestState state,
+        bool available,
+        int? playerLevel = null,
+        IReadOnlyDictionary<string, string>? taskNames = null,
+        Func<string, QuestState>? stateOf = null) => new()
     {
+        Blockers = state != QuestState.NotStarted || available
+            ? []
+            : [
+                .. Reasons(task, playerLevel, taskNames, stateOf),
+            ],
+
         Id = task.Id,
         Name = task.Name,
         TraderName = task.TraderName,
