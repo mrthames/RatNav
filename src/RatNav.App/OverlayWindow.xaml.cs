@@ -378,7 +378,15 @@ public partial class OverlayWindow : Window
 
         // Looking somewhere else is a decision. Leaving following on would snap the map back on
         // the next fix and undo the drag a second after it was made.
-        if (Following) Place(p => p with { Follow = false });
+        //
+        // But switching it off has to leave the view exactly where it is. Following centres on
+        // you; not following centres on the middle of the map — so flipping it mid-drag threw the
+        // map to the centre and you carried on dragging from somewhere you had not chosen. The
+        // offset you were already at is folded into the pan, which makes the change invisible.
+        if (Following && _view is { X: { } atX, Y: { } atY })
+            Place(p => p with { Follow = false, PanX = p.PanX + atX - 0.5, PanY = p.PanY + atY - 0.5 });
+        else if (Following)
+            Place(p => p with { Follow = false });
 
         Pan(to.X - from.X, to.Y - from.Y);
     }
@@ -1193,7 +1201,21 @@ public partial class OverlayWindow : Window
 
     private void ToggleFollowing()
     {
-        Place(p => p with { PanX = 0, PanY = 0, Follow = !p.Follow });
+        // Turning it on means "put the map on me", so the pan is cleared and the view moves — that
+        // is the point of pressing it.
+        //
+        // Turning it off means "let me look around from here", so the view must not move at all.
+        // Where you were is folded into the pan, exactly as it is when a drag switches it off.
+        if (Following)
+        {
+            var (x, y) = (_view?.X ?? 0.5, _view?.Y ?? 0.5);
+            Place(p => p with { Follow = false, PanX = p.PanX + x - 0.5, PanY = p.PanY + y - 0.5 });
+        }
+        else
+        {
+            Place(p => p with { PanX = 0, PanY = 0, Follow = true });
+        }
+
         Draw();
     }
 

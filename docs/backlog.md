@@ -264,6 +264,10 @@ them separately.
   hit-testable and put it over every control in the panel. It is decoration; it no longer takes
   the mouse.
 - [x] **The pop-out button does nothing.** Same cause.
+- [x] **Right-drag jumps the map to centre before dragging.** Cause: dragging switches following
+  off, and following off means "centre on the middle of the map" — so the view snapped there the
+  instant the drag began, and you dragged from the wrong place. Turning following off now converts
+  where you were into an equal pan offset, so the view does not move at all.
 - [x] **"Can buy" is the wrong words.** It suggests the flea market, which is not what is meant.
   - Wanted: either say it plainly — *does not need to be found in raid* — or drop the second entry
     entirely and let the legend explain only the red, with everything else reading as an ordinary
