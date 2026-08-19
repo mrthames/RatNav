@@ -1444,17 +1444,35 @@ public partial class OverlayWindow : Window
             // the map as a place rather than as a diagram.
             if (ink == "graphical" && MapPalette.For(_palette, shape.Classes) is { } styled)
             {
-                MapCanvas.Children.Add(new Path
+                // The fill's own opacity, folded into the layer's. Streets marks its sniper zones
+                // translucent red — dropping that turned three warnings into three solid blocks
+                // covering the map underneath them.
+                var paint = styled.Fill;
+
+                if (styled.FillOpacity is { } alpha && paint is not null)
+                {
+                    paint = paint.Clone();
+                    paint.Opacity = alpha;
+                    paint.Freeze();
+                }
+
+                var drawn = new Path
                 {
                     Data = shape.Geometry,
                     RenderTransform = transform,
-                    Fill = styled.Fill,
+                    Fill = paint,
                     Stroke = styled.Stroke,
                     StrokeThickness = (styled.StrokeWidth > 0 ? styled.StrokeWidth : 1)
                         * _settings.Overlay.LineWeight,
                     Opacity = opacity,
                     IsHitTestVisible = false,
-                });
+                };
+
+                // A dashed outline is how a hazard says "keep out" rather than "here is a wall".
+                if (styled.Dash is { Count: > 0 } dash)
+                    drawn.StrokeDashArray = [.. dash];
+
+                MapCanvas.Children.Add(drawn);
 
                 continue;
             }

@@ -677,6 +677,23 @@ function TurnIns() {
 
 /** What the overlay shows, mirrored here so the pre-raid screen doubles as a second monitor view. */
 function RaidPanel({ raid }: { raid: RaidView }) {
+  /**
+   * What is left, then what is finished.
+   *
+   * <p>A ticked stop staying in place means the next thing to do drifts down the list as the raid
+   * goes on, and by the end you are reading past six struck-through lines to find it. Numbering
+   * counts only what is left, matching the numbers on the map — the map has no marker for a stop
+   * you have already done, so neither does this.</p>
+   */
+  const ordered = useMemo(() => {
+    let number = 0
+
+    return [
+      ...raid.stops.filter((s) => !s.done).map((stop) => ({ stop, number: ++number })),
+      ...raid.stops.filter((s) => s.done).map((stop) => ({ stop, number: null })),
+    ]
+  }, [raid.stops])
+
   const bearing = raid.nextStopRelativeBearing
   const direction = bearing == null ? null : `${Math.abs(Math.round(bearing))}° ${bearing > 0 ? 'right' : 'left'}`
 
@@ -737,19 +754,27 @@ function RaidPanel({ raid }: { raid: RaidView }) {
       {/* Stops are strikeable between raids, which is what makes a plan worth keeping. */}
       {raid.stops.length > 0 && (
         <ul className="flex flex-col gap-px">
-          {raid.stops.map((stop, index) => (
+          {ordered.map(({ stop, number }) => (
             <li key={stop.objectiveId} className="flex items-center gap-3 py-0.5">
               {/*
-                The same number the overlay draws on the map. Reading "go to 3" on the overlay and
-                then hunting for which line that is here was work the number could do itself.
+                The same number the overlay draws on the map, and counted the same way — only what
+                is left gets one. Reading "go to 3" on the overlay and then hunting for which line
+                that is here was work the number could do itself.
               */}
-              <span className="font-mono text-[11px] tabular-nums text-accent">{index + 1}</span>
+              <span className="w-3 text-right font-mono text-[11px] tabular-nums text-accent">
+                {number ?? ''}
+              </span>
 
+              {/*
+                This ticks off the stop, not the quest. Handing something to a trader is a
+                different act and has its own button — a checkbox that quietly retired a quest's
+                item needs would be a trap.
+              */}
               <input
                 type="checkbox"
                 checked={stop.done}
                 onChange={() => void api.completeObjective(stop.objectiveId, !stop.done)}
-                aria-label={`Mark ${stop.taskName} done`}
+                aria-label={`Mark ${stop.taskName} done — the stop, not the quest`}
                 className="accent-accent"
               />
 

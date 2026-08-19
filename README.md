@@ -128,7 +128,7 @@ guessing:
 - When tarkov.dev is down — it was, for a full day during development — the last good data keeps
   being served and the app tells you it is stale.
 
-![The overlay over the game](docs/screenshot-overlay.png)
+![RatNav's overlay over a raid on Streets of Tarkov: the quest log numbered to match the pins on the map, the items to look for, and the map itself with extracts and place names](docs/screenshot-overlay.png)
 
 ## Hotkeys
 

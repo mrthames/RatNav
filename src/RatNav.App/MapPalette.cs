@@ -7,7 +7,20 @@ using Brush = System.Windows.Media.Brush;
 namespace RatNav.App;
 
 /// <summary>How one class of shape is meant to look, according to the map's own stylesheet.</summary>
-public sealed record MapStyle(Brush? Fill, Brush? Stroke, double StrokeWidth);
+/// <param name="FillOpacity">
+/// How solid the fill is, from the stylesheet's <c>fill-opacity</c>. Null means it said nothing.
+///
+/// <para>Not a detail. Streets marks its sniper zones <c>.danger { fill:red; fill-opacity:.4 }</c>,
+/// and dropping the second half turned three warnings into three solid red blocks covering the
+/// map underneath them.</para>
+/// </param>
+/// <param name="Dash">The stroke dash pattern, which is how a hazard's outline says "keep out".</param>
+public sealed record MapStyle(
+    Brush? Fill,
+    Brush? Stroke,
+    double StrokeWidth,
+    double? FillOpacity = null,
+    IReadOnlyList<double>? Dash = null);
 
 /// <summary>
 /// Reads the colours a map was drawn in.
@@ -50,7 +63,9 @@ public static partial class MapPalette
                 var style = new MapStyle(
                     Paint(Declaration(body, "fill")),
                     Paint(Declaration(body, "stroke")),
-                    Width(Declaration(body, "stroke-width")));
+                    Width(Declaration(body, "stroke-width")),
+                    Opacity(Declaration(body, "fill-opacity")),
+                    Dashes(Declaration(body, "stroke-dasharray")));
 
                 // A class can be listed several times — ".road_small { stroke-width:5 }" refines
                 // ".road_tarmac" — so later rules fill in what earlier ones left out rather than
@@ -64,7 +79,9 @@ public static partial class MapPalette
                         ? new MapStyle(
                             style.Fill ?? existing.Fill,
                             style.Stroke ?? existing.Stroke,
-                            style.StrokeWidth > 0 ? style.StrokeWidth : existing.StrokeWidth)
+                            style.StrokeWidth > 0 ? style.StrokeWidth : existing.StrokeWidth,
+                            style.FillOpacity ?? existing.FillOpacity,
+                            style.Dash ?? existing.Dash)
                         : style;
                 }
             }
@@ -90,7 +107,9 @@ public static partial class MapPalette
                 : new MapStyle(
                     style.Fill ?? found.Fill,
                     style.Stroke ?? found.Stroke,
-                    style.StrokeWidth > 0 ? style.StrokeWidth : found.StrokeWidth);
+                    style.StrokeWidth > 0 ? style.StrokeWidth : found.StrokeWidth,
+                    style.FillOpacity ?? found.FillOpacity,
+                    style.Dash ?? found.Dash);
         }
 
         return found;
@@ -123,6 +142,32 @@ public static partial class MapPalette
 
     private static double Width(string? value) =>
         double.TryParse(value, out var width) ? width : 0;
+
+    private static double? Opacity(string? value) =>
+        double.TryParse(value, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var opacity)
+            ? Math.Clamp(opacity, 0, 1)
+            : null;
+
+    /// <summary>
+    /// "6,6" or "4 2" — SVG allows either separator. A single number means equal dash and gap,
+    /// which WPF does not assume, so it is doubled here.
+    /// </summary>
+    private static IReadOnlyList<double>? Dashes(string? value)
+    {
+        if (value is not { Length: > 0 }) return null;
+
+        var parts = value
+            .Split([',', ' ', '	'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => double.TryParse(part, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : -1)
+            .Where(n => n >= 0)
+            .ToList();
+
+        if (parts.Count == 0) return null;
+
+        return parts.Count == 1 ? [parts[0], parts[0]] : parts;
+    }
 
     [GeneratedRegex(@"<style[^>]*>(.*?)</style>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
     private static partial Regex StyleBlock();
