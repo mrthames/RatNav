@@ -8,21 +8,41 @@ public readonly record struct MapPoint(double X, double Y);
 /// <summary>
 /// Converts Escape from Tarkov world coordinates into pixels on a map image, and back.
 ///
-/// Calibration comes from TarkovTracker/tarkovdata's maps.json, which gives each map a
-/// <c>coordinateRotation</c> (degrees the image is turned relative to world axes) and
-/// <c>bounds</c> — the two opposite corners of the image expressed in rotated world
-/// coordinates. Bounds are corner pairs rather than min/max on purpose: a map whose image
-/// runs opposite to the world axis has its first bound larger than its second, and the
-/// normalization below flips direction naturally because the span is negative.
+/// Calibration comes from TarkovTracker/tarkovdata's maps.json, which gives each map
+/// <c>bounds</c> — two opposite corners of the image, in world coordinates — and a
+/// <c>coordinateRotation</c>.
 ///
-/// Only the ground plane matters here. EFT's Y axis is vertical (which floor you are on)
-/// and is carried separately for multi-level maps.
+/// <para><b>Position mapping does not use coordinateRotation.</b> That is not an assumption; it
+/// was measured. A screenshot taken on Customs at world <c>(-14.44, -139.32)</c>, from a spot
+/// the player identified on the map, sits at <c>66.7%, 30.9%</c> of the image. Mapping the raw
+/// coordinates straight through the bounds puts it at <c>66.6%, 30.8%</c> — a one-pixel match.
+/// Rotating first, by any of the plausible conventions, misses by half the map:</para>
+///
+/// <list type="table">
+///   <item><term>raw x/z through bounds</term><description>66.6%, 30.8% — matches</description></item>
+///   <item><term>rotate 180° about origin</term><description>63.9%, 82.0%</description></item>
+///   <item><term>rotate 180° about bounds centre</term><description>33.4%, 69.2%</description></item>
+///   <item><term>axis swap</term><description>78.3%, 53.8%</description></item>
+/// </list>
+///
+/// <para>So <c>coordinateRotation</c> describes how the map was <i>drawn</i> relative to game
+/// north, which is what a heading needs (see <see cref="ToImageHeading"/>) and what a position
+/// does not — the bounds already carry the drawing's orientation.</para>
+///
+/// <para><b>Open:</b> this was confirmed on a 180° map. Every map in the data is 180° except
+/// Factory (90°) and The Lab (270°), and a 90° map is the only case where a wrong convention
+/// would be obvious. Until a screenshot from one of those is checked, treat them as unverified.</para>
+///
+/// <para>Bounds are corner pairs rather than min/max on purpose: a map whose image runs opposite
+/// to the world axis has its first bound larger than its second, and the normalization below
+/// flips direction naturally because the span comes out negative.</para>
+///
+/// <para>Only the ground plane matters here. EFT's Y axis is vertical (which floor you are on)
+/// and is carried separately for multi-level maps.</para>
 /// </summary>
 public sealed class CoordinateTransform
 {
     private readonly MapImage _image;
-    private readonly double _cos;
-    private readonly double _sin;
 
     public CoordinateTransform(MapImage image)
     {
@@ -31,10 +51,6 @@ public sealed class CoordinateTransform
             throw new ArgumentException("Map bounds must be two corner pairs.", nameof(image));
 
         _image = image;
-
-        var radians = image.CoordinateRotation * Math.PI / 180.0;
-        _cos = Math.Cos(radians);
-        _sin = Math.Sin(radians);
     }
 
     private double X1 => _image.Bounds[0][0];
@@ -45,8 +61,7 @@ public sealed class CoordinateTransform
     /// <summary>Where a world position falls on the map image, in pixels.</summary>
     public MapPoint ToPixels(GamePosition position)
     {
-        var (rx, ry) = Rotate(position.X, position.Z);
-        var (u, v) = Normalized(rx, ry);
+        var (u, v) = Normalized(position.X, position.Z);
         return new MapPoint(u * _image.PixelWidth, v * _image.PixelHeight);
     }
 
@@ -56,8 +71,7 @@ public sealed class CoordinateTransform
     /// </summary>
     public MapPoint ToNormalized(GamePosition position)
     {
-        var (rx, ry) = Rotate(position.X, position.Z);
-        var (u, v) = Normalized(rx, ry);
+        var (u, v) = Normalized(position.X, position.Z);
         return new MapPoint(u, v);
     }
 
@@ -67,19 +81,20 @@ public sealed class CoordinateTransform
         var u = _image.PixelWidth == 0 ? 0 : pixel.X / _image.PixelWidth;
         var v = _image.PixelHeight == 0 ? 0 : pixel.Y / _image.PixelHeight;
 
-        var rx = X1 + u * (X2 - X1);
-        var ry = Y1 + v * (Y2 - Y1);
-
-        // Undo the rotation.
-        var x = rx * _cos + ry * _sin;
-        var z = -rx * _sin + ry * _cos;
+        var x = X1 + u * (X2 - X1);
+        var z = Y1 + v * (Y2 - Y1);
 
         return new GamePosition(x, y, z);
     }
 
     /// <summary>
-    /// A compass heading rotated into image space, so a facing cone drawn on the map points
-    /// the same way the player does.
+    /// A compass heading turned into image space, so a facing cone drawn on the map points the
+    /// same way the player does. Unlike positions, a heading genuinely does need
+    /// <c>coordinateRotation</c>: the bounds carry the drawing's orientation for points, but an
+    /// angle has to be turned to match it.
+    ///
+    /// The sign is still unconfirmed — it takes two screenshots from one spot facing 90° apart
+    /// to tell "+rotation" from "−rotation", and both shots so far were facing north.
     /// </summary>
     public double ToImageHeading(double headingDegrees)
         => ScreenshotFilename.Normalize(headingDegrees + _image.CoordinateRotation);
@@ -107,9 +122,6 @@ public sealed class CoordinateTransform
         var delta = ScreenshotFilename.Normalize(targetBearingDegrees - headingDegrees);
         return delta > 180.0 ? delta - 360.0 : delta;
     }
-
-    private (double X, double Y) Rotate(double x, double z)
-        => (x * _cos - z * _sin, x * _sin + z * _cos);
 
     private (double U, double V) Normalized(double rx, double ry)
     {

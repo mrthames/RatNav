@@ -4,9 +4,10 @@ using RatNav.Core.Model;
 namespace RatNav.Core.Tests;
 
 /// <summary>
-/// These lock in the maths. Whether the *convention* matches tarkovdata's — particularly the
-/// direction of <c>coordinateRotation</c> — is settled by the Pass 1 checkpoint against a real
-/// screenshot on a real map, because no amount of synthetic testing can prove that.
+/// These lock in the maths. The convention question — whether <c>coordinateRotation</c> applies
+/// to positions — was settled by measurement, not by reasoning; see
+/// <see cref="Real_customs_screenshot_lands_where_the_player_stood"/>, which is the ground truth
+/// the rest of this file is consistent with.
 /// </summary>
 public class CoordinateTransformTests
 {
@@ -96,15 +97,53 @@ public class CoordinateTransformTests
     }
 
     [Fact]
-    public void Rotation_is_applied_before_the_bounds()
+    public void Real_customs_screenshot_lands_where_the_player_stood()
     {
-        // Under a 90 degree rotation a point on the +X axis should move onto the image's
-        // vertical axis, not stay on its horizontal one.
-        var t = new CoordinateTransform(Square(90));
-        var p = t.ToNormalized(new GamePosition(100, 0, 0));
+        // Ground truth. Escape from Tarkov wrote this position into a screenshot filename, and
+        // the player identified the spot on the map at 66.7%, 30.9%. Mapping raw x/z straight
+        // through the bounds hits it; rotating first misses by half the map, which is how we
+        // learned coordinateRotation is not a position transform.
+        var customs = new MapImage
+        {
+            SourceUrl = "https://example.invalid/Customs.svg",
+            CoordinateRotation = 180,
+            Bounds = [[698, -307], [-371, 237]],
+        };
 
-        Assert.Equal(0.5, p.X, 3);
-        Assert.Equal(1.0, p.Y, 3);
+        var point = new CoordinateTransform(customs)
+            .ToNormalized(new GamePosition(-14.44, 1.44, -139.32));
+
+        Assert.Equal(0.667, point.X, 2);
+        Assert.Equal(0.309, point.Y, 2);
+    }
+
+    [Fact]
+    public void Rotation_does_not_move_a_position()
+    {
+        // Same point, same bounds, different coordinateRotation: the pin must not budge.
+        var at = (int rotation) => new CoordinateTransform(Square(rotation))
+            .ToNormalized(new GamePosition(50, 0, -25));
+
+        var reference = at(0);
+
+        foreach (var rotation in new[] { 90, 180, 270 })
+        {
+            var moved = at(rotation);
+            Assert.Equal(reference.X, moved.X, 6);
+            Assert.Equal(reference.Y, moved.Y, 6);
+        }
+    }
+
+    [Theory]
+    [InlineData(0, 30, 30)]
+    [InlineData(180, 30, 210)]
+    [InlineData(90, 350, 80)]
+    public void A_heading_is_turned_to_match_how_the_map_was_drawn(int rotation, double heading, double expected)
+    {
+        // Headings are the one thing coordinateRotation genuinely applies to: the bounds orient
+        // points, but an angle still has to be turned into the drawing's frame.
+        var t = new CoordinateTransform(Square(rotation));
+        Assert.Equal(expected, t.ToImageHeading(heading), 3);
     }
 
     [Fact]
