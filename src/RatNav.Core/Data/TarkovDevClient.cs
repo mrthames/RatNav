@@ -369,7 +369,10 @@ public sealed class TarkovDevClient(HttpClient http)
         List<BarterItemDto>? RequiredItems,
         BarterItemDto? OfferedItem);
 
-    private sealed record BarterItemDto(string? Item, int Count);
+    // Counts are fractional. A barter that costs "155.1" of something is not a rounding error in
+    // the source — it is how tarkov.dev records trades priced in currency, and 313 of the 789
+    // barters have one. Reading them as integers failed the whole document.
+    private sealed record BarterItemDto(string? Item, double Count);
 
     private sealed record MapDto(
         string? Name, string? NormalizedName, string? NameId, List<ExtractDto>? Extracts);

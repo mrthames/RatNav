@@ -93,13 +93,21 @@ public sealed record Diagnostics
                 new Check
                 {
                     Name = "Game data",
-                    Ok = data is { Loaded: true, ServingStale: false },
+
+                    // A source that failed counts as not OK even when the refresh as a whole
+                    // succeeded — planning around data that quietly came back empty is worse
+                    // than being told a source is down.
+                    Ok = data is { Loaded: true, ServingStale: false } && data.BrokenSources.Count == 0,
                     Detail = data is null
                         ? "Not loaded."
                         : data.ServingStale
                             ? $"Serving cached data — {data.LastError}"
-                            : $"{data.TaskCount} quests, {data.ItemCount} items, "
-                              + $"{data.CalibratedMapCount} maps, checked {Ago(data.FetchedAt)}",
+                            : data.BrokenSources.Count > 0
+                                ? $"{string.Join(", ", data.BrokenSources.Keys)} unavailable — "
+                                  + string.Join("; ", data.BrokenSources.Values)
+                                : $"{data.TaskCount} quests, {data.ItemCount} items, "
+                                  + $"{data.BarterCount} barters, {data.CalibratedMapCount} maps, "
+                                  + $"checked {Ago(data.FetchedAt)}",
                     Fix = "RatNav checks at launch and every six hours. Refresh forces it now.",
                     Required = false,
                 },

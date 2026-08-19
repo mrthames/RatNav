@@ -42,7 +42,11 @@ public sealed record BarterDef
     public BarterItem? OfferedItem { get; init; }
 }
 
-public readonly record struct BarterItem(string ItemId, int Count);
+/// <summary>
+/// One side of a trade. The count is fractional because tarkov.dev records currency-priced trades
+/// that way — "155.1" is real data, not a mistake.
+/// </summary>
+public readonly record struct BarterItem(string ItemId, double Count);
 
 /// <summary>A quest, as tarkov.dev models it.</summary>
 public sealed record TaskDef

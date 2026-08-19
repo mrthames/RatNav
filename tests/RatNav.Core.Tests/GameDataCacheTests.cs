@@ -45,6 +45,63 @@ public class GameDataCacheTests : IDisposable
     };
 
     [Fact]
+    public async Task Names_the_source_that_failed()
+    {
+        // Barters shipped empty in 0.1.0 because the whole source threw on a fractional count,
+        // every refresh reported success, and nothing anywhere said a source was dead. Failing
+        // soft is right; failing quietly is not.
+        SeedDisk(Cached());
+
+        var cache = CacheWith(new StubHandler(request =>
+            IsBarters(request)
+                ? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                : Empty(request)));
+
+        await cache.RefreshAsync();
+
+        Assert.Contains("barters", cache.Problems.Keys);
+    }
+
+    [Fact]
+    public async Task Forgets_a_failure_once_the_source_recovers()
+    {
+        SeedDisk(Cached());
+
+        var fail = true;
+        var cache = CacheWith(new StubHandler(request =>
+            fail && IsBarters(request)
+                ? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                : Empty(request)));
+
+        await cache.RefreshAsync();
+        Assert.Contains("barters", cache.Problems.Keys);
+
+        fail = false;
+        await cache.RefreshAsync();
+
+        // A warning that never clears is a warning people learn to ignore.
+        Assert.DoesNotContain("barters", cache.Problems.Keys);
+    }
+
+    private static bool IsBarters(HttpRequestMessage request) =>
+        request.RequestUri!.AbsolutePath.Contains("barters", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>An empty but well-formed reply — a list for barters, a keyed map for the rest.</summary>
+    private static HttpResponseMessage Empty(HttpRequestMessage request) =>
+        Json(IsBarters(request) ? """{"data":[]}""" : """{"data":{}}""");
+
+    private static HttpResponseMessage Json(string body) => new(HttpStatusCode.OK)
+    {
+        Content = new StringContent(body, Encoding.UTF8, "application/json"),
+    };
+
+    private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
+            Task.FromResult(respond(request));
+    }
+
+    [Fact]
     public async Task Serves_cached_data_when_the_api_is_down()
     {
         SeedDisk(Cached());

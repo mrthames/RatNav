@@ -4,6 +4,18 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
+## 0.1.1 — 2026-08-19
+
+### Fixed
+
+- **Barters were empty.** The whole source failed to load because tarkov.dev records
+  currency-priced trades with fractional counts — a barter costing "155.1" of something is real
+  data, and 313 of the 789 have one. RatNav read them as whole numbers and threw away the
+  document.
+- **A dead source now says so.** The refresh above reported success every time while a source was
+  broken, because a failed fetch was swallowed to keep the rest working. Failing soft is right;
+  failing quietly is not. Setup now names any source that is down, and the check goes red.
+
 ## 0.1.0 — 2026-08-19
 
 First release.

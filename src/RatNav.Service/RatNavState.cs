@@ -54,8 +54,13 @@ public sealed class RatNavState(GameDataCache cache)
             ItemCount = data?.Items.Count ?? 0,
             MapCount = data?.Maps.Count ?? 0,
             CalibratedMapCount = data?.Maps.Count(m => m.Image is not null) ?? 0,
+            BarterCount = data?.Barters.Count ?? 0,
             ServingStale = lastRefresh?.ServingStale ?? false,
             LastError = lastRefresh?.Error,
+
+            // A refresh can succeed overall while one source is dead. Reporting only the overall
+            // result is how barters were empty for a release with nothing anywhere saying so.
+            BrokenSources = cache.Problems,
         };
     }
 }
@@ -68,6 +73,7 @@ public sealed record DataStatus
     public int TaskCount { get; init; }
     public int ItemCount { get; init; }
     public int MapCount { get; init; }
+    public int BarterCount { get; init; }
 
     /// <summary>How many maps we can actually plot pins on — the rest have no calibration yet.</summary>
     public int CalibratedMapCount { get; init; }
@@ -76,4 +82,8 @@ public sealed record DataStatus
     public bool ServingStale { get; init; }
 
     public string? LastError { get; init; }
+
+    /// <summary>Sources that failed on the last refresh, keyed by name. Empty when all is well.</summary>
+    public IReadOnlyDictionary<string, string> BrokenSources { get; init; } =
+        new Dictionary<string, string>();
 }

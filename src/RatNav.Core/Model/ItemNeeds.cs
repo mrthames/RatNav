@@ -30,12 +30,12 @@ public sealed record BarterNeed
     /// <summary>Loyalty level the trade appears at — "Prapor LL2".</summary>
     public required int TraderLevel { get; init; }
 
-    /// <summary>How many of this item the trade costs.</summary>
-    public required int Count { get; init; }
+    /// <summary>How many of this item the trade costs. Fractional for currency-priced trades.</summary>
+    public required double Count { get; init; }
 
     /// <summary>What the trade hands back, named. This is what makes the trade worth judging.</summary>
     public string? OfferedItemName { get; init; }
-    public int OfferedCount { get; init; }
+    public double OfferedCount { get; init; }
 }
 
 /// <summary>Everything RatNav knows about why you'd keep an item.</summary>

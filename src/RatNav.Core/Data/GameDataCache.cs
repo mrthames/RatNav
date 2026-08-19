@@ -39,6 +39,18 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
     private readonly SemaphoreSlim _gate = new(1, 1);
     private GameData? _current;
 
+    /// <summary>Sources that failed on the last refresh, and why. Empty when everything worked.</summary>
+    private readonly Dictionary<string, string> _problems = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// What is currently broken, by source. A refresh can succeed overall while one source is
+    /// dead, and the difference matters — that is a planner quietly missing its barters.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Problems
+    {
+        get { lock (_problems) return new Dictionary<string, string>(_problems, StringComparer.OrdinalIgnoreCase); }
+    }
+
     /// <summary>How old data may get before <see cref="EnsureFreshAsync"/> refreshes it.</summary>
     public TimeSpan MaxAge { get; set; } = TimeSpan.FromHours(6);
 
@@ -105,12 +117,12 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         // already had. Only a total washout is treated as a failed refresh.
         var previous = _current ?? LoadFromDisk(gameVersion);
 
-        var tasksQuery = Try(() => client.GetTasksAsync(ct));
-        var itemsQuery = Try(() => client.GetItemsAsync(ct));
-        var hideoutQuery = Try(() => client.GetHideoutStationsAsync(ct));
-        var mapsQuery = Try(() => client.GetMapsAsync(ct));
-        var bartersQuery = Try(() => client.GetBartersAsync(ct));
-        var calibrationQuery = Try(() => mapAssets.GetCalibrationAsync(ct));
+        var tasksQuery = Try("quests", () => client.GetTasksAsync(ct));
+        var itemsQuery = Try("items", () => client.GetItemsAsync(ct));
+        var hideoutQuery = Try("hideout", () => client.GetHideoutStationsAsync(ct));
+        var mapsQuery = Try("maps", () => client.GetMapsAsync(ct));
+        var bartersQuery = Try("barters", () => client.GetBartersAsync(ct));
+        var calibrationQuery = Try("map calibration", () => mapAssets.GetCalibrationAsync(ct));
 
         await Task.WhenAll(tasksQuery, itemsQuery, hideoutQuery, mapsQuery, bartersQuery, calibrationQuery);
 
@@ -209,15 +221,25 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         };
     }
 
-    /// <summary>Runs a fetch, turning failure into null so one dead source cannot fail the rest.</summary>
-    private static async Task<T?> Try<T>(Func<Task<T>> fetch) where T : class
+    /// <summary>
+    /// Runs a fetch, turning failure into null so one dead source cannot fail the rest — and
+    /// <b>recording that it failed</b>.
+    ///
+    /// <para>Swallowing the failure silently is how barters shipped empty: the whole source was
+    /// throwing on a fractional count, every refresh reported success, and nothing anywhere said
+    /// a source was dead. Failing soft is right; failing quietly is not.</para>
+    /// </summary>
+    private async Task<T?> Try<T>(string source, Func<Task<T>> fetch) where T : class
     {
         try
         {
-            return await fetch();
+            var result = await fetch();
+            lock (_problems) _problems.Remove(source);
+            return result;
         }
         catch (Exception ex) when (ex is TarkovDevException or HttpRequestException or TaskCanceledException)
         {
+            lock (_problems) _problems[source] = ex.InnerException?.Message ?? ex.Message;
             return null;
         }
     }
