@@ -15,8 +15,15 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const calibrated = useMemo(() => maps.filter((m) => m.calibrated), [maps])
 
   useEffect(() => {
-    if (!mapId && calibrated.length > 0) setMapId(calibrated[0].id)
-  }, [calibrated, mapId])
+    if (mapId || calibrated.length === 0) return
+
+    // The map of the plan you last used, not whichever map happens to sort first — which is how a
+    // Streets session reopened on Factory. The plan itself is already restored on the service
+    // side; it was only the picker that was choosing independently.
+    const active = raid?.mapId && calibrated.some((m) => m.id === raid.mapId) ? raid.mapId : null
+
+    setMapId(active ?? calibrated[0].id)
+  }, [calibrated, mapId, raid?.mapId])
 
   const load = useCallback(async () => {
     if (!mapId) return

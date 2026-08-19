@@ -43,11 +43,21 @@ public static class CalibrationSolver
     /// tarkov.dev's own bounds every map solves to a plain <c>(x, z)</c> mapping, agreed by both
     /// the aspect-ratio check and the extract positions, so there is nothing left to override.</para>
     ///
-    /// <para>Kept because it is the right escape hatch: if a future map defeats both signals, one
-    /// player marking their position settles it and the answer ships here so nobody repeats it.</para>
+    /// <para>What is here now is exactly that escape hatch being used. These are maps where the
+    /// automatic signals could not settle the answer — square-ish maps give the aspect check
+    /// nothing to work with, and extracts sitting well inside the border leave the signs
+    /// ambiguous — but where a player stood somewhere known and reported where they actually
+    /// were. That is ground truth, and it beats an inference that could not be made.</para>
     /// </summary>
     public static IReadOnlyDictionary<string, AxisMapping> VerifiedMappings { get; } =
-        new Dictionary<string, AxisMapping>(StringComparer.OrdinalIgnoreCase);
+        new Dictionary<string, AxisMapping>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Confirmed standing at the Northern Checkpoint extract: (x, z) landed 0.3 percentage
+            // points from the marked spot, and the runner-up was 21.6 points out. The solver could
+            // not reach this on its own because every Lighthouse extract sits inside the border,
+            // which leaves mirroring undetectable.
+            ["lighthouse"] = AxisMapping.Direct,
+        };
 
     /// <summary>Below this ratio between best and runner-up, the evidence is not worth trusting.</summary>
     private const double DecisiveRatio = 3.0;

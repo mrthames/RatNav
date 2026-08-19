@@ -22,6 +22,16 @@ public static class ApiEndpoints
     /// </summary>
     public static event Action<RatNavSettings>? HotkeysChanged;
 
+    /// <summary>
+    /// Raised when anything the items list is built from changes — a watchlist entry, a have
+    /// count, a hideout level or target, a quest state.
+    ///
+    /// <para>The overlay used to reload its items only when the <i>raid</i> changed, so starring
+    /// something in the buddy app never reached it. Pushed rather than polled: the plumbing to
+    /// tell every surface at once already exists, and a timer would be slower and busier.</para>
+    /// </summary>
+    public static event Action? ItemsChanged;
+
     public static void MapRatNavApi(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api");
@@ -114,6 +124,7 @@ public static class ApiEndpoints
             else if (request.Count is { } count) tracker.SetHave(id, count);
             else return Results.BadRequest(new { error = "Send either a count or a delta." });
 
+            ItemsChanged?.Invoke();
             return Results.Ok(Track(state, tracker, progress, settings, id));
         });
 
@@ -124,6 +135,7 @@ public static class ApiEndpoints
             if (request.Watch) tracker.Watch(id, request.Note, request.Target);
             else tracker.Unwatch(id);
 
+            ItemsChanged?.Invoke();
             return Results.Ok(Track(state, tracker, progress, settings, id));
         });
 
@@ -274,6 +286,8 @@ public static class ApiEndpoints
         api.MapPost("/hideout/look-ahead", (RatNavSettings settings, LookAheadRequest request) =>
         {
             settings.Remember(s => s.HideoutLookAhead = Math.Clamp(request.Levels, 1, 10));
+
+            ItemsChanged?.Invoke();
             return Results.Ok(new { lookAhead = settings.HideoutLookAhead });
         });
 
@@ -283,6 +297,8 @@ public static class ApiEndpoints
             ProgressStore progress, string stationId, int level, TargetRequest request) =>
         {
             progress.TargetHideoutLevel(stationId, level, request.Targeted);
+
+            ItemsChanged?.Invoke();
             return Results.Ok(new { stationId, level, targeted = request.Targeted });
         });
 
@@ -409,12 +425,16 @@ public static class ApiEndpoints
                 return Results.BadRequest(new { error = $"Unknown quest state '{request.State}'." });
 
             progress.SetManual(id, parsed);
+
+            ItemsChanged?.Invoke();
             return Results.Ok(new { id, state = parsed.ToString() });
         });
 
         api.MapPost("/progress/hideout/{id}", (ProgressStore progress, string id, HideoutLevelRequest request) =>
         {
             progress.SetHideoutLevel(id, request.Level);
+
+            ItemsChanged?.Invoke();
             return Results.Ok(new { id, level = progress.HideoutLevelOf(id) });
         });
 
@@ -969,9 +989,39 @@ public static class ApiEndpoints
         return needs.AsKey.Count > 0 ? "key" : "";
     }
 
-    /// <summary>The name players use, which is also the one that fits a narrow column.</summary>
-    private static string Short(ItemDef item) =>
-        item.ShortName is { Length: > 0 } and not "?" ? item.ShortName : item.Name;
+    /// <summary>
+    /// The name to show.
+    ///
+    /// <para>The short name only when it is one people actually say — "LEDX", "GPU", "Bolts". It
+    /// is tarkov.dev's abbreviation, and for keys it produces things like "Chek. 15", which nobody
+    /// recognises as <i>Chekannaya 15 apartment key</i>. So it is used when it reads as a word and
+    /// the full name is used when it does not.</para>
+    /// </summary>
+    private static string Short(ItemDef item) => Readable(item);
+
+    internal static string Readable(ItemDef item)
+    {
+        var shortName = item.ShortName;
+
+        if (shortName is not { Length: > 0 } || shortName == "?") return item.Name;
+
+        // A dot anywhere is an abbreviation announcing itself — "Chek. 15", "M.parts".
+        if (shortName.Contains('.', StringComparison.Ordinal)) return item.Name;
+
+        // A single word lifted out of the middle of a longer name loses what the thing is:
+        // "Access" for a TerraGroup Labs access keycard could be anything. Acronyms are fine —
+        // "GPU", "LEDX" — because they are what players say, and they are all upper case.
+        var words = item.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        var acronym = shortName.All(c => !char.IsLetter(c) || char.IsUpper(c));
+
+        if (!acronym && words >= 3 && !item.Name.StartsWith(shortName, StringComparison.OrdinalIgnoreCase))
+            return item.Name;
+
+        // Short enough to fit and long enough to mean something.
+        return shortName.Length is >= 2 and <= 18 && shortName.Count(char.IsLetter) >= 2
+            ? shortName
+            : item.Name;
+    }
 
     private static int ByUrgency(PanelRow a, PanelRow b) =>
         a.FoundInRaid != b.FoundInRaid
@@ -1266,9 +1316,7 @@ public sealed record PanelRow
     public static PanelRow From(TrackedItem tracked, string reason) => new()
     {
         Id = tracked.Item.Id,
-        Name = tracked.Item.ShortName is { Length: > 0 } and not "?"
-            ? tracked.Item.ShortName
-            : tracked.Item.Name,
+        Name = ApiEndpoints.Readable(tracked.Item),
         FullName = tracked.Item.Name,
         Count = tracked.Remaining,
         Reason = reason,

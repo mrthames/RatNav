@@ -7,8 +7,10 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
-        ResizeMode="CanResizeWithGrip"
-        Width="190" Height="560"
+        ResizeMode="CanResize"
+        SizeToContent="Manual"
+        MinWidth="150" MinHeight="120"
+        Width="200" Height="420"
         Left="24" Top="120">
 
     <!--
@@ -19,13 +21,40 @@
         list — a chrome-heavy dialog next to a frameless overlay would read as a different
         application. Narrow and tall on purpose, so it fits down the edge of a screen.
 
-        There is no title bar, so the whole surface drags.
+        Its own title strip carries the two things it needs and could not otherwise offer: a way
+        to put it back on the map, and something unambiguous to drag it by. Dragging the whole
+        surface was tried and is unreliable — a click on a row is also a click on the window, and
+        WPF cannot tell which was meant.
     -->
 
     <Window.Resources>
         <SolidColorBrush x:Key="Line" Color="#24313b" />
         <SolidColorBrush x:Key="Ink" Color="#c9d6df" />
         <SolidColorBrush x:Key="Muted" Color="#7b8c9b" />
+        <SolidColorBrush x:Key="Accent" Color="#8ec8ff" />
+
+        <Style x:Key="Chip" TargetType="Button">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome" Background="#33ffffff" CornerRadius="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#668ec8ff" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <DataTemplate x:Key="ItemRowTemplate">
             <Grid Margin="0,1">
@@ -76,9 +105,34 @@
             BorderBrush="{StaticResource Line}"
             BorderThickness="1"
             CornerRadius="2">
-        <ScrollViewer Margin="8,7" VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl x:Name="Sections" ItemTemplate="{StaticResource ItemSectionTemplate}" />
-        </ScrollViewer>
+        <DockPanel Margin="8,6">
+            <Grid x:Name="TitleStrip" DockPanel.Dock="Top" Margin="0,0,0,5"
+                  Background="#1a8ec8ff" Cursor="SizeAll">
+                <TextBlock Text=" ITEMS · drag to move"
+                           FontFamily="Consolas" FontSize="10"
+                           Foreground="{StaticResource Muted}"
+                           VerticalAlignment="Center" />
+
+                <!-- Back onto the map, collapsed. Tearing off was a one-way trip without it. -->
+                <Button x:Name="DockBack" Style="{StaticResource Chip}"
+                        HorizontalAlignment="Right" Content="✕"
+                        ToolTip="Put the list back on the map, collapsed" />
+            </Grid>
+
+            <!-- A legend, because the colours mean something and nothing said what. -->
+            <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0"
+                       FontFamily="Consolas" FontSize="9"
+                       Foreground="{StaticResource Muted}"
+                       TextWrapping="Wrap">
+                <Run Foreground="#ff5a3c">■</Run><Run Text=" find in raid  " />
+                <Run Foreground="#e0c98a">■</Run><Run Text=" can buy  " />
+                <Run Foreground="#7b8c9b">■</Run><Run Text=" have enough" />
+            </TextBlock>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="Sections" ItemTemplate="{StaticResource ItemSectionTemplate}" />
+            </ScrollViewer>
+        </DockPanel>
     </Border>
 </Window>

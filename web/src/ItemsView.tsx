@@ -90,19 +90,32 @@ export function ItemsView() {
         )}
 
         {tab === 'needed' && (
-          <label className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Look ahead</span>
-            <input
-              type="range"
-              min={1}
-              max={6}
-              value={lookAhead}
-              onChange={(e) => setLookAhead(Number(e.target.value))}
-              className="w-24 accent-accent"
-              aria-label="How many hideout upgrades ahead to include"
-            />
-            <span className="font-mono text-xs tabular-nums text-ink">{lookAhead}</span>
-          </label>
+            <button
+              type="button"
+              disabled={lookAhead <= 1}
+              onClick={() => setLookAhead(lookAhead - 1)}
+              aria-label="Look one upgrade less far ahead"
+              className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                         hover:text-ink disabled:opacity-30
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              −
+            </button>
+            <span className="w-6 text-center font-mono text-xs tabular-nums text-ink">{lookAhead}</span>
+            <button
+              type="button"
+              disabled={lookAhead >= 6}
+              onClick={() => setLookAhead(lookAhead + 1)}
+              aria-label="Look one upgrade further ahead"
+              className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                         hover:text-ink disabled:opacity-30
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              +
+            </button>
+          </div>
         )}
 
         {tab === 'search' && (

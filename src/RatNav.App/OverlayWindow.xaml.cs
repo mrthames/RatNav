@@ -50,6 +50,30 @@ public partial class OverlayWindow : Window
     private IReadOnlyList<MapShape> _ghostShapes = [];
     private Size _mapViewBox = new(1000, 1000);
 
+    /// <summary>
+    /// The floor to draw alongside this one, or null when there is nothing to pair it with.
+    ///
+    /// <para>Only the ground floor pairs, and only upward, by one. Higher floors keep hiding what
+    /// is below them — the problem being solved is specifically that you cannot see indoors at
+    /// street level, not that floors are hard to tell apart generally.</para>
+    ///
+    /// <para>Which floor sits above ground differs by map, so it comes from the map's own ordered
+    /// floor list rather than from a hardcoded name.</para>
+    /// </summary>
+    private string? Merged(string? floor)
+    {
+        if (floor is null || _floors.Count == 0) return null;
+
+        var at = _floors.ToList().FindIndex(f => f.Layer == floor);
+        if (at < 0 || at + 1 >= _floors.Count) return null;
+
+        // "Ground" is where the pairing applies. Anywhere else, drawing two floors at once would
+        // be adding confusion rather than removing it.
+        return _floors[at].Name.StartsWith("Ground", StringComparison.OrdinalIgnoreCase)
+            ? _floors[at + 1].Layer
+            : null;
+    }
+
     /// <summary>The map's levels, so the floor control knows what there is to look at.</summary>
     private IReadOnlyList<MapFloorSummary> _floors = [];
     private string? _floorsFor;
@@ -63,7 +87,7 @@ public partial class OverlayWindow : Window
     private DateTimeOffset? _overrodeAt;
 
     private static readonly string[] InkLevels = ["full", "structure", "outline"];
-    private static readonly string[] ExtractModes = ["pmc", "scav", "off"];
+    private static readonly string[] ExtractModes = ["pmc", "scav", "both", "off"];
 
     /// <summary>Extracts for the current map, fetched once per map alongside its floors.</summary>
     private IReadOnlyList<ExtractPin> _extracts = [];
@@ -112,6 +136,10 @@ public partial class OverlayWindow : Window
         HaloButton.Click += (_, _) => ToggleHalo();
         GhostButton.Click += (_, _) => ToggleGhost();
         PlacesButton.Click += (_, _) => TogglePlaces();
+        MarkerUp.Click += (_, _) => StepMarker(+0.5);
+        MarkerDown.Click += (_, _) => StepMarker(-0.5);
+        TextUp.Click += (_, _) => StepText(+0.5);
+        TextDown.Click += (_, _) => StepText(-0.5);
         WeightUp.Click += (_, _) => StepWeight(+0.25);
         WeightDown.Click += (_, _) => StepWeight(-0.25);
         ItemsButton.Click += (_, _) => ToggleItems();
@@ -406,6 +434,13 @@ public partial class OverlayWindow : Window
                 .ToList();
 
             _ghostShapes = [.. below.SelectMany(shapes => shapes)];
+
+            // On Streets the ground level is building *footprints* — the interiors live one floor
+            // up. Standing inside a building at street level resolves to the ground floor, which
+            // has nothing indoors on it, so walking through a door showed nothing at all. Drawn
+            // together at full strength rather than ghosted, because it is the same walk.
+            if (_settings.Overlay.MergeGroundFloor && Merged(floor) is { } partner)
+                _mapShapes = [.. _mapShapes, .. MapGeometry.Parse(svg, partner, $"{mapId}|{partner}")];
             _mapShapesFor = key;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -451,7 +486,9 @@ public partial class OverlayWindow : Window
     private bool ShowsExtract(ExtractPin extract)
     {
         var mode = _settings.Overlay.Extracts;
+
         if (mode == "off") return false;
+        if (mode == "both") return true;
 
         return extract.Faction.Equals("shared", StringComparison.OrdinalIgnoreCase)
             || extract.Faction.Equals(mode, StringComparison.OrdinalIgnoreCase);
@@ -528,6 +565,10 @@ public partial class OverlayWindow : Window
         _itemsWindow.Closed += (_, _) =>
         {
             _itemsWindow = null;
+
+            // Back where it came from, folded away. Tearing off was otherwise a one-way trip:
+            // there was no route back to the map at all.
+            Remember(_settings.Overlay with { ShowItems = false });
             ApplyItemsPanel();
         };
 
@@ -560,6 +601,9 @@ public partial class OverlayWindow : Window
     /// <para>Fetched only when a list is actually on screen — during a raid with the panel closed
     /// this costs nothing at all.</para>
     /// </summary>
+    /// <summary>Reloads the items list because something outside the raid changed it.</summary>
+    public void RefreshItemsNow() => Dispatcher.Invoke(RefreshItems);
+
     private void RefreshItems()
     {
         if (!_settings.Overlay.ShowItems && _itemsWindow is null) return;
@@ -741,6 +785,26 @@ public partial class OverlayWindow : Window
     /// <summary>What the identify endpoint returns.</summary>
     private sealed record IdentifyResponse(List<ItemDetail>? Matches, List<string>? ReadText);
 
+    private void StepMarker(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            MarkerScale = Math.Clamp(_settings.Overlay.MarkerScale + by, 1.0, 8.0),
+        });
+
+        Draw();
+    }
+
+    private void StepText(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            TextScale = Math.Clamp(_settings.Overlay.TextScale + by, 1.0, 6.0),
+        });
+
+        Draw();
+    }
+
     private void ToggleGhost()
     {
         Remember(_settings.Overlay with { GhostOtherFloors = !_settings.Overlay.GhostOtherFloors });
@@ -855,6 +919,8 @@ public partial class OverlayWindow : Window
         // people to ignore it.
         RecentreButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
         ExtractButton.Content = _settings.Overlay.Extracts;
+        MarkerText.Text = $"{_settings.Overlay.MarkerScale:0.0}×";
+        TextScaleText.Text = $"{_settings.Overlay.TextScale:0.0}×";
         HaloButton.Content = _settings.Overlay.Halo ? "halo on" : "halo off";
         GhostButton.Content = _settings.Overlay.GhostOtherFloors ? "ghost on" : "ghost off";
         PlacesButton.Content = _settings.Overlay.ShowPlaceNames ? "names on" : "names off";
@@ -890,9 +956,12 @@ public partial class OverlayWindow : Window
                 {
                     Data = ghost.Geometry,
                     RenderTransform = transform,
-                    Stroke = (Brush)FindResource("Muted"),
-                    StrokeThickness = 0.7 * _settings.Overlay.LineWeight / fit,
-                    Opacity = opacity * 0.22,
+                    Stroke = (Brush)FindResource("Terrain"),
+                    StrokeThickness = 0.9 * _settings.Overlay.LineWeight / fit,
+
+                    // Was 0.22 and did not carry. The whole point of ghosting is seeing walkable
+                    // space when you go indoors, and a hint you have to look for does not do that.
+                    Opacity = opacity * 0.55,
                     IsHitTestVisible = false,
                 });
             }
@@ -1121,6 +1190,9 @@ public partial class OverlayWindow : Window
 
         Point Place(double x, double y) => ToCanvas(view, x, y, width, height);
 
+        var scale = _settings.Overlay.MarkerScale;
+        var textScale = _settings.Overlay.TextScale;
+
         foreach (var extract in _extracts.Where(ShowsExtract))
         {
             var at = Place(extract.X, extract.Y);
@@ -1138,6 +1210,7 @@ public partial class OverlayWindow : Window
                 StrokeThickness = 1.8,
                 Fill = (Brush)FindResource("Ground"),
                 Opacity = 0.95,
+                RenderTransform = new ScaleTransform(scale, scale),
                 ToolTip = $"{extract.Name} · {extract.Faction} extract",
             };
 
@@ -1145,7 +1218,7 @@ public partial class OverlayWindow : Window
             Canvas.SetTop(mark, at.Y);
             MapCanvas.Children.Add(mark);
 
-            Label(extract.Name, at.X, at.Y + 9, colour, 9);
+            Label(extract.Name, at.X, at.Y + 9 * scale, colour, 9 * textScale);
         }
 
         // No line between stops. A dashed path across a map implies a route through walls and
@@ -1168,6 +1241,7 @@ public partial class OverlayWindow : Window
                 Stroke = (Brush)FindResource("Ground"),
                 StrokeThickness = 1.5,
                 Opacity = stop.Done ? 0.45 : 1,
+                RenderTransform = new ScaleTransform(scale, scale),
 
                 // Shown on hover while the overlay takes the mouse. Named the way the planner
                 // does — the quest first, because "which quest is this for" is the question.
@@ -1186,15 +1260,22 @@ public partial class OverlayWindow : Window
             {
                 Text = order.ToString(),
                 FontFamily = new FontFamily("Consolas"),
-                FontSize = 10,
+                FontSize = 10 * scale * 0.6,
                 FontWeight = FontWeights.Bold,
                 Foreground = (Brush)FindResource("Ground"),
                 IsHitTestVisible = false,
             };
 
-            Canvas.SetLeft(label, at.X - 3);
-            Canvas.SetTop(label, at.Y - 19);
+            label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+            Canvas.SetLeft(label, at.X - label.DesiredSize.Width / 2);
+            Canvas.SetTop(label, at.Y - 15 * scale);
             MapCanvas.Children.Add(label);
+
+            // The name too, under the pin, so a plan can be read without hovering — which matters
+            // because hover over a window that never takes focus is unreliable.
+            if (_settings.Overlay.ShowPlaceNames)
+                Label(stop.TaskName, at.X, at.Y + 3, (Brush)FindResource("Need"), 9 * textScale);
         }
 
         // The names players use for places — "Old Gas", "Dorms". Off the map's own labels, so
@@ -1204,7 +1285,7 @@ public partial class OverlayWindow : Window
             foreach (var place in _places)
             {
                 var at = Place(place.X, place.Y);
-                Label(place.Text, at.X, at.Y, (Brush)FindResource("Muted"), 9);
+                Label(place.Text, at.X, at.Y, (Brush)FindResource("Muted"), 9 * textScale);
             }
         }
 
@@ -1239,7 +1320,14 @@ public partial class OverlayWindow : Window
                 Fill = (Brush)FindResource("Accent"),
                 Opacity = 0.25,
                 Data = Geometry.Parse("M 0,0 L -9,-24 L 9,-24 Z"),
-                RenderTransform = new RotateTransform(heading),
+                RenderTransform = new TransformGroup
+                {
+                    Children =
+                    {
+                        new ScaleTransform(scale * 0.7, scale * 0.7),
+                        new RotateTransform(heading),
+                    },
+                },
                 IsHitTestVisible = false,
             };
 
@@ -1250,14 +1338,14 @@ public partial class OverlayWindow : Window
 
         var you = new Ellipse
         {
-            Width = 9, Height = 9,
+            Width = 9 * scale * 0.6, Height = 9 * scale * 0.6,
             Fill = (Brush)FindResource("Accent"),
             Stroke = (Brush)FindResource("Ground"),
             StrokeThickness = 2,
         };
 
-        Canvas.SetLeft(you, centre.X - 4.5);
-        Canvas.SetTop(you, centre.Y - 4.5);
+        Canvas.SetLeft(you, centre.X - you.Width / 2);
+        Canvas.SetTop(you, centre.Y - you.Height / 2);
         MapCanvas.Children.Add(you);
     }
 

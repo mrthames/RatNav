@@ -188,6 +188,16 @@
                                         Visibility="Collapsed" />
                             </Grid>
 
+                            <!-- The colours mean something and nothing said what. -->
+                            <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0"
+                                       FontFamily="Consolas" FontSize="9"
+                                       Foreground="{StaticResource Muted}"
+                                       TextWrapping="Wrap">
+                                <Run Foreground="#ff5a3c">■</Run><Run Text=" find in raid  " />
+                                <Run Foreground="#e0c98a">■</Run><Run Text=" can buy  " />
+                                <Run Foreground="#7b8c9b">■</Run><Run Text=" have enough" />
+                            </TextBlock>
+
                             <ScrollViewer VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <ItemsControl x:Name="ItemsList"
@@ -241,7 +251,12 @@
             of the time so nothing decorative sits over the game during a raid.
         -->
         <Grid x:Name="EditChrome" Visibility="Collapsed">
-            <Border BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="2" />
+            <!--
+                A visible edge and something to grab, in both presentations. The centred map draws
+                no frame of its own, so without this there was nothing on screen to take hold of.
+            -->
+            <Border Background="#140b0f13"
+                    BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="2" />
 
             <Border x:Name="DragHandle"
                     Height="22" VerticalAlignment="Top"
@@ -313,7 +328,23 @@
                     <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
 
                     <TextBlock Style="{StaticResource Label}" Text="EXITS" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <Button x:Name="ExtractButton" Style="{StaticResource Chip}" Content="pmc" MinWidth="44" />
+                    <Button x:Name="ExtractButton" Style="{StaticResource Chip}" Content="pmc" MinWidth="52" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="PINS" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button x:Name="MarkerDown" Style="{StaticResource Chip}" Content="−" />
+                    <TextBlock x:Name="MarkerText" Style="{StaticResource Label}"
+                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                               MinWidth="38" TextAlignment="Center" Text="3.0×" />
+                    <Button x:Name="MarkerUp" Style="{StaticResource Chip}" Content="+" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="TEXT" VerticalAlignment="Center" Margin="10,0,6,0" />
+                    <Button x:Name="TextDown" Style="{StaticResource Chip}" Content="−" />
+                    <TextBlock x:Name="TextScaleText" Style="{StaticResource Label}"
+                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                               MinWidth="38" TextAlignment="Center" Text="2.0×" />
+                    <Button x:Name="TextUp" Style="{StaticResource Chip}" Content="+" />
 
                     <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
 

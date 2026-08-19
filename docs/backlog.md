@@ -10,6 +10,271 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[?]` needs a de
 
 ---
 
+## Round 6 — 2026-08-19
+
+**Decisions taken before execution:**
+
+- **Quests tabs: Active / Ready / Done / All.** Active is what you accepted; Ready is reachable but
+  not accepted; Done covers completed and failed; All includes locked. "Available" survives as
+  "Ready", which is what it always meant.
+- **Quest wiki images: fetch through Fandom's API and cache locally**, shown as a carousel with the
+  captions, attributed CC-BY-SA. The API is a supported route rather than HTML scraping, which is
+  what makes this acceptable against the no-scraping principle.
+
+**Order of execution:** investigations first, since two of them can change what the rest should
+look like; then bugs; then features.
+
+**Pass 1 shipped.** Everything ticked below is done. What remains, in rough order: off-screen edge
+markers, the vertical control stack, spawn locations, the Quests tab rebuild, barter and craft
+tracking with the items-list restructure, buddy-app map controls, items filters, bottom placement
+for the list, plan-page key warnings, and the quest wiki carousel.
+
+### Overlay
+
+- [x] **Map artifacts are far too small, and need to be scalable.** Waypoints especially.
+  - Default: **×3** the current size, as a starting point to judge from.
+  - Add a **scale control** covering everything drawn on the map — waypoints, extracts, and the
+    like — because players run different resolutions and one fixed size cannot suit all of them.
+
+- [x] **The popped-out items list is a one-way trip.** Once torn off, there is no way to put it
+  back. It needs a close control that returns it into the map overlay, **collapsed**.
+- [ ] **Position the list at the bottom left or bottom right of the map**, as a toggle.
+  - Note: a left/right side swap (`⇄`) already exists but is only visible in interact mode (`F6`),
+    so it may simply not have been findable. Worth confirming whether this replaces that or is a
+    separate bottom-corner placement. `[?]`
+- [x] **The popped-out window should open at the height of its contents** — quests, hideout and
+  watchlist combined — rather than needing to be dragged to size every single time it is opened.
+- [ ] **All of the above persists across sessions**, so relaunching RatNav or the game picks up
+  where it left off. Stored **separately from the F9 view**, like the F5/F9 split already is.
+
+### Items list
+
+- [x] **The red and yellow numbers are unexplained.** Needs a legend or helper text.
+  - Cause, for whoever picks this up: the colour is the count, set in `ItemRow.From`. Red means an
+    active quest or upgrade wants it **found in raid**; amber means it is wanted but can be bought;
+    grey means you already have enough. Nothing on screen says so.
+- [x] **Item names are shorthand and unreadable.** "Chek. 15" is not a name anyone recognises.
+  - Cause: the overlay uses tarkov.dev's `shortName` because it fits a narrow column. That works
+    for "LEDX" and "GPU" and fails badly for keys — "Chek. 15" is *Chekannaya 15 apartment key*.
+  - Wanted: human-readable names throughout, not backend shorthand.
+
+### Interact mode (F6)
+
+- [x] **The detached items window cannot be dragged or resized.** `F6`'s move and resize behaviour
+  is not reaching it once it is off the map overlay. It needs the same easy drag and resize.
+  - Note: it *was* given whole-surface `DragMove` and a resize grip, so either they are not
+    working or they are not discoverable. Check before rewriting.
+- [ ] **The map settings strip is horizontal and too long.** Reaching fade, zoom and the rest means
+  widening the map first, which is backwards.
+  - Wanted: a **vertical stack**, shown by default on `F6`, with an option to **collapse** it.
+  - It must live **inside the map overlay** so that the items list — left, right or bottom — is not
+    pushed around by the controls.
+  - Controls should **scale or scroll** within whatever overlay size the player has chosen, rather
+    than dictating a minimum width.
+
+### Floors and building interiors
+
+- [x] **Building interiors are missing on Streets.** Walking through a door, no internal layout
+  appeared on either the ground or second floor — no hallways, no walkable areas, nothing to say
+  where to go or where a dead end is.
+  - **Investigated: the data is fine, and Justin's instinct was right.** Streets' `Ground_Level`
+    holds 484 paths but its `buildings` group is footprints only — no interiors. The interiors
+    live one level up, in `Second_Floor` → `Floor-2` (98 paths). Standing inside a building at
+    street level puts you at a height that resolves to `Ground_Level`, which has nothing indoors
+    to draw. So combining the base pair is the fix, not a workaround.
+- [x] **Ground and the first indoor floor should probably be drawn together.** On Streets, stepping
+  off the street into a building puts you on the second level, but nothing about that transition is
+  visually significant — so the pair should read as one prominent layer.
+  - Higher floors should still hide the ones below, so this is the *base pair* being combined
+    rather than a rule applied to every level.
+  - Exactly which two combine is map-dependent — ground plus first on some, ground plus second on
+    others. `[?]` Needs a rule that works from the map's own floor list rather than a hardcoded pair.
+- [x] **Ghosting needs to be brighter.** At its current strength it does not carry, and the whole
+  point is seeing walkable areas when you go inside a building.
+
+### Off-screen markers
+
+- [ ] **Anything outside the visible area needs an edge indicator.** Zooming or panning pushes
+  waypoints and extracts off the view, and they currently vanish with no trace.
+  - Wanted: a marker pinned to the **edge of the map view**, positioned in the direction of the
+    real thing as the crow flies, so you can walk that way until it comes into view.
+  - Applies to **waypoints and extracts** both — knowing which direction an exit is in while
+    navigating is the same need.
+  - Should keep whatever the marker already means: waypoint numbering, and the green/yellow
+    PMC/Scav distinction for extracts.
+
+### Hover and cursor reliability
+
+These three are probably one underlying problem. Worth investigating together before fixing any of
+them separately.
+
+- [ ] **Tooltips flash and vanish.** Hovering a waypoint in the F5 view shows a tooltip for an
+  instant, then it disappears. Same unresponsiveness in F9.
+  - Hypothesis: the overlay is `Topmost` with `WS_EX_NOACTIVATE`, and a WPF `ToolTip` is a popup
+    owned by a window that never activates — so it opens and is immediately dismissed. If that is
+    it, tooltips cannot be made reliable and the label has to be drawn **into the canvas** instead.
+- [x] **The cursor vanishes and stutters over the map in F6.** It flickers as it crosses lines
+  versus open areas, and near the edges — exactly where you need it for dragging and resizing — it
+  disappears often enough to be hard to locate.
+  - Hypothesis: cursor resolution is falling through inconsistently. Drawn shapes are
+    hit-test-invisible, so the cursor comes from whatever is beneath them, and a `Cursors.None`
+    set for click-through mode may be winning in places. Needs one explicit, consistent cursor
+    across every element while interactive.
+- [x] **F9 has no visible border or drag handle.** There is nothing to grab or even see for
+  selection. It should behave the way F5 does.
+  - And when `F6` is toggled off, those controls must disappear again — that part works today and
+    should stay that way.
+
+### Map text, spawns, and quest imagery
+
+- [ ] **Text on the map needs its own scale control**, alongside the artifact scale from the first
+  item of this round. Covers street names, building names, area names, and waypoint names.
+  - `[?]` One scale for everything drawn, or separate dials for text and iconography? The first
+    item asked for ×3 on icons specifically, which suggests they may want to move independently.
+- [ ] **Spawn locations, toggleable on the map.** Useful for knowing where players who loaded in at
+  the same time as you may be coming from.
+  - Check whether tarkov.dev's maps document carries spawns, and what it distinguishes — PMC,
+    Scav, boss. If it separates them, the toggle probably should too.
+- [ ] **Quest images from the wiki, reachable from the waypoint hover.** For a quest like *Glory to
+  CPSU*, the wiki has screenshots showing the building and the room to look for; those are what
+  turn "walk to this pin" into "find this door".
+  - Wanted: a clickable action opening a **carousel** of the quest's wiki images, with the
+    descriptions that accompany them.
+  - **Settled:** fetch through **Fandom's API** and cache locally, with CC-BY-SA attribution
+    shown. The API is a supported route rather than HTML scraping, which is what makes this sit
+    acceptably against the no-scraping principle.
+  - Also depends on the tooltip work above: if hover labels have to be drawn into the canvas, the
+    "clickable" part needs a click target that survives an overlay that never takes focus.
+
+### Buddy app parity
+
+- [x] **Factory reports "calibration unverified".** Believed to have been sorted already — needs a
+  review that the map data is current with everything since.
+  - **Investigated. The badge is right and the guess is doubtful.** Factory resolves to `(z, x)`
+    at `Weak` confidence — the only map not resolving to `(x, z)`. It is nearly square, so the
+    aspect check cannot settle the axis order, and its extracts sit inside the border, so the
+    signs cannot be settled either.
+  - Four maps are `Weak`: **Factory, Reserve, Terminal**, and Lighthouse. Lighthouse is now marked
+    verified from the Northern Checkpoint screenshot (0.3pp fit, runner-up 21.6pp out).
+  - **Reserve looks actively wrong.** The screenshot taken at Checkpoint Fence reported a best fit
+    of `(-x, -z)` at 12.7pp — a poor fit even as a winner — while the solver settles on `(x, z)`.
+    Worth a fresh screenshot at a known extract to settle it.
+  - Factory and Terminal need the same: one screenshot each, standing somewhere identifiable.
+- [ ] **The buddy app should get the same map controls as the overlay** — ink, fade, ghosting,
+  place names, floor selection, artifact and text scale, zoom, right-drag pan.
+  - **Not** "follows you": there is no you in a browser.
+  - Extends the Round 5 item "Map controls to match the overlay", which is still open — do them
+    together rather than twice.
+- [x] **Extracts need a "both" option**, showing PMC and Scav together, in **both** the overlay and
+  the buddy app. Today the overlay cycles pmc → scav → off with no combined view.
+
+- [x] **The hideout look-ahead slider does not drag.** Clicking steps it, but holding and dragging
+  does nothing.
+  - Likely cause: every change fires a save and a reload, and the re-render replaces the input
+    mid-drag so the browser loses the grab. Debouncing while dragging would fix it.
+  - If dragging cannot be made to feel right, **replace it with arrows** — stepping is the whole
+    interaction anyway, and a slider that only works by clicking is worse than a pair of buttons.
+  - The Items tab has the same control and will have the same problem.
+
+- [ ] **"By amount" / "What's next" appears to do nothing** on the Items page.
+  - Verify it is actually being applied first — the request only sends `sort` for one of the two,
+    so a bug is plausible. If it *is* applied, the two orderings may simply be too alike to notice:
+    both fall back to found-in-raid and then quantity, and if most rows are wave 1 the leading key
+    barely separates anything.
+  - **If the distinction is not meaningful, remove the toggle.** Leave the tabs as needed /
+    watchlist / search, and let the table be sorted by clicking its columns instead.
+- [ ] **Filters on the items table**, which is the thing actually wanted here: show only what is
+  needed now, or only hideout build items.
+
+### Plan persistence
+
+- [x] **The Plan tab forgets which map you were on.** After a Streets session it opened on Factory.
+  It should reopen on the map of the plan you last used, showing whatever was left unfinished.
+  - Cause: the active plan *is* restored on the service side, but the Plan view's map picker is
+    seeded independently — it just takes the first map in the list, which is Factory. The picker
+    needs to start from the active plan.
+- [ ] **Switching maps should not discard the objectives you picked.** Choosing a different map,
+  then coming back, should still have your selections for the first one, and the last map used
+  stays remembered.
+  - `[?]` This implies keeping a selection per map rather than one selection at a time. Worth
+    confirming whether that means several saved plans (one per map, switched between) or one plan
+    that remembers its map-by-map picks.
+
+### Quests tab, rebuilt
+
+- [ ] **Traders belong on the Quests tab**, with their current level and up/down adjustment.
+  - A separate Traders tab was just built (Round 5). This supersedes it — fold it into Quests
+    rather than keeping both.
+  - Auto-track if possible. Already established it is not: loyalty depends on rep, level and spend,
+    none of which the game writes to disk. Manual stays.
+- [ ] **Locked section for quests not yet reachable** — held there until the level is reached or
+  the prerequisite quests are done.
+- [ ] **Cut the tabs down to Active / Done / All.**
+  - Remove **Available** — redundant.
+  - Remove **To-do** — redundant to Active.
+  - **All** shows everything: active, completed, and not started.
+  - **Settled:** four tabs — **Active** (accepted), **Ready** (reachable, not accepted), **Done**
+    (completed and failed), **All** (everything including locked). "Available" was not redundant,
+    it was badly named.
+- [ ] **Every quest offers four states: not started, active, done, failed.**
+  - Quests start as **not started**.
+  - **Done** moves it off Active and into Done.
+  - **Failed** is also a finished state, but tracked separately so failures can be seen.
+- [ ] **Setting a quest active does nothing.** It stays where it was — the status change is not
+  moving it between tabs.
+- [ ] **Storyline quests are missing entirely** — a recent addition to the game and not modelled
+  at all. Needs tracking, likely as its own top-level section.
+  - And a matching one for **side quests**.
+  - Check whether tarkov.dev's tasks document distinguishes these already; if it does not, work out
+    where the distinction comes from before designing tabs around it.
+
+### Overlay freshness
+
+- [x] **Adding an item to the watchlist does not reach the overlay.** It stayed stale well past any
+  reasonable wait. Must work **mid-raid and between raids** alike.
+  - Cause: the overlay only reloads its items when the *raid* changes — a position fix, a plan
+    change, a raid starting or ending. Watchlist and have-count edits go through the tracker, which
+    announces nothing, so the overlay is never told.
+  - Push is the better answer than polling and the plumbing already exists: the raid session
+    publishes to every surface over a WebSocket. Item changes should publish the same way, rather
+    than the overlay waking up on a timer to ask.
+  - Justin's stated fallback: a periodic refresh, or a toggle for one.
+
+### Barter tracking
+
+- [ ] **Barters you are working towards, tracked separately from quests and the hideout.**
+  - Example: Therapist's Dorm 303 key barter wants 7 plugs and 3 blue tapes. Picking that barter
+    should put those on your list.
+  - **Counted apart.** Those finds must not be folded into quest or hideout totals — an item wanted
+    3× for a quest and 7× for a chosen barter is two separate reasons, not a single 10.
+  - Shown as its own header or subsection in the items list, on the **overlay and the buddy app**.
+    Exact UX is open. `[?]`
+  - The data is already there: barters are fetched and indexed by what they cost, and each carries
+    its trader, loyalty level, and what it hands back. What is missing is the ability to *choose*
+    one and have it feed the list — the same shape as targeting a hideout upgrade.
+
+### Crafts, and the shape of the items list
+
+- [ ] **Hideout crafts, tracked the same way as barters.** Pick a craft — a Toolset on the
+  Workbench — and the items needed to start it appear on the list.
+  - Gated by station level, so only crafts your hideout can actually run should be offerable.
+  - tarkov.dev has a `crafts` document alongside `barters`; it is not fetched yet.
+- [ ] **Restructure the items list around this.** Justin's proposed shape, which supersedes the
+  three-section split built in Round 5:
+  - **Quests & hideout** — as now.
+  - **Watchlist** — items of interest, with **subsections for Barter and Crafting**. Each names the
+    barter or craft being worked towards and lists what it needs.
+  - **Later** — still there, but focused purely on quests and hideout.
+- [ ] **Look-ahead applies to quests as well as the hideout**, and is a toggle, not a fixed depth:
+  immediate need, or one or two levels ahead.
+  - **Helper text beside each section title** saying which it is currently showing — immediate
+    need, or looking ahead. Without that the same list means two different things on different
+    days and nothing on screen says which.
+  - Note: a hideout look-ahead already exists. This extends it to quests and surfaces what it is
+    set to, rather than leaving it implicit.
+
+---
+
 ## Round 5 — 2026-08-19
 
 ### Overlay

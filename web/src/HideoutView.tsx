@@ -48,22 +48,31 @@ export function HideoutView() {
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
           <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Look ahead</span>
-
-          <input
-            type="range"
-            min={1}
-            max={6}
-            step={1}
-            value={state.lookAhead}
-            disabled={busy}
-            onChange={(e) => void changeLookAhead(Number(e.target.value))}
-            className="accent-accent"
-            aria-label="How many hideout upgrades ahead to plan for"
-          />
-
-          <span className="font-mono text-sm tabular-nums text-ink">{state.lookAhead}</span>
+          <button
+            type="button"
+            disabled={busy || state.lookAhead <= 1}
+            onClick={() => void changeLookAhead(state.lookAhead - 1)}
+            aria-label="Look one upgrade less far ahead"
+            className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                       hover:text-ink disabled:opacity-30
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            −
+          </button>
+          <span className="w-6 text-center font-mono text-sm tabular-nums text-ink">{state.lookAhead}</span>
+          <button
+            type="button"
+            disabled={busy || state.lookAhead >= 6}
+            onClick={() => void changeLookAhead(state.lookAhead + 1)}
+            aria-label="Look one upgrade further ahead"
+            className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                       hover:text-ink disabled:opacity-30
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            +
+          </button>
         </div>
 
         {/*

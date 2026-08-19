@@ -398,6 +398,30 @@ public sealed record RatNavSettings
         /// <summary>Line weight multiplier, for making the map heavier or lighter over the game.</summary>
         public double LineWeight { get; init; } = 1.0;
 
+        /// <summary>
+        /// Size of everything placed on the map — waypoints, extracts, the player marker.
+        ///
+        /// <para>Scalable rather than fixed because players run wildly different resolutions, and
+        /// a marker sized for 1080p is a speck on a 4K screen.</para>
+        /// </summary>
+        public double MarkerScale { get; init; } = 3.0;
+
+        /// <summary>
+        /// Size of text drawn on the map — place names, extract names. Separate from
+        /// <see cref="MarkerScale"/>: a map can want big markers and small labels, or the reverse.
+        /// </summary>
+        public double TextScale { get; init; } = 2.0;
+
+        /// <summary>
+        /// Draw the floor above the ground together with it, rather than ghosted.
+        ///
+        /// <para>On Streets the ground level holds only building footprints — the interiors are one
+        /// level up. Standing inside a building at street level resolves to the ground floor, which
+        /// has nothing indoors to draw, so the two have to be read together or going through a door
+        /// shows you nothing at all.</para>
+        /// </summary>
+        public bool MergeGroundFloor { get; init; } = true;
+
         /// <summary>The arrangement of whichever presentation is on screen.</summary>
         public OverlayPlacement Current => Mode == OverlayMode.Wireframe ? Wireframe : Box;
 

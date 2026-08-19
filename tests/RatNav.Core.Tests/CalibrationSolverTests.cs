@@ -14,12 +14,27 @@ public class CalibrationSolverTests
     private static GamePosition At(double x, double z) => new(x, 0, z);
 
     [Fact]
-    public void No_map_needs_a_hand_verified_override_any_more()
+    public void A_hand_verified_mapping_beats_the_evidence()
     {
-        // The overrides that used to live here were compensating for a different data source's
-        // bad bounds, not describing the maps. Against tarkov.dev's own numbers every map solves
-        // on the evidence, so an empty table is the correct state rather than an oversight.
-        Assert.Empty(CalibrationSolver.VerifiedMappings);
+        // Overrides exist for the maps the automatic signals cannot settle: square-ish ones give
+        // the aspect check nothing, and extracts sitting inside the border leave mirroring
+        // undetectable. A player standing somewhere known is ground truth, and it has to win.
+        Assert.True(CalibrationSolver.VerifiedMappings.ContainsKey("lighthouse"));
+
+        var solved = CalibrationSolver.Solve("lighthouse", FactoryBounds, 400, 600, []);
+
+        Assert.Equal(CalibrationSolver.VerifiedMappings["lighthouse"], solved.Mapping);
+        Assert.Equal(CalibrationConfidence.Verified, solved.Confidence);
+    }
+
+    [Fact]
+    public void Overrides_stay_the_exception()
+    {
+        // The table is an escape hatch, not a lookup. If it starts filling up, the solver has
+        // stopped working and that is worth noticing rather than papering over one map at a time.
+        Assert.True(
+            CalibrationSolver.VerifiedMappings.Count <= 3,
+            "Overrides are piling up — the solver is probably wrong rather than the maps unusual.");
     }
 
     [Fact]
