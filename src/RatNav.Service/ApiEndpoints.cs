@@ -108,10 +108,26 @@ public static class ApiEndpoints
 
             var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
 
-            var results = tracker.Watchlist
-                .Select(w => index.GetNeeds(w.ItemId)
-                    ?? new ItemNeeds { Item = index.GetItem(w.ItemId) ?? Unknown(w.ItemId) })
-                .Select(n => TrackedItemView.From(tracker.Track(n, progress, hideout)));
+            // The watchlist counts *your* number.
+            //
+            // It used to report quest and hideout need, which the Needed tab already reports — so
+            // the same item read one figure here and another there, and neither was the target you
+            // set. Quest and hideout counts stay on the row so it can still say why the item
+            // matters elsewhere; they just stop deciding how many you are short.
+            var results = tracker.Watchlist.Select(entry =>
+            {
+                var needs = index.GetNeeds(entry.ItemId)
+                    ?? new ItemNeeds { Item = index.GetItem(entry.ItemId) ?? Unknown(entry.ItemId) };
+
+                var tracked = tracker.Track(needs, progress, hideout);
+                var target = entry.Target ?? 0;
+
+                return TrackedItemView.From(tracked) with
+                {
+                    Needed = target,
+                    Remaining = Math.Max(0, target - tracked.Have),
+                };
+            });
 
             return Results.Ok(results);
         });
@@ -315,7 +331,8 @@ public static class ApiEndpoints
             if (state.Index is not { } index)
                 return Results.Ok(new ItemPanel());
 
-            var upcoming = state.Upcoming(progress, lookAhead ?? settings.HideoutLookAhead);
+            var depth = lookAhead ?? settings.HideoutLookAhead;
+            var upcoming = state.Upcoming(progress, depth);
 
             // Split by reachability, not by depth. Wave 1 is what nothing is standing in the way
             // of; the rest is gated behind an upgrade you have not built.
@@ -376,13 +393,31 @@ public static class ApiEndpoints
 
             foreach (var entry in tracker.Watchlist)
             {
-                var needs = index.GetNeeds(entry.ItemId)
-                    ?? new ItemNeeds { Item = index.GetItem(entry.ItemId) ?? Unknown(entry.ItemId) };
+                var item = index.GetItem(entry.ItemId) ?? Unknown(entry.ItemId);
+                var have = tracker.GetHave(entry.ItemId);
 
-                var tracked = tracker.Track(needs, progress, now);
+                // Your number, not the game's. The watchlist is what *you* decided to collect —
+                // quests and the hideout have their own section, and borrowing their totals here
+                // made the same item read one figure in one place and another figure below it.
+                var wanted = entry.Target;
 
-                panel.Watchlist.Add(PanelRow.From(
-                    tracked, entry.Note is { Length: > 0 } note ? note : Why(tracked, needs, progress)));
+                panel.Watchlist.Add(new PanelRow
+                {
+                    Id = entry.ItemId,
+                    Name = Readable(item),
+                    FullName = item.Name,
+                    Count = wanted is { } target ? Math.Max(0, target - have) : 0,
+
+                    // Without a target there is nothing to finish, so nothing to tick off. A row
+                    // that says "done" when you never said how many you wanted is a lie.
+                    Tracked = wanted is not null,
+
+                    Reason = entry.Note is { Length: > 0 } note
+                        ? note
+                        : wanted is { } t ? $"{have} of {t}" : "watching",
+
+                    FoundInRaid = false,
+                });
             }
 
             // Found-in-raid first: it is the one thing you cannot buy your way out of later.
@@ -399,6 +434,7 @@ public static class ApiEndpoints
                 panel.Later.RemoveRange(mostRowsWorthShowing, panel.LaterHidden);
             }
 
+            panel.LookAhead = depth;
             return Results.Ok(panel);
         });
 
@@ -1301,6 +1337,13 @@ public sealed record ItemPanel
 
     /// <summary>How many rows were cut from <see cref="Later"/> to keep the panel readable.</summary>
     public int LaterHidden { get; set; }
+
+    /// <summary>
+    /// How far into the hideout build order the list is looking. Reported so a heading can say so:
+    /// the same list means different things at depth 1 and depth 4, and nothing on screen said
+    /// which you were looking at.
+    /// </summary>
+    public int LookAhead { get; set; } = 1;
 }
 
 /// <summary>One line: what it is, how many more, and why — nothing else fits.</summary>
@@ -1312,6 +1355,12 @@ public sealed record PanelRow
     public required int Count { get; init; }
     public required string Reason { get; init; }
     public bool FoundInRaid { get; init; }
+
+    /// <summary>
+    /// True when there is a number to reach. False for a watchlist entry with no target, where
+    /// zero means "no amount was ever named" rather than "you have enough".
+    /// </summary>
+    public bool Tracked { get; init; } = true;
 
     public static PanelRow From(TrackedItem tracked, string reason) => new()
     {

@@ -253,7 +253,38 @@ them separately.
     than the overlay waking up on a timer to ask.
   - Justin's stated fallback: a periodic refresh, or a toggle for one.
 
+### Item identification (F10) card
+
+- [ ] **The card shows far too much.** It lists every quest, every hideout level, every barter it
+  can find, which is not what the question is.
+  - What is actually wanted, in this order:
+    1. **Is this needed for anything I am working on** — an active quest, a hideout upgrade in
+       view, or a barter being tracked?
+    2. **Is it on my watchlist?**
+    3. **A link to the item's wiki page.**
+  - Everything else is background. A card you have to read while standing over loot has to answer
+    in one glance, and right now it answers by listing.
+  - Note: "barters being tracked" depends on the barter-tracking feature, which is still open. The
+    other two do not.
+
+### Quest log pane
+
+- [ ] **A quest log on the overlay**, listing the active quests being worked in this raid.
+  - A **collapsible pane** alongside the items list. Either can be collapsed, and their order is
+    yours — so whichever matters more that raid sits where you want it.
+  - **Poppable out** into its own window, exactly like the items list.
+  - Each quest **links to its wiki article**.
+  - Shares the plumbing with the items list rather than duplicating it: the same section, collapse,
+    dock-back, pop-out and placement machinery.
+
 ### Items panel, second pass
+
+- [x] **The watchlist was counting quest and hideout need, not your target.** Which is why one item
+  read 19 on the overlay and 60/49 in the buddy app — neither figure was the watchlist's. The
+  watchlist now counts the number you set; quests and the hideout keep their own section. A row
+  with no target set shows a dash rather than a tick, because there was never an amount to finish.
+- [x] **Section headings say what they are counting** — "buildable now" versus "+2 ahead" — so the
+  same list at two look-ahead depths is tellable apart.
 
 - [x] **The items list must never attach to the map in the F9 view.** That view exists to be a map;
   a panel over the middle of the screen is the thing it is for avoiding. Attached is now F5 only,

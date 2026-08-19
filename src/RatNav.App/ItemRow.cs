@@ -30,7 +30,9 @@ public sealed record ItemRow
     public static ItemRow From(PanelRow row) => new()
     {
         Name = row.Name,
-        Count = row.Count > 0 ? row.Count.ToString() : "\u2713",
+        // A tick means "you have enough of something you were counting". Without a target there
+        // was never anything to count, so it gets a dash instead of a false sense of completion.
+        Count = row.Count > 0 ? row.Count.ToString() : row.Tracked ? "\u2713" : "\u2013",
         Reason = row.Reason is { Length: > 0 }
             ? $"{row.FullName} — {row.Reason}"
             : row.FullName,

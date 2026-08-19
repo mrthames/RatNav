@@ -687,10 +687,14 @@ public partial class OverlayWindow : Window
             var url = $"http://localhost:{ServiceHost.DefaultPort}/api/items/panel";
             var panel = await _http.GetFromJsonAsync<ItemPanel>(url) ?? new ItemPanel();
 
+            // The heading carries what is being counted. "Quests & hideout" alone does not say
+            // whether it means tonight's upgrades or the next four, and the number changes a lot.
+            var scope = panel.LookAhead <= 1 ? "buildable now" : $"+{panel.LookAhead - 1} ahead";
+
             return
             [
-                Section("QUESTS & HIDEOUT", panel.Now),
-                Section("WATCHLIST", panel.Watchlist),
+                Section("QUESTS & HIDEOUT", panel.Now, label: $"QUESTS & HIDEOUT · {scope}"),
+                Section("WATCHLIST", panel.Watchlist, label: "WATCHLIST · your targets"),
 
                 // Gated upgrades and quests you could accept but have not. Folded by default: it
                 // is the longest of the three and the least actionable, and an overlay that opens
