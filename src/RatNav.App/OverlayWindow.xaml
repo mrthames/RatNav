@@ -33,6 +33,13 @@
         <SolidColorBrush x:Key="Need" Color="#ff5a3c" />
         <SolidColorBrush x:Key="Terrain" Color="#9fb3c8" />
 
+        <!--
+            Marks of your own. Its own colour and its own shape, because "a quest asked for this"
+            and "I decided to note this" are different kinds of thing and the difference has to
+            survive a glance.
+        -->
+        <SolidColorBrush x:Key="Mark" Color="#c98ef5" />
+
         <!-- Extracts. The colour carries the faction; the shape is the same for both. -->
         <SolidColorBrush x:Key="PmcExit" Color="#5ee07a" />
         <SolidColorBrush x:Key="ScavExit" Color="#f5cf4a" />

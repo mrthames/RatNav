@@ -32,6 +32,13 @@ public static class ApiEndpoints
     /// </summary>
     public static event Action? ItemsChanged;
 
+    /// <summary>
+    /// Raised when a mark of your own is added, renamed or removed, so the overlay redraws without
+    /// waiting for a raid to change. Marking a spot in the buddy app and then having to take a
+    /// position fix before it appeared would defeat the point of marking it.
+    /// </summary>
+    public static event Action? WaypointsChanged;
+
     public static void MapRatNavApi(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api");
@@ -1150,6 +1157,42 @@ public static class ApiEndpoints
                 });
         });
 
+        // ---- marks of your own
+
+        // Spots someone marked by hand, with a short name for each.
+        //
+        // Kept apart from plans deliberately. A plan is for one raid and gets cleared; "car
+        // batteries behind the garage" is true every raid, and having to re-add it each time is
+        // how a feature stops being used.
+        api.MapGet("/maps/{id}/waypoints", (CustomWaypointStore marks, string id) =>
+            Results.Ok(marks.For(id)));
+
+        api.MapPost("/maps/{id}/waypoints", (
+            CustomWaypointStore marks, string id, WaypointRequest request) =>
+        {
+            var mark = marks.Add(id, request.Label ?? "", request.X, request.Y, request.Floor);
+
+            WaypointsChanged?.Invoke();
+            return Results.Ok(mark);
+        });
+
+        api.MapPost("/waypoints/{markId}/label", (
+            CustomWaypointStore marks, string markId, WaypointRequest request) =>
+        {
+            if (!marks.Rename(markId, request.Label ?? "")) return Results.NotFound();
+
+            WaypointsChanged?.Invoke();
+            return Results.Ok(new { id = markId, label = request.Label });
+        });
+
+        api.MapDelete("/waypoints/{markId}", (CustomWaypointStore marks, string markId) =>
+        {
+            if (!marks.Remove(markId)) return Results.NotFound();
+
+            WaypointsChanged?.Invoke();
+            return Results.Ok(new { id = markId });
+        });
+
         // Roughly where the other players started. Areas rather than points, and only the ones a
         // player can appear at — see SpawnAreas for why.
         api.MapGet("/maps/{id}/spawns", (RatNavState state, string id) =>
@@ -1768,6 +1811,8 @@ public sealed record TradeCost
 }
 
 public sealed record TradeRequest(bool Tracked, string? Kind, int? Times);
+
+public sealed record WaypointRequest(string? Label, double X, double Y, string? Floor);
 
 /// <summary>A spawn area, placed on the map image.</summary>
 public sealed record SpawnPin

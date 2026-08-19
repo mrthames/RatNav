@@ -214,6 +214,16 @@ export interface PlannableObjective {
   itemIds: string[]
 }
 
+export interface CustomWaypoint {
+  id: string
+  mapId: string
+  label: string
+  x: number
+  y: number
+  floor: string | null
+  createdAt: string
+}
+
 export interface Trade {
   id: string
   /** "barter" or "craft". */
@@ -440,6 +450,24 @@ export const api = {
     del<RaidView>(`/api/raid/stops/${encodeURIComponent(objectiveId)}`),
 
   clearPlan: () => del<RaidView>('/api/raid/plan'),
+
+  /**
+   * Spots you marked by hand.
+   *
+   * Kept apart from plans: a plan is for one raid and gets cleared, and "car batteries behind the
+   * garage" is true every raid.
+   */
+  waypoints: (mapId: string) =>
+    get<CustomWaypoint[]>(`/api/maps/${encodeURIComponent(mapId)}/waypoints`),
+
+  addWaypoint: (mapId: string, label: string, x: number, y: number, floor?: string | null) =>
+    post<CustomWaypoint>(
+      `/api/maps/${encodeURIComponent(mapId)}/waypoints`, { label, x, y, floor }),
+
+  renameWaypoint: (id: string, label: string) =>
+    post<unknown>(`/api/waypoints/${encodeURIComponent(id)}/label`, { label, x: 0, y: 0 }),
+
+  removeWaypoint: (id: string) => del<unknown>(`/api/waypoints/${encodeURIComponent(id)}`),
 
   /** Where you can leave from. Faction comes back raw so the view decides what to show. */
   extracts: (mapId: string) =>

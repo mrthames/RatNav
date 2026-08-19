@@ -468,15 +468,20 @@ The research is kept below in case it is ever wanted again.
     **search for a named place**, and the ability to **mark a spot** from what you find.
   - Concretely: the overlay's ink, halo, ghosting, place names and scale controls are all missing
     here, and the map already knows 46 named places on Streets that nothing searches.
-- [ ] **Custom waypoints.** The expected workflow is finding a spot in Map Genie, then marking it in
-  RatNav so it shows in raid.
-  - A **short label** — "car batteries" — visible on the overlay.
-  - Added to a plan alongside quest objectives.
-  - **Drawn differently from quest waypoints**, a different colour, so what is a quest and what is
-    your own note are tellable apart at a glance.
-  - Placed by clicking the map, and/or by pasting coordinates. `[?]` Map Genie gives positions in
-    its own coordinate space, not the game's, so clicking RatNav's own map is likely the only
-    reliable route — worth confirming what Justin expects to do here.
+- [x] **Custom waypoints.** Mark a spot on the Maps tab and it draws on the overlay, in raid,
+  labelled.
+  - Placed by clicking, which settled the open question: Map Genie's positions are in its own
+    coordinate space, so clicking RatNav's own map is the only reliable route. Coordinates are
+    stored **normalised** rather than in game units, so a mark also survives a change to a map's
+    calibration.
+  - Purple and a diamond — its own colour *and* its own shape. Colour alone fails for anyone who
+    cannot separate the two hues, and a navigation overlay is a bad place to find that out.
+  - **Not** part of a plan, which is the one deliberate departure from the ask. A plan is for one
+    raid and gets cleared; "car batteries behind the garage" is true every raid, and having to
+    re-add it each time is how a feature stops being used. They persist per map instead, and draw
+    whenever that map is on screen.
+  - Adding one in the buddy app pushes straight to the overlay rather than waiting for the next
+    position fix.
 
 ### Floors, third pass
 

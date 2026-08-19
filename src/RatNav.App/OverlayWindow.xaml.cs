@@ -10,6 +10,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using RatNav.Core;
 using RatNav.Core.Model;
+using RatNav.Core.Tracking;
 using RatNav.App.Interop;
 using RatNav.Service;
 
@@ -124,6 +125,9 @@ public partial class OverlayWindow : Window
 
     /// <summary>Where the other players started, grouped into areas by the service.</summary>
     private IReadOnlyList<SpawnPin> _spawns = [];
+
+    /// <summary>Spots marked by hand. Not part of any plan, so they outlive every plan.</summary>
+    private IReadOnlyList<CustomWaypoint> _marks = [];
 
     /// <summary>Named places on the current map, fetched once per map.</summary>
     private IReadOnlyList<PlaceLabel> _places = [];
@@ -559,6 +563,9 @@ public partial class OverlayWindow : Window
             _spawns = await _http.GetFromJsonAsync<List<SpawnPin>>(
                 $"{root}/maps/{Uri.EscapeDataString(mapId)}/spawns") ?? [];
 
+            _marks = await _http.GetFromJsonAsync<List<CustomWaypoint>>(
+                $"{root}/maps/{Uri.EscapeDataString(mapId)}/waypoints") ?? [];
+
             _floorsFor = mapId;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
@@ -567,6 +574,7 @@ public partial class OverlayWindow : Window
             _extracts = [];
             _places = [];
             _spawns = [];
+            _marks = [];
         }
     }
 
@@ -769,6 +777,19 @@ public partial class OverlayWindow : Window
     /// </summary>
     /// <summary>Reloads the items list because something outside the raid changed it.</summary>
     public void RefreshItemsNow() => Dispatcher.Invoke(RefreshItems);
+
+    /// <summary>
+    /// Re-reads the marks for the map on screen and redraws.
+    ///
+    /// <para>Marks are fetched with the rest of a map's furniture and cached against the map id,
+    /// so adding one in the buddy app would otherwise not show until the map changed. Clearing
+    /// the cache key is what makes the next draw go and look again.</para>
+    /// </summary>
+    public void RefreshWaypointsNow() => Dispatcher.Invoke(() =>
+    {
+        _floorsFor = null;
+        Redraw();
+    });
 
     private void RefreshItems()
     {
@@ -1930,6 +1951,41 @@ public partial class OverlayWindow : Window
             MapCanvas.Children.Add(mark);
 
             Label(extract.Name, at.X, at.Y + 9 * scale, colour, 9 * textScale);
+        }
+
+        // Marks of your own, in their own colour.
+        //
+        // A different colour from a quest waypoint on purpose: what a quest asked for and what you
+        // decided to note are different kinds of thing, and telling them apart has to survive a
+        // glance rather than needing the label read.
+        foreach (var mark in _marks)
+        {
+            var at = Place(mark.X, mark.Y);
+            var colour = (Brush)FindResource("Mark");
+
+            if (OffView(at, width, height, out var markEdge, out var markBearing))
+            {
+                EdgeMarker(markEdge, markBearing, colour, scale, Abbreviate(mark.Label));
+                continue;
+            }
+
+            // A diamond, so the shape carries it too. Colour alone fails for anyone who cannot
+            // separate these two hues, and a navigation overlay is a bad place to learn that.
+            MapCanvas.Children.Add(Positioned(
+                new Path
+                {
+                    Data = Geometry.Parse("M 0,-7 L 7,0 L 0,7 L -7,0 Z"),
+                    Stroke = colour,
+                    StrokeThickness = 1.8,
+                    Fill = (Brush)FindResource("Ground"),
+                    Opacity = 0.95,
+                    RenderTransform = new ScaleTransform(scale, scale),
+                    ToolTip = $"{mark.Label} · your mark",
+                },
+                at.X,
+                at.Y));
+
+            Label(mark.Label, at.X, at.Y + 9 * scale, colour, 9 * textScale);
         }
 
         // No line between stops. A dashed path across a map implies a route through walls and

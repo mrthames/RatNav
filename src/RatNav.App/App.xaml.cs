@@ -83,6 +83,7 @@ public partial class App : Application
         // Starring an item in the buddy app now reaches the overlay immediately, in a raid or out
         // of one, rather than waiting for the next thing the raid happens to do.
         ApiEndpoints.ItemsChanged += () => _overlay?.RefreshItemsNow();
+        ApiEndpoints.WaypointsChanged += () => _overlay?.RefreshWaypointsNow();
 
         _overlay.ExpandRequested += (_, _) => ToggleExpanded();
         _overlay.CompleteRequested += (_, _) => CompleteCurrentStop(session);

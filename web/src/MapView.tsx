@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { api, type ExtractPin, type InkLevel, type MapSummary, type ObjectivePin } from './api'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  api,
+  type CustomWaypoint,
+  type ExtractPin,
+  type InkLevel,
+  type MapSummary,
+  type ObjectivePin,
+} from './api'
 
 /**
  * Which extracts to draw. Nothing the game writes to disk says which side you queued as, so this
@@ -42,6 +49,45 @@ export function MapView({ map }: { map: MapSummary }) {
   const [ghost, setGhost] = useState(true)
   const [extracts, setExtracts] = useState<ExtractPin[]>([])
   const [faction, setFaction] = useState<Faction>('pmc')
+
+  /**
+   * Marks of your own, and whether a click on the map places one.
+   *
+   * <p>Placing is a mode rather than the default, because the same click also has to be able to do
+   * nothing — a map you cannot look at without marking it is a map you stop looking at.</p>
+   */
+  const [marks, setMarks] = useState<CustomWaypoint[]>([])
+  const [placing, setPlacing] = useState(false)
+
+  const loadMarks = useCallback(
+    () => api.waypoints(map.id).then(setMarks).catch(() => setMarks([])), [map.id])
+
+  useEffect(() => { void loadMarks() }, [loadMarks])
+
+  /** Where on the map a click landed, as a fraction of its width and height. */
+  async function place(e: React.MouseEvent<HTMLDivElement>) {
+    if (!placing || !host.current) return
+
+    const box = host.current.getBoundingClientRect()
+    const x = (e.clientX - box.left) / box.width
+    const y = (e.clientY - box.top) / box.height
+
+    if (x < 0 || x > 1 || y < 0 || y > 1) return
+
+    // Asked for straight away rather than placed and named later. An unnamed dot is a puzzle, and
+    // "name it afterwards" is a step people skip.
+    const label = window.prompt('What is here?')
+    if (label === null) return
+
+    await api.addWaypoint(map.id, label, x, y, floor)
+    await loadMarks()
+    setPlacing(false)
+  }
+
+  async function forget(id: string) {
+    await api.removeWaypoint(id)
+    await loadMarks()
+  }
 
   // Zoom and pan, to match the overlay. A map you can only see whole is not much use on Streets.
   const [zoom, setZoom] = useState(1)
@@ -152,6 +198,17 @@ export function MapView({ map }: { map: MapSummary }) {
           />
         )}
 
+        <button
+          type="button"
+          aria-pressed={placing}
+          onClick={() => setPlacing((on) => !on)}
+          className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
+                     hover:text-ink aria-pressed:bg-mark aria-pressed:text-ground
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          {placing ? 'Click the map…' : 'Mark a spot'}
+        </button>
+
         {/* Straight onto the overlay, no plan required — for a look before you queue. */}
         <button
           type="button"
@@ -194,7 +251,8 @@ export function MapView({ map }: { map: MapSummary }) {
           dragging.current = null
           e.currentTarget.releasePointerCapture(e.pointerId)
         }}
-        style={{ cursor: dragging.current ? 'grabbing' : 'default' }}
+        onClick={place}
+        style={{ cursor: placing ? 'crosshair' : dragging.current ? 'grabbing' : 'default' }}
       >
         <div
           className="origin-top-left"
@@ -234,8 +292,47 @@ export function MapView({ map }: { map: MapSummary }) {
             style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
           />
         ))}
+
+        {/*
+          Your own marks, in their own colour and their own shape — the same pairing the overlay
+          uses, so a mark looks like a mark on whichever screen you are reading.
+        */}
+        {marks.map((mark) => (
+          <div
+            key={mark.id}
+            title={`${mark.label} · your mark`}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${mark.x * 100}%`, top: `${mark.y * 100}%` }}
+          >
+            <div className="size-2.5 rotate-45 border border-mark bg-ground
+                            shadow-[0_0_0_1px_var(--color-ground)]" />
+          </div>
+        ))}
         </div>
       </div>
+
+      {marks.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          {marks.map((mark) => (
+            <li
+              key={mark.id}
+              className="flex items-center gap-2 rounded-sm border border-mark/40 bg-mark/5 px-2 py-1"
+            >
+              <span className="text-xs">{mark.label}</span>
+
+              <button
+                type="button"
+                onClick={() => void forget(mark.id)}
+                aria-label={`Forget ${mark.label}`}
+                className="font-mono text-[11px] text-muted hover:text-need
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <p className="font-mono text-xs text-muted">
         {positioned.length > 0

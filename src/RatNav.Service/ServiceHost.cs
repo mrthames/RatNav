@@ -74,6 +74,13 @@ public static class ServiceHost
 
         builder.Services.AddSingleton(_ =>
         {
+            var marks = new CustomWaypointStore(dataDirectory);
+            marks.Load();
+            return marks;
+        });
+
+        builder.Services.AddSingleton(_ =>
+        {
             var progress = new ProgressStore(dataDirectory);
             progress.Load();
             return progress;
