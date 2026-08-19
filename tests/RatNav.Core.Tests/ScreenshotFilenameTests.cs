@@ -79,6 +79,24 @@ public class ScreenshotFilenameTests
         Assert.Equal(90, ScreenshotFilename.HeadingFrom(q), 3);
     }
 
+    [Fact]
+    public void Turning_right_in_game_increases_the_heading()
+    {
+        // Ground truth, from two screenshots taken four seconds apart on Factory: Justin stood
+        // still and turned 90 degrees to his right. The position moved 0.25 m, so this really is
+        // one spot and two facings — which is the only way to tell a correct heading sign from an
+        // inverted one. An inverted formula would report roughly -92 here and the overlay's facing
+        // cone would point behind the player.
+        var before = ScreenshotFilename.HeadingFrom(new Quaternion(-0.00088, 0.99901, -0.03784, -0.02331));
+        var after = ScreenshotFilename.HeadingFrom(new Quaternion(-0.01327, 0.67700, -0.01221, -0.73576));
+
+        Assert.Equal(182.67, before, 1);
+        Assert.Equal(274.77, after, 1);
+
+        var turned = ScreenshotFilename.Normalize(after - before);
+        Assert.InRange(turned, 85, 100);
+    }
+
     [Theory]
     [InlineData(-90, 270)]
     [InlineData(370, 10)]
