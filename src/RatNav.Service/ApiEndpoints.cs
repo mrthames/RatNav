@@ -162,6 +162,57 @@ public static class ApiEndpoints
             });
         });
 
+        // ---- traders
+
+        // Traders were missing entirely, and they are half of how quests are organised — you go
+        // to a trader, not to a quest list.
+        //
+        // Loyalty is set by hand. Nothing the game writes to disk reports it, and the endpoint
+        // that would needs your account credentials, which RatNav will not ask for.
+        api.MapGet("/traders", (RatNavState state, ProgressStore progress, RatNavSettings settings) =>
+        {
+            var tasks = state.Cache.Current?.Tasks ?? [];
+
+            var available = progress
+                .AvailableNow(tasks, settings.PlayerLevel)
+                .Select(t => t.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var traders =
+                from task in tasks
+                where task.TraderName is { Length: > 0 }
+                group task by task.TraderName! into byTrader
+                orderby byTrader.Key
+                select new
+                {
+                    name = byTrader.Key,
+
+                    // Keyed by name rather than id: tasks carry the resolved name, and a separate
+                    // id would mean a second lookup for no gain.
+                    level = progress.TraderLevelOf(byTrader.Key),
+
+                    total = byTrader.Count(),
+                    completed = byTrader.Count(t => progress.StateOf(t.Id) == QuestState.Completed),
+                    active = byTrader.Count(t => progress.StateOf(t.Id) == QuestState.Active),
+                    availableNow = byTrader.Count(t => available.Contains(t.Id)),
+
+                    // What you could pick up from them right now, which is the reason to look.
+                    next = byTrader
+                        .Where(t => available.Contains(t.Id))
+                        .OrderBy(t => t.MinPlayerLevel ?? 0)
+                        .Take(5)
+                        .Select(t => new { t.Id, t.Name, t.MinPlayerLevel, t.WikiUrl }),
+                };
+
+            return Results.Ok(traders);
+        });
+
+        api.MapPost("/traders/{name}/level", (ProgressStore progress, string name, TraderLevelRequest request) =>
+        {
+            progress.SetTraderLevel(name, request.Level);
+            return Results.Ok(new { name, level = progress.TraderLevelOf(name) });
+        });
+
         // ---- hideout
 
         // What the hideout is, what it could become next, and what that costs.
@@ -337,7 +388,7 @@ public static class ApiEndpoints
 
         // ---- progress
 
-        api.MapGet("/progress", (RatNavState state, ProgressStore progress) =>
+        api.MapGet("/progress", (RatNavState state, ProgressStore progress, RatNavSettings settings) =>
         {
             var tasks = state.Cache.Current?.Tasks ?? [];
             var summary = progress.Summarize(tasks);
@@ -348,7 +399,7 @@ public static class ApiEndpoints
                 active = summary[QuestState.Active],
                 completed = summary[QuestState.Completed],
                 failed = summary[QuestState.Failed],
-                availableNow = progress.AvailableNow(tasks).Count(),
+                availableNow = progress.AvailableNow(tasks, settings.PlayerLevel).Count(),
             });
         });
 
@@ -369,11 +420,12 @@ public static class ApiEndpoints
 
         // ---- tasks
 
-        api.MapGet("/tasks", (RatNavState state, ProgressStore progress, string? filter, string? q) =>
+        api.MapGet("/tasks", (
+            RatNavState state, ProgressStore progress, RatNavSettings settings, string? filter, string? q) =>
         {
             var tasks = state.Cache.Current?.Tasks ?? [];
 
-            var available = progress.AvailableNow(tasks)
+            var available = progress.AvailableNow(tasks, settings.PlayerLevel)
                 .Select(t => t.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -448,9 +500,15 @@ public static class ApiEndpoints
 
         // What Setup edits. Everything here is either detected or chosen by a person — none of it
         // is baked in, because someone else's install is not going to look like the developer's.
-        api.MapGet("/settings", (RatNavSettings settings) => Results.Ok(SettingsView.From(settings)));
+        api.MapGet("/settings", (RatNavSettings settings, RatNavState state, ProgressStore progress) =>
+            Results.Ok(SettingsView.From(settings) with
+            {
+                SuggestedPlayerLevel = progress.LevelImpliedBy(state.Cache.Current?.Tasks ?? []),
+            }));
 
-        api.MapPost("/settings", (RatNavSettings settings, RaidHost host, SettingsUpdate update) =>
+        api.MapPost("/settings", (
+            RatNavSettings settings, RatNavState state, ProgressStore progress, RaidHost host,
+            SettingsUpdate update) =>
         {
             // A folder that is not an install is worth refusing rather than accepting quietly:
             // the symptom of a wrong path is an overlay that shows nothing, which looks identical
@@ -483,6 +541,8 @@ public static class ApiEndpoints
                     current.ScreenshotDirectory = Blank(update.ScreenshotDirectory);
 
                 if (update.ScreenshotKey is { Length: > 0 } key) current.ScreenshotKey = key;
+                if (update.PlayerLevel is { } level) current.PlayerLevel = Math.Clamp(level, 1, 79);
+                if (update.GameEdition is { Length: > 0 } edition) current.GameEdition = edition;
                 if (update.Owner is not null) current.Owner = Blank(update.Owner);
 
                 if (update.ScreenshotDisposal is { Length: > 0 } disposal
@@ -507,6 +567,11 @@ public static class ApiEndpoints
 
             // Applied immediately. Being told to restart the app is a poor answer to "RatNav
             // cannot see my game" — that is the moment someone is least willing to be patient.
+            // The edition decides the stash you start with, which is not an upgrade you built and
+            // should not be sitting in "buildable now" waiting for you to notice.
+            if (update.GameEdition is { Length: > 0 })
+                SeedStash(state, progress, settings.GameEdition);
+
             if (watchersAffected) host.Rewatch();
             if (update.Hotkeys is not null) HotkeysChanged?.Invoke(settings);
 
@@ -913,6 +978,34 @@ public static class ApiEndpoints
             ? b.FoundInRaid.CompareTo(a.FoundInRaid)
             : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Sets the stash to whatever the chosen edition ships with, if it is not already higher.
+    ///
+    /// <para>Edge of Darkness starts at Stash 4. Without this it reads as three un-built upgrades
+    /// sitting at the top of "buildable now", wanting items nobody needs to find.</para>
+    ///
+    /// <para>Never lowers it: someone who has upgraded past their edition's starting point should
+    /// not lose that by naming their edition afterwards.</para>
+    /// </summary>
+    private static void SeedStash(RatNavState state, ProgressStore progress, string edition)
+    {
+        var level = edition.ToLowerInvariant() switch
+        {
+            "edge-of-darkness" or "unheard" => 4,
+            "prepare-for-escape" => 3,
+            "left-behind" => 2,
+            _ => 1,
+        };
+
+        var stash = (state.Cache.Current?.HideoutStations ?? [])
+            .FirstOrDefault(s => string.Equals(s.NormalizedName, "stash", StringComparison.OrdinalIgnoreCase)
+                              || string.Equals(s.Name, "Stash", StringComparison.OrdinalIgnoreCase));
+
+        if (stash is null || progress.HideoutLevelOf(stash.Id) >= level) return;
+
+        progress.SetHideoutLevel(stash.Id, level);
+    }
+
     private static ItemDef Unknown(string itemId) => new() { Id = itemId, Name = "Unknown item" };
 
     private static object? Track(
@@ -1073,6 +1166,8 @@ public sealed record SettingsUpdate
     public string? ScreenshotDisposal { get; init; }
     public string? Owner { get; init; }
     public HotKeyUpdate? Hotkeys { get; init; }
+    public int? PlayerLevel { get; init; }
+    public string? GameEdition { get; init; }
 }
 
 public sealed record HotKeyUpdate
@@ -1100,6 +1195,14 @@ public sealed record SettingsView
     public required string ScreenshotDisposal { get; init; }
     public string? Owner { get; init; }
     public required RatNavSettings.HotKeySettings Hotkeys { get; init; }
+    public int? PlayerLevel { get; init; }
+    public required string GameEdition { get; init; }
+
+    /// <summary>
+    /// The lowest level consistent with the quests marked complete, offered when nothing is set.
+    /// Not your real level — nothing on disk reports that — but a floor beats an empty box.
+    /// </summary>
+    public int? SuggestedPlayerLevel { get; init; }
 
     /// <summary>The install in use, whether set by hand or detected.</summary>
     public string? ResolvedGameDirectory { get; init; }
@@ -1122,6 +1225,8 @@ public sealed record SettingsView
             ScreenshotDisposal = settings.ScreenshotDisposal.ToString(),
             Owner = settings.Owner,
             Hotkeys = settings.Hotkeys,
+            PlayerLevel = settings.PlayerLevel,
+            GameEdition = settings.GameEdition,
             ResolvedGameDirectory = resolved,
             ResolvedScreenshotDirectory =
                 settings.ScreenshotDirectory ?? RatNavPaths.DefaultScreenshotDirectory,
@@ -1169,6 +1274,12 @@ public sealed record PanelRow
         Reason = reason,
         FoundInRaid = tracked.FoundInRaid,
     };
+}
+
+/// <summary>Sets how far you have levelled a trader.</summary>
+public sealed record TraderLevelRequest
+{
+    public int Level { get; init; } = 1;
 }
 
 /// <summary>How many hideout upgrades deep the items list should reach.</summary>

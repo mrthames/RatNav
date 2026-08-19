@@ -132,6 +132,8 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
         screenshotDirectory: draft.screenshotDirectory ?? '',
         screenshotKey: draft.screenshotKey,
         owner: draft.owner ?? '',
+        playerLevel: draft.playerLevel ?? undefined,
+        gameEdition: draft.gameEdition,
         hotkeys: draft.hotkeys,
       }))
     } catch (e) {
@@ -173,6 +175,50 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
         value={draft.screenshotKey}
         onChange={(screenshotKey) => setDraft({ ...draft, screenshotKey })}
       />
+
+      <label className="flex flex-col gap-1">
+        <span className="text-sm">Your character level</span>
+        <input
+          type="number"
+          min={1}
+          max={79}
+          value={draft.playerLevel ?? ''}
+          placeholder={settings.suggestedPlayerLevel ? `at least ${settings.suggestedPlayerLevel}` : '1'}
+          onChange={(e) => setDraft({
+            ...draft,
+            playerLevel: e.target.value === '' ? null : Number(e.target.value),
+          })}
+          className="w-24 border border-line bg-ground px-2 py-1.5 font-mono text-xs text-ink
+                     placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
+        />
+        <span className="text-xs text-muted">
+          Most quests gate on it, so without this the planner offers quests you cannot accept yet.
+          Set by hand — nothing the game writes to disk reports your level, and the endpoint that
+          would needs your account password, which RatNav will not ask for.
+          {settings.suggestedPlayerLevel != null &&
+            ` The quests you have marked complete put you at level ${settings.suggestedPlayerLevel} or above.`}
+        </span>
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-sm">Which edition you own</span>
+        <select
+          value={draft.gameEdition}
+          onChange={(e) => setDraft({ ...draft, gameEdition: e.target.value })}
+          className="w-56 border border-line bg-ground px-2 py-1.5 font-mono text-xs text-ink
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <option value="standard">Standard — Stash 1</option>
+          <option value="left-behind">Left Behind — Stash 2</option>
+          <option value="prepare-for-escape">Prepare for Escape — Stash 3</option>
+          <option value="edge-of-darkness">Edge of Darkness — Stash 4</option>
+          <option value="unheard">The Unheard Edition — Stash 4</option>
+        </select>
+        <span className="text-xs text-muted">
+          Sets the stash you started with, so it is not listed as an upgrade you still have to
+          build. Never lowers a stash you have already upgraded past.
+        </span>
+      </label>
 
       <Field
         label="Your name on shared plans"

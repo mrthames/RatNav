@@ -177,6 +177,22 @@ public sealed record RatNavSettings
     public string? Owner { get; set; }
 
     /// <summary>
+    /// Your character level. Most quests gate on it, so without this the planner offers quests you
+    /// cannot accept yet.
+    ///
+    /// <para>Set by hand: nothing Escape from Tarkov writes to disk reports your level, and the
+    /// only endpoint that does needs your account credentials. Setup suggests a floor from the
+    /// quests you have marked complete, which is the best that can be known from here.</para>
+    /// </summary>
+    public int? PlayerLevel { get; set; }
+
+    /// <summary>
+    /// Which edition of the game you own. It decides the stash you start with — Edge of Darkness
+    /// begins at Stash 4 — which otherwise looks like an upgrade you have not built.
+    /// </summary>
+    public string GameEdition { get; set; } = "standard";
+
+    /// <summary>
     /// The key bound to Screenshot <i>inside Escape from Tarkov</i> — middle mouse by default,
     /// because it is reachable without letting go of movement.
     ///

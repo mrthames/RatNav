@@ -211,10 +211,45 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
     /// Prerequisites come from the data rather than being assumed, so a reworked quest chain
     /// follows the game rather than a hardcoded tree.
     /// </summary>
-    public IEnumerable<TaskDef> AvailableNow(IEnumerable<TaskDef> tasks) =>
+    /// <param name="playerLevel">
+    /// Your character level, which most quests gate on. Null means "do not filter by level" —
+    /// better to over-report than to hide a quest because RatNav was never told.
+    /// </param>
+    public IEnumerable<TaskDef> AvailableNow(IEnumerable<TaskDef> tasks, int? playerLevel = null) =>
         tasks.Where(t =>
             StateOf(t.Id) == QuestState.NotStarted &&
-            t.PrerequisiteTaskIds.All(p => StateOf(p) == QuestState.Completed));
+            t.PrerequisiteTaskIds.All(p => StateOf(p) == QuestState.Completed) &&
+            (playerLevel is null || t.MinPlayerLevel is null || t.MinPlayerLevel <= playerLevel));
+
+    /// <summary>
+    /// The lowest character level consistent with the quests marked complete.
+    ///
+    /// <para>Not your real level — RatNav cannot see that, and nothing the game writes to disk
+    /// says it. But a quest that needs level 15 cannot have been finished below it, so this is a
+    /// floor worth offering as a suggestion rather than leaving the field blank.</para>
+    /// </summary>
+    public int LevelImpliedBy(IEnumerable<TaskDef> tasks) =>
+        tasks.Where(t => StateOf(t.Id) == QuestState.Completed)
+            .Select(t => t.MinPlayerLevel ?? 0)
+            .DefaultIfEmpty(1)
+            .Max();
+
+    /// <summary>Trader loyalty, by trader id. Set by hand; nothing on disk reports it.</summary>
+    public int TraderLevelOf(string traderId)
+    {
+        lock (_gate) return _state.TraderLevels.GetValueOrDefault(traderId, 1);
+    }
+
+    public void SetTraderLevel(string traderId, int level)
+    {
+        lock (_gate) _state.TraderLevels[traderId] = Math.Clamp(level, 1, 4);
+        Save();
+    }
+
+    public IReadOnlyDictionary<string, int> TraderLevels
+    {
+        get { lock (_gate) return new Dictionary<string, int>(_state.TraderLevels, StringComparer.OrdinalIgnoreCase); }
+    }
 
     private void Save()
     {
@@ -251,5 +286,8 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
 
         /// <summary>Hideout upgrades being worked towards, as "stationId:level".</summary>
         public HashSet<string> HideoutTargets { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Trader loyalty levels, by trader id.</summary>
+        public Dictionary<string, int> TraderLevels { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     }
 }

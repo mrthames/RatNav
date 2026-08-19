@@ -42,8 +42,9 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[?]` needs a de
 
 ### Hideout
 
-- [ ] **Game edition sets the starting stash level.** Edge of Darkness starts at Stash 4. Probably
-  a Setup question on first run.
+- [x] **Game edition sets the starting stash level.** A Setup dropdown; Edge of Darkness and
+  Unheard start at Stash 4, Prepare for Escape at 3, Left Behind at 2. Never lowers a stash you
+  have already upgraded past.
 - [x] **Check why Stash cannot be built** under "Buildable now" — confirmed correct, not a bug.
   Stash is 4/4 on your profile, so there is no next level to offer. Nothing was gating it; it is
   finished.
@@ -53,10 +54,13 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[?]` needs a de
 - [ ] **Map controls to match the overlay** — zoom, right-drag pan, layer control.
 - [ ] **Plan page: call out required keys.** Show which key each objective needs, in red when not
   marked as held, and let it be marked found/held.
-- [ ] **Character level**, configurable — and read automatically if that is possible. Needed to
-  work out which quests are reachable.
-- [ ] **Traders and their loyalty levels.** Missing entirely. Own tab, or folded into Quests if
-  that reads better. Derive from quest completion if possible.
+- [x] **Character level**, configurable in Setup, and now filtering which quests count as
+  available. **Cannot be read automatically** — nothing the game writes to disk reports it, and
+  the only endpoint that does needs your account password. Setup suggests a floor from the quests
+  you have marked complete instead.
+- [x] **Traders and their loyalty levels.** Own tab: loyalty 1–4 per trader, quests done and
+  active, and what each will give you right now. **Loyalty cannot be derived** — it depends on
+  rep, level and spend, none of which are on disk — so it is set by hand.
 
 ---
 

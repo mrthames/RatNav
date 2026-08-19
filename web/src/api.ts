@@ -131,11 +131,26 @@ export interface Settings {
   screenshotDisposal: string
   owner: string | null
   hotkeys: HotKeys
+  playerLevel: number | null
+  gameEdition: string
+  /** Lowest level consistent with the quests you have completed — a floor, not your real level. */
+  suggestedPlayerLevel: number | null
   /** The install in use, whether set by hand or found. */
   resolvedGameDirectory: string | null
   resolvedScreenshotDirectory: string
   /** True when the folder in use was detected rather than chosen. */
   gameDirectoryDetected: boolean
+}
+
+export interface Trader {
+  name: string
+  /** Loyalty level, 1–4. Set by hand: nothing on disk reports it. */
+  level: number
+  total: number
+  completed: number
+  active: number
+  availableNow: number
+  next: { id: string; name: string; minPlayerLevel: number | null; wikiUrl: string | null }[]
 }
 
 export interface ProgressSummary {
@@ -290,6 +305,11 @@ export const api = {
     post<RaidView>(`/api/plans/${encodeURIComponent(id)}/activate`, {}),
 
   raid: () => get<RaidView>('/api/raid'),
+
+  traders: () => get<Trader[]>('/api/traders'),
+
+  setTraderLevel: (name: string, level: number) =>
+    post<unknown>(`/api/traders/${encodeURIComponent(name)}/level`, { level }),
 
   settings: () => get<Settings>('/api/settings'),
 
