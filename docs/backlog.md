@@ -244,17 +244,20 @@ them separately.
   - **Settled:** four tabs — **Active** (accepted), **Ready** (reachable, not accepted), **Done**
     (completed and failed), **All** (everything including locked). "Available" was not redundant,
     it was badly named.
-- [ ] **Every quest offers four states: not started, active, done, failed.**
-  - Quests start as **not started**.
-  - **Done** moves it off Active and into Done.
-  - **Failed** is also a finished state, but tracked separately so failures can be seen.
-- [ ] **Setting a quest active does nothing.** It stays where it was — the status change is not
-  moving it between tabs.
-- [ ] **Storyline quests are missing entirely** — a recent addition to the game and not modelled
-  at all. Needs tracking, likely as its own top-level section.
-  - And a matching one for **side quests**.
-  - Check whether tarkov.dev's tasks document distinguishes these already; if it does not, work out
-    where the distinction comes from before designing tabs around it.
+- [x] **Every quest offers four states: not started, active, done, failed.** All four are on every
+  row. Failed now carries its own red tag and a count beside the list — the Complete tab holds both
+  finished states, and a failed quest that reads as done is one you never go back and look at.
+- [x] **Setting a quest active does nothing.** Fixed by the tab rebuild. Verified live: marking
+  *Stick to It* active took the Active tab from 52 quests to 53 and the quest appeared in it.
+- [ ] **Storyline quests are missing entirely.** `[?]` **The distinction is not in the data.**
+  tarkov.dev's tasks document carries no category field of any kind — the 24 keys on a task are
+  trader, level, requirements, rewards, objectives, and flags for `kappaRequired` (13 quests),
+  `lightkeeperRequired` (7), `factionName` (BEAR 6 / USEC 6) and `restartable` (16). Nothing names
+  a storyline.
+  - So this needs a source before it needs a design. Options: the wiki's own categorisation, a
+    hand-kept list in the repo, or waiting for tarkov.dev to model it.
+  - The nearest thing that *is* derivable and worth having meanwhile: filters for Kappa,
+    Lightkeeper and faction-locked quests — the real "which of these actually matter" axes.
 
 ### Overlay freshness
 

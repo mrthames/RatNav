@@ -66,6 +66,8 @@ export function QuestsView() {
   // is a filter here rather than a separate tab showing the same quests a second time.
   const shown = trader ? tasks.filter((t) => t.traderName === trader) : tasks
 
+  const failed = shown.filter((t) => t.state === 'Failed').length
+
   async function setState(task: TaskSummary, state: string) {
     await api.setTaskState(task.id, state)
     // Marking a quest active is what makes its items appear on the Items view, so the list has
@@ -100,7 +102,10 @@ export function QuestsView() {
                      text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
         />
 
-        <p className="font-mono text-xs text-muted tabular-nums">{shown.length} quests</p>
+        <p className="font-mono text-xs text-muted tabular-nums">
+          {shown.length} quests
+          {failed > 0 && <span className="text-need"> · {failed} failed</span>}
+        </p>
       </div>
 
       {/*
@@ -173,9 +178,23 @@ export function QuestsView() {
             <li key={task.id} className="flex flex-wrap items-center gap-3 bg-panel px-3 py-2.5">
               <div className="min-w-56 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={task.state === 'Completed' ? 'text-muted line-through' : ''}>
+                  <span className={
+                    task.state === 'Completed' || task.state === 'Failed'
+                      ? 'text-muted line-through'
+                      : ''
+                  }>
                     {task.name}
                   </span>
+
+                  {/*
+                    Failed is a finished state, and the Complete tab holds both — but they are not
+                    the same thing, and a failed quest that reads as done is one you never go back
+                    and look at.
+                  */}
+                  {task.state === 'Failed' && (
+                    <Tag className="border-need/50 text-need">failed</Tag>
+                  )}
+
                   {task.kappa && <Tag className="border-warn/50 text-warn">κ</Tag>}
                   {/* A padlock tells you nothing; "needs level 20" tells you what to do. */}
                   {task.blockers.map((why) => (
