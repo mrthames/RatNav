@@ -1697,10 +1697,20 @@ public partial class OverlayWindow : Window
 
         // Markers ease off as the map zooms out.
         //
-        // Sized for reading a building, they become a wall of overlapping furniture across a whole
-        // map. Held perfectly still they crowd; scaled with the map they vanish. The exponent is
-        // the compromise, and it is the player's to set.
-        var relative = Math.Pow(Placement.Zoom, -_settings.Overlay.ScaleWithZoom);
+        // Sized for reading a building they become a wall of overlapping furniture across a whole
+        // map; held perfectly still they crowd, scaled with the map they vanish. The exponent is
+        // the compromise and the player sets it.
+        //
+        // Measured from a middling zoom rather than from fully-out, so the size you chose is the
+        // size you get around where you actually work. The first attempt used a negative exponent,
+        // which shrank markers as you zoomed *in* — precisely backwards, and it made a waypoint
+        // unusable at the zoom where you most need to see it.
+        const double reference = 2.0;
+
+        var relative = Math.Clamp(
+            Math.Pow(Math.Max(0.1, Placement.Zoom) / reference, _settings.Overlay.ScaleWithZoom),
+            0.6,
+            1.5);
 
         var scale = _settings.Overlay.MarkerScale * relative;
         var textScale = _settings.Overlay.TextScale * relative;
