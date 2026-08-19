@@ -3,6 +3,25 @@ import { api, type TrackedItem, type Trade } from './api'
 
 type Tab = 'needed' | 'watchlist' | 'trades' | 'search'
 
+/**
+ * What to show of the list.
+ *
+ * <p>Filtering rather than only sorting. The two sort orders answered "what first", which is a
+ * quiet difference on a list of two hundred rows — you had to read the whole thing to see that
+ * anything had changed. What is actually wanted is a shorter list: the keys, or the
+ * found-in-raid, or what a barter is waiting on.</p>
+ */
+const FILTERS = [
+  { id: 'all', label: 'Everything', of: () => true },
+  { id: 'fir', label: 'Found in raid', of: (r: TrackedItem) => r.foundInRaid },
+  { id: 'quests', label: 'For quests', of: (r: TrackedItem) => r.questNeeded > 0 },
+  { id: 'hideout', label: 'For the hideout', of: (r: TrackedItem) => r.hideoutNeeded > 0 },
+  { id: 'trades', label: 'For a trade', of: (r: TrackedItem) => r.tradeNeeded > 0 },
+  { id: 'keys', label: 'Keys', of: (r: TrackedItem) => r.isKey },
+] as const
+
+type FilterId = (typeof FILTERS)[number]['id']
+
 export function ItemsView() {
   const [tab, setTab] = useState<Tab>('needed')
   const [query, setQuery] = useState('')
@@ -15,6 +34,7 @@ export function ItemsView() {
   // view is several hundred rows of things gated behind upgrades not yet started.
   const [lookAhead, setLookAhead] = useState(2)
   const [rows, setRows] = useState<TrackedItem[]>([])
+  const [filter, setFilter] = useState<FilterId>('all')
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -54,11 +74,17 @@ export function ItemsView() {
         ? current.filter((r) => r.id !== updated.id)
         : current.map((r) => (r.id === updated.id ? updated : r)))
 
+  // Filtering happens here rather than on the server: the list is already loaded, and a filter
+  // that answers instantly is one people actually use.
+  const shown = useMemo(
+    () => rows.filter(FILTERS.find((f) => f.id === filter)?.of ?? (() => true)),
+    [rows, filter])
+
   const totals = useMemo(() => ({
-    items: rows.length,
-    remaining: rows.reduce((sum, r) => sum + r.remaining, 0),
-    fir: rows.filter((r) => r.foundInRaid).length,
-  }), [rows])
+    items: shown.length,
+    remaining: shown.reduce((sum, r) => sum + r.remaining, 0),
+    fir: shown.filter((r) => r.foundInRaid).length,
+  }), [shown])
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,8 +106,9 @@ export function ItemsView() {
         </div>
 
         {tab === 'needed' && (
-          <div className="flex gap-px">
-            {([['default', 'By amount'], ['next', "What's next"]] as const).map(([id, text]) => (
+          <div className="flex items-center gap-1">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Sort</span>
+            {([['default', 'Most needed'], ['next', 'Nearest upgrade']] as const).map(([id, text]) => (
               <button
                 key={id}
                 type="button"
@@ -144,6 +171,31 @@ export function ItemsView() {
         )}
       </div>
 
+      {/* Filters, on the lists where there is enough to filter. */}
+      {(tab === 'needed' || tab === 'search') && rows.length > 0 && (
+        <div className="flex flex-wrap gap-px">
+          {FILTERS.map((f) => {
+            const count = rows.filter(f.of).length
+
+            return (
+              <button
+                key={f.id}
+                type="button"
+                disabled={count === 0}
+                aria-pressed={filter === f.id}
+                onClick={() => setFilter(f.id)}
+                className="rounded-sm bg-panel-hi px-2.5 py-1 font-mono text-[11px] text-muted
+                           tabular-nums transition-colors hover:text-ink disabled:opacity-30
+                           aria-pressed:bg-accent aria-pressed:text-ground
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {f.label} {count}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {tab === 'watchlist' && (
         <p className="text-xs text-muted">
           These numbers are yours. <b>Need</b> is the amount you are after, and <b>Have</b> is what
@@ -156,6 +208,10 @@ export function ItemsView() {
 
       {tab !== 'trades' && loading && <Empty>loading…</Empty>}
 
+      {tab !== 'trades' && !loading && shown.length === 0 && rows.length > 0 && (
+        <Empty>Nothing here matches that filter.</Empty>
+      )}
+
       {tab !== 'trades' && !loading && rows.length === 0 && (
         <Empty>
           {tab === 'needed'
@@ -166,7 +222,7 @@ export function ItemsView() {
         </Empty>
       )}
 
-      {tab !== 'trades' && !loading && rows.length > 0 && (
+      {tab !== 'trades' && !loading && shown.length > 0 && (
         <div className="overflow-x-auto border border-line">
           <table className="w-full border-collapse text-sm">
             <thead>
@@ -179,7 +235,7 @@ export function ItemsView() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {shown.map((row) => (
                 <Row key={row.id} row={row} onChange={replace} watchlist={tab === 'watchlist'} />
               ))}
             </tbody>

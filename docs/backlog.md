@@ -198,14 +198,18 @@ them separately.
     interaction anyway, and a slider that only works by clicking is worse than a pair of buttons.
   - The Items tab has the same control and will have the same problem.
 
-- [ ] **"By amount" / "What's next" appears to do nothing** on the Items page.
+- [x] **"By amount" / "What's next" appears to do nothing** on the Items page. It did do
+  something — "what's next" leads with the nearest hideout wave — but it is a *sort*, and a
+  reordering of two hundred rows is a quiet change you have to read the whole list to notice. It
+  now says `Sort` beside it and names the two orders for what they are; the thing that was
+  actually wanted is the filter row below.
   - Verify it is actually being applied first — the request only sends `sort` for one of the two,
     so a bug is plausible. If it *is* applied, the two orderings may simply be too alike to notice:
     both fall back to found-in-raid and then quantity, and if most rows are wave 1 the leading key
     barely separates anything.
   - **If the distinction is not meaningful, remove the toggle.** Leave the tabs as needed /
     watchlist / search, and let the table be sorted by clicking its columns instead.
-- [ ] **Filters on the items table**, which is the thing actually wanted here: show only what is
+- [x] **Filters on the items table**, which is the thing actually wanted here: show only what is
   needed now, or only hideout build items.
 
 ### Plan persistence
