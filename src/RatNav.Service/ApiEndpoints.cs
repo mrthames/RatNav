@@ -521,9 +521,11 @@ public static class ApiEndpoints
 
             if (q is { Length: > 0 })
             {
+                // Punctuation-insensitive: quest names use a typographic apostrophe that nobody
+                // types, so a literal match on "What's on the Flash Drive?" found nothing and read
+                // as the quest being missing.
                 rows = rows.Where(t =>
-                    t.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                    (t.TraderName?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false));
+                    SearchText.Contains(t.Name, q) || SearchText.Contains(t.TraderName, q));
             }
 
             // Active first — those are the ones with items worth picking up tonight — then what

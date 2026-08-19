@@ -269,6 +269,15 @@ them separately.
   - Note: "barters being tracked" depends on the barter-tracking feature, which is still open. The
     other two do not.
 
+### Search
+
+- [x] **Searching a quest by its own name found nothing.** "What's on the Flash Drive?" returned no
+  results because the game writes a typographic apostrophe (`’`) where anyone typing uses a
+  straight one — so a quest sitting in the Ready list could not be found by its name, which reads
+  as the quest being missing. Search now folds punctuation away on both sides, and an apostrophe
+  joins a word rather than splitting it, so "whats" finds it too. Applies to items as well; they
+  have the same typeset names.
+
 ### Floors, overlap only
 
 - [x] **Other floors are only faded where they actually overlap the one you are on.** Ghosting a

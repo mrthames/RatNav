@@ -167,16 +167,27 @@ public sealed class ItemIndex
             .Select(x => x.item);
     }
 
+    /// <summary>
+    /// How well an item answers a query, highest first.
+    ///
+    /// <para>Compared with punctuation folded away on both sides. Item names are typeset — curly
+    /// apostrophes, en dashes — and matching them literally means the thing on screen cannot be
+    /// found by typing what it says.</para>
+    /// </summary>
     private static int Score(ItemDef item, string query)
     {
-        const StringComparison ci = StringComparison.OrdinalIgnoreCase;
+        var q = SearchText.Normalize(query);
+        if (q.Length == 0) return 0;
 
-        if (item.ShortName is { } shortName && shortName.Equals(query, ci)) return 100;
-        if (item.Name.Equals(query, ci)) return 90;
-        if (item.Name.StartsWith(query, ci)) return 70;
-        if (item.ShortName?.StartsWith(query, ci) == true) return 60;
-        if (item.Name.Contains(query, ci)) return 40;
-        if (item.NormalizedName?.Contains(query, ci) == true) return 20;
+        var name = SearchText.Normalize(item.Name);
+        var shortName = SearchText.Normalize(item.ShortName);
+
+        if (shortName.Length > 0 && shortName == q) return 100;
+        if (name == q) return 90;
+        if (name.StartsWith(q, StringComparison.Ordinal)) return 70;
+        if (shortName.StartsWith(q, StringComparison.Ordinal) && shortName.Length > 0) return 60;
+        if (name.Contains(q, StringComparison.Ordinal)) return 40;
+        if (SearchText.Contains(item.NormalizedName, q)) return 20;
         return 0;
     }
 
