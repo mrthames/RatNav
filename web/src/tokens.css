@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   RatNav design tokens.
+
+   Defined once here and mirrored into a WPF ResourceDictionary for the overlay,
+   so the compact HUD, the expanded panel, and the browser app read as one
+   product rather than three things that happen to share a name.
+
+   Dark by commitment, not by default: Tarkov is a dark game played in dark
+   rooms, and the overlay has to sit on top of it. A light theme would make the
+   two surfaces disagree about what RatNav looks like.
+   --------------------------------------------------------------------------- */
+@theme {
+  /* Ground and surfaces — neutrals biased cold, toward the accent. */
+  --color-ground: #0b0f13;
+  --color-panel: #141b21;
+  --color-panel-hi: #1b242c;
+  --color-line: #24313b;
+  --color-line-soft: #1a242c;
+
+  /* Text */
+  --color-ink: #c9d6df;
+  --color-muted: #7b8c9b;
+
+  /* One accent carries emphasis; everything else stays neutral. */
+  --color-accent: #8ec8ff;
+
+  /* Semantic, kept separate from the accent so state never competes with brand. */
+  --color-need: #ff5a3c;
+  --color-have: #5ce6a0;
+  --color-route: #e0c98a;
+  --color-warn: #ffc24a;
+
+  --font-display: Archivo, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Map floors. Every multi-level map stacks its levels as top-level groups in one
+   SVG; drawn together they are unreadable. The id selector outranks the ghost
+   rule so the active floor stays solid while the rest recede. */
+.map-svg > g {
+  display: none;
+}
+.map-svg[data-ghost="on"] > g {
+  display: inline;
+  opacity: 0.12;
+}
+.map-svg > g.floor-active {
+  display: inline;
+  opacity: 1;
+}

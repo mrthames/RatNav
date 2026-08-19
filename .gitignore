@@ -19,3 +19,6 @@ src/RatNav.Service/wwwroot/
 # OS
 Thumbs.db
 .DS_Store
+
+# Vite build artifacts land in the service's wwwroot
+web/dist/
