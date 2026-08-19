@@ -21,6 +21,7 @@ using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using FontFamily = System.Windows.Media.FontFamily;
 using Image = System.Windows.Controls.Image;
+using Panel = System.Windows.Controls.Panel;
 using Cursors = System.Windows.Input.Cursors;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
@@ -772,27 +773,49 @@ public partial class OverlayWindow : Window
             && _itemsWindow is null
             && _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box;
 
+        var showQuests = _settings.Overlay.ShowQuests
+            && _questWindow is null
+            && _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box;
+
         ItemsPanel.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
+        QuestPanel.Visibility = showQuests ? Visibility.Visible : Visibility.Collapsed;
+
+        // Each drawer picks its own side, and two on the same side stack rather than fight for it.
+        PlaceDrawer(ItemsPanel, _settings.Overlay.ItemsSide);
+        PlaceDrawer(QuestPanel, _settings.Overlay.QuestsSide);
 
         var onLeft = _settings.Overlay.ItemsSide == "left";
 
-        Grid.SetColumn(ItemsPanel, onLeft ? 0 : 2);
         Grid.SetColumn(ItemsSplitter, onLeft ? 0 : 2);
-
-        ItemsPanel.Margin = onLeft ? new Thickness(0, 0, 6, 0) : new Thickness(6, 0, 0, 0);
         ItemsSplitter.HorizontalAlignment = onLeft
             ? System.Windows.HorizontalAlignment.Right
             : System.Windows.HorizontalAlignment.Left;
 
-        // The column the list is not in collapses, so the map keeps the space.
+        // A column earns its width when a drawer is actually in it.
         ApplyItemsWidth();
 
-        ItemsSplitter.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
+        ItemsSplitter.Visibility = inline || showQuests ? Visibility.Visible : Visibility.Collapsed;
 
         // Moving and tearing off are deliberate acts, offered only while the overlay takes the mouse.
         var editing = inline && !_clickThrough;
         DetachItems.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
         SwapSide.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+
+        var editingQuests = showQuests && !_clickThrough;
+        DetachQuests.Visibility = editingQuests ? Visibility.Visible : Visibility.Collapsed;
+        SwapQuestsSide.Visibility = editingQuests ? Visibility.Visible : Visibility.Collapsed;
+
+        ItemsDrawer.Content = _settings.Overlay.ShowItems ? "items ▾" : "items ▸";
+        QuestDrawer.Content = _settings.Overlay.ShowQuests ? "quests ▾" : "quests ▸";
+
+        // The handles go with the rest of the furniture when interact mode is off. They are
+        // buttons, and a button that cannot be clicked is clutter over the game.
+        var handles = _clickThrough ? Visibility.Collapsed : Visibility.Visible;
+
+        ItemsDrawer.Visibility = handles;
+        QuestDrawer.Visibility = handles;
+        CollapseItems.Visibility = handles;
+        CollapseQuests.Visibility = handles;
     }
 
     /// <summary>
@@ -814,6 +837,13 @@ public partial class OverlayWindow : Window
 
             ItemsList.ItemsSource = sections;
             _itemsWindow?.Show(sections);
+
+            var quests = QuestSections();
+
+            QuestList.ItemsSource = quests;
+            QuestEmpty.Visibility = quests.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            _questWindow?.Show(quests);
         });
     }
 
@@ -830,8 +860,11 @@ public partial class OverlayWindow : Window
 
             return
             [
-                Section("QUESTS & HIDEOUT", panel.Now, label: $"QUESTS & HIDEOUT · {scope}"),
+                // Yours first. The watchlist is the short list you chose by hand; quests and the
+                // hideout are worked out and far longer, and putting them above meant scrolling
+                // past forty derived rows to reach three deliberate ones.
                 Section("WATCHLIST", panel.Watchlist, label: "WATCHLIST · your targets"),
+                Section("QUESTS & HIDEOUT", panel.Now, label: $"QUESTS & HIDEOUT · {scope}"),
 
                 // Gated upgrades and quests you could accept but have not. Folded by default: it
                 // is the longest of the three and the least actionable, and an overlay that opens
@@ -909,12 +942,38 @@ public partial class OverlayWindow : Window
     /// </summary>
     private void ApplyItemsWidth()
     {
-        var shown = ItemsPanel.Visibility == Visibility.Visible;
-        var onLeft = _settings.Overlay.ItemsSide == "left";
-        var width = shown ? new GridLength(_settings.Overlay.ItemsWidth) : new GridLength(0);
+        // A column earns its width when a drawer is actually in it and showing. Reserved
+        // regardless, it left a stripe of nothing down one side with the map pushed off-centre.
+        var width = new GridLength(_settings.Overlay.ItemsWidth);
+        var none = new GridLength(0);
 
-        LeftSlot.Width = onLeft ? width : new GridLength(0);
-        RightSlot.Width = onLeft ? new GridLength(0) : width;
+        LeftSlot.Width = Occupied(LeftDrawers) ? width : none;
+        RightSlot.Width = Occupied(RightDrawers) ? width : none;
+
+        static bool Occupied(Panel side) =>
+            side.Children.OfType<UIElement>().Any(c => c.Visibility == Visibility.Visible);
+    }
+
+    /// <summary>
+    /// Moves a drawer into the column it belongs in.
+    ///
+    /// <para>Reparented rather than built once per side: one panel that moves cannot drift from
+    /// itself, where two that are shown and hidden in turn eventually do.</para>
+    /// </summary>
+    private void PlaceDrawer(FrameworkElement panel, string side)
+    {
+        var target = side == "left" ? LeftDrawers : RightDrawers;
+
+        panel.Margin = side == "left"
+            ? new Thickness(0, 0, 6, 6)
+            : new Thickness(6, 0, 0, 6);
+
+        if (ReferenceEquals(panel.Parent, target)) return;
+
+        // Grid is a Panel, so one case covers both the starting grid and the other side's stack.
+        if (panel.Parent is Panel current) current.Children.Remove(panel);
+
+        target.Children.Add(panel);
     }
 
     /// <summary>Opens or folds the quest log.</summary>
@@ -1232,19 +1291,12 @@ public partial class OverlayWindow : Window
         // want to see one.
         if (view is null || !view.HasMap)
         {
-            MapNameText.Text = "no map";
             BearingText.Text = "";
             ProgressText.Text = "";
             FixAgeText.Text = "";
             UpdateControls(null);
             return;
         }
-
-        // The map, and the next stop named small beside it. The quest log carries the rest — the
-        // big line used to show one quest of several and imply it was the only one.
-        MapNameText.Text = view.NextStopName is { Length: > 0 } next
-            ? $"{view.MapName?.ToUpperInvariant()} · {next}"
-            : view.MapName?.ToUpperInvariant() ?? "";
 
         BearingText.Text = view.NextStopMetres is { } metres && view.NextStopRelativeBearing is { } bearing
             ? $"{metres:F0} m · {Math.Abs(bearing):F0}° {(bearing > 0 ? "right" : "left")}"

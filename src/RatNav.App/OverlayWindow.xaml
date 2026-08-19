@@ -163,8 +163,7 @@
                                    Foreground="{StaticResource Muted}" />
                     </DockPanel>
 
-                    <TextBlock x:Name="MapNameText" Style="{StaticResource Label}" Margin="0,4,0,0" Text="" />
-                    <TextBlock x:Name="BearingText"
+                    <TextBlock x:Name="BearingText" Margin="0,4,0,0"
                                FontFamily="Consolas" FontSize="14"
                                Foreground="{StaticResource Accent}" Text="" />
                 </StackPanel>
@@ -227,6 +226,10 @@
                                         Visibility="Collapsed" />
                             </DockPanel>
 
+                            <TextBlock x:Name="QuestEmpty" Style="{StaticResource Label}"
+                                       TextWrapping="Wrap" Visibility="Collapsed"
+                                       Text="No plan yet. Build one on the Plan tab and its stops appear here, numbered as on the map." />
+
                             <ScrollViewer VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <ItemsControl x:Name="QuestList"
@@ -271,7 +274,20 @@
                 </Grid>
 
                 <Grid x:Name="StatusRow" Grid.Row="3">
-                    <TextBlock x:Name="ProgressText" Style="{StaticResource Label}" HorizontalAlignment="Left" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <!--
+                            Down here rather than in the header. Up there it sat on top of the
+                            drawer handles, and it is the control you reach for least of the three.
+                        -->
+                        <Button x:Name="ExpandControls" Style="{StaticResource Chip}"
+                                Content="⚙" Margin="0,0,6,0"
+                                ToolTip="Show the map controls"
+                                Visibility="Collapsed" />
+
+                        <TextBlock x:Name="ProgressText" Style="{StaticResource Label}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
                     <TextBlock x:Name="FixAgeText" Style="{StaticResource Label}" HorizontalAlignment="Right" />
                 </Grid>
             </Grid>
@@ -510,13 +526,6 @@
                             ToolTip="Hold the map still, or keep it centred on you" />
                 </StackPanel>
             </Border>
-
-            <!-- What is left when the stack is folded: one button to bring it back. -->
-            <Button x:Name="ExpandControls" Grid.Row="1" Style="{StaticResource Chip}"
-                    HorizontalAlignment="Left" VerticalAlignment="Top"
-                    Margin="6,6,0,0" Content="»"
-                    ToolTip="Show the map controls"
-                    Visibility="Collapsed" />
 
             <Thumb x:Name="ResizeGrip" Grid.Row="1"
                    Width="16" Height="16"

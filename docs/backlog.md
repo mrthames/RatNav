@@ -455,6 +455,22 @@ them separately.
     its own coordinate space, not the game's, so clicking RatNav's own map is likely the only
     reliable route — worth confirming what Justin expects to do here.
 
+### Overlay chrome, fourth pass
+
+- [x] **The F6 grab bar covered the drawer handles.** Interact mode pushes the content clear of it —
+  a handle you can see and cannot press is worse than no handle.
+- [x] **The map and quest-name line is gone.** The drawers say what it was trying to.
+- [x] **The settings handle moved to the bottom corner** as a gear, beside the counter. In the
+  header it sat on the drawer handles, and it is the least-reached-for of the three.
+- [x] **Drawer handles hide when interact mode is off**, with the rest of the furniture.
+- [x] **The quest log said nothing when empty**, which read as a broken button rather than an
+  empty plan.
+- [x] **The items list is alphabetical.** Sorting by urgency reads well as a ranking and badly as a
+  list — you come to it looking for one name.
+- [x] **The watchlist sits above quests and hideout.** It is the short list you chose by hand; the
+  other is worked out and far longer.
+- [x] **Share is a modal**, behind two buttons, rather than a panel taking a third of the Plan page.
+
 ### Plan ordering and the quest log drawer
 
 - [x] **Stops keep the order you picked them in.** The planner was solving a shortest route and

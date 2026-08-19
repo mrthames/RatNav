@@ -218,6 +218,7 @@ function Sharing({
   planned: number
 }) {
   const [plans, setPlans] = useState<SavedPlan[]>([])
+  const [open, setOpen] = useState<'share' | 'import' | null>(null)
   const [code, setCode] = useState<string | null>(null)
   const [paste, setPaste] = useState('')
   const [note, setNote] = useState<string | null>(null)
@@ -229,15 +230,14 @@ function Sharing({
   useEffect(() => { void load() }, [load, planned])
 
   // A Customs code left on screen while Streets is selected is an invitation to send the wrong one.
-  useEffect(() => { setCode(null); setNote(null) }, [mapId])
+  useEffect(() => { setCode(null); setNote(null); setOpen(null) }, [mapId])
 
-  // The plan for the map you are looking at, not whichever happens to be first. Sharing is a
-  // per-map act — a Customs code is no use to someone queueing Streets — and offering "get a code
-  // for Streets of Tarkov" while Customs is selected is offering the wrong plan.
   const mine = plans.find((p) => p.mapId === mapId)
 
   async function show() {
     if (!mine) return
+
+    setOpen('share')
     setCode((await api.planCode(mine.id)).code)
   }
 
@@ -250,12 +250,7 @@ function Sharing({
       setPaste('')
       await load()
 
-      // Merging is the point of importing — you want both sets of objectives, attributed, not
-      // theirs instead of yours. Offered only when there is something of yours to merge with.
       const theirs = result.id
-
-      // Merged with your plan for the same map. Merging across maps is refused by the service
-      // anyway, and silently picking some other plan would be worse than saying there is none.
       const ours = plans.find((p) => p.mapId === result.plan.mapId && p.id !== theirs)?.id
 
       if (!ours) {
@@ -282,10 +277,13 @@ function Sharing({
   }
 
   return (
-    <section className="flex flex-col gap-3 border border-line bg-panel p-3">
-      <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Share a plan</h2>
-
-      <div className="flex flex-wrap items-center gap-3">
+    <>
+      {/*
+        Two buttons rather than a panel. Sharing is occasional and reading a plan is what this page
+        is for, so the machinery waits behind a click instead of taking a third of the view every
+        time the tab is opened.
+      */}
+      <div className="flex items-center gap-3">
         <button
           type="button"
           disabled={!mine}
@@ -294,62 +292,133 @@ function Sharing({
                      hover:text-ink disabled:opacity-40
                      focus-visible:outline-2 focus-visible:outline-accent"
         >
-          {mine ? `Get code for ${mine.mapName}` : `No ${mapName} plan yet`}
+          Share plan
         </button>
 
-        {code && (
-          <button
-            type="button"
-            onClick={() => void navigator.clipboard.writeText(code)}
-            className="rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase
-                       tracking-wider text-ground
-                       focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            Copy
-          </button>
-        )}
-      </div>
-
-      {code && (
-        <textarea
-          readOnly
-          value={code}
-          rows={3}
-          onFocus={(e) => e.currentTarget.select()}
-          className="w-full resize-none break-all rounded-sm border border-line bg-ground p-2
-                     font-mono text-[11px] text-muted
-                     focus-visible:outline-2 focus-visible:outline-accent"
-        />
-      )}
-
-      <label className="flex flex-col gap-1">
-        <span className="text-sm">Paste a friend's code</span>
-        <textarea
-          value={paste}
-          onChange={(e) => setPaste(e.target.value)}
-          rows={2}
-          placeholder="RATNAV1-…"
-          className="w-full resize-none break-all rounded-sm border border-line bg-ground p-2
-                     font-mono text-[11px] text-ink placeholder:text-muted/60
-                     focus-visible:outline-2 focus-visible:outline-accent"
-        />
-      </label>
-
-      <div className="flex items-center gap-3">
         <button
           type="button"
-          disabled={busy || paste.trim() === ''}
-          onClick={() => void take()}
+          onClick={() => { setOpen('import'); setNote(null) }}
           className="rounded-sm bg-panel-hi px-3 py-1.5 text-sm text-muted transition-colors
-                     hover:text-ink disabled:opacity-40
-                     focus-visible:outline-2 focus-visible:outline-accent"
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
         >
-          {busy ? 'Importing…' : 'Import and merge'}
+          Import a plan
         </button>
 
-        {note && <p className="text-xs text-muted">{note}</p>}
+        {!mine && <span className="text-xs text-muted">No {mapName} plan to share yet.</span>}
       </div>
-    </section>
+
+      {open && (
+        <Modal
+          title={open === 'share' ? `Share your ${mapName} plan` : 'Import a plan'}
+          onClose={() => setOpen(null)}
+        >
+          {open === 'share' ? (
+            <>
+              <p className="text-sm text-muted">
+                Send this to whoever you are running with. They paste it into their own RatNav and
+                it merges with theirs — nothing is dropped, and every objective keeps its owner.
+              </p>
+
+              <textarea
+                readOnly
+                value={code ?? 'Building…'}
+                rows={4}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full resize-none break-all rounded-sm border border-line bg-ground p-2
+                           font-mono text-[11px] text-muted
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              />
+
+              <button
+                type="button"
+                disabled={!code}
+                onClick={() => code && void navigator.clipboard.writeText(code)}
+                className="self-start rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase
+                           tracking-wider text-ground disabled:opacity-40
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                Copy
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted">
+                Paste what a friend sent you. It imports and merges with your plan for the same map
+                in one step.
+              </p>
+
+              <textarea
+                value={paste}
+                onChange={(e) => setPaste(e.target.value)}
+                rows={4}
+                placeholder="RATNAV1-…"
+                className="w-full resize-none break-all rounded-sm border border-line bg-ground p-2
+                           font-mono text-[11px] text-ink placeholder:text-muted/60
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              />
+
+              <button
+                type="button"
+                disabled={busy || paste.trim() === ''}
+                onClick={() => void take()}
+                className="self-start rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase
+                           tracking-wider text-ground disabled:opacity-40
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {busy ? 'Importing…' : 'Import and merge'}
+              </button>
+            </>
+          )}
+
+          {note && <p className="text-xs text-muted">{note}</p>}
+        </Modal>
+      )}
+    </>
+  )
+}
+
+/** A plain dialog: dim the page, close on escape or on the backdrop. */
+function Modal({
+  title, onClose, children,
+}: {
+  title: string
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  useEffect(() => {
+    const escape = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', escape)
+    return () => window.removeEventListener('keydown', escape)
+  }, [onClose])
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={onClose}
+      className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex w-full max-w-lg flex-col gap-3 border border-line bg-panel p-4 shadow-xl"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="font-mono text-sm text-muted hover:text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            ✕
+          </button>
+        </div>
+
+        {children}
+      </div>
+    </div>
   )
 }
 
