@@ -404,6 +404,15 @@ public sealed record RatNavSettings
         public string ItemsSide { get; init; } = "right";
 
         /// <summary>
+        /// Whether the quest log is open: the started stops in the plan, numbered as they are on
+        /// the map, with what each one wants.
+        /// </summary>
+        public bool ShowQuests { get; init; }
+
+        /// <summary>Which side the quest log sits on. Its own, so the two can face each other.</summary>
+        public string QuestsSide { get; init; } = "left";
+
+        /// <summary>
         /// How wide the items list is, in pixels. Dragged by the divider between it and the map,
         /// and remembered — item names vary enough in length that one fixed width suits nobody.
         /// </summary>

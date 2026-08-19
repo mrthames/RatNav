@@ -130,6 +130,9 @@ public partial class OverlayWindow : Window
     /// <summary>The torn-off items window, while one is open.</summary>
     private ItemsWindow? _itemsWindow;
 
+    /// <summary>The torn-off quest log, while one is open.</summary>
+    private ItemsWindow? _questWindow;
+
     public OverlayWindow(RatNavSettings settings, Action<RatNavSettings> saveSettings)
     {
         InitializeComponent();
@@ -193,6 +196,11 @@ public partial class OverlayWindow : Window
         QuickZoomUp.Click += (_, _) => SetZoom(Placement.Zoom * 1.25);
         QuickFollow.Click += (_, _) => ToggleFollowing();
         CollapseItems.Click += (_, _) => ToggleItems();
+        ItemsDrawer.Click += (_, _) => ToggleItems();
+        QuestDrawer.Click += (_, _) => ToggleQuests();
+        CollapseQuests.Click += (_, _) => ToggleQuests();
+        SwapQuestsSide.Click += (_, _) => SwapQuestsToOtherSide();
+        DetachQuests.Click += (_, _) => DetachQuestPanel();
         CollapseControls.Click += (_, _) => ShowControls(false);
         ExpandControls.Click += (_, _) => ShowControls(true);
     }
@@ -847,11 +855,15 @@ public partial class OverlayWindow : Window
     /// </param>
     /// <param name="label">What to display, when that differs from the title.</param>
     private ItemSection Section(
-        string title, List<PanelRow> rows, bool expandedByDefault = true, string? label = null)
+        string title, List<PanelRow> rows, bool expandedByDefault = true, string? label = null) =>
+        Section(title, [.. rows.Select(ItemRow.From)], expandedByDefault, label);
+
+    private ItemSection Section(
+        string title, IReadOnlyList<ItemRow> rows, bool expandedByDefault = true, string? label = null)
     {
         var section = new ItemSection(
             label ?? title,
-            [.. rows.Select(ItemRow.From)],
+            rows,
             _settings.Overlay.CollapsedSections.Contains(title) ? false : expandedByDefault);
 
         // Folding is a preference, not a per-refresh state — it has to survive the list reloading
@@ -903,6 +915,88 @@ public partial class OverlayWindow : Window
 
         LeftSlot.Width = onLeft ? width : new GridLength(0);
         RightSlot.Width = onLeft ? new GridLength(0) : width;
+    }
+
+    /// <summary>Opens or folds the quest log.</summary>
+    private void ToggleQuests()
+    {
+        if (_settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe)
+        {
+            if (_questWindow is null) DetachQuestPanel();
+            else _questWindow.Close();
+
+            return;
+        }
+
+        Remember(_settings.Overlay with { ShowQuests = !_settings.Overlay.ShowQuests });
+        ApplyItemsPanel();
+        RefreshItems();
+    }
+
+    private void SwapQuestsToOtherSide()
+    {
+        Remember(_settings.Overlay with
+        {
+            QuestsSide = _settings.Overlay.QuestsSide == "left" ? "right" : "left",
+        });
+
+        ApplyItemsPanel();
+    }
+
+    private void DetachQuestPanel()
+    {
+        if (_questWindow is not null)
+        {
+            _questWindow.Activate();
+            return;
+        }
+
+        _questWindow = new ItemsWindow { Title = "RatNav — Quests" };
+        _questWindow.Closed += (_, _) =>
+        {
+            _questWindow = null;
+
+            Remember(_settings.Overlay with { ShowQuests = false });
+            ApplyItemsPanel();
+            RefreshItems();
+        };
+
+        _questWindow.Show();
+
+        ApplyItemsPanel();
+        RefreshItems();
+    }
+
+    /// <summary>
+    /// The plan's stops as a log: the number on the map, what it is for, and what it wants.
+    ///
+    /// <para>Built from the raid view rather than fetched. Everything needed is already there, and
+    /// a second source for the same thing is a second thing to keep in step.</para>
+    /// </summary>
+    private IReadOnlyList<ItemSection> QuestSections()
+    {
+        var view = _view;
+        if (view is null || view.Stops.Count == 0) return [];
+
+        var order = 0;
+        var rows = new List<ItemRow>();
+
+        foreach (var stop in view.Stops)
+        {
+            if (!stop.Done) order++;
+
+            rows.Add(new ItemRow
+            {
+                Count = stop.Done ? "\u2713" : order.ToString(),
+                Name = stop.TaskName,
+                Reason = stop.Description is { Length: > 0 }
+                    ? $"{stop.Place ?? stop.TaskName} — {stop.Description}"
+                    : stop.Place ?? stop.TaskName,
+                Colour = (Brush)FindResource(stop.Done ? "Muted" : "Route"),
+            });
+        }
+
+        return [Section("QUEST LOG", rows, label: $"QUEST LOG · {view.Stops.Count}")];
     }
 
     /// <summary>Moves the list to the other side of the map. The overlay can sit against either edge.</summary>
@@ -1138,8 +1232,7 @@ public partial class OverlayWindow : Window
         // want to see one.
         if (view is null || !view.HasMap)
         {
-            MapNameText.Text = "RATNAV";
-            NextStopText.Text = "No plan";
+            MapNameText.Text = "no map";
             BearingText.Text = "";
             ProgressText.Text = "";
             FixAgeText.Text = "";
@@ -1147,9 +1240,11 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        MapNameText.Text = view.MapName?.ToUpperInvariant() ?? "";
-        NextStopText.Text = view.NextStopName
-            ?? (view.HasPlan ? "Plan complete" : view.InRaid ? "No plan" : "Map only");
+        // The map, and the next stop named small beside it. The quest log carries the rest — the
+        // big line used to show one quest of several and imply it was the only one.
+        MapNameText.Text = view.NextStopName is { Length: > 0 } next
+            ? $"{view.MapName?.ToUpperInvariant()} · {next}"
+            : view.MapName?.ToUpperInvariant() ?? "";
 
         BearingText.Text = view.NextStopMetres is { } metres && view.NextStopRelativeBearing is { } bearing
             ? $"{metres:F0} m · {Math.Abs(bearing):F0}° {(bearing > 0 ? "right" : "left")}"

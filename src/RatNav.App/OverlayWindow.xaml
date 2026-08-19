@@ -141,16 +141,31 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Where you are going, which is the one thing worth reading mid-raid. -->
+                <!--
+                    A name and the drawers, then where you are going.
+
+                    The big line used to be the next stop's quest name — one of however many were
+                    in the plan, picked because it happened to be first, which said less than it
+                    implied. The quest log says all of them; this says whose overlay it is and
+                    leaves room for the handles that open them.
+                -->
                 <StackPanel x:Name="Readout" Grid.Row="0">
-                    <TextBlock x:Name="MapNameText" Style="{StaticResource Label}" Text="RATNAV" />
-                    <TextBlock x:Name="NextStopText"
-                               FontFamily="Segoe UI" FontSize="17" FontWeight="SemiBold"
-                               Foreground="{StaticResource Ink}"
-                               TextTrimming="CharacterEllipsis"
-                               Text="No plan" />
+                    <DockPanel>
+                        <Button x:Name="QuestDrawer" DockPanel.Dock="Left"
+                                Style="{StaticResource Chip}" Content="quests"
+                                ToolTip="The plan's quests, numbered as on the map" />
+                        <Button x:Name="ItemsDrawer" DockPanel.Dock="Left" Margin="4,0,0,0"
+                                Style="{StaticResource Chip}" Content="items"
+                                ToolTip="What to pick up" />
+
+                        <TextBlock Text="RATNAV" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   FontFamily="Consolas" FontSize="11"
+                                   Foreground="{StaticResource Muted}" />
+                    </DockPanel>
+
+                    <TextBlock x:Name="MapNameText" Style="{StaticResource Label}" Margin="0,4,0,0" Text="" />
                     <TextBlock x:Name="BearingText"
-                               FontFamily="Consolas" FontSize="13"
+                               FontFamily="Consolas" FontSize="14"
                                Foreground="{StaticResource Accent}" Text="" />
                 </StackPanel>
 
@@ -185,6 +200,41 @@
                             </ControlTemplate>
                         </Thumb.Template>
                     </Thumb>
+
+                    <!-- Whichever drawers are set to this side, stacked. -->
+                    <StackPanel x:Name="LeftDrawers" Grid.Column="0" />
+                    <StackPanel x:Name="RightDrawers" Grid.Column="2" />
+
+                    <!--
+                        The plan's quests, numbered as they are on the map. Deliberately the same
+                        parts as the items list — sections, rows, collapse, pop out, either side —
+                        because it is the same idea and two of anything drift apart.
+                    -->
+                    <Border x:Name="QuestPanel" Grid.Column="0" Visibility="Collapsed"
+                            Margin="0,0,6,0" Padding="6,4"
+                            Background="#33141b21" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4" LastChildFill="False">
+                                <Button x:Name="CollapseQuests" DockPanel.Dock="Left"
+                                        Style="{StaticResource Chip}" Content="–"
+                                        ToolTip="Fold the quest log away" />
+                                <Button x:Name="SwapQuestsSide" DockPanel.Dock="Left" Margin="4,0,0,0"
+                                        Style="{StaticResource Chip}" Content="⇄"
+                                        ToolTip="Move the log to the other side"
+                                        Visibility="Collapsed" />
+                                <Button x:Name="DetachQuests" DockPanel.Dock="Right"
+                                        Style="{StaticResource Chip}" Content="pop out"
+                                        Visibility="Collapsed" />
+                            </DockPanel>
+
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl x:Name="QuestList"
+                                              ItemTemplate="{StaticResource ItemSectionTemplate}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+
 
                     <Border x:Name="ItemsPanel" Grid.Column="2" Visibility="Collapsed"
                             Margin="6,0,0,0" Padding="6,4"

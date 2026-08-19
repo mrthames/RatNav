@@ -466,7 +466,10 @@ them separately.
   place for it rather than moving to theirs.
 - [ ] **Drag to reorder in the buddy app**, with the number shown on each row — the same number the
   map and overlay use.
-- [ ] **A quest log drawer on the F5 overlay**, beside the items list.
+- [x] **The F5 title shows one quest name of several**, picked because it happened to be first,
+  which says less than it implies. Replace with just "RATNAV", set to the right so the drawer
+  handles have room on the left. The quest log replaces what it was trying to say.
+- [x] **A quest log drawer on the F5 overlay**, beside the items list.
   - Lists the started quests in the plan: **waypoint number, title, and a brief objective**.
   - Extremely minimal.
   - Same machinery as the items list: left or right of the map, swappable, poppable out, closing
@@ -474,6 +477,17 @@ them separately.
   - A quick toggle for the items view too, alongside it.
 - [ ] **A shortcut on the Plan page to complete a quest**, updating quest state without going to
   the Quests tab.
+
+### Extracts actually available to you
+
+- [ ] **Read the in-raid extract list and show only what you can use.** Pressing `O` twice in raid
+  lists the extracts open to you this run; the map shows every extract the map has, and several are
+  never available on a given raid — wrong side, wrong conditions, wrong faction.
+  - Toggleable in the overlay: all extracts, or only the ones offered to you.
+  - The reading is the same technique as item identification — capture the screen, OCR it, match
+    the names against the map's extracts. `ScreenTextReader` and the fuzzy matcher both exist.
+  - `[?]` Triggered how? A hotkey pressed just after the game's list is up is the obvious route,
+    since RatNav cannot know you pressed `O` without watching the keyboard, which it will not do.
 
 ### Bulk item import from a screenshot
 
