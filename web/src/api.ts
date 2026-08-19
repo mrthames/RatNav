@@ -281,8 +281,17 @@ export const api = {
   setHave: (itemId: string, body: { count?: number; delta?: number }) =>
     post<TrackedItem>(`/api/items/${encodeURIComponent(itemId)}/have`, body),
 
-  setWatch: (itemId: string, watch: boolean, note?: string, target?: number) =>
-    post<TrackedItem>(`/api/items/${encodeURIComponent(itemId)}/watch`, { watch, note, target }),
+  /**
+   * Changes a watchlist entry. Omitted fields are left alone, so setting a target does not blank
+   * a note. `have` is the watchlist's own count — separate from the stash total, so what is set
+   * aside for the hideout is not counted as available for this.
+   */
+  setWatch: (
+    itemId: string,
+    watch: boolean,
+    fields?: { note?: string; target?: number | null; have?: number },
+  ) =>
+    post<TrackedItem>(`/api/items/${encodeURIComponent(itemId)}/watch`, { watch, ...fields }),
 
   progress: () => get<ProgressSummary>('/api/progress'),
 

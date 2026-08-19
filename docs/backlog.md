@@ -279,6 +279,13 @@ them separately.
 
 ### Items panel, second pass
 
+- [x] **No way to set a watchlist target in the buddy app.** The Need field was only editable for
+  items nothing else wanted, so anything a quest or the hideout also needed could not be given a
+  target. On the watchlist it is always editable now — it is your number.
+- [x] **The watchlist keeps its own have-count**, separate from the stash total. Twenty bundles of
+  wires with fifteen earmarked for the hideout is not twenty available for a barter, and one shared
+  number said it was — which is how you spend something already promised elsewhere.
+
 - [x] **The watchlist was counting quest and hideout need, not your target.** Which is why one item
   read 19 on the overlay and 60/49 in the buddy app — neither figure was the watchlist's. The
   watchlist now counts the number you set; quests and the hideout keep their own section. A row

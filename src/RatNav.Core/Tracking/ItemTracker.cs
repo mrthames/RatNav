@@ -91,12 +91,23 @@ public sealed class ItemTracker(string dataDirectory)
     }
 
     /// <summary>Adds or updates a watchlist entry. Re-adding an item edits it rather than duplicating.</summary>
-    public void Watch(string itemId, string? note = null, int? target = null)
+    public void Watch(string itemId, string? note = null, int? target = null, int? have = null)
     {
         lock (_gate)
         {
             var existing = _state.Watchlist.FindIndex(w => w.ItemId == itemId);
-            var entry = new WatchlistEntry { ItemId = itemId, Note = note, Target = target };
+
+            // Editing one field must not blank the others: the UI sends whichever the player just
+            // changed, and a target set yesterday should survive a note typed today.
+            var current = existing >= 0 ? _state.Watchlist[existing] : null;
+
+            var entry = new WatchlistEntry
+            {
+                ItemId = itemId,
+                Note = note ?? current?.Note,
+                Target = target ?? current?.Target,
+                Have = Math.Max(0, have ?? current?.Have ?? 0),
+            };
 
             if (existing >= 0) _state.Watchlist[existing] = entry;
             else _state.Watchlist.Add(entry);
@@ -196,6 +207,15 @@ public sealed record WatchlistEntry
 
     /// <summary>How many you want. Null means "just remind me", with no quantity attached.</summary>
     public int? Target { get; init; }
+
+    /// <summary>
+    /// How many you have set aside <b>for this</b>, counted separately from the stash total.
+    ///
+    /// <para>Two pools rather than one on purpose. Twenty bundles of wires with fifteen earmarked
+    /// for the hideout is not twenty available for a barter, and a single shared count says it
+    /// is — which is how you end up spending something you had already promised elsewhere.</para>
+    /// </summary>
+    public int Have { get; init; }
 }
 
 /// <summary>

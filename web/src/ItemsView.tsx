@@ -134,6 +134,14 @@ export function ItemsView() {
         </p>
       </div>
 
+      {tab === 'watchlist' && (
+        <p className="text-xs text-muted">
+          These numbers are yours. <b>Need</b> is the amount you are after, and <b>Have</b> is what
+          you have set aside for it — kept apart from your stash count, so items promised to a
+          quest or a hideout upgrade are not counted as available here too.
+        </p>
+      )}
+
       {loading && <Empty>loading…</Empty>}
 
       {!loading && rows.length === 0 && (
@@ -160,7 +168,7 @@ export function ItemsView() {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <Row key={row.id} row={row} onChange={replace} />
+                <Row key={row.id} row={row} onChange={replace} watchlist={tab === 'watchlist'} />
               ))}
             </tbody>
           </table>
@@ -170,8 +178,29 @@ export function ItemsView() {
   )
 }
 
-function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem) => void }) {
+function Row({
+  row, onChange, watchlist,
+}: {
+  row: TrackedItem
+  onChange: (item: TrackedItem) => void
+  /** On the watchlist the numbers are yours: an editable target, and a count kept apart from the stash. */
+  watchlist: boolean
+}) {
   const [busy, setBusy] = useState(false)
+
+  /**
+   * The watchlist keeps its own count.
+   *
+   * Twenty bundles of wires with fifteen earmarked for the hideout is not twenty available for a
+   * barter, and one shared number says it is — which is how you spend something already promised.
+   */
+  const setWatchHave = async (value: string) => {
+    const have = Math.max(0, Number.parseInt(value, 10) || 0)
+    if (have === row.have) return
+
+    setBusy(true)
+    try { onChange(await api.setWatch(row.id, true, { have })) } finally { setBusy(false) }
+  }
 
   async function setTarget(value: string) {
     const target = value.trim() === '' ? null : Math.max(0, Number(value) || 0)
@@ -180,7 +209,7 @@ function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem
     try {
       // Setting a target is also how you put something on the watchlist — wanting four of a thing
       // and watching it are the same statement.
-      onChange(await api.setWatch(row.id, true, row.watchNote ?? undefined, target ?? undefined))
+      onChange(await api.setWatch(row.id, true, { target }))
     } finally {
       setBusy(false)
     }
@@ -257,7 +286,7 @@ function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem
           Quest and hideout needs are worked out; a watchlist target is not, so it is editable.
           Showing a derived number in a box you can type in would be a lie about what it is.
         */}
-        {row.questNeeded > 0 || row.hideoutNeeded > 0 ? (
+        {!watchlist && (row.questNeeded > 0 || row.hideoutNeeded > 0) ? (
           <span className="font-mono text-xs tabular-nums">{row.needed}</span>
         ) : (
           <input
@@ -276,17 +305,17 @@ function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem
 
       <Td align="center">
         <div className="flex items-center justify-center gap-1">
-          <Step onClick={() => adjust(-1)} disabled={busy || row.have === 0} label="one fewer">−</Step>
+          <Step onClick={() => adjust(-1)} disabled={busy || row.have === 0 || watchlist} label="one fewer">−</Step>
           <input
             key={row.have}
             defaultValue={row.have}
-            onBlur={(e) => setExact(e.target.value)}
+            onBlur={(e) => (watchlist ? setWatchHave(e.target.value) : setExact(e.target.value))}
             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
             aria-label={`how many ${row.name} you have`}
             className="w-12 rounded-sm border border-line bg-panel px-1 py-0.5 text-center font-mono
                        text-xs tabular-nums focus-visible:outline-2 focus-visible:outline-accent"
           />
-          <Step onClick={() => adjust(1)} disabled={busy} label="one more">+</Step>
+          <Step onClick={() => adjust(1)} disabled={busy || watchlist} label="one more">+</Step>
         </div>
       </Td>
 

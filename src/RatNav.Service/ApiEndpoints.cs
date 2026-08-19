@@ -125,7 +125,12 @@ public static class ApiEndpoints
                 return TrackedItemView.From(tracked) with
                 {
                     Needed = target,
-                    Remaining = Math.Max(0, target - tracked.Have),
+
+                    // The watchlist's own count, not the stash total. What is set aside for the
+                    // hideout is not available for this, and one shared number cannot say so.
+                    Have = entry.Have,
+                    Remaining = Math.Max(0, target - entry.Have),
+                    WatchTarget = entry.Target,
                 };
             });
 
@@ -148,7 +153,7 @@ public static class ApiEndpoints
             RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
             string id, WatchRequest request) =>
         {
-            if (request.Watch) tracker.Watch(id, request.Note, request.Target);
+            if (request.Watch) tracker.Watch(id, request.Note, request.Target, request.Have);
             else tracker.Unwatch(id);
 
             ItemsChanged?.Invoke();
@@ -394,7 +399,7 @@ public static class ApiEndpoints
             foreach (var entry in tracker.Watchlist)
             {
                 var item = index.GetItem(entry.ItemId) ?? Unknown(entry.ItemId);
-                var have = tracker.GetHave(entry.ItemId);
+                var have = entry.Have;
 
                 // Your number, not the game's. The watchlist is what *you* decided to collect —
                 // quests and the hideout have their own section, and borrowing their totals here
@@ -1131,7 +1136,11 @@ public sealed record BuildPlanRequest(
 /// <summary>Either an absolute count or a nudge. The +/- buttons send a delta.</summary>
 public sealed record HaveRequest(int? Count, int? Delta);
 
-public sealed record WatchRequest(bool Watch, string? Note, int? Target);
+/// <summary>
+/// A change to a watchlist entry. Every field but <c>Watch</c> is optional and absent means "leave
+/// it alone", so setting a target does not blank a note typed earlier.
+/// </summary>
+public sealed record WatchRequest(bool Watch, string? Note, int? Target, int? Have);
 public sealed record TaskStateRequest(string State);
 public sealed record HideoutLevelRequest(int Level);
 
