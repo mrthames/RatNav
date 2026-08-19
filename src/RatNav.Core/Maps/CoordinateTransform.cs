@@ -12,26 +12,30 @@ public readonly record struct MapPoint(double X, double Y);
 /// <c>bounds</c> — two opposite corners of the image, in world coordinates — and a
 /// <c>coordinateRotation</c>.
 ///
-/// <para><b>Position mapping does not use coordinateRotation.</b> That is not an assumption; it
-/// was measured. A screenshot taken on Customs at world <c>(-14.44, -139.32)</c>, from a spot
-/// the player identified on the map, sits at <c>66.7%, 30.9%</c> of the image. Mapping the raw
-/// coordinates straight through the bounds puts it at <c>66.6%, 30.8%</c> — a one-pixel match.
-/// Rotating first, by any of the plausible conventions, misses by half the map:</para>
+/// <para><b>The rotation applied to a position is <c>180° − coordinateRotation</c>, not
+/// <c>coordinateRotation</c>.</b> That is measured, not reasoned. Players marked their own
+/// position on two maps with different rotations, and only this rule fits both:</para>
 ///
 /// <list type="table">
-///   <item><term>raw x/z through bounds</term><description>66.6%, 30.8% — matches</description></item>
-///   <item><term>rotate 180° about origin</term><description>63.9%, 82.0%</description></item>
-///   <item><term>rotate 180° about bounds centre</term><description>33.4%, 69.2%</description></item>
-///   <item><term>axis swap</term><description>78.3%, 53.8%</description></item>
+///   <item><term>Customs, rotation 180 → apply 0°</term>
+///         <description>pin 66.6%, 30.8% vs marked 66.7%, 30.9% — 0.1pp</description></item>
+///   <item><term>Factory, rotation 90 → apply +90°</term>
+///         <description>two points, 5.3pp and 6.1pp, both offset the same direction</description></item>
 /// </list>
 ///
-/// <para>So <c>coordinateRotation</c> describes how the map was <i>drawn</i> relative to game
-/// north, which is what a heading needs (see <see cref="ToImageHeading"/>) and what a position
-/// does not — the bounds already carry the drawing's orientation.</para>
+/// <para>Customs alone was misleading: at 180° the correct rule and "apply nothing" are the same
+/// thing, so the first version of this class simply dropped the rotation and looked right. Factory
+/// is where that fell apart. It was settled by the <i>direction</i> between two marked points
+/// rather than either point alone — the candidate rules predicted bearings of 115° and 148° for
+/// the same walk, and the measured bearing was 146°, which is well outside how far a click can
+/// slip.</para>
 ///
-/// <para><b>Open:</b> this was confirmed on a 180° map. Every map in the data is 180° except
-/// Factory (90°) and The Lab (270°), and a 90° map is the only case where a wrong convention
-/// would be obvious. Until a screenshot from one of those is checked, treat them as unverified.</para>
+/// <para>The residual on Factory is a consistent few percent in one direction on both points,
+/// which reads as click bias rather than a calibration error. Worth revisiting if a map ever
+/// looks systematically shifted.</para>
+///
+/// <para><b>Open:</b> The Lab is the only untested rotation (270°, so this predicts −90°).
+/// Every other map is 180°, which Customs covers.</para>
 ///
 /// <para>Bounds are corner pairs rather than min/max on purpose: a map whose image runs opposite
 /// to the world axis has its first bound larger than its second, and the normalization below
@@ -44,6 +48,9 @@ public sealed class CoordinateTransform
 {
     private readonly MapImage _image;
 
+    private readonly double _cos;
+    private readonly double _sin;
+
     public CoordinateTransform(MapImage image)
     {
         ArgumentNullException.ThrowIfNull(image);
@@ -51,6 +58,10 @@ public sealed class CoordinateTransform
             throw new ArgumentException("Map bounds must be two corner pairs.", nameof(image));
 
         _image = image;
+
+        var radians = (180.0 - image.CoordinateRotation) * Math.PI / 180.0;
+        _cos = Math.Cos(radians);
+        _sin = Math.Sin(radians);
     }
 
     private double X1 => _image.Bounds[0][0];
@@ -61,7 +72,8 @@ public sealed class CoordinateTransform
     /// <summary>Where a world position falls on the map image, in pixels.</summary>
     public MapPoint ToPixels(GamePosition position)
     {
-        var (u, v) = Normalized(position.X, position.Z);
+        var (rx, ry) = Rotate(position.X, position.Z);
+        var (u, v) = Normalized(rx, ry);
         return new MapPoint(u * _image.PixelWidth, v * _image.PixelHeight);
     }
 
@@ -71,7 +83,8 @@ public sealed class CoordinateTransform
     /// </summary>
     public MapPoint ToNormalized(GamePosition position)
     {
-        var (u, v) = Normalized(position.X, position.Z);
+        var (rx, ry) = Rotate(position.X, position.Z);
+        var (u, v) = Normalized(rx, ry);
         return new MapPoint(u, v);
     }
 
@@ -81,23 +94,30 @@ public sealed class CoordinateTransform
         var u = _image.PixelWidth == 0 ? 0 : pixel.X / _image.PixelWidth;
         var v = _image.PixelHeight == 0 ? 0 : pixel.Y / _image.PixelHeight;
 
-        var x = X1 + u * (X2 - X1);
-        var z = Y1 + v * (Y2 - Y1);
+        var rx = X1 + u * (X2 - X1);
+        var ry = Y1 + v * (Y2 - Y1);
+
+        // Undo the rotation.
+        var x = rx * _cos + ry * _sin;
+        var z = -rx * _sin + ry * _cos;
 
         return new GamePosition(x, y, z);
     }
 
     /// <summary>
     /// A compass heading turned into image space, so a facing cone drawn on the map points the
-    /// same way the player does. Unlike positions, a heading genuinely does need
-    /// <c>coordinateRotation</c>: the bounds carry the drawing's orientation for points, but an
-    /// angle has to be turned to match it.
+    /// same way the player does.
     ///
-    /// The sign is still unconfirmed — it takes two screenshots from one spot facing 90° apart
-    /// to tell "+rotation" from "−rotation", and both shots so far were facing north.
+    /// The direction is <b>minus</b> the rotation, measured the same way as the position rule: on
+    /// Customs a walk between two known points appeared on the image 180° from its world bearing,
+    /// and on Factory 90° the other way. Adding instead of subtracting looks correct on every 180°
+    /// map — because ±180 are the same angle — and points the cone sideways on Factory and The Lab.
     /// </summary>
     public double ToImageHeading(double headingDegrees)
-        => ScreenshotFilename.Normalize(headingDegrees + _image.CoordinateRotation);
+        => ScreenshotFilename.Normalize(headingDegrees - _image.CoordinateRotation);
+
+    private (double X, double Y) Rotate(double x, double z)
+        => (x * _cos - z * _sin, x * _sin + z * _cos);
 
     /// <summary>Straight-line distance between two world positions on the ground plane, in metres.</summary>
     public static double GroundDistance(GamePosition a, GamePosition b)

@@ -11,7 +11,10 @@ namespace RatNav.Core.Tests;
 /// </summary>
 public class CoordinateTransformTests
 {
-    private static MapImage Square(int rotation = 0) => new()
+    // 180 is the identity case under the 180-minus-rotation rule, and it is also what almost
+    // every real map declares — so it is the right default for tests about bounds rather than
+    // rotation.
+    private static MapImage Square(int rotation = 180) => new()
     {
         SourceUrl = "https://example.invalid/test.svg",
         CoordinateRotation = rotation,
@@ -53,7 +56,7 @@ public class CoordinateTransformTests
         var image = new MapImage
         {
             SourceUrl = "https://example.invalid/test.svg",
-            CoordinateRotation = 0,
+            CoordinateRotation = 180,
             Bounds = [[100, -100], [-100, 100]],
             PixelWidth = 1000,
             PixelHeight = 1000,
@@ -118,30 +121,61 @@ public class CoordinateTransformTests
     }
 
     [Fact]
-    public void Rotation_does_not_move_a_position()
+    public void Real_factory_screenshots_land_where_the_player_stood()
     {
-        // Same point, same bounds, different coordinateRotation: the pin must not budge.
-        var at = (int rotation) => new CoordinateTransform(Square(rotation))
-            .ToNormalized(new GamePosition(50, 0, -25));
-
-        var reference = at(0);
-
-        foreach (var rotation in new[] { 90, 180, 270 })
+        // The map that proved the rule. Factory's rotation is 90, and at 90 the candidate
+        // conventions separate — unlike Customs at 180, where several of them coincide.
+        var factory = new MapImage
         {
-            var moved = at(rotation);
-            Assert.Equal(reference.X, moved.X, 6);
-            Assert.Equal(reference.Y, moved.Y, 6);
-        }
+            SourceUrl = "https://example.invalid/Factory.svg",
+            CoordinateRotation = 90,
+            Bounds = [[-67, 69], [76.6, -65.5]],
+        };
+
+        var t = new CoordinateTransform(factory);
+
+        var turn = t.ToNormalized(new GamePosition(44.16, 5.89, 39.67));
+        Assert.Equal(0.212, turn.X, 1);
+        Assert.Equal(0.233, turn.Y, 1);
+
+        var extract = t.ToNormalized(new GamePosition(58.66, 1.81, 66.15));
+        Assert.Equal(0.041, extract.X, 1);
+        Assert.Equal(0.127, extract.Y, 1);
+
+        // The clincher was the direction between the two, not either point alone: the rival
+        // convention predicted 115 degrees for this walk where the player measured 146.
+        var du = extract.X - turn.X;
+        var dv = extract.Y - turn.Y;
+        var bearing = Math.Atan2(-dv * 141.80, du * 131.57) * 180 / Math.PI;
+        Assert.InRange(ScreenshotFilename.Normalize(bearing), 138, 156);
+    }
+
+    [Theory]
+    [InlineData(180, 0)]     // Customs and almost every other map
+    [InlineData(90, 90)]     // Factory
+    [InlineData(270, -90)]   // The Lab — predicted, not yet measured
+    public void The_applied_rotation_is_180_minus_the_declared_one(int declared, int applied)
+    {
+        // A point on the +X axis, so the rotation is easy to see.
+        var actual = new CoordinateTransform(Square(declared)).ToNormalized(new GamePosition(100, 0, 0));
+
+        var radians = applied * Math.PI / 180.0;
+        var expectedX = (100 * Math.Cos(radians) + 100) / 200;
+        var expectedY = (100 * Math.Sin(radians) + 100) / 200;
+
+        Assert.Equal(expectedX, actual.X, 6);
+        Assert.Equal(expectedY, actual.Y, 6);
     }
 
     [Theory]
     [InlineData(0, 30, 30)]
     [InlineData(180, 30, 210)]
-    [InlineData(90, 350, 80)]
-    public void A_heading_is_turned_to_match_how_the_map_was_drawn(int rotation, double heading, double expected)
+    [InlineData(90, 350, 260)]
+    [InlineData(270, 0, 90)]
+    public void A_heading_is_turned_against_how_the_map_was_drawn(int rotation, double heading, double expected)
     {
-        // Headings are the one thing coordinateRotation genuinely applies to: the bounds orient
-        // points, but an angle still has to be turned into the drawing's frame.
+        // Minus, not plus. Adding is indistinguishable on a 180 map and points the facing cone
+        // sideways on Factory and The Lab.
         var t = new CoordinateTransform(Square(rotation));
         Assert.Equal(expected, t.ToImageHeading(heading), 3);
     }
@@ -185,7 +219,7 @@ public class CoordinateTransformTests
         var broken = new MapImage
         {
             SourceUrl = "https://example.invalid/test.svg",
-            CoordinateRotation = 0,
+            CoordinateRotation = 180,
             Bounds = [[0, 0]],
         };
 
