@@ -17,7 +17,25 @@ public sealed record GameData
     public IReadOnlyList<HideoutStation> HideoutStations { get; init; } = [];
     public IReadOnlyList<MapDef> Maps { get; init; } = [];
     public IReadOnlyList<BarterDef> Barters { get; init; } = [];
+    public IReadOnlyList<TraderDef> Traders { get; init; } = [];
 }
+
+/// <summary>
+/// A trader, and what each of their loyalty levels costs.
+///
+/// <para>Loyalty gates quests — 109 of them — so without this RatNav offers work you cannot take
+/// yet. It cannot know your reputation or how much you have spent, but it can know that Prapor
+/// level 3 needs player level 21, which is enough to stop pretending a quest is reachable.</para>
+/// </summary>
+public sealed record TraderDef
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public string? NormalizedName { get; init; }
+    public IReadOnlyList<TraderLevel> Levels { get; init; } = [];
+}
+
+public readonly record struct TraderLevel(int Level, int RequiredPlayerLevel, double RequiredReputation);
 
 /// <summary>
 /// One trader barter: what you hand over, and what you get for it.
@@ -60,6 +78,12 @@ public sealed record TaskDef
 
     /// <summary>Task ids that must be completed before this one unlocks.</summary>
     public IReadOnlyList<string> PrerequisiteTaskIds { get; init; } = [];
+
+    /// <summary>
+    /// Trader loyalty this quest needs before it is offered. Real, and previously unmodelled —
+    /// which is why quests you cannot yet take were being listed as ready.
+    /// </summary>
+    public IReadOnlyList<TraderLevelRequirement> TraderRequirements { get; init; } = [];
 
     public IReadOnlyList<TaskObjective> Objectives { get; init; } = [];
 

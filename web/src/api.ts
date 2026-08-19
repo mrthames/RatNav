@@ -146,6 +146,8 @@ export interface Trader {
   name: string
   /** Loyalty level, 1–4. Set by hand: nothing on disk reports it. */
   level: number
+  /** What each loyalty level costs, and whether your character level can have reached it. */
+  levels: { level: number; requiredPlayerLevel: number; reachable: boolean }[]
   total: number
   completed: number
   active: number

@@ -269,6 +269,18 @@ them separately.
   - Note: "barters being tracked" depends on the barter-tracking feature, which is still open. The
     other two do not.
 
+### Traders and quest gating
+
+- [x] **Traders listed in the game's own order** — Prapor, Therapist, Fence, Skier, Peacekeeper,
+  Mechanic, Ragman, Jaeger, Ref, Lightkeeper, BTR Driver. Alphabetical put Fence third and BTR
+  Driver first, matching nothing anyone sees while playing.
+- [x] **Loyalty levels a character level cannot have reached are shown as out of reach**, with what
+  they cost, rather than merely unselected.
+- [x] **Quest availability now checks trader loyalty.** 109 quests carry a loyalty gate that RatNav
+  never read, which is exactly why Ready was overstating. At level 22 this moved 19 quests out of
+  Ready and into Locked; 68 locked quests name a loyalty gate as their reason.
+- [x] **"Done" renamed "Complete"**, matching the game's wording.
+
 ### Search
 
 - [x] **Searching a quest by its own name found nothing.** "What's on the Flash Drive?" returned no
@@ -318,6 +330,24 @@ them separately.
   - Keep the file export as well: a code is for chat, a file is for keeping.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
+
+### Bulk item import from a screenshot
+
+- [ ] **Read a stash or scav-box screenshot and set have-counts from it**, as a first import rather
+  than typing thirty numbers in by hand.
+  - This is the **inventory OCR** that was deliberately left out of the original plan, now being
+    asked for. Worth re-reading that reasoning before starting: it is grid detection plus icon
+    template matching against tarkov.dev's item images — a different discipline from everything
+    else here, needing iterative tuning against real screenshots, and accuracy is never perfect
+    (stacks, mods, and lookalike icons all trip it).
+  - **Must ship behind a review-before-apply screen** whatever the accuracy. Silently overwriting
+    counts someone spent weeks accumulating is far worse than making them confirm a list.
+  - "Initial import" is the right framing and makes it far more tractable: getting from nothing to
+    roughly right is useful even at 80% accuracy, where continuously trusting it would not be.
+  - Some of the machinery already exists: `ScreenTextReader` captures the screen and runs Windows'
+    own OCR, and `ItemMatcher` fuzzy-matches text to items. A stash screenshot may carry readable
+    stack counts and, on hover, names — worth checking whether OCR alone gets far enough before
+    reaching for icon matching.
 
 ### Quest log pane
 

@@ -13,7 +13,7 @@ type Filter = 'active' | 'ready' | 'done' | 'locked' | 'all'
 const FILTERS: [Filter, string][] = [
   ['active', 'Active'],
   ['ready', 'Ready'],
-  ['done', 'Done'],
+  ['done', 'Complete'],
   ['locked', 'Locked'],
   ['all', 'All'],
 ]
@@ -22,7 +22,7 @@ const FILTERS: [Filter, string][] = [
 const STATES: [string, string][] = [
   ['NotStarted', 'Not started'],
   ['Active', 'Active'],
-  ['Completed', 'Done'],
+  ['Completed', 'Complete'],
   ['Failed', 'Failed'],
 ]
 
@@ -123,20 +123,30 @@ export function QuestsView() {
             </button>
 
             <span className="font-mono text-[11px] text-muted">LL</span>
-            {[1, 2, 3, 4].map((level) => (
-              <button
-                key={level}
-                type="button"
-                aria-pressed={t.level === level}
-                aria-label={`${t.name} loyalty ${level}`}
-                onClick={() => void setTraderLevel(t.name, level)}
-                className="size-5 rounded-sm bg-panel-hi font-mono text-[11px] text-muted
-                           transition-colors hover:text-ink aria-pressed:bg-accent
-                           aria-pressed:text-ground focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                {level}
-              </button>
-            ))}
+            {[1, 2, 3, 4].map((level) => {
+              const rule = t.levels?.find((l) => l.level === level)
+              const reachable = rule?.reachable ?? true
+
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  aria-pressed={t.level === level}
+                  disabled={!reachable}
+                  title={reachable
+                    ? `${t.name} loyalty ${level}`
+                    : `Needs character level ${rule?.requiredPlayerLevel}`}
+                  aria-label={`${t.name} loyalty ${level}`}
+                  onClick={() => void setTraderLevel(t.name, level)}
+                  className="size-5 rounded-sm bg-panel-hi font-mono text-[11px] text-muted
+                             transition-colors hover:text-ink aria-pressed:bg-accent
+                             aria-pressed:text-ground disabled:opacity-25 disabled:hover:text-muted
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  {level}
+                </button>
+              )
+            })}
 
             {t.availableNow > 0 && (
               <span className="font-mono text-[11px] text-accent">{t.availableNow} ready</span>

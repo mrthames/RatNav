@@ -218,6 +218,36 @@ public sealed class TarkovDevClient(HttpClient http)
         ];
     }
 
+    /// <summary>
+    /// Traders, with what each loyalty level costs.
+    ///
+    /// <para>Loyalty gates quests, so without this RatNav offers work you cannot take yet. It
+    /// cannot see your reputation or your spending, but it can see that Prapor level 3 wants
+    /// player level 21.</para>
+    /// </summary>
+    public async Task<IReadOnlyList<TraderDef>> GetTradersAsync(CancellationToken ct = default)
+    {
+        var (traders, text) = await FetchAsync<Dictionary<string, TraderDto?>>($"{GameMode}/traders", ct);
+
+        return
+        [
+            .. traders
+                .Where(pair => pair.Value is not null)
+                .Select(pair => new TraderDef
+                {
+                    Id = pair.Key,
+                    Name = text.Of(pair.Value!.Name) ?? pair.Value.NormalizedName ?? pair.Key,
+                    NormalizedName = pair.Value.NormalizedName,
+                    Levels =
+                    [
+                        .. (pair.Value.Levels ?? [])
+                            .Select(l => new TraderLevel(l.Level, l.RequiredPlayerLevel, l.RequiredReputation))
+                            .OrderBy(l => l.Level)
+                    ],
+                })
+        ];
+    }
+
     private async Task<Dictionary<string, string>> GetTraderNamesAsync(CancellationToken ct)
     {
         // Tasks reference traders by id only, and "which trader" is the first thing a player
@@ -292,6 +322,15 @@ public sealed class TarkovDevClient(HttpClient http)
         MinPlayerLevel = task.MinPlayerLevel,
         Kappa = task.KappaRequired ?? false,
         WikiUrl = task.WikiLink,
+        TraderRequirements =
+        [
+            .. (task.TraderRequirements ?? [])
+                .Where(r => r.Trader is { Length: > 0 }
+                    && string.Equals(r.RequirementType, "level", StringComparison.OrdinalIgnoreCase))
+                .Select(r => new TraderLevelRequirement(
+                    r.Trader!, traders.GetValueOrDefault(r.Trader!), r.Value))
+        ],
+
         PrerequisiteTaskIds =
         [
             .. (task.TaskRequirements ?? [])
@@ -364,9 +403,13 @@ public sealed class TarkovDevClient(HttpClient http)
     private sealed record ItemsPayload(Dictionary<string, ItemDto?>? Items);
     private sealed record MapsPayload(Dictionary<string, MapDto?>? Maps);
 
+    private sealed record TraderLevelDto(int Level, int RequiredPlayerLevel, double RequiredReputation);
+    private sealed record TaskTraderRequirementDto(string? Trader, string? RequirementType, int Value);
+
     private sealed record TaskDto(
         string? Name, string? NormalizedName, string? WikiLink, int? MinPlayerLevel,
         bool? KappaRequired, string? Trader, List<TaskRequirementDto>? TaskRequirements,
+        List<TaskTraderRequirementDto>? TraderRequirements,
         List<ObjectiveDto>? Objectives);
 
     private sealed record TaskRequirementDto(string? Task);
@@ -405,7 +448,8 @@ public sealed class TarkovDevClient(HttpClient http)
     private sealed record TraderRequirementDto(string? Trader, int Level);
     private sealed record SkillRequirementDto(string? Name, int Level);
 
-    private sealed record TraderDto(string? Name);
+    private sealed record TraderDto(
+        string? Name, string? NormalizedName, List<TraderLevelDto>? Levels);
 
     private sealed record BarterDto(
         string? Id,

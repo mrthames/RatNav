@@ -211,14 +211,31 @@ public static class ApiEndpoints
                 .Select(t => t.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+            var known = (state.Cache.Current?.Traders ?? [])
+                .ToDictionary(t => t.Name, t => t, StringComparer.OrdinalIgnoreCase);
+
             var traders =
                 from task in tasks
                 where task.TraderName is { Length: > 0 }
                 group task by task.TraderName! into byTrader
-                orderby byTrader.Key
+
+                // The order the game lists them in. Alphabetical put Fence third and BTR Driver
+                // first, which matches nothing anyone sees while playing.
+                orderby TraderOrder(byTrader.Key)
+                let def = known.GetValueOrDefault(byTrader.Key)
                 select new
                 {
                     name = byTrader.Key,
+
+                    // What each loyalty level costs, so a level you cannot have reached can be
+                    // shown as out of reach rather than merely unselected.
+                    levels = (def?.Levels ?? []).Select(l => new
+                    {
+                        level = l.Level,
+                        requiredPlayerLevel = l.RequiredPlayerLevel,
+                        reachable = settings.PlayerLevel is null || l.RequiredPlayerLevel <= settings.PlayerLevel,
+                    }),
+
 
                     // Keyed by name rather than id: tasks carry the resolved name, and a separate
                     // id would mean a second lookup for no gain.
@@ -496,7 +513,7 @@ public static class ApiEndpoints
 
             var rows = tasks.Select(t => TaskSummary.From(
                 t, progress.StateOf(t.Id), available.Contains(t.Id),
-                settings.PlayerLevel, names, progress.StateOf));
+                settings.PlayerLevel, names, progress.StateOf, progress.TraderLevelOf));
 
             // Four groups, and each answers a different question.
             //
@@ -1153,6 +1170,29 @@ public static class ApiEndpoints
         progress.SetHideoutLevel(stash.Id, level);
     }
 
+    /// <summary>
+    /// Where a trader sits in the game's own list.
+    ///
+    /// <para>Hardcoded because the order is a fact about the game's interface rather than
+    /// something the data carries, and it has been stable for years. Anything unrecognised sorts
+    /// last rather than throwing the rest out of order.</para>
+    /// </summary>
+    private static int TraderOrder(string name) => name.ToLowerInvariant() switch
+    {
+        "prapor" => 0,
+        "therapist" => 1,
+        "fence" => 2,
+        "skier" => 3,
+        "peacekeeper" => 4,
+        "mechanic" => 5,
+        "ragman" => 6,
+        "jaeger" => 7,
+        "ref" => 8,
+        "lightkeeper" => 9,
+        "btr driver" => 10,
+        _ => 99,
+    };
+
     private static ItemDef Unknown(string itemId) => new() { Id = itemId, Name = "Unknown item" };
 
     private static object? Track(
@@ -1532,10 +1572,22 @@ public sealed record TaskSummary
         TaskDef task,
         int? playerLevel,
         IReadOnlyDictionary<string, string>? taskNames,
-        Func<string, QuestState>? stateOf)
+        Func<string, QuestState>? stateOf,
+        Func<string, int>? traderLevelOf)
     {
         if (playerLevel is { } level && task.MinPlayerLevel is { } needed && needed > level)
             yield return $"needs level {needed}";
+
+        if (traderLevelOf is not null)
+        {
+            foreach (var requirement in task.TraderRequirements)
+            {
+                var trader = requirement.TraderName ?? requirement.TraderId;
+                if (traderLevelOf(trader) >= requirement.Level) continue;
+
+                yield return $"needs {requirement.TraderName ?? "trader"} LL{requirement.Level}";
+            }
+        }
 
         if (stateOf is null) yield break;
 
@@ -1575,12 +1627,13 @@ public sealed record TaskSummary
         bool available,
         int? playerLevel = null,
         IReadOnlyDictionary<string, string>? taskNames = null,
-        Func<string, QuestState>? stateOf = null) => new()
+        Func<string, QuestState>? stateOf = null,
+        Func<string, int>? traderLevelOf = null) => new()
     {
         Blockers = state != QuestState.NotStarted || available
             ? []
             : [
-                .. Reasons(task, playerLevel, taskNames, stateOf),
+                .. Reasons(task, playerLevel, taskNames, stateOf, traderLevelOf),
             ],
 
         Id = task.Id,

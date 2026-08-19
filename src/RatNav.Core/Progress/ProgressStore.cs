@@ -216,10 +216,24 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
     /// better to over-report than to hide a quest because RatNav was never told.
     /// </param>
     public IEnumerable<TaskDef> AvailableNow(IEnumerable<TaskDef> tasks, int? playerLevel = null) =>
-        tasks.Where(t =>
-            StateOf(t.Id) == QuestState.NotStarted &&
-            t.PrerequisiteTaskIds.All(p => StateOf(p) == QuestState.Completed) &&
-            (playerLevel is null || t.MinPlayerLevel is null || t.MinPlayerLevel <= playerLevel));
+        tasks.Where(t => StateOf(t.Id) == QuestState.NotStarted && Reachable(t, playerLevel));
+
+    /// <summary>
+    /// Whether every gate on a quest is met: prerequisites, character level, and trader loyalty.
+    ///
+    /// <para>Loyalty was the one missing, and it is not a small omission — a hundred and nine
+    /// quests carry one, so leaving it out listed work as ready that the game will not offer.</para>
+    /// </summary>
+    public bool Reachable(TaskDef task, int? playerLevel)
+    {
+        if (!task.PrerequisiteTaskIds.All(p => StateOf(p) == QuestState.Completed)) return false;
+
+        // Not knowing your level means not filtering by it. Hiding a quest because RatNav was
+        // never told is worse than listing one you cannot quite take.
+        if (playerLevel is { } level && task.MinPlayerLevel is { } needed && needed > level) return false;
+
+        return task.TraderRequirements.All(r => TraderLevelOf(r.TraderName ?? r.TraderId) >= r.Level);
+    }
 
     /// <summary>
     /// The lowest character level consistent with the quests marked complete.
