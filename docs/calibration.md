@@ -165,6 +165,46 @@ The Lab requires a keycard, so this is blocked on access rather than effort. Whe
 4. If the pins land where you marked, `180 − r` is confirmed for all ten maps. If they land
    mirrored across the diagonal, the rule is `|180 − r|` and only The Lab changes.
 
+## Settled maps
+
+| map | mapping | how |
+|---|---|---|
+| Customs | `( x, z)` | marked position, 0.1pp |
+| Factory | `(-z, x)` | two marked positions, settled by the bearing between them |
+| Lighthouse | `( x, z)` | marked at Northern Checkpoint — 0.3pp against a runner-up at 21.6pp |
+| Woods | `( x, z)` | marked at South V-Ex, 1.9pp; tie with the transpose broken 25:1 by extract positions |
+| Interchange | `( x, z)` | marked at NW Exfil — 1.2pp against a runner-up at 6.1pp |
+
+Interchange is the opposite case: its image is exactly square, so the aspect-ratio test is silent
+and no amount of published data could have settled it. Only a marked position could.
+
+Woods is worth noting as the case where one click was *not* enough. The map is nearly square, so
+the transposed mapping lands 1.4pp from the correct one — inside the slip of a human click. The
+published extract positions settled it, which is why the solver uses both signals rather than
+trusting whichever is available.
+
+## Reserve does not fit any axis-aligned mapping
+
+Reserve's best fit against a marked position misses by **12.7 percentage points**, with the
+runner-up at 18.6 — no separation worth acting on, and an absolute error of roughly 75 metres.
+
+The cause appears in the data:
+
+| source | Reserve's rotation |
+|---|---|
+| tarkov.dev `coordinateToCardinalRotation` | **195.209** |
+| tarkovdata `coordinateRotation` | 180 |
+
+**195.209° is not a right angle.** Reserve's map is drawn about 15° off the world axes, so no
+combination of axis swaps and sign flips can represent it — the eight mappings this solver
+considers are all that axis-aligned transforms allow, and Reserve needs a general rotation.
+
+Every other map in the data declares a multiple of 90. Reserve is the only one, which is why this
+did not show up until a marked position exposed a residual that would not go away.
+
+Supporting a free rotation angle means carrying one on the mapping and fitting it, rather than
+choosing between eight discrete options. Until then Reserve stays `Weak` and says so.
+
 ## Floors
 
 Seven of ten maps are multi-level. Streets has seven levels.

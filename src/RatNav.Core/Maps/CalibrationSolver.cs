@@ -42,12 +42,27 @@ public static class CalibrationSolver
     ///
     /// Factory: two marked positions, settled by the bearing between them — 146° measured
     /// against 148° predicted, where the rival candidate predicted 115°.
+    ///
+    /// Lighthouse: a screenshot at the Northern Checkpoint extract, marked on the image. The
+    /// direct mapping missed by 0.3 percentage points and the runner-up by 21.6.
+    ///
+    /// Woods: a screenshot at the South V-Ex extract. The click alone was not decisive — Woods is
+    /// nearly square, so the transposed mapping lands only 1.4pp away and that is within a click's
+    /// slip. The 20 published extract positions break the tie 25 to 1 in favour of direct, and
+    /// both signals agree.
+    ///
+    /// Interchange: a marked position at the NW Exfil, 1.2pp against a runner-up at 6.1pp. This
+    /// one could only ever be settled by hand — Interchange's image is exactly square, so the
+    /// aspect-ratio test has nothing to say about which axis runs which way.
     /// </summary>
     public static IReadOnlyDictionary<string, AxisMapping> VerifiedMappings { get; } =
         new Dictionary<string, AxisMapping>(StringComparer.OrdinalIgnoreCase)
         {
             ["customs"] = new(Swapped: false, SignU: 1, SignV: 1),
             ["factory"] = new(Swapped: true, SignU: -1, SignV: 1),
+            ["woods"] = new(Swapped: false, SignU: 1, SignV: 1),
+            ["lighthouse"] = new(Swapped: false, SignU: 1, SignV: 1),
+            ["interchange"] = new(Swapped: false, SignU: 1, SignV: 1),
         };
 
     /// <summary>Below this ratio between best and runner-up, the evidence is not worth trusting.</summary>
