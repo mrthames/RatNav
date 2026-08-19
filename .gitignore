@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+.vs/
+
+# Runtime data — caches, map images, plans, tracking, settings
+data/
+
+# Web
+node_modules/
+web/dist/
+src/RatNav.Service/wwwroot/
+*.local
+
+# OS
+Thumbs.db
+.DS_Store
