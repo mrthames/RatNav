@@ -451,6 +451,16 @@ public sealed record RatNavSettings
         public double ScaleWithZoom { get; init; } = 0.55;
 
         /// <summary>
+        /// Size of your own marker and the cone showing which way you are facing.
+        ///
+        /// <para>Its own setting, and deliberately not subject to the zoom shrink. Where you are
+        /// and which way you are pointing is the one thing that matters at every zoom — pull back
+        /// to see the whole map and that is exactly when a marker that has shrunk with everything
+        /// else stops answering the question you pulled back to ask.</para>
+        /// </summary>
+        public double PlayerScale { get; init; } = 3.0;
+
+        /// <summary>
         /// Draw the floor above the ground together with it, rather than ghosted.
         ///
         /// <para>On Streets the ground level holds only building footprints — the interiors are one

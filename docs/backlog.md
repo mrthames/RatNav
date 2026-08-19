@@ -331,6 +331,13 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Your marker
+
+- [x] **Your marker and facing cone keep one size at every zoom**, with their own **YOU** control.
+  They were shrinking along with the pins, which is wrong for the one thing that matters at every
+  zoom: you pull the map back precisely to ask where you are and which way you are pointing, and a
+  marker that shrank with everything else stops answering exactly when it is asked.
+
 ### Map labels
 
 - [x] **Place names are white**, not muted grey. At full ink the map's own roads and rock are pale

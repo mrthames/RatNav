@@ -178,6 +178,8 @@ public partial class OverlayWindow : Window
         TextDown.Click += (_, _) => StepText(-0.5);
         ShrinkUp.Click += (_, _) => StepShrink(+0.1);
         ShrinkDown.Click += (_, _) => StepShrink(-0.1);
+        YouUp.Click += (_, _) => StepPlayer(+0.5);
+        YouDown.Click += (_, _) => StepPlayer(-0.5);
         WeightUp.Click += (_, _) => StepWeight(+0.25);
         WeightDown.Click += (_, _) => StepWeight(-0.25);
         ItemsButton.Click += (_, _) => ToggleItems();
@@ -1058,6 +1060,16 @@ public partial class OverlayWindow : Window
         ExpandControls.Visibility = editing && !open ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void StepPlayer(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            PlayerScale = Math.Clamp(_settings.Overlay.PlayerScale + by, 1.0, 8.0),
+        });
+
+        Draw();
+    }
+
     private void StepShrink(double by)
     {
         Remember(_settings.Overlay with
@@ -1200,6 +1212,7 @@ public partial class OverlayWindow : Window
         MarkerText.Text = $"{_settings.Overlay.MarkerScale:0.0}×";
         TextScaleText.Text = $"{_settings.Overlay.TextScale:0.0}×";
         ShrinkText.Text = $"{_settings.Overlay.ScaleWithZoom:0.00}";
+        YouText.Text = $"{_settings.Overlay.PlayerScale:0.0}×";
         HaloButton.Content = _settings.Overlay.Halo ? "halo on" : "halo off";
         GhostButton.Content = _settings.Overlay.GhostOtherFloors ? "ghost on" : "ghost off";
         PlacesButton.Content = _settings.Overlay.ShowPlaceNames ? "names on" : "names off";
@@ -1861,6 +1874,13 @@ public partial class OverlayWindow : Window
         // impossible: the marker could not move, so the map had to.
         var centre = Place(view.X.Value, view.Y.Value);
 
+        // Your marker and your facing keep one size at every zoom.
+        //
+        // Everything else eases off as the map pulls back, which is right for furniture — but you
+        // pull back precisely to ask "where am I and which way am I pointing", and a marker that
+        // shrank along with the pins stops answering it at the moment it is asked.
+        var you = _settings.Overlay.PlayerScale;
+
         if (view.HeadingDegrees is { } heading)
         {
             var cone = new Path
@@ -1872,7 +1892,7 @@ public partial class OverlayWindow : Window
                 {
                     Children =
                     {
-                        new ScaleTransform(scale * 0.7, scale * 0.7),
+                        new ScaleTransform(you * 0.7, you * 0.7),
                         new RotateTransform(heading),
                     },
                 },
@@ -1884,17 +1904,17 @@ public partial class OverlayWindow : Window
             MapCanvas.Children.Add(cone);
         }
 
-        var you = new Ellipse
+        var marker = new Ellipse
         {
-            Width = 9 * scale * 0.6, Height = 9 * scale * 0.6,
+            Width = 9 * you * 0.6, Height = 9 * you * 0.6,
             Fill = (Brush)FindResource("Accent"),
             Stroke = (Brush)FindResource("Ground"),
             StrokeThickness = 2,
         };
 
-        Canvas.SetLeft(you, centre.X - you.Width / 2);
-        Canvas.SetTop(you, centre.Y - you.Height / 2);
-        MapCanvas.Children.Add(you);
+        Canvas.SetLeft(marker, centre.X - marker.Width / 2);
+        Canvas.SetTop(marker, centre.Y - marker.Height / 2);
+        MapCanvas.Children.Add(marker);
     }
 
     /// <summary>A stop in one line: which quest, and what it wants there.</summary>

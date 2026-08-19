@@ -385,6 +385,16 @@
                                 <Button x:Name="TextUp" Style="{StaticResource Chip}" Content="+" />
                             </StackPanel>
 
+                            <TextBlock Style="{StaticResource Label}" Text="YOU" Margin="0,0,0,2"
+                                       ToolTip="Your marker and facing cone — one size at every zoom" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="YouDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="YouText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="3.0×" />
+                                <Button x:Name="YouUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
+
                             <TextBlock Style="{StaticResource Label}" Text="SHRINK" Margin="0,0,0,2"
                                        ToolTip="How much pins and text shrink as you zoom out" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
