@@ -331,6 +331,17 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Graphical maps, second pass
+
+- [x] **Buildings were invisible in graphical mode.** They were being drawn — Woods has 111 of
+  them — in the map's own `.building { fill:#1a2632 }` against `.land { fill:#1f5054 }`. Near-black
+  on dark teal, which at any sensible opacity over a game reads as nothing, so Sawmill looked like
+  roads through empty ground. Structures and boundaries are now traced over the graphical base, so
+  the base gives you the place and the tracing gives you the buildings and rooms.
+- [x] **Ink is per presentation.** The centred map is for crossing ground and wants outlines only;
+  the corner map is for when you have arrived and wants the full picture. They were sharing one
+  setting, so choosing for one spoiled the other. Defaults: `outline` for F9, `graphical` for F5.
+
 ### Graphical maps
 
 - [x] **Maps can now be drawn in their own colours.** Asked for as "a graphical base layer instead

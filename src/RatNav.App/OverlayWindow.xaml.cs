@@ -581,8 +581,8 @@ public partial class OverlayWindow : Window
 
     private void CycleInk()
     {
-        var at = Array.IndexOf(InkLevels, _settings.Overlay.Ink);
-        Remember(_settings.Overlay with { Ink = InkLevels[(at + 1 + InkLevels.Length) % InkLevels.Length] });
+        var at = Array.IndexOf(InkLevels, Placement.Ink);
+        Place(p => p with { Ink = InkLevels[(at + 1 + InkLevels.Length) % InkLevels.Length] });
         Redraw();
     }
 
@@ -1069,7 +1069,7 @@ public partial class OverlayWindow : Window
         FloorUp.IsEnabled = _floors.Count > 0 && at < _floors.Count - 1;
         FloorDown.IsEnabled = _floors.Count > 0 && at > 0;
 
-        InkButton.Content = _settings.Overlay.Ink;
+        InkButton.Content = Placement.Ink;
         FadeText.Text = $"{_settings.Overlay.MapOpacity * 100:F0}%";
         ZoomReset.Content = $"{Placement.Zoom:0.0}×";
         FollowButton.Content = Following ? "follows you" : "still";
@@ -1100,7 +1100,7 @@ public partial class OverlayWindow : Window
         if (width <= 0 || height <= 0) return;
 
         var opacity = _settings.Overlay.MapOpacity;
-        var ink = _settings.Overlay.Ink;
+        var ink = Placement.Ink;
         var fit = FitScale(width, height);
 
         var transform = MapTransform(view, width, height);
@@ -1202,6 +1202,31 @@ public partial class OverlayWindow : Window
             };
 
             MapCanvas.Children.Add(path);
+        }
+
+        // Structures traced over the top of the graphical base.
+        //
+        // The map's own palette draws buildings at #1a2632 against #1f5054 terrain — near-black on
+        // dark teal, which at any sensible opacity over a game is invisible. Woods has 111
+        // buildings and Sawmill read as roads through empty ground. The colours below are the
+        // map's, and correct; what they are not is legible over something else.
+        if (ink == "graphical")
+        {
+            foreach (var shape in _mapShapes)
+            {
+                if (shape.Role is not (MapShapeRole.Structure or MapShapeRole.Boundary)) continue;
+
+                MapCanvas.Children.Add(new Path
+                {
+                    Data = shape.Geometry,
+                    RenderTransform = transform,
+                    Stroke = (Brush)FindResource(
+                        shape.Role == MapShapeRole.Structure ? "Accent" : "Ink"),
+                    StrokeThickness = 0.8 * _settings.Overlay.LineWeight / fit,
+                    Opacity = Math.Min(1, opacity * 1.5),
+                    IsHitTestVisible = false,
+                });
+            }
         }
     }
 

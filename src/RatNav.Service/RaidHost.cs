@@ -318,6 +318,16 @@ public sealed record RatNavSettings
         /// <summary>Whether the map keeps you centred.</summary>
         public bool Follow { get; init; }
 
+        /// <summary>
+        /// How much of the map to draw, and in whose colours: "graphical", "full", "structure",
+        /// or "outline".
+        ///
+        /// <para>Per presentation, because the two are used for different things. The centred map
+        /// is for crossing ground — roads and structures, nothing else competing. The corner map
+        /// is for when you have arrived somewhere and want to read the place.</para>
+        /// </summary>
+        public string Ink { get; init; } = "graphical";
+
         /// <summary>True before anyone has arranged this presentation, so a sensible default can be used.</summary>
         public bool Unplaced => Width <= 0 || Height <= 0;
     }
@@ -342,9 +352,10 @@ public sealed record RatNavSettings
         /// <summary>
         /// The large centred map. Holds still by default: it is big enough to read as a map, and
         /// one that re-centres on every fix puts the same building somewhere new each time you
-        /// look. Left unplaced so it is first sized to the screen.
+        /// look. Drawn as outlines, because crossing ground wants roads and structures and not
+        /// much else.
         /// </summary>
-        public OverlayPlacement Wireframe { get; init; } = new();
+        public OverlayPlacement Wireframe { get; init; } = new() { Ink = "outline" };
 
         /// <summary>Fraction of the screen the centred map covers before it is arranged by hand.</summary>
         public double WireframeScale { get; init; } = 0.7;
@@ -354,13 +365,6 @@ public sealed record RatNavSettings
         /// is the dial that decides whether an overlay helps or gets in the way.
         /// </summary>
         public double MapOpacity { get; init; } = 0.55;
-
-        /// <summary>
-        /// How much of the map to draw at all: "full", "structure", or "outline". Distinct from
-        /// <see cref="MapOpacity"/> — this drops whole categories of detail rather than fading
-        /// everything equally, which is what keeps a dense map readable over a dark scene.
-        /// </summary>
-        public string Ink { get; init; } = "structure";
 
         /// <summary>
         /// Draw the floors below the one you are on, faintly, underneath it.
