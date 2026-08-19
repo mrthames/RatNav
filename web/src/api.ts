@@ -214,6 +214,12 @@ export interface PlannableObjective {
   itemIds: string[]
 }
 
+export interface PlaceLabel {
+  text: string
+  x: number
+  y: number
+}
+
 export interface CustomWaypoint {
   id: string
   mapId: string
@@ -450,6 +456,10 @@ export const api = {
     del<RaidView>(`/api/raid/stops/${encodeURIComponent(objectiveId)}`),
 
   clearPlan: () => del<RaidView>('/api/raid/plan'),
+
+  /** The names players use for places — "Old Gas", "Dorms" — with where each one is. */
+  places: (mapId: string) =>
+    get<PlaceLabel[]>(`/api/maps/${encodeURIComponent(mapId)}/places`),
 
   /**
    * Spots you marked by hand.

@@ -219,12 +219,14 @@ them separately.
   - Cause: the active plan *is* restored on the service side, but the Plan view's map picker is
     seeded independently — it just takes the first map in the list, which is Factory. The picker
     needs to start from the active plan.
-- [ ] **Switching maps should not discard the objectives you picked.** Choosing a different map,
-  then coming back, should still have your selections for the first one, and the last map used
-  stays remembered.
-  - `[?]` This implies keeping a selection per map rather than one selection at a time. Worth
-    confirming whether that means several saved plans (one per map, switched between) or one plan
-    that remembers its map-by-map picks.
+- [x] **Switching maps should not discard the objectives you picked.** Picks are kept per map for
+  the session, so glancing at Woods mid-way through building a Customs run and coming back finds
+  it as you left it.
+  - Answered the open question the simpler way: **one selection per map, held in the page**, not
+    several saved plans. Saved plans are what "Plan this raid" produces; this is the scratch pad
+    before that, and it should not be leaving files behind.
+  - A pick can outlive the quest that produced it, so building sends only what the map still
+    offers rather than a dead id that would silently shorten the plan.
 
 ### Quests tab, rebuilt
 
@@ -468,6 +470,10 @@ The research is kept below in case it is ever wanted again.
     **search for a named place**, and the ability to **mark a spot** from what you find.
   - Concretely: the overlay's ink, halo, ghosting, place names and scale controls are all missing
     here, and the map already knows 46 named places on Streets that nothing searches.
+  - **Done so far:** ink, floors, ghosting, extracts, zoom and right-drag pan were already there;
+    **place search** now finds a name and takes you to it, and **marking a spot** works. Still
+    missing against the overlay: halo, marker and text scaling, and drawing the place names on the
+    map rather than only searching them.
 - [x] **Custom waypoints.** Mark a spot on the Maps tab and it draws on the overlay, in raid,
   labelled.
   - Placed by clicking, which settled the open question: Map Genie's positions are in its own

@@ -16,13 +16,19 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const [mapId, setMapId] = useState<string | null>(null)
   const [objectives, setObjectives] = useState<PlannableObjective[]>([])
   /**
-   * The objectives picked, in the order they were picked.
+   * The objectives picked, per map, in the order they were picked.
    *
    * <p>An ordered list rather than a set, because the order is the plan. The planner walks the
    * stops as given, so what you tick first is where you go first — and a set would have handed it
    * whatever order the objectives happened to load in.</p>
+   *
+   * <p>Kept per map rather than one selection at a time. Half-picking a Customs run, glancing at
+   * Woods to check something, and coming back to an empty list is a small betrayal — and a common
+   * one, because comparing two maps before you queue is exactly what this page is for.</p>
    */
-  const [chosen, setChosen] = useState<string[]>([])
+  const [picks, setPicks] = useState<Record<string, string[]>>({})
+
+  const chosen = useMemo(() => (mapId ? picks[mapId] ?? [] : []), [picks, mapId])
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
@@ -51,18 +57,21 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
     } catch {
       setObjectives([])
     }
-    setChosen([])
   }, [mapId])
 
   useEffect(() => { load() }, [load])
 
+  /** Edits this map's picks, leaving every other map's alone. */
+  const edit = (change: (current: string[]) => string[]) =>
+    setPicks((all) => (mapId ? { ...all, [mapId]: change(all[mapId] ?? []) } : all))
+
   const toggle = (id: string) =>
-    setChosen((current) =>
+    edit((current) =>
       current.includes(id) ? current.filter((c) => c !== id) : [...current, id])
 
   /** Move one stop to another position, keeping everything else in order around it. */
   const move = (from: number, to: number) =>
-    setChosen((current) => {
+    edit((current) => {
       if (from === to || to < 0 || to >= current.length) return current
 
       const next = [...current]
@@ -94,7 +103,10 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
     setBusy(true)
     setNote(null)
     try {
-      const built = await api.buildPlan(mapId, chosen)
+      // Only what this map still offers. A pick kept from an earlier visit can outlive the quest
+      // that produced it — completed since, or dropped by a patch — and sending a dead id would
+      // silently shorten the plan rather than say so.
+      const built = await api.buildPlan(mapId, route.map((o) => o.objectiveId))
       await api.activatePlan(built.id)
       setNote(`Plan active — ${built.plan.stops.length} stops.`)
       setPlanned((n) => n + 1)

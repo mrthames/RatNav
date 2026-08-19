@@ -6,6 +6,7 @@ import {
   type InkLevel,
   type MapSummary,
   type ObjectivePin,
+  type PlaceLabel,
 } from './api'
 
 /**
@@ -59,6 +60,40 @@ export function MapView({ map }: { map: MapSummary }) {
   const [marks, setMarks] = useState<CustomWaypoint[]>([])
   const [placing, setPlacing] = useState(false)
 
+  /**
+   * Finding somewhere by name.
+   *
+   * <p>Streets knows 46 named places and nothing searched them, so the only way to find Pinewood
+   * was to already know where it was — which is the thing you came here not knowing.</p>
+   */
+  const [places, setPlaces] = useState<PlaceLabel[]>([])
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    setSearch('')
+    api.places(map.id).then(setPlaces).catch(() => setPlaces([]))
+  }, [map.id])
+
+  const found = useMemo(() => {
+    const needle = search.trim().toLowerCase()
+    if (!needle) return []
+
+    return places.filter((p) => p.text.toLowerCase().includes(needle)).slice(0, 8)
+  }, [places, search])
+
+  /** Puts a point in the middle of the frame at whatever zoom is set. */
+  function centreOn(x: number, y: number) {
+    const box = frame.current?.getBoundingClientRect()
+    if (!box) return
+
+    // Zoomed all the way out the whole map is already on screen, so centring would only push half
+    // of it off the edge. A closer look is what "take me there" means.
+    const next = Math.max(zoom, 2.5)
+
+    setZoom(next)
+    setPan({ x: box.width / 2 - x * box.width * next, y: box.height / 2 - y * box.height * next })
+  }
+
   const loadMarks = useCallback(
     () => api.waypoints(map.id).then(setMarks).catch(() => setMarks([])), [map.id])
 
@@ -94,6 +129,7 @@ export function MapView({ map }: { map: MapSummary }) {
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const dragging = useRef<{ x: number; y: number } | null>(null)
   const host = useRef<HTMLDivElement>(null)
+  const frame = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -198,6 +234,36 @@ export function MapView({ map }: { map: MapSummary }) {
           />
         )}
 
+        {places.length > 0 && (
+          <div className="relative">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Find a place… (${places.length})`}
+              className="w-44 rounded-sm border border-line bg-panel px-2.5 py-1.5 text-xs text-ink
+                         placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
+            />
+
+            {found.length > 0 && (
+              <ul className="absolute left-0 top-full z-10 mt-1 w-56 border border-line bg-panel shadow-xl">
+                {found.map((place) => (
+                  <li key={`${place.text}-${place.x}`}>
+                    <button
+                      type="button"
+                      onClick={() => { centreOn(place.x, place.y); setSearch('') }}
+                      className="w-full px-2.5 py-1.5 text-left text-xs text-muted transition-colors
+                                 hover:bg-panel-hi hover:text-ink
+                                 focus-visible:outline-2 focus-visible:outline-accent"
+                    >
+                      {place.text}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         <button
           type="button"
           aria-pressed={placing}
@@ -227,6 +293,7 @@ export function MapView({ map }: { map: MapSummary }) {
       </div>
 
       <div
+        ref={frame}
         className="relative overflow-hidden border border-line bg-[#0e1317]"
         onWheel={(e) => {
           e.preventDefault()
