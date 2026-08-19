@@ -1,4 +1,5 @@
 using RatNav.Core.Model;
+using RatNav.Core.Planning;
 using RatNav.Core.Progress;
 using RatNav.Core.Tracking;
 
@@ -33,21 +34,58 @@ public class ItemTrackerTests : IDisposable
         ],
     };
 
+    /// <summary>What the planner decided the hideout wants, in the shape the tracker takes.</summary>
+    private static Dictionary<string, HideoutDemand> Wants(int count, int wave = 1, string upgrade = "Workbench 2") =>
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["watch"] = new HideoutDemand
+            {
+                Count = count,
+                Wave = wave,
+                UpgradeName = upgrade,
+                StationId = "workbench",
+            },
+        };
+
     [Fact]
-    public void Only_active_quests_and_unbuilt_modules_count_toward_what_you_need()
+    public void Only_active_quests_and_upgrades_in_view_count_toward_what_you_need()
     {
         var progress = Progress();
         progress.SetManual("active", QuestState.Active);
         progress.SetManual("done", QuestState.Completed);
-        progress.SetHideoutLevel("workbench", 1);   // level 1 built, level 2 not
 
-        var tracked = Tracker().Track(Watch(), progress);
+        var tracked = Tracker().Track(Watch(), progress, Wants(7));
 
-        // 2 from the active quest, 7 from the un-built module. The finished quest's 5 and the
-        // built module's 3 are no longer anyone's problem.
+        // 2 from the active quest, 7 from the upgrade the planner put in view. The finished
+        // quest's 5 is no longer anyone's problem.
         Assert.Equal(2, tracked.QuestNeeded);
         Assert.Equal(7, tracked.HideoutNeeded);
         Assert.Equal(9, tracked.Needed);
+    }
+
+    [Fact]
+    public void The_hideout_wants_nothing_until_the_planner_says_what()
+    {
+        var progress = Progress();
+        progress.SetManual("active", QuestState.Active);
+
+        // Counting every un-built level is what made the items list unusable: hundreds of items
+        // for upgrades gated behind three others you have not started. With no planner supplied,
+        // the hideout claims nothing rather than claiming all of it.
+        var tracked = Tracker().Track(Watch(), progress);
+
+        Assert.Equal(0, tracked.HideoutNeeded);
+        Assert.Null(tracked.HideoutUpgrade);
+    }
+
+    [Fact]
+    public void A_row_says_which_upgrade_wants_it_and_how_soon()
+    {
+        // A bare number does not tell you whether to keep something. "Medstation 3" does.
+        var tracked = Tracker().Track(Watch(), Progress(), Wants(4, wave: 2, upgrade: "Medstation 3"));
+
+        Assert.Equal("Medstation 3", tracked.HideoutUpgrade);
+        Assert.Equal(2, tracked.HideoutWave);
     }
 
     [Fact]

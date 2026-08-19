@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using RatNav.Core;
 using RatNav.Core.Data;
+using RatNav.Core.Sharing;
 using RatNav.Core.Watchers;
 
 namespace RatNav.Service;
@@ -15,7 +16,8 @@ namespace RatNav.Service;
 public sealed class RaidHost(
     RaidSession session,
     RatNavSettings settings,
-    GameDataCache cache) : IHostedService, IDisposable
+    GameDataCache cache,
+    PlanStore plans) : IHostedService, IDisposable
 {
     private ScreenshotWatcher? _screenshots;
     private LogWatcher? _logs;
@@ -51,7 +53,10 @@ public sealed class RaidHost(
 
         // Quests, items and maps all change with a patch, and a plan built on last wipe's data is
         // worse than no plan. So: check at launch, then every six hours while running.
-        _ = RefreshAsync(ct);
+        //
+        // The plan is restored after this rather than before it, because activating one needs the
+        // map data the refresh loads.
+        _ = RefreshAsync(ct).ContinueWith(_ => RestoreActivePlan(), TaskScheduler.Default);
         _refresh = new Timer(_ => _ = RefreshAsync(CancellationToken.None), null,
             TimeSpan.FromHours(6), TimeSpan.FromHours(6));
 
@@ -71,6 +76,28 @@ public sealed class RaidHost(
         var result = await cache.EnsureFreshAsync(_logs?.GameVersion, ct);
         LastRefresh = result;
         return result;
+    }
+
+    /// <summary>
+    /// Puts back the plan that was active when RatNav last closed.
+    ///
+    /// <para>A plan outlives its raid, so it has to outlive the app too. Closing RatNav between
+    /// sessions and losing what you were working towards would make the planner something you
+    /// rebuild every evening.</para>
+    /// </summary>
+    private void RestoreActivePlan()
+    {
+        if (settings.ActivePlanId is not { Length: > 0 } id) return;
+
+        var saved = plans.Get(id);
+        var data = cache.Current;
+
+        var map = data?.Maps.FirstOrDefault(m =>
+            string.Equals(m.Id, saved?.Document.MapId, StringComparison.OrdinalIgnoreCase));
+
+        if (saved is null || map is null) return;
+
+        session.UsePlan(PlanConversion.ToPlan(saved.Document, map, data), map);
     }
 
     public Task StopAsync(CancellationToken ct)
@@ -133,6 +160,37 @@ public sealed record RatNavSettings
     public OverlayBounds Overlay { get; init; } = new();
 
     /// <summary>Bindable hotkeys. Anything <see cref="string"/> here is parsed at startup.</summary>
+    /// <summary>
+    /// The plan that was active when RatNav last closed, put back on the next start. A plan
+    /// outlives its raid, so it has to outlive the app too.
+    ///
+    /// <para>Settable rather than init-only: this one is changed by the service while running,
+    /// every time a plan is activated, and everything else here is set by a person in Setup.</para>
+    /// </summary>
+    public string? ActivePlanId { get; set; }
+
+    /// <summary>
+    /// How many hideout upgrades deep the items list reaches. 1 is only what can be built right
+    /// now; higher is what to stop vendoring. Set from the Hideout view and remembered.
+    /// </summary>
+    public int HideoutLookAhead { get; set; } = Core.Planning.HideoutPlanner.DefaultLookAhead;
+
+    /// <summary>
+    /// Where these settings were read from, so a change made while running can be written back.
+    /// Not serialised — it describes the file rather than being part of it.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string? Origin { get; set; }
+
+    /// <summary>
+    /// Changes a setting and saves it, in one step, so no caller has to remember the second half.
+    /// </summary>
+    public void Remember(Action<RatNavSettings> change)
+    {
+        change(this);
+        if (Origin is { Length: > 0 } directory) Save(directory);
+    }
+
     public sealed record HotKeySettings
     {
         /// <summary>Show or hide the overlay.</summary>
@@ -248,7 +306,9 @@ public sealed record RatNavSettings
                     new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)
                     {
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
-                    }) ?? new RatNavSettings();
+                    }) is { } loaded
+                    ? Stamp(loaded, dataDirectory)
+                    : Stamp(new RatNavSettings(), dataDirectory);
             }
         }
         catch (Exception ex) when (ex is System.Text.Json.JsonException or IOException)
@@ -257,7 +317,13 @@ public sealed record RatNavSettings
             // customisations in it.
         }
 
-        return new RatNavSettings();
+        return Stamp(new RatNavSettings(), dataDirectory);
+    }
+
+    private static RatNavSettings Stamp(RatNavSettings settings, string dataDirectory)
+    {
+        settings.Origin = dataDirectory;
+        return settings;
     }
 
     public void Save(string dataDirectory)

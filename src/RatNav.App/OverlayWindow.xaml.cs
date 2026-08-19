@@ -204,12 +204,16 @@ public partial class OverlayWindow : Window
             Left = screen.Left + (screen.Width - Width) / 2;
             Top = screen.Top + (screen.Height - Height) / 2;
 
-            // No panel, no chrome — just the map over the game.
+            // Nothing but the map. In box mode the readout is the point and the map supports it;
+            // here that is inverted, and a title and a timestamp floating in the corners of the
+            // screen are just text over the game where no text should be.
             Frame.Background = Brushes.Transparent;
             Frame.BorderThickness = new Thickness(0);
             MapFrame.Background = Brushes.Transparent;
             MapFrame.BorderThickness = new Thickness(0);
-            Readout.Opacity = 0.9;
+
+            Readout.Visibility = Visibility.Collapsed;
+            StatusRow.Visibility = Visibility.Collapsed;
         }
         else
         {
@@ -224,7 +228,9 @@ public partial class OverlayWindow : Window
             Frame.BorderThickness = new Thickness(1);
             MapFrame.Background = new SolidColorBrush(Color.FromArgb(0x33, 0x14, 0x1b, 0x21));
             MapFrame.BorderThickness = new Thickness(1);
-            Readout.Opacity = 1;
+
+            Readout.Visibility = Visibility.Visible;
+            StatusRow.Visibility = Visibility.Visible;
         }
     }
 

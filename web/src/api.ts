@@ -57,6 +57,10 @@ export interface TrackedItem {
   avg24hPrice: number | null
   questNeeded: number
   hideoutNeeded: number
+  /** The nearest hideout upgrade wanting this — "Medstation 3". */
+  hideoutUpgrade: string | null
+  /** How far out that upgrade is. 1 means you could build it today. */
+  hideoutWave: number | null
   needed: number
   have: number
   remaining: number
@@ -65,6 +69,50 @@ export interface TrackedItem {
   watched: boolean
   watchNote: string | null
   watchTarget: number | null
+}
+
+export interface HideoutStationSummary {
+  id: string
+  name: string
+  builtLevel: number
+  maxLevel: number
+}
+
+export interface HideoutUpgradeItem {
+  itemId: string
+  name: string
+  shortName: string | null
+  count: number
+  have: number
+  foundInRaid: boolean
+}
+
+export interface HideoutUpgrade {
+  stationId: string
+  stationName: string
+  level: number
+  /** 1 is buildable now; 2 is buildable once everything at 1 is done. */
+  wave: number
+  targeted: boolean
+  description: string | null
+  constructionTimeSeconds: number
+  blockers: { kind: string; text: string }[]
+  items: HideoutUpgradeItem[]
+}
+
+export interface HideoutState {
+  lookAhead: number
+  stations: HideoutStationSummary[]
+  upcoming: HideoutUpgrade[]
+}
+
+export interface TurnIn {
+  taskId: string
+  taskName: string
+  traderName: string | null
+  objectiveCount: number
+  totalObjectiveCount: number
+  wikiUrl: string | null
 }
 
 export interface ProgressSummary {
@@ -116,6 +164,10 @@ export interface RaidStop {
 
 export interface RaidView {
   inRaid: boolean
+  /** True when a plan is loaded, whether or not you are in the raid it was built for. */
+  hasPlan: boolean
+  /** Set when the active plan is for a different map than the one on screen. */
+  planMapName: string | null
   mapId: string | null
   mapName: string | null
   x: number | null
@@ -156,6 +208,12 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return response.json() as Promise<T>
 }
 
+async function del<T>(path: string): Promise<T> {
+  const response = await fetch(path, { method: 'DELETE' })
+  if (!response.ok) throw new Error(`${path} returned ${response.status}`)
+  return response.status === 204 ? (undefined as T) : (response.json() as Promise<T>)
+}
+
 export const api = {
   status: () => get<DataStatus>('/api/status'),
   refresh: async () => {
@@ -165,7 +223,19 @@ export const api = {
   },
   maps: () => get<MapSummary[]>('/api/maps'),
 
-  neededItems: () => get<TrackedItem[]>('/api/items/needed'),
+  /**
+   * What to pick up. `lookAhead` decides how deep into the hideout build order to count, and
+   * `sort` of "next" leads with the upgrades you are closest to finishing rather than with
+   * quantity.
+   */
+  neededItems: (options?: { lookAhead?: number; sort?: 'next' }) => {
+    const query = new URLSearchParams()
+    if (options?.lookAhead) query.set('lookAhead', String(options.lookAhead))
+    if (options?.sort) query.set('sort', options.sort)
+
+    const suffix = query.toString()
+    return get<TrackedItem[]>(`/api/items/needed${suffix ? `?${suffix}` : ''}`)
+  },
   watchlist: () => get<TrackedItem[]>('/api/items/watchlist'),
   searchItems: (query: string) =>
     get<TrackedItem[]>(`/api/items/search?q=${encodeURIComponent(query)}&limit=40`),
@@ -197,6 +267,30 @@ export const api = {
     post<RaidView>(`/api/plans/${encodeURIComponent(id)}/activate`, {}),
 
   raid: () => get<RaidView>('/api/raid'),
+
+  hideout: (lookAhead?: number) =>
+    get<HideoutState>(`/api/hideout${lookAhead ? `?lookAhead=${lookAhead}` : ''}`),
+
+  setLookAhead: (levels: number) =>
+    post<{ lookAhead: number }>('/api/hideout/look-ahead', { levels }),
+
+  setHideoutLevel: (stationId: string, level: number) =>
+    post<{ id: string; level: number }>(`/api/progress/hideout/${encodeURIComponent(stationId)}`, { level }),
+
+  targetUpgrade: (stationId: string, level: number, targeted: boolean) =>
+    post<unknown>(
+      `/api/hideout/${encodeURIComponent(stationId)}/levels/${level}/target`, { targeted }),
+
+  /** Quests whose every planned objective is done, waiting on a trader. */
+  turnIns: () => get<TurnIn[]>('/api/raid/turn-ins'),
+
+  markTaskState: (taskId: string, state: string) =>
+    post<unknown>(`/api/progress/tasks/${encodeURIComponent(taskId)}`, { state }),
+
+  removeStop: (objectiveId: string) =>
+    del<RaidView>(`/api/raid/stops/${encodeURIComponent(objectiveId)}`),
+
+  clearPlan: () => del<RaidView>('/api/raid/plan'),
 
   /** Where you can leave from. Faction comes back raw so the view decides what to show. */
   extracts: (mapId: string) =>

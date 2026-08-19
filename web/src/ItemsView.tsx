@@ -6,6 +6,10 @@ type Tab = 'needed' | 'watchlist' | 'search'
 export function ItemsView() {
   const [tab, setTab] = useState<Tab>('needed')
   const [query, setQuery] = useState('')
+
+  // "next" leads with the hideout upgrades you are closest to finishing. The default leads with
+  // quantity, which answers a different question: what to grab if you happen to see it.
+  const [sort, setSort] = useState<'default' | 'next'>('default')
   const [rows, setRows] = useState<TrackedItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -15,14 +19,16 @@ export function ItemsView() {
       if (tab === 'search') {
         setRows(query.trim() ? await api.searchItems(query) : [])
       } else {
-        setRows(tab === 'needed' ? await api.neededItems() : await api.watchlist())
+        setRows(tab === 'needed'
+          ? await api.neededItems({ sort: sort === 'next' ? 'next' : undefined })
+          : await api.watchlist())
       }
     } catch {
       setRows([])
     } finally {
       setLoading(false)
     }
-  }, [tab, query])
+  }, [tab, query, sort])
 
   // Search runs as you type, so it waits for a pause rather than firing per keystroke.
   useEffect(() => {
@@ -60,6 +66,24 @@ export function ItemsView() {
             </button>
           ))}
         </div>
+
+        {tab === 'needed' && (
+          <div className="flex gap-px">
+            {([['default', 'By amount'], ['next', "What's next"]] as const).map(([id, text]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={sort === id}
+                onClick={() => setSort(id)}
+                className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
+                           hover:text-ink aria-pressed:bg-accent aria-pressed:text-ground
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+        )}
 
         {tab === 'search' && (
           <input
@@ -148,11 +172,16 @@ function Row({ row, onChange }: { row: TrackedItem; onChange: (item: TrackedItem
                   it has to survive colour-blindness. */}
               {row.foundInRaid && <Tag className="border-need/50 text-need">◆ FIR</Tag>}
               {row.isKey && <Tag className="border-route/50 text-route">▲ key</Tag>}
+              {row.hideoutWave === 1 && <Tag className="border-accent/50 text-accent">● now</Tag>}
             </div>
             <div className="font-mono text-[11px] text-muted">
               {[
                 row.questNeeded > 0 && `${row.questNeeded} for quests`,
-                row.hideoutNeeded > 0 && `${row.hideoutNeeded} for hideout`,
+                // Named rather than counted. "4 for Medstation 3" tells you whether to keep the
+                // thing; "4 for hideout" does not.
+                row.hideoutNeeded > 0 && (row.hideoutUpgrade
+                  ? `${row.hideoutNeeded} for ${row.hideoutUpgrade}`
+                  : `${row.hideoutNeeded} for hideout`),
                 row.watchNote,
               ].filter(Boolean).join(' · ') || row.shortName}
             </div>

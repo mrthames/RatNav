@@ -1,4 +1,6 @@
 using RatNav.Core.Data;
+using RatNav.Core.Planning;
+using RatNav.Core.Progress;
 using RatNav.Core.Model;
 
 namespace RatNav.Service;
@@ -41,6 +43,20 @@ public sealed class RatNavState(GameDataCache cache)
     }
 
     /// <summary>Freshness, in the form the UI shows the player.</summary>
+    /// <summary>
+    /// The hideout upgrades in view, given how far ahead the player has asked to look.
+    ///
+    /// <para>Single source for this: the Hideout view, the items list, and the overlay's panel all
+    /// have to agree about what is next, and three separate walks of the build order would
+    /// eventually not.</para>
+    /// </summary>
+    public IReadOnlyList<HideoutUpgrade> Upcoming(ProgressStore progress, int lookAhead) =>
+        HideoutPlanner.Upcoming(
+            cache.Current?.HideoutStations ?? [],
+            progress.HideoutLevels,
+            lookAhead,
+            progress.HideoutTargets);
+
     public DataStatus Status(RefreshResult? lastRefresh = null)
     {
         var data = cache.Current;

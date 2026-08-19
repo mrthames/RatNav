@@ -154,6 +154,38 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
         Save();
     }
 
+    /// <summary>
+    /// Marks a hideout upgrade as one you are working towards.
+    ///
+    /// <para>Targets are how a player says "these three, not the other eight". Without them the
+    /// look-ahead can only widen the list; with them it narrows to what someone actually
+    /// decided.</para>
+    /// </summary>
+    public void TargetHideoutLevel(string stationId, int level, bool wanted = true)
+    {
+        var key = Planning.HideoutPlanner.Key(stationId, level);
+
+        lock (_gate)
+        {
+            if (wanted) _state.HideoutTargets.Add(key);
+            else _state.HideoutTargets.Remove(key);
+        }
+
+        Save();
+    }
+
+    /// <summary>Upgrades picked out as wanted, as "stationId:level".</summary>
+    public IReadOnlySet<string> HideoutTargets
+    {
+        get { lock (_gate) return _state.HideoutTargets.ToHashSet(StringComparer.OrdinalIgnoreCase); }
+    }
+
+    /// <summary>Every station's built level, which is what the planner walks forward from.</summary>
+    public IReadOnlyDictionary<string, int> HideoutLevels
+    {
+        get { lock (_gate) return new Dictionary<string, int>(_state.HideoutLevels, StringComparer.OrdinalIgnoreCase); }
+    }
+
     public int HideoutLevelOf(string stationId)
     {
         lock (_gate) return _state.HideoutLevels.GetValueOrDefault(stationId, 0);
@@ -216,5 +248,8 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
 
         /// <summary>Objectives cleared in a raid, kept once the raid is over.</summary>
         public HashSet<string> CompletedObjectives { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Hideout upgrades being worked towards, as "stationId:level".</summary>
+        public HashSet<string> HideoutTargets { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     }
 }

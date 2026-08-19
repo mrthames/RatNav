@@ -154,7 +154,7 @@
                     </DockPanel>
                 </Border>
 
-                <Grid Grid.Row="3">
+                <Grid x:Name="StatusRow" Grid.Row="3">
                     <TextBlock x:Name="ProgressText" Style="{StaticResource Label}" HorizontalAlignment="Left" />
                     <TextBlock x:Name="FixAgeText" Style="{StaticResource Label}" HorizontalAlignment="Right" />
                 </Grid>

@@ -4,6 +4,38 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
+### The hideout
+
+- A **Hideout** view: set where each station is, and see what that makes reachable next.
+- A **Look ahead** control that means something. Every un-built level wants items, so the
+  unfiltered answer is hundreds of them — most for upgrades gated behind three others you have
+  not started. RatNav walks the game's own prerequisites instead: 1 is what you could build
+  tonight, 3 is what to stop vendoring. On a fresh hideout that is 17 items rather than several
+  hundred.
+- **Target** the upgrades you actually want and the items list narrows to them, because widening
+  a list is not what someone with a plan needs.
+- Items say *which* upgrade wants them — "4 for Medstation 3" rather than "4 for hideout" — and
+  can be ordered by what you are closest to finishing rather than by quantity.
+- Trader and skill gates are shown but never hide an upgrade. RatNav cannot see your loyalty
+  levels, and guessing would hide things you can in fact start.
+
+### Plans
+
+- **A plan outlives its raid**, and the app. Extracting no longer throws away what you were
+  working towards; the stops stay, strikeable one by one, ready for the next time you queue that
+  map. Restarting RatNav puts the plan back.
+- A plan for another map is kept rather than applied. Queue Streets with a Customs plan loaded
+  and the overlay shows Streets, says the plan is for Customs, and leaves it intact.
+- **Turn-ins are confirmed, not assumed.** When every planned objective of a quest is ticked, the
+  plan view offers to mark it turned in — and says so when you only planned part of the quest.
+  Finishing objectives and handing a quest in are different events, the game does not reliably
+  log the second, and a completed quest retires its item needs.
+
+### The overlay
+
+- The centred map view is now only the map. The title and the fix age were text over the game in
+  the one mode that exists to keep the screen clear.
+
 ## 0.1.1 — 2026-08-19
 
 ### Fixed

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using RatNav.Core.Data;
 using RatNav.Core.Model;
+using RatNav.Core.Planning;
 
 namespace RatNav.Core.Tracking;
 
@@ -117,15 +118,22 @@ public sealed class ItemTracker(string dataDirectory)
     /// difference between a list of everything the game will ever ask for and a list of what to
     /// pick up tonight.
     /// </summary>
-    public TrackedItem Track(ItemNeeds needs, IProgressView progress)
+    public TrackedItem Track(
+        ItemNeeds needs,
+        IProgressView progress,
+        IReadOnlyDictionary<string, HideoutDemand>? hideout = null)
     {
         var questNeeded = needs.Quests
             .Where(q => progress.IsActive(q.TaskId))
             .Sum(q => q.Count);
 
-        var hideoutNeeded = needs.Hideout
-            .Where(h => !progress.IsHideoutLevelBuilt(h.StationId, h.Level))
-            .Sum(h => h.Count);
+        // The hideout's demand is decided by the planner, not here.
+        //
+        // Counting every un-built level produces a list of everything the hideout will ever want —
+        // hundreds of items, most for upgrades gated behind three others you have not started.
+        // With no planner supplied, nothing is claimed rather than claiming all of it.
+        var demand = hideout is null ? null : hideout.GetValueOrDefault(needs.Item.Id);
+        var hideoutNeeded = demand?.Count ?? 0;
 
         var watch = Watchlist.FirstOrDefault(w => w.ItemId == needs.Item.Id);
         var have = GetHave(needs.Item.Id);
@@ -136,12 +144,19 @@ public sealed class ItemTracker(string dataDirectory)
             Item = needs.Item,
             QuestNeeded = questNeeded,
             HideoutNeeded = hideoutNeeded,
+            HideoutUpgrade = demand?.UpgradeName,
+            HideoutWave = demand?.Wave,
             WatchTarget = watch?.Target,
             WatchNote = watch?.Note,
             Watched = watch is not null,
             Have = have,
             Remaining = Math.Max(0, total - have),
-            FoundInRaid = needs.Quests.Any(q => q.FoundInRaid && progress.IsActive(q.TaskId)),
+
+            // Found-in-raid is the difference between keeping something and buying it, and the
+            // hideout asks for it as often as quests do.
+            FoundInRaid = needs.Quests.Any(q => q.FoundInRaid && progress.IsActive(q.TaskId))
+                || (demand?.FoundInRaid ?? false),
+
             IsKey = needs.AsKey.Count > 0,
         };
     }
@@ -201,6 +216,12 @@ public sealed record TrackedItem
     public required ItemDef Item { get; init; }
     public int QuestNeeded { get; init; }
     public int HideoutNeeded { get; init; }
+
+    /// <summary>The nearest hideout upgrade wanting this — "Medstation 3". Null when none does.</summary>
+    public string? HideoutUpgrade { get; init; }
+
+    /// <summary>How far out that upgrade is. 1 means you could build it today.</summary>
+    public int? HideoutWave { get; init; }
     public int? WatchTarget { get; init; }
     public string? WatchNote { get; init; }
     public bool Watched { get; init; }

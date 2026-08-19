@@ -39,13 +39,16 @@ public static class ApiEndpoints
         // Search returns the same shape as the needed and watchlist views, so one table
         // component renders all three and a row behaves identically wherever you found it.
         api.MapGet("/items/search", (
-            RatNavState state, ItemTracker tracker, ProgressStore progress, string q, int? limit) =>
+            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
+            string q, int? limit) =>
         {
             if (state.Index is not { } index) return Results.Ok(Array.Empty<object>());
 
+            var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
+
             var results = index.Search(q, limit ?? 25)
                 .Select(item => index.GetNeeds(item.Id) ?? new ItemNeeds { Item = item })
-                .Select(needs => TrackedItemView.From(tracker.Track(needs, progress)));
+                .Select(needs => TrackedItemView.From(tracker.Track(needs, progress, hideout)));
 
             return Results.Ok(results);
         });
@@ -53,49 +56,66 @@ public static class ApiEndpoints
         // What to actually pick up: only what active quests and un-built modules want, minus
         // what you already have. The unfiltered version is every item the game will ever ask
         // for, which is not a shopping list.
-        api.MapGet("/items/needed", (RatNavState state, ItemTracker tracker, ProgressStore progress) =>
+        api.MapGet("/items/needed", (
+            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
+            int? lookAhead, string? sort) =>
         {
             if (state.Index is not { } index) return Results.Ok(Array.Empty<object>());
 
-            var results = index.AllNeeded()
-                .Select(n => tracker.Track(n, progress))
-                .Where(t => t.Remaining > 0)
-                .OrderByDescending(t => t.FoundInRaid)
-                .ThenByDescending(t => t.Remaining)
-                .Select(TrackedItemView.From);
+            var hideout = HideoutPlanner.Demand(
+                state.Upcoming(progress, lookAhead ?? settings.HideoutLookAhead));
 
-            return Results.Ok(results);
+            var rows = index.AllNeeded()
+                .Select(n => tracker.Track(n, progress, hideout))
+                .Where(t => t.Remaining > 0);
+
+            // "next" answers a different question from the default. The default is what to grab if
+            // you see it; "next" is what stands between you and finishing something, so it leads
+            // with the nearest hideout wave and only then with quantity.
+            rows = sort?.ToLowerInvariant() == "next"
+                ? rows.OrderBy(t => t.HideoutWave ?? int.MaxValue)
+                      .ThenByDescending(t => t.FoundInRaid)
+                      .ThenByDescending(t => t.Remaining)
+                : rows.OrderByDescending(t => t.FoundInRaid)
+                      .ThenByDescending(t => t.Remaining);
+
+            return Results.Ok(rows.Select(TrackedItemView.From));
         });
 
-        api.MapGet("/items/watchlist", (RatNavState state, ItemTracker tracker, ProgressStore progress) =>
+        api.MapGet("/items/watchlist", (
+            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings) =>
         {
             if (state.Index is not { } index) return Results.Ok(Array.Empty<object>());
+
+            var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
 
             var results = tracker.Watchlist
                 .Select(w => index.GetNeeds(w.ItemId)
                     ?? new ItemNeeds { Item = index.GetItem(w.ItemId) ?? Unknown(w.ItemId) })
-                .Select(n => TrackedItemView.From(tracker.Track(n, progress)));
+                .Select(n => TrackedItemView.From(tracker.Track(n, progress, hideout)));
 
             return Results.Ok(results);
         });
 
         api.MapPost("/items/{id}/have", (
-            RatNavState state, ItemTracker tracker, ProgressStore progress, string id, HaveRequest request) =>
+            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
+            string id, HaveRequest request) =>
         {
             if (request.Delta is { } delta) tracker.AdjustHave(id, delta);
             else if (request.Count is { } count) tracker.SetHave(id, count);
             else return Results.BadRequest(new { error = "Send either a count or a delta." });
 
-            return Results.Ok(Track(state, tracker, progress, id));
+            return Results.Ok(Track(state, tracker, progress, settings, id));
         });
 
         api.MapPost("/items/{id}/watch", (
-            RatNavState state, ItemTracker tracker, ProgressStore progress, string id, WatchRequest request) =>
+            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
+            string id, WatchRequest request) =>
         {
             if (request.Watch) tracker.Watch(id, request.Note, request.Target);
             else tracker.Unwatch(id);
 
-            return Results.Ok(Track(state, tracker, progress, id));
+            return Results.Ok(Track(state, tracker, progress, settings, id));
         });
 
         api.MapGet("/items/{id}", (RatNavState state, ItemTracker tracker, string id) =>
@@ -131,6 +151,79 @@ public static class ApiEndpoints
                 matches = matches.Select(m => Detail(index, tracker, m.Item, m.Confidence)),
                 readText = lines,
             });
+        });
+
+        // ---- hideout
+
+        // What the hideout is, what it could become next, and what that costs.
+        //
+        // The look-ahead is the whole point. Every un-built level wants items, so the unfiltered
+        // answer is hundreds of items for upgrades gated behind three others you have not started
+        // — a list nobody can shop from. Waves make the number mean something: 1 is what you could
+        // build tonight.
+        api.MapGet("/hideout", (
+            RatNavState state, ProgressStore progress, RatNavSettings settings, ItemTracker tracker, int? lookAhead) =>
+        {
+            var data = state.Cache.Current;
+            if (data is null) return Results.Ok(new { stations = Array.Empty<object>(), upcoming = Array.Empty<object>() });
+
+            var depth = lookAhead ?? settings.HideoutLookAhead;
+            var upcoming = state.Upcoming(progress, depth);
+            var index = state.Index;
+
+            var stations = data.HideoutStations
+                .OrderBy(st => st.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(st => new
+                {
+                    id = st.Id,
+                    name = st.Name,
+                    builtLevel = progress.HideoutLevelOf(st.Id),
+                    maxLevel = st.Levels.Count == 0 ? 0 : st.Levels.Max(l => l.Level),
+                });
+
+            return Results.Ok(new
+            {
+                lookAhead = depth,
+                stations,
+                upcoming = upcoming.Select(u => new
+                {
+                    stationId = u.StationId,
+                    stationName = u.StationName,
+                    level = u.Level,
+                    wave = u.Wave,
+                    targeted = u.Targeted,
+                    description = u.Description,
+                    constructionTimeSeconds = u.ConstructionTimeSeconds,
+                    blockers = u.Blockers.Select(b => new { kind = b.Kind, text = b.Text }),
+
+                    // Costs carry what you already have, so the view can show what is left rather
+                    // than what it wants in total — the useful number when shopping.
+                    items = u.ItemRequirements.Select(r => new
+                    {
+                        itemId = r.ItemId,
+                        name = index?.GetItem(r.ItemId)?.Name ?? "Unknown item",
+                        shortName = index?.GetItem(r.ItemId)?.ShortName,
+                        count = r.Count,
+                        have = tracker.GetHave(r.ItemId),
+                        foundInRaid = r.FoundInRaid,
+                    }),
+                }),
+            });
+        });
+
+        api.MapPost("/hideout/look-ahead", (RatNavSettings settings, LookAheadRequest request) =>
+        {
+            settings.Remember(s => s.HideoutLookAhead = Math.Clamp(request.Levels, 1, 10));
+            return Results.Ok(new { lookAhead = settings.HideoutLookAhead });
+        });
+
+        // Picking upgrades out narrows the items list to them. Without this the look-ahead can
+        // only ever widen the list, and widening is not what someone with a plan wants.
+        api.MapPost("/hideout/{stationId}/levels/{level:int}/target", (
+            ProgressStore progress, string stationId, int level, TargetRequest request) =>
+        {
+            progress.TargetHideoutLevel(stationId, level, request.Targeted);
+            return Results.Ok(new { stationId, level, targeted = request.Targeted });
         });
 
         // ---- progress
@@ -257,6 +350,56 @@ public static class ApiEndpoints
             return Results.Ok(session.View());
         });
 
+        // A plan outlives the raid it was built for, so it is editable between raids. Striking off
+        // what is no longer worth doing and keeping the rest is the usual move after extracting.
+        api.MapDelete("/raid/stops/{id}", (RaidSession session, string id) =>
+        {
+            session.RemoveStop(id);
+            return Results.Ok(session.View());
+        });
+
+        api.MapDelete("/raid/plan", (RaidSession session, RatNavSettings settings) =>
+        {
+            session.ClearPlan();
+            settings.Remember(s => s.ActivePlanId = null);
+            return Results.Ok(session.View());
+        });
+
+        // Quests whose every planned objective is done, waiting on a trader.
+        //
+        // RatNav will not mark these complete on its own. Finishing the objectives and handing the
+        // quest in are different events, the game does not reliably log the second, and a quest
+        // marked complete retires its item needs — so guessing wrong quietly deletes a shopping
+        // list. It asks instead.
+        api.MapGet("/raid/turn-ins", (RatNavState state, RaidSession session, ProgressStore progress) =>
+        {
+            var view = session.View();
+            var tasks = (state.Cache.Current?.Tasks ?? []).ToDictionary(t => t.Id, t => t, StringComparer.OrdinalIgnoreCase);
+
+            var done = view.CompletedObjectiveIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var ready =
+                from stop in view.Stops
+                group stop by stop.TaskId into byTask
+                where byTask.All(s => done.Contains(s.ObjectiveId))
+                let task = tasks.GetValueOrDefault(byTask.Key)
+                where progress.StateOf(byTask.Key) != QuestState.Completed
+                select new
+                {
+                    taskId = byTask.Key,
+                    taskName = byTask.First().TaskName,
+                    traderName = task?.TraderName,
+                    objectiveCount = byTask.Count(),
+
+                    // Objectives you did not plan are not evidence of anything. Saying how many of
+                    // the quest you actually covered is what makes "turned in?" answerable.
+                    totalObjectiveCount = task?.Objectives.Count ?? byTask.Count(),
+                    wikiUrl = task?.WikiUrl,
+                };
+
+            return Results.Ok(ready);
+        });
+
         // Ends the raid by hand. The log watcher normally does this on its own, but the game does
         // not write a "raid over" line — it writes that it is re-preparing your profile — and a
         // log that rolls over or a launcher cache wipe can lose the moment. A raid you cannot
@@ -323,7 +466,8 @@ public static class ApiEndpoints
         });
 
         // Makes a saved plan the one the overlay follows.
-        api.MapPost("/plans/{id}/activate", (RatNavState state, PlanStore plans, RaidSession session, string id) =>
+        api.MapPost("/plans/{id}/activate", (
+            RatNavState state, PlanStore plans, RaidSession session, RatNavSettings settings, string id) =>
         {
             var saved = plans.Get(id);
             if (saved is null) return Results.NotFound();
@@ -331,7 +475,12 @@ public static class ApiEndpoints
             var map = FindMap(state, saved.Document.MapId);
             if (map is null) return Results.NotFound(new { error = "That plan's map is not loaded." });
 
-            session.UsePlan(ToPlan(saved.Document, map, state.Cache.Current), map);
+            session.UsePlan(PlanConversion.ToPlan(saved.Document, map, state.Cache.Current), map);
+
+            // Remembered so the plan is still there after a restart. Rebuilding it every evening
+            // would make the planner a chore rather than a tool.
+            settings.Remember(s => s.ActivePlanId = id);
+
             return Results.Ok(session.View());
         });
 
@@ -543,55 +692,19 @@ public static class ApiEndpoints
             ?? maps.FirstOrDefault(m => string.Equals(m.NormalizedName, id, StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>
-    /// Rebuilds a route from a shared document.
-    ///
-    /// Positions travel with the document so a route can be drawn even for an objective this copy
-    /// of the game data no longer knows about — but names are resolved from local data, so a plan
-    /// shows what the quests are called <i>now</i> rather than what they were called when it was
-    /// made, and a plan from a friend reads in your own language.
-    /// </summary>
-    private static RaidPlan ToPlan(PlanDocument document, MapDef map, GameData? data)
-    {
-        var tasks = (data?.Tasks ?? []).ToDictionary(t => t.Id, t => t, StringComparer.OrdinalIgnoreCase);
-
-        var objectives = (data?.Tasks ?? [])
-            .SelectMany(t => t.Objectives)
-            .GroupBy(o => o.Id, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
-
-        return RaidPlanner.Plan(map,
-        [
-            .. document.Stops.Select(s =>
-            {
-                var task = tasks.GetValueOrDefault(s.TaskId);
-                var objective = objectives.GetValueOrDefault(s.ObjectiveId);
-
-                return new Waypoint
-                {
-                    ObjectiveId = s.ObjectiveId,
-                    TaskId = s.TaskId,
-                    TaskName = task?.Name ?? "(unknown quest)",
-                    Description = objective?.Description ?? "",
-                    Position = new GamePosition(s.X, s.Y, s.Z),
-                    TraderName = task?.TraderName,
-                    Owner = s.Owner,
-                    NeededKeyItemIds = s.NeededKeyItemIds,
-                };
-            })
-        ]);
-    }
-
     private static ItemDef Unknown(string itemId) => new() { Id = itemId, Name = "Unknown item" };
 
-    private static object? Track(RatNavState state, ItemTracker tracker, ProgressStore progress, string itemId)
+    private static object? Track(
+        RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings, string itemId)
     {
         if (state.Index is not { } index) return null;
 
         var needs = index.GetNeeds(itemId)
             ?? new ItemNeeds { Item = index.GetItem(itemId) ?? Unknown(itemId) };
 
-        return TrackedItemView.From(tracker.Track(needs, progress));
+        var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
+
+        return TrackedItemView.From(tracker.Track(needs, progress, hideout));
     }
 
     private static MapInkLevel ParseInk(string? ink) => ink?.ToLowerInvariant() switch
@@ -633,6 +746,13 @@ public sealed record TrackedItemView
     public int? Avg24hPrice { get; init; }
     public int QuestNeeded { get; init; }
     public int HideoutNeeded { get; init; }
+
+    /// <summary>The nearest hideout upgrade wanting this — "Medstation 3".</summary>
+    public string? HideoutUpgrade { get; init; }
+
+    /// <summary>How far out that upgrade is. 1 means you could build it today.</summary>
+    public int? HideoutWave { get; init; }
+
     public int Needed { get; init; }
     public int Have { get; init; }
     public int Remaining { get; init; }
@@ -652,6 +772,8 @@ public sealed record TrackedItemView
         Avg24hPrice = t.Item.Avg24hPrice,
         QuestNeeded = t.QuestNeeded,
         HideoutNeeded = t.HideoutNeeded,
+        HideoutUpgrade = t.HideoutUpgrade,
+        HideoutWave = t.HideoutWave,
         Needed = t.Needed,
         Have = t.Have,
         Remaining = t.Remaining,
@@ -719,6 +841,18 @@ public sealed record ItemSummary
         HideoutCount = needs?.Hideout.Count ?? 0,
         IsKey = needs?.AsKey.Count > 0,
     };
+}
+
+/// <summary>How many hideout upgrades deep the items list should reach.</summary>
+public sealed record LookAheadRequest
+{
+    public int Levels { get; init; } = 1;
+}
+
+/// <summary>Marks a hideout upgrade as one being worked towards.</summary>
+public sealed record TargetRequest
+{
+    public bool Targeted { get; init; } = true;
 }
 
 /// <summary>Text read off the screen, awaiting identification.</summary>

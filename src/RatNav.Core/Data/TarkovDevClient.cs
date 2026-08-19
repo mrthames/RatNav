@@ -81,6 +81,7 @@ public sealed class TarkovDevClient(HttpClient http)
         // Hideout is the one endpoint whose payload is the station map itself rather than a
         // named collection inside it.
         var (stations, text) = await FetchAsync<Dictionary<string, StationDto?>>($"{GameMode}/hideout", ct);
+        var traders = await GetTraderNamesAsync(ct);
 
         return
         [
@@ -90,6 +91,7 @@ public sealed class TarkovDevClient(HttpClient http)
                 {
                     Id = pair.Key,
                     Name = text.Of(pair.Value!.Name) ?? "(unnamed station)",
+                    NormalizedName = pair.Value.NormalizedName,
                     Levels =
                     [
                         .. (pair.Value.Levels ?? [])
@@ -97,11 +99,41 @@ public sealed class TarkovDevClient(HttpClient http)
                             {
                                 Id = level.Id ?? $"{pair.Key}-{level.Level}",
                                 Level = level.Level,
+                                ConstructionTimeSeconds = level.ConstructionTime,
+                                Description = text.Of(level.Description),
                                 ItemRequirements =
                                 [
                                     .. (level.ItemRequirements ?? [])
                                         .Where(r => r.Item is { Length: > 0 })
-                                        .Select(r => new ObjectiveItem { ItemId = r.Item!, Count = r.Count })
+                                        .Select(r => new ObjectiveItem
+                                        {
+                                            ItemId = r.Item!,
+                                            Count = r.Count,
+
+                                            // Hideout items are found-in-raid more often than
+                                            // people expect, and it decides what you can buy your
+                                            // way out of.
+                                            FoundInRaid = r.Attributes?.FoundInRaid ?? false,
+                                        })
+                                ],
+                                StationRequirements =
+                                [
+                                    .. (level.StationLevelRequirements ?? [])
+                                        .Where(r => r.Station is { Length: > 0 })
+                                        .Select(r => new StationLevelRequirement(r.Station!, r.Level))
+                                ],
+                                TraderRequirements =
+                                [
+                                    .. (level.TraderRequirements ?? [])
+                                        .Where(r => r.Trader is { Length: > 0 })
+                                        .Select(r => new TraderLevelRequirement(
+                                            r.Trader!, traders.GetValueOrDefault(r.Trader!), r.Level))
+                                ],
+                                SkillRequirements =
+                                [
+                                    .. (level.SkillRequirements ?? [])
+                                        .Where(r => r.Name is { Length: > 0 })
+                                        .Select(r => new SkillRequirement(r.Name!, r.Level))
                                 ],
                             })
                     ],
@@ -355,9 +387,23 @@ public sealed class TarkovDevClient(HttpClient http)
         string? Name, string? ShortName, string? NormalizedName,
         int? BasePrice, int? Avg24hPrice, int? Width, int? Height, string? IconLink, string? WikiLink);
 
-    private sealed record StationDto(string? Name, List<StationLevelDto>? Levels);
-    private sealed record StationLevelDto(string? Id, int Level, List<RequirementItemDto>? ItemRequirements);
-    private sealed record RequirementItemDto(string? Item, int Count);
+    private sealed record StationDto(string? Name, string? NormalizedName, List<StationLevelDto>? Levels);
+
+    private sealed record StationLevelDto(
+        string? Id,
+        int Level,
+        int ConstructionTime,
+        string? Description,
+        List<RequirementItemDto>? ItemRequirements,
+        List<StationRequirementDto>? StationLevelRequirements,
+        List<TraderRequirementDto>? TraderRequirements,
+        List<SkillRequirementDto>? SkillRequirements);
+
+    private sealed record RequirementItemDto(string? Item, int Count, RequirementAttributesDto? Attributes);
+    private sealed record RequirementAttributesDto(bool FoundInRaid);
+    private sealed record StationRequirementDto(string? Station, int Level);
+    private sealed record TraderRequirementDto(string? Trader, int Level);
+    private sealed record SkillRequirementDto(string? Name, int Level);
 
     private sealed record TraderDto(string? Name);
 

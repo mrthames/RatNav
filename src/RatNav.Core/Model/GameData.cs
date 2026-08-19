@@ -119,6 +119,7 @@ public sealed record HideoutStation
 {
     public required string Id { get; init; }
     public required string Name { get; init; }
+    public string? NormalizedName { get; init; }
     public IReadOnlyList<HideoutLevel> Levels { get; init; } = [];
 }
 
@@ -127,7 +128,32 @@ public sealed record HideoutLevel
     public required string Id { get; init; }
     public required int Level { get; init; }
     public IReadOnlyList<ObjectiveItem> ItemRequirements { get; init; } = [];
+
+    /// <summary>
+    /// Other stations that must already be built, and to what level.
+    ///
+    /// <para>This is what makes a hideout a build order rather than a shopping list. Without it
+    /// every un-built level looks equally reachable, and a list of everything the hideout will
+    /// ever want is not something anyone can act on.</para>
+    /// </summary>
+    public IReadOnlyList<StationLevelRequirement> StationRequirements { get; init; } = [];
+
+    /// <summary>Trader loyalty needed before this level can be built.</summary>
+    public IReadOnlyList<TraderLevelRequirement> TraderRequirements { get; init; } = [];
+
+    /// <summary>Character skills needed. Rare, and no reason to hide it when it applies.</summary>
+    public IReadOnlyList<SkillRequirement> SkillRequirements { get; init; } = [];
+
+    /// <summary>Build time in seconds, for judging whether to start it before a raid.</summary>
+    public int ConstructionTimeSeconds { get; init; }
+
+    /// <summary>What the level gives you, in the game's own words.</summary>
+    public string? Description { get; init; }
 }
+
+public readonly record struct StationLevelRequirement(string StationId, int Level);
+public readonly record struct TraderLevelRequirement(string TraderId, string? TraderName, int Level);
+public readonly record struct SkillRequirement(string Name, int Level);
 
 public sealed record MapDef
 {

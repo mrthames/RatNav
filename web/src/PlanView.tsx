@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, type MapSummary, type PlannableObjective, type RaidView } from './api'
+import { api, type MapSummary, type PlannableObjective, type RaidView, type TurnIn } from './api'
 
 /**
  * The pre-raid ritual, in the order it is actually done: pick a map, tick the objectives you are
@@ -90,7 +90,13 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         ))}
       </div>
 
-      {raid?.inRaid && <RaidPanel raid={raid} />}
+      {/*
+        Shown whether or not you are in a raid. A plan outlives the raid it was built for, and the
+        usual next move after extracting is to strike off what is no longer worth doing and keep
+        the rest — which needs the plan still on screen.
+      */}
+      {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
+      <TurnIns />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
         <div className="flex flex-col gap-3">
@@ -169,15 +175,82 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   )
 }
 
+/**
+ * Quests whose every planned objective is done, waiting on a trader.
+ *
+ * RatNav will not mark these complete on its own. Finishing the objectives and handing the quest
+ * in are different events, the game does not reliably log the second, and a completed quest
+ * retires its item needs — so guessing wrong quietly deletes a shopping list. It asks instead.
+ */
+function TurnIns() {
+  const [ready, setReady] = useState<TurnIn[]>([])
+
+  const load = () => api.turnIns().then(setReady).catch(() => setReady([]))
+  useEffect(() => { void load() }, [])
+
+  async function confirm(task: TurnIn) {
+    await api.markTaskState(task.taskId, 'Completed')
+    await load()
+  }
+
+  if (ready.length === 0) return null
+
+  return (
+    <div className="flex flex-col gap-2 border border-route/40 bg-route/5 px-3 py-2">
+      <span className="font-mono text-[11px] uppercase tracking-wider text-route">
+        Done in raid — turned in?
+      </span>
+
+      {ready.map((task) => (
+        <div key={task.taskId} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-sm">{task.taskName}</span>
+
+          {task.traderName && (
+            <span className="font-mono text-xs text-muted">hand to {task.traderName}</span>
+          )}
+
+          {/*
+            Said plainly when the plan only covered part of the quest. Marking it complete would
+            retire item needs for objectives you never selected.
+          */}
+          {task.objectiveCount < task.totalObjectiveCount && (
+            <span className="font-mono text-xs text-warn">
+              you planned {task.objectiveCount} of {task.totalObjectiveCount} objectives
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={() => void confirm(task)}
+            className="ml-auto rounded-sm bg-panel-hi px-2.5 py-1 font-mono text-[11px] uppercase
+                       tracking-wider text-muted transition-colors hover:bg-accent hover:text-ground
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Mark turned in
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** What the overlay shows, mirrored here so the pre-raid screen doubles as a second monitor view. */
 function RaidPanel({ raid }: { raid: RaidView }) {
   const bearing = raid.nextStopRelativeBearing
   const direction = bearing == null ? null : `${Math.abs(Math.round(bearing))}° ${bearing > 0 ? 'right' : 'left'}`
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border border-accent/40 bg-accent/5 px-3 py-2">
-      <span className="font-mono text-[11px] uppercase tracking-wider text-accent">In raid</span>
+    <div className="flex flex-col gap-2 border border-accent/40 bg-accent/5 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <span className="font-mono text-[11px] uppercase tracking-wider text-accent">
+        {raid.inRaid ? 'In raid' : 'Plan ready'}
+      </span>
       <span className="text-sm">{raid.mapName}</span>
+
+      {/* A plan for somewhere else still exists; it just does not apply to the raid you are in. */}
+      {raid.planMapName && (
+        <span className="font-mono text-xs text-warn">plan is for {raid.planMapName}</span>
+      )}
 
       {raid.nextStopName && (
         <span className="font-mono text-sm tabular-nums">
@@ -197,13 +270,52 @@ function RaidPanel({ raid }: { raid: RaidView }) {
         when it does not — the game writes no "raid over" line, so detection reads a proxy, and a
         proxy can be missed. Ticked objectives are kept either way.
       */}
-      <button
-        type="button"
-        onClick={() => void api.endRaid()}
-        className="ml-auto font-mono text-[11px] uppercase tracking-wider text-muted underline-offset-4 hover:text-ink hover:underline"
-      >
-        End raid
-      </button>
+      <div className="ml-auto flex gap-4">
+        {raid.inRaid && (
+          <button
+            type="button"
+            onClick={() => void api.endRaid()}
+            className="font-mono text-[11px] uppercase tracking-wider text-muted underline-offset-4 hover:text-ink hover:underline"
+          >
+            End raid
+          </button>
+        )}
+
+        {raid.hasPlan && (
+          <button
+            type="button"
+            onClick={() => void api.clearPlan()}
+            className="font-mono text-[11px] uppercase tracking-wider text-muted underline-offset-4 hover:text-ink hover:underline"
+          >
+            Clear plan
+          </button>
+        )}
+      </div>
+      </div>
+
+      {/* Stops are strikeable between raids, which is what makes a plan worth keeping. */}
+      {raid.stops.length > 0 && (
+        <ul className="flex flex-col gap-px">
+          {raid.stops.map((stop) => (
+            <li key={stop.objectiveId} className="flex items-center gap-3 py-0.5">
+              <span className={`text-sm ${stop.done ? 'text-muted line-through' : ''}`}>
+                {stop.place ?? stop.taskName}
+              </span>
+              <span className="truncate font-mono text-[11px] text-muted">{stop.taskName}</span>
+
+              <button
+                type="button"
+                onClick={() => void api.removeStop(stop.objectiveId)}
+                aria-label={`Remove ${stop.taskName}`}
+                className="ml-auto font-mono text-xs text-muted hover:text-need
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

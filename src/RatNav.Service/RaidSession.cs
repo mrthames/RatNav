@@ -26,6 +26,12 @@ public sealed record RaidView
     /// <summary>The floor the fix puts you on, chosen from the map's height bands.</summary>
     public string? Floor { get; init; }
 
+    /// <summary>True when a plan is loaded, whether or not you are in the raid it was built for.</summary>
+    public bool HasPlan { get; init; }
+
+    /// <summary>Set when the active plan is for a different map than the one on screen.</summary>
+    public string? PlanMapName { get; init; }
+
     public IReadOnlyList<RaidStop> Stops { get; init; } = [];
     public IReadOnlyList<string> CompletedObjectiveIds { get; init; } = [];
 
@@ -41,6 +47,10 @@ public sealed record RaidView
 public sealed record RaidStop
 {
     public required string ObjectiveId { get; init; }
+
+    /// <summary>The quest this serves, so finished stops can be grouped into "ready to turn in".</summary>
+    public required string TaskId { get; init; }
+
     public required string TaskName { get; init; }
     public required string Description { get; init; }
     public required double X { get; init; }
@@ -133,12 +143,11 @@ public sealed class RaidSession
         {
             finished = [.. _completed];
 
+            // Only what belonged to the raid: which map the game had loaded, where you were, and
+            // the trail behind you.
             _locationId = null;
-            _chosenMap = null;
-            _plan = null;
             _fix = null;
             _trail.Clear();
-            _completed.Clear();
         }
 
         foreach (var objectiveId in finished)
@@ -147,12 +156,22 @@ public sealed class RaidSession
         Publish();
     }
 
-    /// <summary>The map in play: whichever a plan was activated for, else whatever the game loaded.</summary>
-    private MapDef? Map =>
-        _chosenMap ?? (_locationId is null
+    /// <summary>The map the game currently has loaded, or null when not in a raid.</summary>
+    private MapDef? RaidMap =>
+        _locationId is null
             ? null
             : _state.Cache.Current?.Maps.FirstOrDefault(m =>
-                m.LogAliases.Contains(_locationId, StringComparer.OrdinalIgnoreCase)));
+                m.LogAliases.Contains(_locationId, StringComparer.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// The map to draw.
+    ///
+    /// <para>In a raid the game wins, always — if you planned Customs and queued Streets, the
+    /// overlay must show Streets, and the plan simply does not apply. Out of a raid it falls back
+    /// to whatever the active plan is for, so the plan is still there to look at and edit between
+    /// raids rather than vanishing the moment you extract.</para>
+    /// </summary>
+    private MapDef? Map => RaidMap ?? _chosenMap;
 
     /// <summary>A quest changed according to the game. Recorded under any manual correction.</summary>
     public void OnQuestChanged(QuestEvent change)
@@ -235,18 +254,23 @@ public sealed class RaidSession
             var map = Map;
 
             if (map?.Image is not { } image)
-                return new RaidView { InRaid = false };
+                return new RaidView { InRaid = false, HasPlan = _plan is not null };
+
+            // A plan for somewhere else is not this raid's plan. Its stops are kept — you will
+            // want them next time you queue that map — but nothing from them is drawn here.
+            var applies = _plan is not null && string.Equals(_plan.MapId, map.Id, StringComparison.OrdinalIgnoreCase);
 
             var transform = new CoordinateTransform(image);
             var stops = new List<RaidStop>();
 
-            foreach (var waypoint in _plan?.Waypoints ?? [])
+            foreach (var waypoint in (applies ? _plan?.Waypoints : null) ?? [])
             {
                 var point = transform.ToNormalized(waypoint.Position);
 
                 stops.Add(new RaidStop
                 {
                     ObjectiveId = waypoint.ObjectiveId,
+                    TaskId = waypoint.TaskId,
                     TaskName = waypoint.TaskName,
                     Description = waypoint.Description,
                     X = point.X,
@@ -257,12 +281,19 @@ public sealed class RaidSession
                 });
             }
 
-            var next = _plan?.Waypoints.FirstOrDefault(w => !_completed.Contains(w.ObjectiveId));
+            var next = applies
+                ? _plan?.Waypoints.FirstOrDefault(w => !_completed.Contains(w.ObjectiveId))
+                : null;
             var here = _fix is null ? (MapPoint?)null : transform.ToNormalized(_fix.Position);
 
             return new RaidView
             {
-                InRaid = true,
+                // In a raid means the game says so, not that there is a map on screen. Between
+                // raids the plan still draws, and calling that "in raid" would have the overlay
+                // reporting a fix age for a raid that ended an hour ago.
+                InRaid = RaidMap is not null,
+                HasPlan = _plan is not null,
+                PlanMapName = _plan is not null && !applies ? PlanMapName() : null,
                 MapId = map.Id,
                 MapName = map.Name,
                 X = here?.X,
@@ -284,6 +315,54 @@ public sealed class RaidSession
                         CoordinateTransform.BearingTo(_fix.Position, next.Position)),
             };
         }
+    }
+
+    /// <summary>The name of the map the active plan is for, when it is not the one being drawn.</summary>
+    private string? PlanMapName() =>
+        _chosenMap?.Name
+        ?? _state.Cache.Current?.Maps.FirstOrDefault(m =>
+            string.Equals(m.Id, _plan?.MapId, StringComparison.OrdinalIgnoreCase))?.Name;
+
+    /// <summary>
+    /// Drops one stop from the active plan.
+    ///
+    /// <para>A plan outlives the raid it was built for, so it has to be editable outside one —
+    /// the usual next move after extracting is to strike off what is no longer worth doing and
+    /// keep the rest.</para>
+    /// </summary>
+    public void RemoveStop(string objectiveId)
+    {
+        lock (_gate)
+        {
+            if (_plan is null) return;
+
+            var kept = _plan.Waypoints.Where(w => !string.Equals(w.ObjectiveId, objectiveId, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (kept.Count == _plan.Waypoints.Count) return;
+
+            _plan = kept.Count == 0 ? null : _plan with { Waypoints = kept };
+            _completed.Remove(objectiveId);
+        }
+
+        Publish();
+    }
+
+    /// <summary>Puts the plan away entirely, for when the next raid is nothing like the last.</summary>
+    public void ClearPlan()
+    {
+        lock (_gate)
+        {
+            _plan = null;
+            _chosenMap = null;
+            _completed.Clear();
+        }
+
+        Publish();
+    }
+
+    /// <summary>The plan currently active, for saving it across a restart.</summary>
+    public RaidPlan? ActivePlan
+    {
+        get { lock (_gate) return _plan; }
     }
 
     private void Publish() => Changed?.Invoke(this, View());
