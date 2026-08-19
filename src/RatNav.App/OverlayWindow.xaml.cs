@@ -48,6 +48,15 @@ public partial class OverlayWindow : Window
 
     /// <summary>The floors below the one in view, drawn faintly under it for context.</summary>
     private IReadOnlyList<MapShape> _ghostShapes = [];
+
+    /// <summary>
+    /// The floor immediately above ground, kept apart from it.
+    ///
+    /// <para>Separate from both the active floor and the floors below because it is neither: it is
+    /// the level whose interiors you can walk into from the street, and it has to be visible
+    /// without pretending to be where you are standing.</para>
+    /// </summary>
+    private IReadOnlyList<MapShape> _aboveShapes = [];
     private Size _mapViewBox = new(1000, 1000);
 
     /// <summary>
@@ -113,7 +122,10 @@ public partial class OverlayWindow : Window
 
         DragHandle.MouseLeftButtonDown += (_, _) => DragMove();
         ResizeGrip.DragDelta += OnResize;
-        MouseWheel += OnWheel;
+        // On the map, not on the window. Handled at window level it beat the items list to every
+        // scroll, so the wheel zoomed the map while the pointer was over a list you were trying
+        // to read.
+        MapFrame.MouseWheel += OnWheel;
 
         // The canvas is a bare drawing surface, so WPF leaves the cursor to whatever was last
         // set — which over a transparent window is nothing at all. Stating it keeps the pointer
@@ -231,6 +243,10 @@ public partial class OverlayWindow : Window
         {
             // Where it ended up is where it should be next time — for this presentation only.
             Place(p => p with { Left = Left, Top = Top, Width = Width, Height = Height });
+
+            // Including how wide the list was dragged to.
+            var width = _settings.Overlay.ItemsSide == "left" ? LeftSlot.Width.Value : RightSlot.Width.Value;
+            if (width > 0) Remember(_settings.Overlay with { ItemsWidth = width });
         }
     }
 
@@ -435,12 +451,17 @@ public partial class OverlayWindow : Window
 
             _ghostShapes = [.. below.SelectMany(shapes => shapes)];
 
-            // On Streets the ground level is building *footprints* — the interiors live one floor
-            // up. Standing inside a building at street level resolves to the ground floor, which
-            // has nothing indoors on it, so walking through a door showed nothing at all. Drawn
-            // together at full strength rather than ghosted, because it is the same walk.
-            if (_settings.Overlay.MergeGroundFloor && Merged(floor) is { } partner)
-                _mapShapes = [.. _mapShapes, .. MapGeometry.Parse(svg, partner, $"{mapId}|{partner}")];
+            // On Streets the ground level is building *footprints* — what interiors exist live one
+            // floor up. Standing inside a building at street level resolves to the ground floor,
+            // which has nothing indoors on it, so the floor above is worth showing alongside.
+            //
+            // Kept in the ghost layer rather than merged into the floor you are on. Drawn at full
+            // strength it reads as your floor, so a stairwell one storey up looks like a room
+            // beside you — and it ignored the ghost toggle, which is not something a toggle
+            // labelled "ghost" should be able to do.
+            _aboveShapes = _settings.Overlay.MergeGroundFloor && Merged(floor) is { } partner
+                ? MapGeometry.Parse(svg, partner, $"{mapId}|{partner}")
+                : [];
             _mapShapesFor = key;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -448,6 +469,7 @@ public partial class OverlayWindow : Window
             // No map drawing this time. The route and readout still work, which is most of the value.
             _mapShapes = [];
             _ghostShapes = [];
+            _aboveShapes = [];
         }
     }
 
@@ -586,8 +608,20 @@ public partial class OverlayWindow : Window
         ItemsPanel.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
 
         var onLeft = _settings.Overlay.ItemsSide == "left";
+
         Grid.SetColumn(ItemsPanel, onLeft ? 0 : 2);
+        Grid.SetColumn(ItemsSplitter, onLeft ? 0 : 2);
+
         ItemsPanel.Margin = onLeft ? new Thickness(0, 0, 6, 0) : new Thickness(6, 0, 0, 0);
+        ItemsSplitter.HorizontalAlignment = onLeft
+            ? System.Windows.HorizontalAlignment.Right
+            : System.Windows.HorizontalAlignment.Left;
+
+        // The column the list is not in collapses, so the map keeps the space.
+        LeftSlot.Width = onLeft ? new GridLength(_settings.Overlay.ItemsWidth) : new GridLength(0);
+        RightSlot.Width = onLeft ? new GridLength(0) : new GridLength(_settings.Overlay.ItemsWidth);
+
+        ItemsSplitter.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
 
         // Moving and tearing off are deliberate acts, offered only while the overlay takes the mouse.
         var editing = inline && !_clickThrough;
@@ -948,23 +982,11 @@ public partial class OverlayWindow : Window
 
         if (_settings.Overlay.GhostOtherFloors)
         {
-            foreach (var ghost in _ghostShapes)
-            {
-                if (ghost.Role is MapShapeRole.Decoration or MapShapeRole.Terrain) continue;
-
-                MapCanvas.Children.Add(new Path
-                {
-                    Data = ghost.Geometry,
-                    RenderTransform = transform,
-                    Stroke = (Brush)FindResource("Terrain"),
-                    StrokeThickness = 0.9 * _settings.Overlay.LineWeight / fit,
-
-                    // Was 0.22 and did not carry. The whole point of ghosting is seeing walkable
-                    // space when you go indoors, and a hint you have to look for does not do that.
-                    Opacity = opacity * 0.55,
-                    IsHitTestVisible = false,
-                });
-            }
+            // Two ghost layers, and the difference matters. Below you is context — where you came
+            // from. Above you is somewhere you can walk into from where you are standing, so it is
+            // drawn harder, but still clearly not the floor you are on.
+            Ghost(_ghostShapes, transform, fit, opacity * 0.40, "Muted");
+            Ghost(_aboveShapes, transform, fit, opacity * 0.75, "Terrain");
         }
 
         foreach (var shape in _mapShapes)
@@ -1032,6 +1054,30 @@ public partial class OverlayWindow : Window
             };
 
             MapCanvas.Children.Add(path);
+        }
+    }
+
+    /// <summary>Draws a floor that is not the one you are on, at a strength that says so.</summary>
+    private void Ghost(
+        IReadOnlyList<MapShape> shapes, Transform transform, double fit, double opacity, string brush)
+    {
+        foreach (var shape in shapes)
+        {
+            if (shape.Role is MapShapeRole.Decoration or MapShapeRole.Terrain) continue;
+
+            MapCanvas.Children.Add(new Path
+            {
+                Data = shape.Geometry,
+                RenderTransform = transform,
+                Stroke = (Brush)FindResource(brush),
+
+                // Dashed, so another floor is tellable from this one without relying on how bright
+                // it happens to look against whatever the game is showing underneath.
+                StrokeDashArray = [3, 2],
+                StrokeThickness = 0.9 * _settings.Overlay.LineWeight / fit,
+                Opacity = opacity,
+                IsHitTestVisible = false,
+            });
         }
     }
 

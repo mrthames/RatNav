@@ -384,6 +384,12 @@ public sealed record RatNavSettings
         public string ItemsSide { get; init; } = "right";
 
         /// <summary>
+        /// How wide the items list is, in pixels. Dragged by the divider between it and the map,
+        /// and remembered — item names vary enough in length that one fixed width suits nobody.
+        /// </summary>
+        public double ItemsWidth { get; init; } = 170;
+
+        /// <summary>
         /// Sections of the items list that are folded away, by title. Remembered, because the
         /// list is rebuilt on every position fix and folding would otherwise undo itself.
         /// </summary>

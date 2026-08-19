@@ -162,8 +162,8 @@
                 -->
                 <Grid Grid.Row="1" Margin="0,8">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="LeftSlot" Width="Auto" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition x:Name="LeftSlot" Width="0" />
+                        <ColumnDefinition Width="*" MinWidth="80" />
                         <ColumnDefinition x:Name="RightSlot" Width="Auto" />
                     </Grid.ColumnDefinitions>
 
@@ -174,8 +174,14 @@
                         <Canvas x:Name="MapCanvas" ClipToBounds="True" />
                     </Border>
 
+                    <!-- Grab the edge to give the list more room, or take it back. -->
+                    <GridSplitter x:Name="ItemsSplitter" Grid.Column="2" Visibility="Collapsed"
+                                  Width="5" HorizontalAlignment="Left"
+                                  Background="#3324313b" Cursor="SizeWE"
+                                  ResizeBehavior="PreviousAndNext" />
+
                     <Border x:Name="ItemsPanel" Grid.Column="2" Visibility="Collapsed"
-                            Width="152" Margin="6,0,0,0" Padding="6,4"
+                            Margin="6,0,0,0" Padding="6,4"
                             Background="#33141b21" BorderBrush="{StaticResource Line}" BorderThickness="1">
                         <DockPanel>
                             <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
@@ -193,9 +199,7 @@
                                        FontFamily="Consolas" FontSize="9"
                                        Foreground="{StaticResource Muted}"
                                        TextWrapping="Wrap">
-                                <Run Foreground="#ff5a3c">■</Run><Run Text=" find in raid  " />
-                                <Run Foreground="#e0c98a">■</Run><Run Text=" can buy  " />
-                                <Run Foreground="#7b8c9b">■</Run><Run Text=" have enough" />
+                                <Run Foreground="#ff5a3c">■</Run><Run Text=" must be found in raid" />
                             </TextBlock>
 
                             <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -256,7 +260,8 @@
                 no frame of its own, so without this there was nothing on screen to take hold of.
             -->
             <Border Background="#140b0f13"
-                    BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="2" />
+                    BorderBrush="{StaticResource Accent}" BorderThickness="1" CornerRadius="2"
+                    IsHitTestVisible="False" />
 
             <Border x:Name="DragHandle"
                     Height="22" VerticalAlignment="Top"

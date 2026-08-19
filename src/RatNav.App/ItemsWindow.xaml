@@ -124,9 +124,7 @@
                        FontFamily="Consolas" FontSize="9"
                        Foreground="{StaticResource Muted}"
                        TextWrapping="Wrap">
-                <Run Foreground="#ff5a3c">■</Run><Run Text=" find in raid  " />
-                <Run Foreground="#e0c98a">■</Run><Run Text=" can buy  " />
-                <Run Foreground="#7b8c9b">■</Run><Run Text=" have enough" />
+                <Run Foreground="#ff5a3c">■</Run><Run Text=" must be found in raid" />
             </TextBlock>
 
             <ScrollViewer VerticalScrollBarVisibility="Auto"

@@ -82,7 +82,20 @@ for the list, plan-page key warnings, and the quest wiki carousel.
     live one level up, in `Second_Floor` → `Floor-2` (98 paths). Standing inside a building at
     street level puts you at a height that resolves to `Ground_Level`, which has nothing indoors
     to draw. So combining the base pair is the fix, not a workaround.
-- [x] **Ground and the first indoor floor should probably be drawn together.** On Streets, stepping
+- [x] **Ground and the first indoor floor should probably be drawn together.** Done, then
+  corrected: drawn as a *distinct ghost layer* rather than merged into your floor, and behind the
+  ghost toggle. Merged at full strength it read as your floor — a stairwell one storey up looked
+  like a room beside you — and it ignored the ghost toggle entirely, which a toggle called "ghost"
+  should not be able to do.
+- [ ] **Streets has no interior geometry for most buildings.** `[?]` Measured at a real position
+  inside a room off the street (0.811, 0.907): exactly one ground-level shape covers that point and
+  it is large — a footprint. No room-sized geometry exists there on *any* floor. The small squares
+  visible nearby are the handful of buildings that do have interiors, which live in `Floor-2`.
+  - This is the map data, not RatNav. tarkov.dev's Streets drawing simply does not include most
+    building interiors.
+  - Options: leave it and say so; look for a different Streets drawing that has them; or draw
+    something honest at the point — "no interior mapped here" — so it does not read as a bug.
+  - Original wording for the record: On Streets, stepping
   off the street into a building puts you on the second level, but nothing about that transition is
   visually significant — so the pair should read as one prominent layer.
   - Higher floors should still hide the ones below, so this is the *base pair* being combined
@@ -239,6 +252,22 @@ them separately.
     publishes to every surface over a WebSocket. Item changes should publish the same way, rather
     than the overlay waking up on a timer to ask.
   - Justin's stated fallback: a periodic refresh, or a toggle for one.
+
+### Items panel, second pass
+
+- [x] **Scrolling over the items list scrolls the map instead.** The wheel handler is on the window,
+  so it wins before the list's scroll viewer ever sees it.
+- [x] **The divider between map and list should be draggable.** Widen it to fit the longest item
+  name, and let it be adjusted by dragging left and right.
+- [x] **The swap-sides arrow does nothing.** Both it and the pop-out button were wired correctly —
+  the frame drawn behind F9's chrome earlier this round had a background, which made it
+  hit-testable and put it over every control in the panel. It is decoration; it no longer takes
+  the mouse.
+- [x] **The pop-out button does nothing.** Same cause.
+- [x] **"Can buy" is the wrong words.** It suggests the flea market, which is not what is meant.
+  - Wanted: either say it plainly — *does not need to be found in raid* — or drop the second entry
+    entirely and let the legend explain only the red, with everything else reading as an ordinary
+    needed item.
 
 ### Barter tracking
 
