@@ -478,8 +478,11 @@ public static class ApiEndpoints
             // Quests you could accept today, not every quest in the game. Without this the section
             // is several thousand rows — everything the whole wipe will ever ask for — which is not
             // something anyone can read, let alone act on.
+            // The same dial that decides how far into the hideout build order to look decides how
+            // far along the quest chain. Depth 1 is what you could accept today; past that it
+            // follows what finishing those would unlock.
             var acceptable = progress
-                .AvailableNow(state.Cache.Current?.Tasks ?? [])
+                .ReachableWithin(state.Cache.Current?.Tasks ?? [], depth)
                 .Select(t => t.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var placed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

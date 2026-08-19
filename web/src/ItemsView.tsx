@@ -196,6 +196,22 @@ export function ItemsView() {
         </div>
       )}
 
+      {/*
+        What the dial currently means. The same list means different things at depth 1 and depth 4
+        and nothing on screen said which — so a number you set last week quietly changed what you
+        were reading today.
+      */}
+      {tab === 'needed' && (
+        <p className="text-xs text-muted">
+          Showing what <b>active quests</b> and{' '}
+          {lookAhead <= 1
+            ? <>upgrades you could <b>build today</b></>
+            : <>the next <b>{lookAhead} hideout upgrades</b></>}{' '}
+          want. Look-ahead moves both: it also follows the quest chain{' '}
+          {lookAhead <= 1 ? 'no further than what you could accept now' : `${lookAhead} steps out`}.
+        </p>
+      )}
+
       {tab === 'watchlist' && (
         <p className="text-xs text-muted">
           These numbers are yours. <b>Need</b> is the amount you are after, and <b>Have</b> is what

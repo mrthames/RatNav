@@ -93,4 +93,67 @@ public class QuestAvailabilityTests : IDisposable
 
         Assert.Equal(3, reopened.TraderLevelOf("Prapor"));
     }
+
+    // ---- looking further down the chain
+
+    private static readonly TaskDef[] Chain =
+    [
+        Task("debut"),
+        Task("shootout", null, "debut"),
+        Task("bp-depot", null, "shootout"),
+        Task("far-away", null, "bp-depot"),
+    ];
+
+    [Fact]
+    public void Depth_one_is_only_what_you_could_accept_today()
+    {
+        var reached = Progress().ReachableWithin(Chain, 1);
+
+        Assert.Equal(["debut"], reached.Select(t => t.Id));
+    }
+
+    [Fact]
+    public void Depth_two_adds_what_finishing_todays_quests_would_unlock()
+    {
+        var reached = Progress().ReachableWithin(Chain, 2).Select(t => t.Id).ToList();
+
+        Assert.Equal(["debut", "shootout"], reached);
+    }
+
+    [Fact]
+    public void Each_further_step_follows_the_chain_one_more_link()
+    {
+        Assert.Equal(3, Progress().ReachableWithin(Chain, 3).Count);
+        Assert.Equal(4, Progress().ReachableWithin(Chain, 4).Count);
+    }
+
+    [Fact]
+    public void Looking_past_the_end_of_the_chain_stops_rather_than_repeating()
+    {
+        Assert.Equal(4, Progress().ReachableWithin(Chain, 40).Count);
+    }
+
+    [Fact]
+    public void A_completed_prerequisite_counts_as_met_at_any_depth()
+    {
+        var progress = Progress();
+        progress.SetManual("debut", QuestState.Completed);
+
+        var reached = progress.ReachableWithin(Chain, 1).Select(t => t.Id);
+
+        Assert.Equal(["shootout"], reached);
+    }
+
+    /// <summary>
+    /// Level and loyalty rise as you play, so holding a quest back past depth 1 because today's
+    /// level is short would hide exactly the work that raises it.
+    /// </summary>
+    [Fact]
+    public void Past_the_first_step_the_level_gate_stops_hiding_things()
+    {
+        TaskDef[] tasks = [Task("debut"), Task("high", level: 40, "debut")];
+
+        Assert.Single(Progress().ReachableWithin(tasks, 1, playerLevel: 5));
+        Assert.Equal(2, Progress().ReachableWithin(tasks, 2, playerLevel: 5).Count);
+    }
 }

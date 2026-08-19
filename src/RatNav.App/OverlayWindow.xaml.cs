@@ -822,6 +822,14 @@ public partial class OverlayWindow : Window
             // whether it means tonight's upgrades or the next four, and the number changes a lot.
             var scope = panel.LookAhead <= 1 ? "buildable now" : $"+{panel.LookAhead - 1} ahead";
 
+            // And the same for what is being looked past. The dial moves both — how far into the
+            // hideout build order, and how far along the quest chain — so both headings say where
+            // it currently sits rather than leaving the same list meaning different things on
+            // different days.
+            var ahead = panel.LookAhead <= 1
+                ? "gated upgrades, quests you could take"
+                : $"gated upgrades, quests {panel.LookAhead} deep";
+
             return
             [
                 // Yours first. The watchlist is the short list you chose by hand; quests and the
@@ -849,7 +857,9 @@ public partial class OverlayWindow : Window
                     "LATER",
                     panel.Later,
                     expandedByDefault: false,
-                    label: panel.LaterHidden > 0 ? $"LATER (+{panel.LaterHidden} more)" : null),
+                    label: panel.LaterHidden > 0
+                        ? $"LATER · {ahead} (+{panel.LaterHidden} more)"
+                        : $"LATER · {ahead}"),
             ];
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)

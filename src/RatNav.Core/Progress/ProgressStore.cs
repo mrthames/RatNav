@@ -219,6 +219,42 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
         tasks.Where(t => StateOf(t.Id) == QuestState.NotStarted && Reachable(t, playerLevel));
 
     /// <summary>
+    /// The quests within <paramref name="depth"/> steps of being available.
+    ///
+    /// <para>Depth 1 is what you could accept today — every gate met. Past that it follows the
+    /// prerequisite chain: depth 2 adds what finishing one of today's quests would unlock, depth 3
+    /// what that would unlock, and so on.</para>
+    ///
+    /// <para>Beyond depth 1 the level and loyalty gates are deliberately ignored. Both rise as you
+    /// play, and holding a quest back because today's loyalty is one short would hide exactly the
+    /// work that raises it — which is the opposite of what looking ahead is for.</para>
+    /// </summary>
+    public IReadOnlyList<TaskDef> ReachableWithin(
+        IEnumerable<TaskDef> tasks, int depth, int? playerLevel = null)
+    {
+        var all = tasks.ToList();
+        var reached = AvailableNow(all, playerLevel).ToList();
+        var ids = reached.Select(t => t.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        for (var step = 2; step <= depth; step++)
+        {
+            var next = all
+                .Where(t => !ids.Contains(t.Id))
+                .Where(t => StateOf(t.Id) == QuestState.NotStarted)
+                .Where(t => t.PrerequisiteTaskIds.All(
+                    p => StateOf(p) == QuestState.Completed || ids.Contains(p)))
+                .ToList();
+
+            if (next.Count == 0) break;
+
+            reached.AddRange(next);
+            foreach (var task in next) ids.Add(task.Id);
+        }
+
+        return reached;
+    }
+
+    /// <summary>
     /// Whether every gate on a quest is met: prerequisites, character level, and trader loyalty.
     ///
     /// <para>Loyalty was the one missing, and it is not a small omission — a hundred and nine
