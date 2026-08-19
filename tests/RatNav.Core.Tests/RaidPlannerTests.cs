@@ -34,7 +34,8 @@ public class RaidPlannerTests
     public void A_route_along_a_line_comes_out_in_order()
     {
         // Handed to the planner shuffled; there is only one sensible answer.
-        var plan = RaidPlanner.Plan(Customs, [At("c", 200, 0), At("a", 0, 0), At("d", 300, 0), At("b", 100, 0)]);
+        var plan = RaidPlanner.Plan(Customs, [At("c", 200, 0), At("a", 0, 0), At("d", 300, 0), At("b", 100, 0)],
+            ordering: StopOrdering.Shortest);
 
         Assert.Equal(["a", "b", "c", "d"], plan.Waypoints.Select(w => w.ObjectiveId));
     }
@@ -44,12 +45,12 @@ public class RaidPlannerTests
     {
         var stops = new[] { At("far", 300, 0), At("near", 10, 0), At("middle", 150, 0) };
 
-        var fromWest = RaidPlanner.Plan(Customs, stops, new GamePosition(0, 0, 0));
+        var fromWest = RaidPlanner.Plan(Customs, stops, new GamePosition(0, 0, 0), StopOrdering.Shortest);
         Assert.Equal("near", fromWest.Waypoints[0].ObjectiveId);
 
         // Spawn at the other end and the whole plan flips, which is the point of re-planning on
         // the first position fix rather than assuming a spawn.
-        var fromEast = RaidPlanner.Plan(Customs, stops, new GamePosition(320, 0, 0));
+        var fromEast = RaidPlanner.Plan(Customs, stops, new GamePosition(320, 0, 0), StopOrdering.Shortest);
         Assert.Equal("far", fromEast.Waypoints[0].ObjectiveId);
     }
 
@@ -60,7 +61,7 @@ public class RaidPlannerTests
         // diagonal; the perimeter is shorter and is what a player would actually walk.
         var square = new[] { At("nw", 0, 100), At("ne", 100, 100), At("se", 100, 0), At("sw", 0, 0) };
 
-        var plan = RaidPlanner.Plan(Customs, square, new GamePosition(0, 0, 0));
+        var plan = RaidPlanner.Plan(Customs, square, new GamePosition(0, 0, 0), StopOrdering.Shortest);
 
         // Perimeter of three sides is 300; any route with a crossing exceeds that.
         Assert.True(Length(plan, new GamePosition(0, 0, 0)) <= 300.0001,
@@ -71,7 +72,7 @@ public class RaidPlannerTests
     public void The_reported_distance_matches_the_route_it_describes()
     {
         var start = new GamePosition(0, 0, 0);
-        var plan = RaidPlanner.Plan(Customs, [At("a", 0, 30), At("b", 40, 30)], start);
+        var plan = RaidPlanner.Plan(Customs, [At("a", 0, 30), At("b", 40, 30)], start, StopOrdering.Shortest);
 
         Assert.Equal(70, plan.DistanceMetres, 3);
     }
@@ -92,9 +93,32 @@ public class RaidPlannerTests
     }
 
     [Fact]
+    public void An_order_you_chose_is_the_order_you_get()
+    {
+        // A shortest path is a guess about distance and nothing else. It does not know that one
+        // objective is worth doing before dark, or that you would rather clear the far end while
+        // it is quiet — so what was picked is what is walked, and the numbers follow it.
+        var plan = RaidPlanner.Plan(Customs, [At("c", 200, 0), At("a", 0, 0), At("b", 100, 0)]);
+
+        Assert.Equal(["c", "a", "b"], plan.Waypoints.Select(w => w.ObjectiveId));
+    }
+
+    [Fact]
+    public void A_chosen_order_survives_a_position_fix()
+    {
+        // Re-sorting on every screenshot would undo an arrangement seconds after it was made, and
+        // move the numbers on the map while you were walking to one of them.
+        var plan = RaidPlanner.Plan(Customs, [At("c", 200, 0), At("a", 0, 0), At("b", 100, 0)]);
+        var after = RaidPlanner.Reroute(plan, new GamePosition(0, 0, 0), new HashSet<string>());
+
+        Assert.Equal(["c", "a", "b"], after.Waypoints.Select(w => w.ObjectiveId));
+    }
+
+    [Fact]
     public void Rerouting_drops_what_you_have_done_and_starts_from_where_you_are()
     {
-        var plan = RaidPlanner.Plan(Customs, [At("a", 0, 0), At("b", 100, 0), At("c", 200, 0)]);
+        var plan = RaidPlanner.Plan(
+            Customs, [At("a", 0, 0), At("b", 100, 0), At("c", 200, 0)], ordering: StopOrdering.Shortest);
 
         // Cleared "a", and standing nearer "c" than "b".
         var rerouted = RaidPlanner.Reroute(plan, new GamePosition(190, 0, 0), new HashSet<string> { "a" });
@@ -122,7 +146,7 @@ public class RaidPlannerTests
     {
         var stops = Enumerable.Range(0, count).Select(i => At($"s{i}", i * 100, 0)).ToArray();
 
-        var plan = RaidPlanner.Plan(Customs, stops);
+        var plan = RaidPlanner.Plan(Customs, stops, ordering: StopOrdering.Shortest);
 
         Assert.Equal(count, plan.Waypoints.Count);
     }
@@ -159,7 +183,7 @@ public class RaidPlannerTests
             At("e", 70, 160), At("f", 10, 45), At("g", 180, 140),
         };
 
-        var plan = RaidPlanner.Plan(Customs, stops, new GamePosition(0, 0, 0));
+        var plan = RaidPlanner.Plan(Customs, stops, new GamePosition(0, 0, 0), StopOrdering.Shortest);
 
         Assert.Equal(stops.Length, plan.Waypoints.Count);
         Assert.Equal(
@@ -174,7 +198,7 @@ public class RaidPlannerTests
         var stops = new[] { At("a", 0, 0), At("f", 500, 0), At("b", 100, 0), At("e", 400, 0), At("c", 200, 0) };
         var start = new GamePosition(0, 0, 0);
 
-        var plan = RaidPlanner.Plan(Customs, stops, start);
+        var plan = RaidPlanner.Plan(Customs, stops, start, StopOrdering.Shortest);
 
         var asGiven = 0.0;
         var previous = start;

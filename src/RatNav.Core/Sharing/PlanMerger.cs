@@ -102,8 +102,20 @@ public static class PlanMerger
         var waypoints = new List<Waypoint>();
         var shared = new List<SharedObjective>();
 
-        foreach (var (objectiveId, entries) in byObjective)
+        // Walked in document order, then stop order, rather than over the grouping — which is a
+        // dictionary and owes nobody an order.
+        //
+        // So your plan stays as you arranged it and a friend's stops follow, in the order they
+        // arranged theirs. An objective you both picked keeps your position for it: it is the same
+        // stop, and moving it to where they put it would rearrange your plan on their say-so.
+        var sequence = latest
+            .SelectMany(d => d.Stops.Select(stop => stop.ObjectiveId))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var objectiveId in sequence)
         {
+            var entries = byObjective[objectiveId];
+
             var stopOwners = entries
                 .Select(e => e.Stop.Owner ?? e.Doc.Owner ?? "(unnamed)")
                 .Distinct(StringComparer.OrdinalIgnoreCase)

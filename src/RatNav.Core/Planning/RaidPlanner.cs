@@ -23,8 +23,21 @@ public sealed record Waypoint
 }
 
 /// <summary>A route through the objectives you chose, plus what to bring.</summary>
+/// <summary>How the stops in a plan are sequenced.</summary>
+public enum StopOrdering
+{
+    /// <summary>The order they were picked, or dragged into. What the numbers on the map follow.</summary>
+    AsChosen,
+
+    /// <summary>Worked out as a short route. A guess about distance, and only about distance.</summary>
+    Shortest,
+}
+
 public sealed record RaidPlan
 {
+    /// <summary>Whether this plan's order was chosen or worked out.</summary>
+    public StopOrdering Ordering { get; init; } = StopOrdering.AsChosen;
+
     public required string MapId { get; init; }
     public required string MapName { get; init; }
 
@@ -61,18 +74,29 @@ public static class RaidPlanner
     /// the route begins from there; otherwise it starts at whichever objective makes the shortest
     /// overall loop.
     /// </summary>
+    /// <param name="ordering">
+    /// Whether to work the route out, or walk the stops in the order they were given.
+    ///
+    /// <para>Given order is the default. A shortest path is a good guess and only a guess — it
+    /// knows distances and nothing else: not that one objective is worth doing before dark, not
+    /// that two are on the way to a third, not that you would rather clear the far end first while
+    /// it is quiet. Rearranging what someone deliberately picked, and renumbering it, is a
+    /// confident answer to a question they had already answered.</para>
+    /// </summary>
     public static RaidPlan Plan(
         MapDef map,
         IReadOnlyList<Waypoint> chosen,
-        GamePosition? start = null)
+        GamePosition? start = null,
+        StopOrdering ordering = StopOrdering.AsChosen)
     {
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(chosen);
 
-        var ordered = Order(chosen, start);
+        var ordered = ordering == StopOrdering.Shortest ? Order(chosen, start) : [.. chosen];
 
         return new RaidPlan
         {
+            Ordering = ordering,
             MapId = map.Id,
             MapName = map.Name,
             Waypoints = ordered,
@@ -95,7 +119,13 @@ public static class RaidPlanner
         ArgumentNullException.ThrowIfNull(plan);
 
         var remaining = plan.Waypoints.Where(w => !completed.Contains(w.ObjectiveId)).ToArray();
-        var ordered = Order(remaining, from);
+
+        // An order someone set by hand survives a position fix. Re-sorting it every time you take
+        // a screenshot would undo the arrangement a few seconds after it was made, and the numbers
+        // on the map would move while you were walking to one of them.
+        var ordered = plan.Ordering == StopOrdering.Shortest
+            ? Order(remaining, from)
+            : remaining;
 
         return plan with
         {

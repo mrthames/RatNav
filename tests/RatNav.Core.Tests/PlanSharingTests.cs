@@ -153,17 +153,29 @@ public class PlanSharingTests
     }
 
     [Fact]
-    public void The_merged_route_is_ordered_rather_than_concatenated()
+    public void A_merge_keeps_both_orders_with_yours_first()
     {
-        // Interleaved on purpose: a merge that just appended one list to the other would walk the
-        // map twice.
-        var mine = DocumentFor("justin", At("a", 0, 0), At("c", 200, 0));
-        var theirs = DocumentFor("the tester", At("b", 100, 0), At("d", 300, 0));
+        // Your arrangement survives, and theirs follows in the order they arranged it. Re-sorting
+        // the pair into a shorter route would throw away two people's decisions to save a walk.
+        var mine = DocumentFor("justin", At("c", 200, 0), At("a", 0, 0));
+        var theirs = DocumentFor("the tester", At("d", 300, 0), At("b", 100, 0));
 
         var squad = PlanMerger.Merge(Customs, [mine, theirs]);
 
-        Assert.Equal(["a", "b", "c", "d"], squad.Plan.Waypoints.Select(w => w.ObjectiveId));
-        Assert.Equal(300, squad.Plan.DistanceMetres, 3);
+        Assert.Equal(["c", "a", "d", "b"], squad.Plan.Waypoints.Select(w => w.ObjectiveId));
+    }
+
+    [Fact]
+    public void An_objective_you_both_picked_keeps_your_place_for_it()
+    {
+        // The same stop, not two — and it stays where you put it. Moving it to where they put it
+        // would rearrange your plan on their say-so.
+        var mine = DocumentFor("justin", At("a", 0, 0), At("shared", 50, 0));
+        var theirs = DocumentFor("the tester", At("shared", 50, 0), At("b", 100, 0));
+
+        var squad = PlanMerger.Merge(Customs, [mine, theirs]);
+
+        Assert.Equal(["a", "shared", "b"], squad.Plan.Waypoints.Select(w => w.ObjectiveId));
     }
 
     [Fact]

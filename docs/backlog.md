@@ -455,6 +455,26 @@ them separately.
     its own coordinate space, not the game's, so clicking RatNav's own map is likely the only
     reliable route — worth confirming what Justin expects to do here.
 
+### Plan ordering and the quest log drawer
+
+- [x] **Stops keep the order you picked them in.** The planner was solving a shortest route and
+  renumbering what you had chosen — a confident answer to a question you had already answered. The
+  optimiser still exists and is still tested; it is opt-in now.
+- [x] **A chosen order survives a position fix.** Rerouting used to re-sort on every screenshot,
+  undoing an arrangement seconds after it was made and moving the numbers while you walked to one.
+- [x] **A merged plan keeps both orders, yours first**, with a shared objective holding *your*
+  place for it rather than moving to theirs.
+- [ ] **Drag to reorder in the buddy app**, with the number shown on each row — the same number the
+  map and overlay use.
+- [ ] **A quest log drawer on the F5 overlay**, beside the items list.
+  - Lists the started quests in the plan: **waypoint number, title, and a brief objective**.
+  - Extremely minimal.
+  - Same machinery as the items list: left or right of the map, swappable, poppable out, closing
+    the popped-out window reattaches it.
+  - A quick toggle for the items view too, alongside it.
+- [ ] **A shortcut on the Plan page to complete a quest**, updating quest state without going to
+  the Quests tab.
+
 ### Bulk item import from a screenshot
 
 - [ ] **Read a stash or scav-box screenshot and set have-counts from it**, as a first import rather
