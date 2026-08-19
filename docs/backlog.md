@@ -279,6 +279,10 @@ them separately.
 
 ### Items panel, second pass
 
+- [x] **No way to remove a watchlist item.** The star toggle was there and worked, but un-watching
+  only swapped the row for an updated copy of itself — so it sat on the list with a hollow star and
+  read as a button that did nothing. It is a ✕ on the watchlist now, and the row leaves.
+
 - [x] **No way to set a watchlist target in the buddy app.** The Need field was only editable for
   items nothing else wanted, so anything a quest or the hideout also needed could not be given a
   target. On the watchlist it is always editable now — it is your number.

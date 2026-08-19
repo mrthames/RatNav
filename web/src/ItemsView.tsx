@@ -44,7 +44,12 @@ export function ItemsView() {
   // Updates return the changed row, so one item changing doesn't reload the whole list and
   // throw away your scroll position.
   const replace = (updated: TrackedItem) =>
-    setRows((current) => current.map((r) => (r.id === updated.id ? updated : r)))
+    setRows((current) =>
+      // A row that has stopped being watched has no business on the watchlist. Left in place it
+      // looked like the button had done nothing.
+      tab === 'watchlist' && !updated.watched
+        ? current.filter((r) => r.id !== updated.id)
+        : current.map((r) => (r.id === updated.id ? updated : r)))
 
   const totals = useMemo(() => ({
     items: rows.length,
@@ -163,7 +168,7 @@ export function ItemsView() {
                 <Th align="right">Need</Th>
                 <Th align="center">Have</Th>
                 <Th align="right">Left</Th>
-                <Th align="center">Watch</Th>
+                <Th align="center">{tab === 'watchlist' ? 'Remove' : 'Watch'}</Th>
               </tr>
             </thead>
             <tbody>
@@ -324,16 +329,24 @@ function Row({
       </Td>
 
       <Td align="center">
+        {/*
+          A star to add, a cross to remove. On the watchlist "un-star" is the same action as
+          "take this off the list", and saying the second is clearer than implying it.
+        */}
         <button
           type="button"
           onClick={toggleWatch}
           disabled={busy}
           aria-pressed={row.watched}
-          aria-label={row.watched ? `stop watching ${row.name}` : `watch ${row.name}`}
-          className="rounded-sm px-1.5 text-muted transition-colors hover:text-warn
-                     aria-pressed:text-warn focus-visible:outline-2 focus-visible:outline-accent"
+          aria-label={watchlist
+            ? `remove ${row.name} from the watchlist`
+            : row.watched ? `stop watching ${row.name}` : `watch ${row.name}`}
+          className={`rounded-sm px-1.5 transition-colors focus-visible:outline-2
+                      focus-visible:outline-accent ${watchlist
+                        ? 'text-muted hover:text-need'
+                        : 'text-muted hover:text-warn aria-pressed:text-warn'}`}
         >
-          {row.watched ? '★' : '☆'}
+          {watchlist ? '✕' : row.watched ? '★' : '☆'}
         </button>
       </Td>
     </tr>
