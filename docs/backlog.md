@@ -331,6 +331,24 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Maps tab, and custom waypoints
+
+- [ ] **Drop the Maps tab from the buddy app.** Beyond the scope of this project — Map Genie and
+  friends already do detailed map exploration far better, and RatNav's map exists to serve the
+  overlay rather than to compete with them.
+  - Keep the map rendering itself: the overlay needs it, and the Plan view still places pins.
+  - Note: this removes where "Show on overlay" currently lives, so that control needs a new home —
+    probably the Plan view's map picker.
+- [ ] **Custom waypoints.** The expected workflow is finding a spot in Map Genie, then marking it in
+  RatNav so it shows in raid.
+  - A **short label** — "car batteries" — visible on the overlay.
+  - Added to a plan alongside quest objectives.
+  - **Drawn differently from quest waypoints**, a different colour, so what is a quest and what is
+    your own note are tellable apart at a glance.
+  - Placed by clicking the map, and/or by pasting coordinates. `[?]` Map Genie gives positions in
+    its own coordinate space, not the game's, so clicking RatNav's own map is likely the only
+    reliable route — worth confirming what Justin expects to do here.
+
 ### Bulk item import from a screenshot
 
 - [ ] **Read a stash or scav-box screenshot and set have-counts from it**, as a first import rather

@@ -2,19 +2,21 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, type TaskSummary, type Trader } from './api'
 
 /**
- * Four groups, each answering a different question.
+ * Three groups, because those are the three that are true.
  *
- * "Available" was never redundant with "active" — one is what you accepted, the other is what you
- * could accept — it was just badly named, so it is "Ready" now. "To do" genuinely was redundant
- * and is gone. "Locked" is new, and holds what is waiting on a level or an earlier quest.
+ * Grouping by "reachable" was tried and dropped. RatNav can see prerequisites, character level and
+ * the loyalty you have recorded — but not reputation or how much you have spent, so it can never
+ * be certain a quest is available, and a tab claiming to know sorts quests you *can* take into a
+ * list called Locked.
+ *
+ * All is searchable and shows everything. You can see the trader screen; RatNav cannot. What it
+ * knows about the gates still appears on each row, where it informs rather than hides.
  */
-type Filter = 'active' | 'ready' | 'done' | 'locked' | 'all'
+type Filter = 'active' | 'complete' | 'all'
 
 const FILTERS: [Filter, string][] = [
   ['active', 'Active'],
-  ['ready', 'Ready'],
-  ['done', 'Complete'],
-  ['locked', 'Locked'],
+  ['complete', 'Complete'],
   ['all', 'All'],
 ]
 
@@ -93,7 +95,7 @@ export function QuestsView() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Quest or trader…"
+          placeholder={filter === 'all' ? 'Search every quest…' : 'Quest or trader…'}
           className="min-w-48 flex-1 rounded-sm border border-line bg-panel px-3 py-1.5 text-sm
                      text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
         />
@@ -160,10 +162,8 @@ export function QuestsView() {
       {!loading && shown.length === 0 && (
         <Empty>
           {filter === 'active'
-            ? 'No active quests. Switch to Ready to see what you can pick up, and mark them active as you accept them in game.'
-            : filter === 'locked'
-              ? 'Nothing locked — everything is either done or within reach.'
-              : 'Nothing here.'}
+            ? 'No active quests. Search All for one you have picked up in game and mark it active.'
+            : 'Nothing here.'}
         </Empty>
       )}
 

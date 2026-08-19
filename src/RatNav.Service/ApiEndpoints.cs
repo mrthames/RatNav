@@ -515,23 +515,24 @@ public static class ApiEndpoints
                 t, progress.StateOf(t.Id), available.Contains(t.Id),
                 settings.PlayerLevel, names, progress.StateOf, progress.TraderLevelOf));
 
-            // Four groups, and each answers a different question.
+            // Three groups, because those are the three that are true.
             //
-            // "Available" was not redundant with "active", it was badly named: one is what you
-            // accepted, the other is what you could accept. Renamed to "ready", which is what it
-            // always meant, and "todo" is gone because it genuinely was redundant.
+            // Grouping by "reachable" was tried and dropped. RatNav can see prerequisites, level
+            // and recorded loyalty, but not reputation or spending — so it can never be certain a
+            // quest is available, and a tab that claims to know sorts quests you *can* take into a
+            // list called Locked. Better to show everything and let the player, who can see the
+            // trader screen, decide what to activate.
+            //
+            // The gates are still worked out and still shown on each row. As information they are
+            // useful; as a filter that hides things they were not.
             rows = filter?.ToLowerInvariant() switch
             {
                 "active" => rows.Where(t => t.State == nameof(QuestState.Active)),
-                "ready" => rows.Where(t => t.Available),
 
-                // Failed sits with done because both are finished — but it stays distinguishable,
-                // so a wipe's failures can be seen rather than quietly folded into successes.
-                "done" => rows.Where(t =>
+                // Failed sits with complete because both are finished — but it stays
+                // distinguishable, so a wipe's failures can be seen rather than folded into wins.
+                "complete" => rows.Where(t =>
                     t.State is nameof(QuestState.Completed) or nameof(QuestState.Failed)),
-
-                // Neither started, nor reachable: waiting on a level or on another quest.
-                "locked" => rows.Where(t => t.State == nameof(QuestState.NotStarted) && !t.Available),
 
                 _ => rows,
             };
