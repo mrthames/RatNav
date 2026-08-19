@@ -331,6 +331,26 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Raster tiles as a base layer
+
+- [~] **A real raster base under the vector.** Asked for after seeing Map Genie.
+  - **Map Genie's maps cannot be used.** They are a commercial product sold behind a subscription;
+    their tiles are their own work. RatNav is MIT and public, so borrowing them would put a
+    licensing problem into every copy anyone downloads. Their approach is fair to learn from,
+    their artwork is not.
+  - **tarkov.dev serves tiles, from the same project as the SVGs already in use.** Found in
+    `the-hideout/tarkov-dev`'s `maps.json`, which the calibration already reads:
+    - `tilePath: https://assets.tarkov.dev/maps/woods/main_0.16/{z}/{x}/{y}.png`
+    - `minZoom: 2`, `maxZoom: 6`, standard slippy scheme, verified fetching
+    - `transform: [0.1855, 112.95, 0.1855, 167.85]` — a Leaflet transformation mapping game
+      coordinates into the tile CRS, which is what places them
+    - Author **Shebuka**, already credited per map.
+  - Alignment: the tile pyramid is square and does not share the SVG's extent, so the raster's own
+    world bounds are derived from the transform and then placed through the existing, verified
+    coordinate transform. Same normalized space as everything else.
+  - **Needs eyeballing once built** — alignment is the kind of thing that looks right in numbers
+    and wrong on screen.
+
 ### Graphical maps, second pass
 
 - [x] **Buildings were invisible in graphical mode.** They were being drawn — Woods has 111 of

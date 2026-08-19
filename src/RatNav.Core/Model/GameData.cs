@@ -236,6 +236,24 @@ public sealed record MapImage
     public required string SourceUrl { get; init; }
 
     /// <summary>
+    /// Raster tiles for this map, as a <c>{z}/{x}/{y}</c> template, when the source has them.
+    ///
+    /// <para>Drawn beneath the vector to give a map that looks like a place rather than a diagram.
+    /// From the same project as the SVG and by the same authors, who are credited per map — which
+    /// is what makes using them reasonable where a commercial mapmaker's tiles would not be.</para>
+    /// </summary>
+    public string? TilePath { get; init; }
+
+    /// <summary>
+    /// The Leaflet transformation placing game coordinates in the tile grid: <c>[a, b, c, d]</c>
+    /// giving <c>(a·x + b, c·z + d)</c>. Without it the tiles cannot be lined up with anything.
+    /// </summary>
+    public double[]? TileTransform { get; init; }
+
+    public int MinZoom { get; init; }
+    public int MaxZoom { get; init; }
+
+    /// <summary>
     /// What tarkovdata declares as the map's rotation. Kept for reference and display only —
     /// it does not determine the coordinate mapping. See <see cref="Mapping"/>.
     /// </summary>

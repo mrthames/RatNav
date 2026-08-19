@@ -92,6 +92,10 @@ public sealed partial class MapAssets(HttpClient http, string cacheDirectory)
                         CoordinateRotation = (int)Math.Round(variant.CoordinateRotation ?? 0),
                         Bounds = variant.Bounds,
                         DefaultFloor = variant.SvgLayer,
+                        TilePath = variant.TilePath,
+                        TileTransform = variant.Transform,
+                        MinZoom = variant.MinZoom,
+                        MaxZoom = variant.MaxZoom,
                         Author = variant.Author,
                         AuthorLink = variant.AuthorLink,
                         Floors = ReadFloors(variant),
@@ -261,6 +265,7 @@ public sealed partial class MapAssets(HttpClient http, string cacheDirectory)
 
     private sealed record MapVariant(
         string? Key, string? Projection, string? SvgPath, string? SvgLayer,
+        string? TilePath, double[]? Transform, int MinZoom, int MaxZoom,
         double[][]? Bounds, double? CoordinateRotation, double[]? HeightRange,
         string? Author, string? AuthorLink,
         List<LayerEntry>? Layers, List<LabelEntry>? Labels);
