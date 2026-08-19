@@ -7,6 +7,19 @@ namespace RatNav.Core.Model;
 /// </summary>
 public sealed record GameData
 {
+    /// <summary>
+    /// What shape this document is in. Bumped whenever a field is added that a cached copy would
+    /// not have.
+    ///
+    /// <para>Without it, adding a field means every existing install serves a cache missing it
+    /// until the six-hour age check happens to fire — so a new layer looks broken rather than
+    /// absent, and the person who has it worst is whoever just updated.</para>
+    /// </summary>
+    public const int CurrentSchema = 2;
+
+    /// <summary>The schema this copy was written with. Zero on anything written before schemas.</summary>
+    public int Schema { get; init; }
+
     public required DateTimeOffset FetchedAt { get; init; }
 
     /// <summary>Game version this data was fetched against, if known (from the EFT log directory name).</summary>
@@ -193,6 +206,9 @@ public sealed record MapDef
 
     public IReadOnlyList<MapExtract> Extracts { get; init; } = [];
 
+    /// <summary>Roughly where the other players in your raid started.</summary>
+    public IReadOnlyList<MapSpawnArea> SpawnAreas { get; init; } = [];
+
     /// <summary>Named places on this map, for naming route stops the way a player would.</summary>
     public IReadOnlyList<MapLabel> Labels { get; init; } = [];
 
@@ -324,6 +340,32 @@ public sealed record MapLabel
     /// <summary>Height band this label belongs to, for maps whose levels have different names.</summary>
     public double? MinHeight { get; init; }
     public double? MaxHeight { get; init; }
+}
+
+/// <summary>Which players start at a spawn area.</summary>
+public enum SpawnFaction
+{
+    Pmc,
+    Scav,
+}
+
+/// <summary>
+/// Roughly where a group of players starts a raid, grouped from tarkov.dev's individual spawn
+/// points. See <c>SpawnAreas</c> for why this is areas rather than points.
+/// </summary>
+public sealed record MapSpawnArea
+{
+    public required GamePosition Centre { get; init; }
+    public required SpawnFaction Faction { get; init; }
+
+    /// <summary>How far the furthest member sits from the centre, in metres.</summary>
+    public required double Spread { get; init; }
+
+    /// <summary>How many individual spawns this area covers.</summary>
+    public required int Points { get; init; }
+
+    /// <summary>The game's internal zone name, where the members agree on one.</summary>
+    public string? Zone { get; init; }
 }
 
 public sealed record MapExtract

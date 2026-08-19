@@ -144,10 +144,19 @@ them separately.
   item of this round. Covers street names, building names, area names, and waypoint names.
   - `[?]` One scale for everything drawn, or separate dials for text and iconography? The first
     item asked for ×3 on icons specifically, which suggests they may want to move independently.
-- [ ] **Spawn locations, toggleable on the map.** Useful for knowing where players who loaded in at
-  the same time as you may be coming from.
-  - Check whether tarkov.dev's maps document carries spawns, and what it distinguishes — PMC,
-    Scav, boss. If it separates them, the toggle probably should too.
+- [x] **Spawn locations, toggleable on the map.** `SPAWNS` in the control stack cycles
+  off / pmc / scav / both.
+  - tarkov.dev's REST maps document does carry them, and distinguishes both things that matter:
+    `sides` (pmc / scav / all) and `categories` (player / bot / boss). Bot-only points are dropped
+    — most of the list, and none of them say where a *player* is coming from.
+  - Drawn as **areas, not points**. The source lists 140 PMC spawns on Woods and 196 on Streets;
+    plotted literally that is a rash of dots that answers no question. They cluster at a 100 m
+    radius into 12–26 regions a map, drawn at the size of the ground they cover with the number of
+    spawn points in the tooltip.
+  - Fell out of it: **the game data cache now carries a schema number**. Adding a field used to
+    mean every existing install served a cache missing it until the six-hour age check happened to
+    fire — so a new layer read as broken rather than pending, for exactly the person who had just
+    updated and gone looking for it.
 - [ ] **Quest images from the wiki, reachable from the waypoint hover.** For a quest like *Glory to
   CPSU*, the wiki has screenshots showing the building and the room to look for; those are what
   turn "walk to this pin" into "find this door".

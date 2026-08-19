@@ -117,8 +117,13 @@ public partial class OverlayWindow : Window
         new Dictionary<string, MapStyle>(StringComparer.OrdinalIgnoreCase);
     private static readonly string[] ExtractModes = ["pmc", "scav", "both", "off"];
 
+    private static readonly string[] SpawnModes = ["off", "pmc", "scav", "both"];
+
     /// <summary>Extracts for the current map, fetched once per map alongside its floors.</summary>
     private IReadOnlyList<ExtractPin> _extracts = [];
+
+    /// <summary>Where the other players started, grouped into areas by the service.</summary>
+    private IReadOnlyList<SpawnPin> _spawns = [];
 
     /// <summary>Named places on the current map, fetched once per map.</summary>
     private IReadOnlyList<PlaceLabel> _places = [];
@@ -168,6 +173,7 @@ public partial class OverlayWindow : Window
         FollowButton.Click += (_, _) => ToggleFollowing();
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
+        SpawnButton.Click += (_, _) => CycleSpawns();
         HaloButton.Click += (_, _) => ToggleHalo();
         GhostButton.Click += (_, _) => ToggleGhost();
         PlacesButton.Click += (_, _) => TogglePlaces();
@@ -550,6 +556,9 @@ public partial class OverlayWindow : Window
             _places = await _http.GetFromJsonAsync<List<PlaceLabel>>(
                 $"{root}/maps/{Uri.EscapeDataString(mapId)}/places") ?? [];
 
+            _spawns = await _http.GetFromJsonAsync<List<SpawnPin>>(
+                $"{root}/maps/{Uri.EscapeDataString(mapId)}/spawns") ?? [];
+
             _floorsFor = mapId;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
@@ -557,6 +566,7 @@ public partial class OverlayWindow : Window
             _floors = [];
             _extracts = [];
             _places = [];
+            _spawns = [];
         }
     }
 
@@ -1212,6 +1222,12 @@ public partial class OverlayWindow : Window
         Draw();
     }
 
+    private void CycleSpawns()
+    {
+        var at = Array.IndexOf(SpawnModes, _settings.Overlay.Spawns);
+        Remember(_settings.Overlay with { Spawns = SpawnModes[(at + 1 + SpawnModes.Length) % SpawnModes.Length] });
+    }
+
     private void CycleExtracts()
     {
         var at = Array.IndexOf(ExtractModes, _settings.Overlay.Extracts);
@@ -1311,6 +1327,7 @@ public partial class OverlayWindow : Window
         // people to ignore it.
         RecentreButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
         ExtractButton.Content = _settings.Overlay.Extracts;
+        SpawnButton.Content = $"spawns {_settings.Overlay.Spawns}";
         MarkerText.Text = $"{_settings.Overlay.MarkerScale:0.0}×";
         TextScaleText.Text = $"{_settings.Overlay.TextScale:0.0}×";
         ShrinkText.Text = $"{_settings.Overlay.ScaleWithZoom:0.00}";
@@ -1540,6 +1557,15 @@ public partial class OverlayWindow : Window
     /// version stretched to the canvas aspect while the map scaled uniformly, which put every pin
     /// off the building it belonged to on any overlay that was not square.</para>
     /// </summary>
+    /// <summary>Put an element on the canvas at a point, and hand it back for adding.</summary>
+    private static UIElement Positioned(UIElement element, double left, double top)
+    {
+        Canvas.SetLeft(element, left);
+        Canvas.SetTop(element, top);
+
+        return element;
+    }
+
     private Point ToCanvas(RaidView view, double x, double y, double width, double height)
     {
         var fit = FitScale(width, height);
@@ -1815,6 +1841,46 @@ public partial class OverlayWindow : Window
                 // White. At full ink the map's own roads and rock are pale enough that a muted
                 // grey caption disappears into them.
                 Label(place.Text, at.X, at.Y, Brushes.White, 9 * textScale);
+            }
+        }
+
+        // Spawn areas, under everything else. They are ground rather than furniture — a region of
+        // the map that means something, not a thing standing on it — so they draw first and stay
+        // faint enough to read the map through.
+        if (_settings.Overlay.Spawns is var spawnMode && spawnMode != "off")
+        {
+            var fit = FitScale(width, height);
+
+            foreach (var spawn in _spawns)
+            {
+                if (spawnMode != "both"
+                    && !spawn.Faction.Equals(spawnMode, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var scav = spawn.Faction.Equals("scav", StringComparison.OrdinalIgnoreCase);
+                var at = Place(spawn.X, spawn.Y);
+
+                // Drawn at the size of the ground it covers, so it grows and shrinks with the map
+                // the way a place does. A fixed screen size would say every spawn area is the same
+                // shape, which is the one thing the clustering worked out that they are not.
+                var radius = Math.Max(6, spawn.Radius * _mapViewBox.Width * fit);
+
+                var colour = (Brush)FindResource(scav ? "ScavExit" : "PmcExit");
+
+                MapCanvas.Children.Add(Positioned(
+                    new Ellipse
+                    {
+                        Width = radius * 2,
+                        Height = radius * 2,
+                        Stroke = colour,
+                        StrokeThickness = 1,
+                        StrokeDashArray = [3, 3],
+                        Fill = colour,
+                        Opacity = 0.14,
+                        ToolTip = $"{(scav ? "Scav" : "PMC")} spawn area · {spawn.Points} spawn points",
+                    },
+                    at.X - radius,
+                    at.Y - radius));
             }
         }
 

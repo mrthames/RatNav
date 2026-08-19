@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RatNav.Core.Maps;
 using RatNav.Core.Model;
 
 namespace RatNav.Core.Data;
@@ -214,6 +215,18 @@ public sealed class TarkovDevClient(HttpClient http)
                                 Position = e.Position?.ToGamePosition(),
                             })
                     ],
+
+                    // Clustered here rather than on the way out. The raw list runs to four hundred
+                    // points a map and none of them are individually interesting, so the cache
+                    // holds the dozen areas they amount to instead.
+                    SpawnAreas = SpawnAreas.From(
+                        from spawn in pair.Value.Spawns ?? []
+                        where spawn.Position is not null
+                        select new SpawnAreas.RawSpawn(
+                            spawn.Position.ToGamePosition(),
+                            spawn.Sides ?? [],
+                            spawn.Categories ?? [],
+                            spawn.ZoneName)),
                 })
         ];
     }
@@ -465,7 +478,11 @@ public sealed class TarkovDevClient(HttpClient http)
     private sealed record BarterItemDto(string? Item, double Count);
 
     private sealed record MapDto(
-        string? Name, string? NormalizedName, string? NameId, List<ExtractDto>? Extracts);
+        string? Name, string? NormalizedName, string? NameId,
+        List<ExtractDto>? Extracts, List<SpawnDto>? Spawns);
+
+    private sealed record SpawnDto(
+        PositionDto? Position, List<string>? Sides, List<string>? Categories, string? ZoneName);
 
     private sealed record ExtractDto(string? Name, string? Faction, PositionDto? Position);
 }

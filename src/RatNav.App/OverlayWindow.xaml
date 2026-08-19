@@ -496,7 +496,12 @@
 
                             <TextBlock Style="{StaticResource Label}" Text="EXITS" Margin="0,0,0,2" />
                             <Button x:Name="ExtractButton" Style="{StaticResource Chip}"
-                                    Content="pmc" HorizontalAlignment="Stretch" />
+                                    Content="pmc" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
+
+                            <TextBlock Style="{StaticResource Label}" Text="SPAWNS" Margin="0,0,0,2"
+                                       ToolTip="Roughly where the other players in your raid started" />
+                            <Button x:Name="SpawnButton" Style="{StaticResource Chip}"
+                                    Content="spawns off" HorizontalAlignment="Stretch" />
 
                             <!--
                                 No items toggle here. The drawer handles sit at the bottom of the

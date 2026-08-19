@@ -68,7 +68,12 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         var patched = loaded is not null && gameVersion is not null && loaded.GameVersion != gameVersion;
         var stale = loaded is null || DateTimeOffset.UtcNow - loaded.FetchedAt > MaxAge;
 
-        if (loaded is not null && !stale && !patched)
+        // A cache written by an older RatNav is missing whatever was added since, so it refetches
+        // now rather than at the end of the age window. Otherwise a new map layer reads as broken
+        // for up to six hours after an update, which is exactly when someone is looking for it.
+        var outdated = loaded is not null && loaded.Schema < GameData.CurrentSchema;
+
+        if (loaded is not null && !stale && !patched && !outdated)
         {
             _current = loaded;
             return new RefreshResult { Succeeded = true, Data = loaded };
@@ -215,6 +220,7 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
 
         return new GameData
         {
+            Schema = GameData.CurrentSchema,
             FetchedAt = DateTimeOffset.UtcNow,
             GameVersion = gameVersion,
             Tasks = tasks ?? [],

@@ -39,6 +39,7 @@ public class GameDataCacheTests : IDisposable
 
     private static GameData Cached(string? version = "0.14.0") => new()
     {
+        Schema = GameData.CurrentSchema,
         FetchedAt = DateTimeOffset.UtcNow.AddDays(-3),
         GameVersion = version,
         Items = [new ItemDef { Id = "watch", Name = "Bronze pocket watch" }],
@@ -141,6 +142,24 @@ public class GameDataCacheTests : IDisposable
 
         Assert.True(result.Succeeded);
         Assert.Equal(0, handler.Calls);
+    }
+
+    /// <summary>
+    /// A cache written by an older RatNav is missing whatever fields have been added since, and
+    /// waiting out the age window would show those as absent rather than pending — which reads as
+    /// a broken feature to the one person guaranteed to be looking for it, whoever just updated.
+    /// </summary>
+    [Fact]
+    public async Task An_older_cache_shape_forces_a_refresh_even_if_the_cache_is_young()
+    {
+        SeedDisk(Cached() with { Schema = 0, FetchedAt = DateTimeOffset.UtcNow });
+
+        var handler = new AlwaysFailsHandler();
+        var cache = CacheWith(handler);
+
+        await cache.EnsureFreshAsync("0.14.0");
+
+        Assert.NotEqual(0, handler.Calls);
     }
 
     [Fact]
