@@ -166,11 +166,25 @@ public sealed class RaidSession
     }
 
     /// <summary>The map the game currently has loaded, or null when not in a raid.</summary>
-    private MapDef? RaidMap =>
-        _locationId is null
-            ? null
-            : _state.Cache.Current?.Maps.FirstOrDefault(m =>
-                m.LogAliases.Contains(_locationId, StringComparer.OrdinalIgnoreCase));
+    private MapDef? RaidMap
+    {
+        get
+        {
+            if (_locationId is not { Length: > 0 } id) return null;
+
+            var maps = _state.Cache.Current?.Maps;
+            if (maps is null) return null;
+
+            // The game spells the map differently depending on which line it wrote:
+            // "TarkovStreets" from a transit line, "Interchange" from the raid-created one. Match
+            // on all three names rather than picking one and being wrong half the time.
+            return maps.FirstOrDefault(m => m.LogAliases.Contains(id, StringComparer.OrdinalIgnoreCase))
+                ?? maps.FirstOrDefault(m => string.Equals(m.Name, id, StringComparison.OrdinalIgnoreCase))
+                ?? maps.FirstOrDefault(m => string.Equals(m.NormalizedName, id, StringComparison.OrdinalIgnoreCase))
+                ?? maps.FirstOrDefault(m => string.Equals(
+                    m.NormalizedName, id.Replace(" ", "-"), StringComparison.OrdinalIgnoreCase));
+        }
+    }
 
     /// <summary>
     /// The map to draw.

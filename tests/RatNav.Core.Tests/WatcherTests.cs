@@ -192,6 +192,44 @@ public class LogWatcherTests : IDisposable
     }
 
     [Fact]
+    public void A_raid_entered_normally_is_detected()
+    {
+        // The line every raid writes. "Locations:" only appears when you arrive by transit, which
+        // is why Streets was detected and Interchange silently was not.
+        Append("application",
+            "2026-08-19 12:06:50.207|1.1.0.1.46777|Debug|application|"
+            + "TRACE-NetworkGameCreate profileStatus: 'Profileid: abc, Status: Busy, RaidMode: Online, "
+            + "Ip: 79.127.221.38, Port: 17001, Location: Interchange, Sid: US-SEA03G015_x, "
+            + "GameMode: deathmatch, shortId: DPXPWP'");
+
+        using var watcher = new LogWatcher(_install);
+        RaidStarted? started = null;
+        watcher.RaidStarted += (_, e) => started = e;
+
+        watcher.Poll();
+
+        Assert.NotNull(started);
+        Assert.Equal("Interchange", started.LocationId);
+    }
+
+    [Fact]
+    public void Both_ways_the_game_names_a_map_are_read()
+    {
+        // Transit writes one spelling, a normal raid the other. Whichever came last is the raid
+        // you are in.
+        Append("application", "[Transit] Flag:None, RaidId:x, Count:0, Locations:TarkovStreets ->");
+
+        using var watcher = new LogWatcher(_install);
+        watcher.Poll();
+        Assert.Equal("TarkovStreets", watcher.CurrentLocationId);
+
+        Append("application", "TRACE-NetworkGameCreate profileStatus: 'Status: Busy, Location: Interchange, Sid: y'");
+        watcher.Poll();
+
+        Assert.Equal("Interchange", watcher.CurrentLocationId);
+    }
+
+    [Fact]
     public void Going_back_to_the_menu_ends_the_raid()
     {
         Append("application", "Locations:bigmap ->");

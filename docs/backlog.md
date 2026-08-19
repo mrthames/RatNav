@@ -269,6 +269,15 @@ them separately.
   - Note: "barters being tracked" depends on the barter-tracking feature, which is still open. The
     other two do not.
 
+### Raid detection
+
+- [x] **Raid detection only worked for transit raids.** `Locations:` comes from a `[Transit]` line,
+  which the game writes only when you arrive by transit — which is why Streets was detected and
+  Interchange silently never was. Every raid writes `Location: Interchange` inside a
+  `TRACE-NetworkGameCreate` line; both are read now, and the map is matched on its aliases, its
+  name and its normalized name, since the two lines spell it differently (`TarkovStreets` against
+  `Interchange`).
+
 ### Show a map without a raid
 
 - [x] **The overlay went blank with no plan and no raid.** It drew only when in a raid, so there

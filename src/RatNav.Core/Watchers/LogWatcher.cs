@@ -165,7 +165,7 @@ public sealed partial class LogWatcher : IDisposable
         foreach (var line in ReadNewLines(path))
         {
             // "[Transit] Flag:None, RaidId:..., Locations:bigmap ->" is what names the map.
-            var location = LocationLine().Match(line);
+            var location = LocationIn(line);
             if (location.Success)
             {
                 var id = location.Groups["location"].Value.Trim();
@@ -204,10 +204,8 @@ public sealed partial class LogWatcher : IDisposable
             var existing = LogSession.ReadAll(path);
             if (existing.Length == 0) return null;
 
-            var matches = LocationLine().Matches(existing);
-            if (matches.Count == 0) return null;
-
-            var last = matches[^1];
+            var last = LastLocationIn(existing);
+            if (!last.Success) return null;
 
             // A raid that has already finished is not one to resume. If the game went back to the
             // menu after the last map loaded, there is nothing live to pick up — and announcing
@@ -413,8 +411,47 @@ public sealed partial class LogWatcher : IDisposable
         _timer = null;
     }
 
+    /// <summary>
+    /// A raid starting, in either of the two ways the game says so.
+    ///
+    /// <para><c>Locations:</c> comes from a <c>[Transit]</c> line and is only written when you
+    /// arrive by transit — which is why Streets was detected and Interchange was not. Every raid,
+    /// transit or otherwise, writes <c>Location: Interchange</c> inside a
+    /// <c>TRACE-NetworkGameCreate</c> line, so that is the one to rely on.</para>
+    ///
+    /// <para>The two spell the map differently — <c>TarkovStreets</c> against <c>Interchange</c> —
+    /// so whatever is captured is matched against a map's aliases, its name, and its normalized
+    /// name rather than against one of them.</para>
+    /// </summary>
     [GeneratedRegex(@"Locations:(?<location>[^\s,\->]+)", RegexOptions.IgnoreCase)]
-    private static partial Regex LocationLine();
+    private static partial Regex TransitLocation();
+
+    /// <summary>
+    /// The line every raid writes, transit or not:
+    /// <c>TRACE-NetworkGameCreate profileStatus: '... Location: Interchange, Sid: ...'</c>
+    /// </summary>
+    [GeneratedRegex(@"\bLocation:\s*(?<location>[^,']+)", RegexOptions.IgnoreCase)]
+    private static partial Regex CreatedLocation();
+
+    /// <summary>Whichever of the two ways the game names a map appears in a line.</summary>
+    private static Match LocationIn(string text)
+    {
+        var transit = TransitLocation().Match(text);
+        return transit.Success ? transit : CreatedLocation().Match(text);
+    }
+
+    /// <summary>The last map named anywhere in a stretch of log, for catching up on startup.</summary>
+    private static Match LastLocationIn(string text)
+    {
+        Match? best = null;
+
+        foreach (Match match in TransitLocation().Matches(text).Concat(CreatedLocation().Matches(text)))
+        {
+            if (best is null || match.Index > best.Index) best = match;
+        }
+
+        return best ?? Match.Empty;
+    }
 
     [GeneratedRegex(@"pstrGameVersion:\s*(?<version>[\d.]+)", RegexOptions.IgnoreCase)]
     private static partial Regex VersionLine();
