@@ -331,6 +331,17 @@ them separately.
   - Size matters — it has to survive being pasted into Discord without wrapping into nonsense.
     Names are already resolved locally at import, so they need not travel.
 
+### Quick controls, and what fade means
+
+- [x] **Panel opacity is its own thing.** "Fade" was inking the map; how solid the *window* is —
+  how much of the game the bordered corner panel covers while you run around — is a separate
+  question, and the centred view has no border to fade at all. Per presentation, like everything
+  else about placement.
+- [x] **A quick bar for the three reached for constantly**: panel opacity, zoom, and still/follow.
+  The stack can stay folded and those are still to hand.
+- [x] **Ink is arrows, not a cycling button.** A single control reading "full" looks like a switch
+  that is on — nothing said three other levels existed, or that the drawn map is on one of them.
+
 ### Raster tiles as a base layer
 
 - [~] **A real raster base under the vector.** Asked for after seeing Map Genie.

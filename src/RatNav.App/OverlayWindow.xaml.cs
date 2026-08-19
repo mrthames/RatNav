@@ -161,7 +161,8 @@ public partial class OverlayWindow : Window
 
         FloorUp.Click += (_, _) => StepFloor(+1);
         FloorDown.Click += (_, _) => StepFloor(-1);
-        InkButton.Click += (_, _) => CycleInk();
+        InkBack.Click += (_, _) => CycleInk(-1);
+        InkNext.Click += (_, _) => CycleInk(+1);
         FadeUp.Click += (_, _) => StepFade(+0.1);
         FadeDown.Click += (_, _) => StepFade(-0.1);
         ZoomReset.Click += (_, _) => SetZoom(1);
@@ -181,6 +182,12 @@ public partial class OverlayWindow : Window
         DetachItems.Click += (_, _) => DetachItemsPanel();
         SwapSide.Click += (_, _) => SwapItemsSide();
         ItemsSplitter.DragDelta += OnItemsResize;
+
+        QuickFadeDown.Click += (_, _) => StepWindowOpacity(-0.1);
+        QuickFadeUp.Click += (_, _) => StepWindowOpacity(+0.1);
+        QuickZoomDown.Click += (_, _) => SetZoom(Placement.Zoom / 1.25);
+        QuickZoomUp.Click += (_, _) => SetZoom(Placement.Zoom * 1.25);
+        QuickFollow.Click += (_, _) => ToggleFollowing();
         CollapseItems.Click += (_, _) => ToggleItems();
         CollapseControls.Click += (_, _) => ShowControls(false);
         ExpandControls.Click += (_, _) => ShowControls(true);
@@ -347,6 +354,9 @@ public partial class OverlayWindow : Window
             Width = placement.Width;
             Height = placement.Height;
         }
+
+        // The window itself, not the map inside it.
+        Opacity = Math.Clamp(placement.WindowOpacity, 0.2, 1.0);
 
         if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
         {
@@ -528,7 +538,6 @@ public partial class OverlayWindow : Window
     {
         if (_rasterFor == mapId) return;
 
-        _rasterFor = mapId;
         _raster = null;
 
         try
@@ -564,6 +573,11 @@ public partial class OverlayWindow : Window
             _raster = bitmap;
             _rasterAt = new Rect(
                 view.Left, view.Top, view.Right - view.Left, view.Bottom - view.Top);
+
+            // Only once it worked. Marking the map as done before fetching meant a single failed
+            // attempt — a slow first response, a dropped connection — was remembered as the
+            // answer and never retried.
+            _rasterFor = mapId;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException
             or JsonException or NotSupportedException or System.IO.IOException or UriFormatException)
@@ -645,11 +659,32 @@ public partial class OverlayWindow : Window
         Redraw();
     }
 
-    private void CycleInk()
+    /// <summary>
+    /// Steps through the ink levels.
+    ///
+    /// <para>Arrows rather than one button that cycles. A single control reading "full" looks like
+    /// a switch that is on, so there was nothing to say three other levels existed — or that the
+    /// drawn map lives on one of them.</para>
+    /// </summary>
+    private void CycleInk(int direction)
     {
         var at = Array.IndexOf(InkLevels, Placement.Ink);
-        Place(p => p with { Ink = InkLevels[(at + 1 + InkLevels.Length) % InkLevels.Length] });
+        var next = (at + direction + InkLevels.Length) % InkLevels.Length;
+
+        Place(p => p with { Ink = InkLevels[next] });
         Redraw();
+    }
+
+    /// <summary>
+    /// How solid the panel is. Kept apart from the map's fade, which inks the drawing — this is
+    /// how much of the game the window covers while you are running around.
+    /// </summary>
+    private void StepWindowOpacity(double by)
+    {
+        Place(p => p with { WindowOpacity = Math.Clamp(p.WindowOpacity + by, 0.2, 1.0) });
+
+        ApplyBounds();
+        Draw();
     }
 
     private void StepFade(double by)
@@ -1135,10 +1170,16 @@ public partial class OverlayWindow : Window
         FloorUp.IsEnabled = _floors.Count > 0 && at < _floors.Count - 1;
         FloorDown.IsEnabled = _floors.Count > 0 && at > 0;
 
-        InkButton.Content = Placement.Ink;
+        InkButton.Text = Placement.Ink;
         FadeText.Text = $"{_settings.Overlay.MapOpacity * 100:F0}%";
         ZoomReset.Content = $"{Placement.Zoom:0.0}×";
         FollowButton.Content = Following ? "follows you" : "still";
+
+        // The quick bar carries the three reached for constantly, so they do not need the stack
+        // opened to get at them.
+        QuickFadeText.Text = $"{Placement.WindowOpacity * 100:F0}%";
+        QuickZoomText.Text = $"{Placement.Zoom:0.0}×";
+        QuickFollow.Content = Following ? "follows" : "still";
 
         // Only worth offering when it would do something. A crosshair that is always lit teaches
         // people to ignore it.
@@ -1183,7 +1224,12 @@ public partial class OverlayWindow : Window
                 Source = _raster,
                 Width = Math.Max(1, bottomRight.X - topLeft.X),
                 Height = Math.Max(1, bottomRight.Y - topLeft.Y),
-                Opacity = opacity,
+
+                // Brighter than the fade dial alone would give. That dial decides how much of the
+                // game shows through a map drawn in thin lines; a photograph at 30% over a dark
+                // panel is simply muddy. It still responds — turning fade down dims the picture —
+                // it just does not start invisible.
+                Opacity = Math.Min(1, 0.25 + opacity * 1.8),
                 Stretch = Stretch.Fill,
                 IsHitTestVisible = false,
             };

@@ -328,6 +328,16 @@ public sealed record RatNavSettings
         /// </summary>
         public string Ink { get; init; } = "graphical";
 
+        /// <summary>
+        /// How solid the whole panel is, 0.2 to 1.
+        ///
+        /// <para>Different from the map's own fade, which decides how heavily the drawing is inked.
+        /// This is the window: the corner view is a bordered panel sitting on the screen, and how
+        /// much of the game it blocks while you run around is a separate question from how dense
+        /// the map inside it looks.</para>
+        /// </summary>
+        public double WindowOpacity { get; init; } = 1.0;
+
         /// <summary>True before anyone has arranged this presentation, so a sensible default can be used.</summary>
         public bool Unplaced => Width <= 0 || Height <= 0;
     }
