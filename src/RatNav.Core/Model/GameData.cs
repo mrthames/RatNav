@@ -123,8 +123,20 @@ public sealed record MapImage
     /// <summary>Remote URL the image is downloaded from. Images are never committed to the repo.</summary>
     public required string SourceUrl { get; init; }
 
-    /// <summary>Degrees the map image is rotated relative to game world axes (0, 90, 180, 270).</summary>
+    /// <summary>
+    /// What tarkovdata declares as the map's rotation. Kept for reference and display only —
+    /// it does not determine the coordinate mapping. See <see cref="Mapping"/>.
+    /// </summary>
     public required int CoordinateRotation { get; init; }
+
+    /// <summary>How world axes lay onto this image. Solved per map; never computed from the rotation.</summary>
+    public AxisMapping Mapping { get; init; } = AxisMapping.Direct;
+
+    /// <summary>How far the mapping can be trusted, and why.</summary>
+    public CalibrationConfidence Confidence { get; init; } = CalibrationConfidence.Unknown;
+
+    /// <summary>Plain-language account of how the mapping was arrived at.</summary>
+    public string? CalibrationReason { get; init; }
 
     /// <summary>Game-world bounds of the image, as [[x1, z1], [x2, z2]].</summary>
     public required double[][] Bounds { get; init; }
@@ -133,17 +145,11 @@ public sealed record MapImage
     public int PixelHeight { get; init; }
 
     /// <summary>
-    /// Whether this map's calibration has been checked against a real in-game position.
-    ///
-    /// The rule for turning world coordinates into image coordinates was derived from marked
-    /// positions on maps declaring 180° and 90°. Two rules fit that evidence — <c>180 − r</c> and
-    /// <c>|180 − r|</c> — and they agree everywhere except 270°, where they point opposite ways.
-    /// The Lab is the only 270° map in the game, so it is the only place the remaining ambiguity
-    /// can show up, and the only place it can be resolved.
-    ///
-    /// Surfaced rather than hidden: a pin that might be wrong should say so.
+    /// Whether pins on this map can be trusted. Surfaced rather than hidden: a pin that might be
+    /// wrong should say so, and a map nobody has confirmed is exactly where a silent error hides.
     /// </summary>
-    public bool CalibrationVerified => CoordinateRotation is 0 or 90 or 180;
+    public bool CalibrationVerified =>
+        Confidence is CalibrationConfidence.Verified or CalibrationConfidence.Derived;
 }
 
 public sealed record MapExtract

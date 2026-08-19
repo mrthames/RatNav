@@ -11,16 +11,14 @@ namespace RatNav.Core.Tests;
 /// </summary>
 public class CoordinateTransformTests
 {
-    // 180 is the identity case under the 180-minus-rotation rule, and it is also what almost
-    // every real map declares — so it is the right default for tests about bounds rather than
-    // rotation.
-    private static MapImage Square(int rotation = 180) => new()
+    private static MapImage Square(AxisMapping? mapping = null) => new()
     {
         SourceUrl = "https://example.invalid/test.svg",
-        CoordinateRotation = rotation,
+        CoordinateRotation = 180,
         Bounds = [[-100, -100], [100, 100]],
         PixelWidth = 1000,
         PixelHeight = 1000,
+        Mapping = mapping ?? AxisMapping.Direct,
     };
 
     [Fact]
@@ -60,6 +58,7 @@ public class CoordinateTransformTests
             Bounds = [[100, -100], [-100, 100]],
             PixelWidth = 1000,
             PixelHeight = 1000,
+            Mapping = AxisMapping.Direct,
         };
 
         var t = new CoordinateTransform(image);
@@ -74,13 +73,13 @@ public class CoordinateTransformTests
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(90)]
-    [InlineData(180)]
-    [InlineData(270)]
-    public void Pixel_conversion_round_trips_back_to_world_coordinates(int rotation)
+    [InlineData(false, 1, 1)]
+    [InlineData(false, -1, 1)]
+    [InlineData(true, 1, -1)]
+    [InlineData(true, -1, -1)]
+    public void Pixel_conversion_round_trips_back_to_world_coordinates(bool swapped, int signU, int signV)
     {
-        var t = new CoordinateTransform(Square(rotation));
+        var t = new CoordinateTransform(Square(new AxisMapping(swapped, signU, signV)));
         var original = new GamePosition(37.5, 2.5, -62.25);
 
         var round = t.ToGamePosition(t.ToPixels(original), original.Y);
@@ -111,6 +110,7 @@ public class CoordinateTransformTests
             SourceUrl = "https://example.invalid/Customs.svg",
             CoordinateRotation = 180,
             Bounds = [[698, -307], [-371, 237]],
+            Mapping = CalibrationSolver.VerifiedMappings["customs"],
         };
 
         var point = new CoordinateTransform(customs)
@@ -130,6 +130,9 @@ public class CoordinateTransformTests
             SourceUrl = "https://example.invalid/Factory.svg",
             CoordinateRotation = 90,
             Bounds = [[-67, 69], [76.6, -65.5]],
+            Mapping = CalibrationSolver.VerifiedMappings["factory"],
+            PixelWidth = 131,
+            PixelHeight = 142,
         };
 
         var t = new CoordinateTransform(factory);
@@ -150,34 +153,70 @@ public class CoordinateTransformTests
         Assert.InRange(ScreenshotFilename.Normalize(bearing), 138, 156);
     }
 
-    [Theory]
-    [InlineData(180, 0)]     // Customs and almost every other map
-    [InlineData(90, 90)]     // Factory
-    [InlineData(270, -90)]   // The Lab — predicted, not yet measured
-    public void The_applied_rotation_is_180_minus_the_declared_one(int declared, int applied)
+    [Fact]
+    public void Declared_rotation_does_not_affect_anything()
     {
-        // A point on the +X axis, so the rotation is easy to see.
-        var actual = new CoordinateTransform(Square(declared)).ToNormalized(new GamePosition(100, 0, 0));
+        // coordinateRotation is kept for display only. Deriving the mapping from it produced a
+        // rule that fit two maps and put every one of The Lab's extracts off the image.
+        var a = Square() with { CoordinateRotation = 90 };
+        var b = Square() with { CoordinateRotation = 270 };
 
-        var radians = applied * Math.PI / 180.0;
-        var expectedX = (100 * Math.Cos(radians) + 100) / 200;
-        var expectedY = (100 * Math.Sin(radians) + 100) / 200;
+        var pa = new CoordinateTransform(a).ToNormalized(new GamePosition(50, 0, -25));
+        var pb = new CoordinateTransform(b).ToNormalized(new GamePosition(50, 0, -25));
 
-        Assert.Equal(expectedX, actual.X, 6);
-        Assert.Equal(expectedY, actual.Y, 6);
+        Assert.Equal(pa.X, pb.X, 9);
+        Assert.Equal(pa.Y, pb.Y, 9);
     }
 
-    [Theory]
-    [InlineData(0, 30, 30)]
-    [InlineData(180, 30, 210)]
-    [InlineData(90, 350, 260)]
-    [InlineData(270, 0, 90)]
-    public void A_heading_is_turned_against_how_the_map_was_drawn(int rotation, double heading, double expected)
+    [Fact]
+    public void A_swapped_mapping_sends_the_x_axis_down_the_image()
     {
-        // Minus, not plus. Adding is indistinguishable on a 180 map and points the facing cone
-        // sideways on Factory and The Lab.
-        var t = new CoordinateTransform(Square(rotation));
-        Assert.Equal(expected, t.ToImageHeading(heading), 3);
+        var direct = new CoordinateTransform(Square()).ToNormalized(new GamePosition(100, 0, 0));
+        Assert.Equal(1.0, direct.X, 6);
+        Assert.Equal(0.5, direct.Y, 6);
+
+        var swapped = new CoordinateTransform(Square(new AxisMapping(true, 1, 1)))
+            .ToNormalized(new GamePosition(100, 0, 0));
+        Assert.Equal(0.5, swapped.X, 6);
+        Assert.Equal(1.0, swapped.Y, 6);
+    }
+
+    [Fact]
+    public void A_heading_follows_the_same_mapping_as_the_pins()
+    {
+        // The cone is derived from the position mapping rather than from a rule of its own, so
+        // the two cannot drift apart. With these bounds both spans are positive, so world east
+        // runs right across the image and world north runs down it.
+        var direct = new CoordinateTransform(Square());
+        Assert.Equal(180, direct.ToImageHeading(0), 3);   // north -> down
+        Assert.Equal(90, direct.ToImageHeading(90), 3);   // east  -> right
+
+        // Flipping the vertical axis flips which way north points, and the heading follows
+        // without anything else being told about it.
+        var flipped = new CoordinateTransform(Square(new AxisMapping(false, 1, -1)));
+        Assert.Equal(0, flipped.ToImageHeading(0), 3);
+    }
+
+    [Fact]
+    public void Real_customs_headings_match_what_was_measured_in_game()
+    {
+        // Measured, not assumed: walking between two screenshot positions on Customs produced a
+        // world bearing of 250.1 degrees and an on-image bearing of 70.3 — the image is a half
+        // turn from world north. Customs' bounds run backwards on the horizontal axis, which is
+        // what produces that without any rotation being applied.
+        var customs = new MapImage
+        {
+            SourceUrl = "https://example.invalid/Customs.svg",
+            CoordinateRotation = 180,
+            Bounds = [[698, -307], [-371, 237]],
+            PixelWidth = 1062,
+            PixelHeight = 535,
+            Mapping = CalibrationSolver.VerifiedMappings["customs"],
+        };
+
+        var image = new CoordinateTransform(customs).ToImageHeading(250.1);
+
+        Assert.Equal(70.3, image, 0);
     }
 
     [Fact]

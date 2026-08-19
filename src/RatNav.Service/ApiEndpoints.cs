@@ -314,8 +314,17 @@ public sealed record MapSummary
     public int CoordinateRotation { get; init; }
     public int ExtractCount { get; init; }
 
-    /// <summary>False where the coordinate rule has not been checked against a real position.</summary>
+    /// <summary>False where the mapping has not been established with confidence.</summary>
     public bool CalibrationVerified { get; init; }
+
+    /// <summary>"Verified", "Derived", "Weak" or "Unknown".</summary>
+    public string Confidence { get; init; } = "Unknown";
+
+    /// <summary>How the mapping was arrived at, in words, for the UI to show.</summary>
+    public string? CalibrationReason { get; init; }
+
+    /// <summary>The solved mapping itself, e.g. "(-z, x)".</summary>
+    public string? Mapping { get; init; }
 
     public static MapSummary From(MapDef map) => new()
     {
@@ -324,6 +333,9 @@ public sealed record MapSummary
         NormalizedName = map.NormalizedName,
         Calibrated = map.Image is not null,
         CalibrationVerified = map.Image?.CalibrationVerified ?? false,
+        Confidence = map.Image?.Confidence.ToString() ?? "Unknown",
+        CalibrationReason = map.Image?.CalibrationReason,
+        Mapping = map.Image?.Mapping.ToString(),
         ImageUrl = map.Image?.SourceUrl,
         CoordinateRotation = map.Image?.CoordinateRotation ?? 0,
         ExtractCount = map.Extracts.Count,

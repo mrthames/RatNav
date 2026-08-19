@@ -8,48 +8,23 @@ public readonly record struct MapPoint(double X, double Y);
 /// <summary>
 /// Converts Escape from Tarkov world coordinates into pixels on a map image, and back.
 ///
-/// Calibration comes from TarkovTracker/tarkovdata's maps.json, which gives each map
-/// <c>bounds</c> — two opposite corners of the image, in world coordinates — and a
-/// <c>coordinateRotation</c>.
+/// <para>Calibration is an <see cref="AxisMapping"/> — which world axis runs across the image,
+/// which runs down it, and the sign of each — combined with the <c>bounds</c> that
+/// TarkovTracker/tarkovdata publishes per map. The mapping is solved per map by
+/// <see cref="CalibrationSolver"/>, because it is a property of how each drawing was made and
+/// cannot be computed from the declared rotation. Trying to compute it produced a rule that fit
+/// two maps and was badly wrong on a third; docs/calibration.md has the full account.</para>
 ///
-/// <para><b>The rotation applied to a position is <c>180° − coordinateRotation</c>, not
-/// <c>coordinateRotation</c>.</b> That is measured, not reasoned. Players marked their own
-/// position on two maps with different rotations, and only this rule fits both:</para>
+/// <para>Bounds are corner pairs, not min/max. A map whose image runs opposite to the world axis
+/// has its first bound larger than its second, and the normalisation below honours that on its
+/// own — sorting them into min/max would mirror the map.</para>
 ///
-/// <list type="table">
-///   <item><term>Customs, rotation 180 → apply 0°</term>
-///         <description>pin 66.6%, 30.8% vs marked 66.7%, 30.9% — 0.1pp</description></item>
-///   <item><term>Factory, rotation 90 → apply +90°</term>
-///         <description>two points, 5.3pp and 6.1pp, both offset the same direction</description></item>
-/// </list>
-///
-/// <para>Customs alone was misleading: at 180° the correct rule and "apply nothing" are the same
-/// thing, so the first version of this class simply dropped the rotation and looked right. Factory
-/// is where that fell apart. It was settled by the <i>direction</i> between two marked points
-/// rather than either point alone — the candidate rules predicted bearings of 115° and 148° for
-/// the same walk, and the measured bearing was 146°, which is well outside how far a click can
-/// slip.</para>
-///
-/// <para>The residual on Factory is a consistent few percent in one direction on both points,
-/// which reads as click bias rather than a calibration error. Worth revisiting if a map ever
-/// looks systematically shifted.</para>
-///
-/// <para><b>Open:</b> The Lab is the only untested rotation (270°, so this predicts −90°).
-/// Every other map is 180°, which Customs covers.</para>
-///
-/// <para>Bounds are corner pairs rather than min/max on purpose: a map whose image runs opposite
-/// to the world axis has its first bound larger than its second, and the normalization below
-/// flips direction naturally because the span comes out negative.</para>
-///
-/// <para>Only the ground plane matters here. EFT's Y axis is vertical (which floor you are on)
+/// <para>Only the ground plane matters here. EFT's Y axis is vertical — which floor you are on —
 /// and is carried separately for multi-level maps.</para>
 /// </summary>
 public sealed class CoordinateTransform
 {
     private readonly MapImage _image;
-
-    private readonly double _cos;
-    private readonly double _sin;
 
     public CoordinateTransform(MapImage image)
     {
@@ -58,11 +33,9 @@ public sealed class CoordinateTransform
             throw new ArgumentException("Map bounds must be two corner pairs.", nameof(image));
 
         _image = image;
-
-        var radians = (180.0 - image.CoordinateRotation) * Math.PI / 180.0;
-        _cos = Math.Cos(radians);
-        _sin = Math.Sin(radians);
     }
+
+    private AxisMapping Mapping => _image.Mapping;
 
     private double X1 => _image.Bounds[0][0];
     private double Y1 => _image.Bounds[0][1];
@@ -72,19 +45,17 @@ public sealed class CoordinateTransform
     /// <summary>Where a world position falls on the map image, in pixels.</summary>
     public MapPoint ToPixels(GamePosition position)
     {
-        var (rx, ry) = Rotate(position.X, position.Z);
-        var (u, v) = Normalized(rx, ry);
+        var (u, v) = Normalized(position);
         return new MapPoint(u * _image.PixelWidth, v * _image.PixelHeight);
     }
 
     /// <summary>
-    /// Where a world position falls on the map image as a fraction of its size (0..1).
-    /// Useful for renderers that scale the image themselves — which both of ours do.
+    /// Where a world position falls on the image as a fraction of its size (0..1).
+    /// This is the primary form: both renderers scale the image themselves.
     /// </summary>
     public MapPoint ToNormalized(GamePosition position)
     {
-        var (rx, ry) = Rotate(position.X, position.Z);
-        var (u, v) = Normalized(rx, ry);
+        var (u, v) = Normalized(position);
         return new MapPoint(u, v);
     }
 
@@ -94,13 +65,10 @@ public sealed class CoordinateTransform
         var u = _image.PixelWidth == 0 ? 0 : pixel.X / _image.PixelWidth;
         var v = _image.PixelHeight == 0 ? 0 : pixel.Y / _image.PixelHeight;
 
-        var rx = X1 + u * (X2 - X1);
-        var ry = Y1 + v * (Y2 - Y1);
+        var a = X1 + u * (X2 - X1);
+        var b = Y1 + v * (Y2 - Y1);
 
-        // Undo the rotation.
-        var x = rx * _cos + ry * _sin;
-        var z = -rx * _sin + ry * _cos;
-
+        var (x, z) = Mapping.Reverse(a, b);
         return new GamePosition(x, y, z);
     }
 
@@ -108,16 +76,30 @@ public sealed class CoordinateTransform
     /// A compass heading turned into image space, so a facing cone drawn on the map points the
     /// same way the player does.
     ///
-    /// The direction is <b>minus</b> the rotation, measured the same way as the position rule: on
-    /// Customs a walk between two known points appeared on the image 180° from its world bearing,
-    /// and on Factory 90° the other way. Adding instead of subtracting looks correct on every 180°
-    /// map — because ±180 are the same angle — and points the cone sideways on Factory and The Lab.
+    /// <para>This is <i>derived from the position mapping</i> rather than being a rule of its own:
+    /// it projects a short step in the given direction and measures the angle that step makes on
+    /// the image. Doing it this way means the cone cannot disagree with the pins — an earlier
+    /// version kept a separate heading rule, and separate rules drift apart. The image's
+    /// proportions are included, because an angle on a non-square image is not the same angle in
+    /// normalised space.</para>
     /// </summary>
     public double ToImageHeading(double headingDegrees)
-        => ScreenshotFilename.Normalize(headingDegrees - _image.CoordinateRotation);
+    {
+        var radians = headingDegrees * Math.PI / 180.0;
 
-    private (double X, double Y) Rotate(double x, double z)
-        => (x * _cos - z * _sin, x * _sin + z * _cos);
+        // Bearing 0 is +Z (north) and 90 is +X (east), matching BearingTo.
+        var from = ToNormalized(new GamePosition(0, 0, 0));
+        var to = ToNormalized(new GamePosition(Math.Sin(radians), 0, Math.Cos(radians)));
+
+        var width = _image.PixelWidth > 0 ? _image.PixelWidth : 1;
+        var height = _image.PixelHeight > 0 ? _image.PixelHeight : 1;
+
+        var du = (to.X - from.X) * width;
+        var dv = (to.Y - from.Y) * height;
+
+        // Screen space: 0 is up, angles increase clockwise, and V grows downward.
+        return ScreenshotFilename.Normalize(Math.Atan2(du, -dv) * 180.0 / Math.PI);
+    }
 
     /// <summary>Straight-line distance between two world positions on the ground plane, in metres.</summary>
     public static double GroundDistance(GamePosition a, GamePosition b)
@@ -127,15 +109,13 @@ public sealed class CoordinateTransform
         return Math.Sqrt(dx * dx + dz * dz);
     }
 
-    /// <summary>
-    /// Compass bearing from one world position to another, in degrees (0 = north, clockwise).
-    /// </summary>
+    /// <summary>Compass bearing from one world position to another, in degrees (0 = north, clockwise).</summary>
     public static double BearingTo(GamePosition from, GamePosition to)
         => ScreenshotFilename.Normalize(Math.Atan2(to.X - from.X, to.Z - from.Z) * 180.0 / Math.PI);
 
     /// <summary>
     /// How far to turn to face a target, in degrees: negative is left, positive is right.
-    /// This is what the overlay actually shows — "30° right" beats "bearing 147°".
+    /// This is what the overlay shows — "30° right" beats "bearing 147°".
     /// </summary>
     public static double RelativeBearing(double headingDegrees, double targetBearingDegrees)
     {
@@ -143,13 +123,15 @@ public sealed class CoordinateTransform
         return delta > 180.0 ? delta - 360.0 : delta;
     }
 
-    private (double U, double V) Normalized(double rx, double ry)
+    private (double U, double V) Normalized(GamePosition position)
     {
-        var spanX = X2 - X1;
-        var spanY = Y2 - Y1;
+        var (a, b) = Mapping.Apply(position.X, position.Z);
+
+        var spanU = X2 - X1;
+        var spanV = Y2 - Y1;
 
         return (
-            spanX == 0 ? 0 : (rx - X1) / spanX,
-            spanY == 0 ? 0 : (ry - Y1) / spanY);
+            spanU == 0 ? 0 : (a - X1) / spanU,
+            spanV == 0 ? 0 : (b - Y1) / spanV);
     }
 }
