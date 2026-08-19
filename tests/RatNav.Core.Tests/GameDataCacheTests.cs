@@ -141,14 +141,19 @@ public class GameDataCacheTests : IDisposable
         }
     }
 
-    /// <summary>Returns just enough of each response shape to exercise the happy path.</summary>
+    /// <summary>
+    /// Returns just enough of each JSON endpoint to exercise the happy path, including the
+    /// paired translation documents that turn keys into readable names.
+    /// </summary>
     private sealed class CannedHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
-            var body = request.RequestUri!.Host.Contains("githubusercontent")
+            var path = request.RequestUri!.AbsolutePath;
+
+            var body = request.RequestUri.Host.Contains("githubusercontent")
                 ? "{}"
-                : Canned(request);
+                : Canned(path);
 
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -156,17 +161,17 @@ public class GameDataCacheTests : IDisposable
             });
         }
 
-        private static string Canned(HttpRequestMessage request)
+        private static string Canned(string path) => path switch
         {
-            var query = request.Content?.ReadAsStringAsync().Result ?? "";
-
-            if (query.Contains("RatNavItems"))
-                return """{"data":{"items":[{"id":"watch","name":"Bronze pocket watch","shortName":"Watch","width":1,"height":1}]}}""";
-            if (query.Contains("RatNavTasks"))
-                return """{"data":{"tasks":[]}}""";
-            if (query.Contains("RatNavHideout"))
-                return """{"data":{"hideoutStations":[]}}""";
-            return """{"data":{"maps":[]}}""";
-        }
+            "/regular/items" =>
+                """{"data":{"items":{"watch":{"name":"watch Name","shortName":"watch ShortName","width":1,"height":1}}}}""",
+            "/regular/items_en" =>
+                """{"data":{"watch Name":"Bronze pocket watch","watch ShortName":"Watch"}}""",
+            "/regular/tasks" => """{"data":{"tasks":{}}}""",
+            "/regular/hideout" => """{"data":{}}""",
+            "/regular/maps" => """{"data":{"maps":{}}}""",
+            "/regular/traders" => """{"data":{"traders":{}}}""",
+            _ => """{"data":{}}""",
+        };
     }
 }

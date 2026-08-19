@@ -96,6 +96,46 @@ A compass reading that rises when you turn right is correct. The image-space dir
 measured separately, from how a walk between two known points appears on the image: 180° from its
 world bearing on Customs, 90° the other way on Factory. Hence *minus* the rotation.
 
+## Correction: the rule does not generalise
+
+The rule above was derived from two maps and **is wrong as a universal law.** Published extract
+coordinates — dozens per map, from `json.tarkov.dev` — contradict it:
+
+- **The Lab** declares 270°, so the rule applies −90°. Under that, **all 7 of its extracts land
+  outside the image**. Under no rotation at all, all 7 land inside. The rule is simply wrong there.
+- The rule happened to be right for Customs and Factory because their declared rotations coincided
+  with their actual axis orientations. Two maps was not enough to tell a rule from a coincidence.
+
+**Axis orientation is a per-map property and is not derivable from `coordinateRotation`.**
+
+There is, however, a purely geometric way to determine part of it. The world span mapped to the
+image width and the span mapped to its height must share a metres-per-pixel scale, so comparing
+aspect ratios reveals whether the axes are swapped, with no human input:
+
+| map | verdict | confidence |
+|---|---|---|
+| customs | direct (x → width) | 1.0% vs 290% |
+| factory | **swapped** (x → height) | 0.9% vs 15% |
+| shoreline | direct | 1.3% vs 131% |
+| lighthouse | direct | 0.1% vs 62% |
+| reserve | **swapped** | 4.5% vs 19% |
+| woods | direct | 3.7% vs 6.2% — weak, near-square map |
+| interchange | undecidable | 0.3% vs 0.3% — perfectly square image |
+
+What that test *cannot* determine is mirroring: flipping the sign of an axis mirrors the layout
+while keeping every extract inside the image and equally spread, so extracts alone can never
+distinguish it. **That needs exactly one known position per map** — which is what a player marking
+their own spot provides, and why the two marked maps are settled and the rest are not.
+
+So calibration should be solved per map and stored, not computed from a rule:
+
+1. Aspect ratio picks direct vs swapped, automatically.
+2. One marked in-game position resolves the two remaining sign flips.
+3. Extract positions sanity-check the result — they must land inside the image.
+
+Since RatNav is open source, a calibration solved once can ship in the repo and nobody else has to
+repeat it.
+
 ## What is still unproven
 
 Two rules fit every measurement so far, and they agree everywhere except one value:
@@ -106,9 +146,8 @@ Two rules fit every measurement so far, and they agree everywhere except one val
 | 90 | +90 | +90 | agree |
 | **270** | **−90** | **+90** | **disagree** |
 
-**The Lab is the only 270° map in the game.** It is therefore both the only place the remaining
-ambiguity can appear and the only place it can be resolved. Every other map declares 180°, which
-Customs covers, and Factory covers 90°.
+**Superseded — see the correction above.** The Lab's own extract positions show that neither form
+of the rule applies there, which is what exposed the rule as a coincidence rather than a law.
 
 RatNav ships the `180 − r` form, so it predicts **−90°**, i.e. `(z, −x)`, for The Lab.
 `MapImage.CalibrationVerified` returns false for 270° maps so the UI can say a pin might be wrong

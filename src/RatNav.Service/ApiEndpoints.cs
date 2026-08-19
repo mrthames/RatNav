@@ -123,7 +123,10 @@ public static class ApiEndpoints
             var pins =
                 from task in data.Tasks
                 from objective in task.Objectives
-                where objective.Position is not null && objective.MapIds.Contains(id)
+                // Match on the resolved map's own id, not the URL segment — the route accepts a
+                // normalized name too, and comparing that against tarkov.dev ids silently
+                // matched nothing.
+                where objective.Position is not null && objective.MapIds.Contains(map.Id)
                 let position = objective.Position.GetValueOrDefault()
                 let point = transform.ToNormalized(position)
                 select new ObjectivePin
