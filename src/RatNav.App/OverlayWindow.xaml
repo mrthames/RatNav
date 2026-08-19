@@ -175,10 +175,16 @@
                     </Border>
 
                     <!-- Grab the edge to give the list more room, or take it back. -->
-                    <GridSplitter x:Name="ItemsSplitter" Grid.Column="2" Visibility="Collapsed"
-                                  Width="5" HorizontalAlignment="Left"
-                                  Background="#3324313b" Cursor="SizeWE"
-                                  ResizeBehavior="PreviousAndNext" />
+                    <Thumb x:Name="ItemsSplitter" Grid.Column="2" Visibility="Collapsed"
+                           Width="7" HorizontalAlignment="Left" Cursor="SizeWE">
+                        <Thumb.Template>
+                            <ControlTemplate TargetType="Thumb">
+                                <Border Background="#3324313b">
+                                    <Rectangle Width="1" Fill="{StaticResource Line}" />
+                                </Border>
+                            </ControlTemplate>
+                        </Thumb.Template>
+                    </Thumb>
 
                     <Border x:Name="ItemsPanel" Grid.Column="2" Visibility="Collapsed"
                             Margin="6,0,0,0" Padding="6,4"

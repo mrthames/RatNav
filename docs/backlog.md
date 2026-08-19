@@ -257,8 +257,10 @@ them separately.
 
 - [x] **Scrolling over the items list scrolls the map instead.** The wheel handler is on the window,
   so it wins before the list's scroll viewer ever sees it.
-- [x] **The divider between map and list should be draggable.** Widen it to fit the longest item
-  name, and let it be adjusted by dragging left and right.
+- [x] **The divider between map and list should be draggable.** First attempt used a GridSplitter
+  sharing a column with the panel, which left its resize target ambiguous — it did nothing. Now a
+  Thumb, which reports how far it moved and nothing else. Default width raised 170 → 235 so a name
+  like "Chekannaya 15 apartment key" is not trimmed.
 - [x] **The swap-sides arrow does nothing.** Both it and the pop-out button were wired correctly —
   the frame drawn behind F9's chrome earlier this round had a background, which made it
   hit-testable and put it over every control in the panel. It is decoration; it no longer takes

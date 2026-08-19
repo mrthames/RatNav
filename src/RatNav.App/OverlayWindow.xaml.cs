@@ -157,6 +157,7 @@ public partial class OverlayWindow : Window
         ItemsButton.Click += (_, _) => ToggleItems();
         DetachItems.Click += (_, _) => DetachItemsPanel();
         SwapSide.Click += (_, _) => SwapItemsSide();
+        ItemsSplitter.DragDelta += OnItemsResize;
     }
 
     public event EventHandler? ExpandRequested;
@@ -242,11 +243,8 @@ public partial class OverlayWindow : Window
         else
         {
             // Where it ended up is where it should be next time — for this presentation only.
+            // The list width saves itself as it is dragged, so there is nothing to read back here.
             Place(p => p with { Left = Left, Top = Top, Width = Width, Height = Height });
-
-            // Including how wide the list was dragged to.
-            var width = _settings.Overlay.ItemsSide == "left" ? LeftSlot.Width.Value : RightSlot.Width.Value;
-            if (width > 0) Remember(_settings.Overlay with { ItemsWidth = width });
         }
     }
 
@@ -626,8 +624,7 @@ public partial class OverlayWindow : Window
             : System.Windows.HorizontalAlignment.Left;
 
         // The column the list is not in collapses, so the map keeps the space.
-        LeftSlot.Width = onLeft ? new GridLength(_settings.Overlay.ItemsWidth) : new GridLength(0);
-        RightSlot.Width = onLeft ? new GridLength(0) : new GridLength(_settings.Overlay.ItemsWidth);
+        ApplyItemsWidth();
 
         ItemsSplitter.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
 
@@ -713,6 +710,35 @@ public partial class OverlayWindow : Window
         };
 
         return section;
+    }
+
+    /// <summary>
+    /// Widens or narrows the items list.
+    ///
+    /// <para>Which way a drag grows the list depends on which side it is on: dragging left widens
+    /// a list on the right, and narrows one on the left.</para>
+    /// </summary>
+    private void OnItemsResize(object sender, DragDeltaEventArgs e)
+    {
+        var onLeft = _settings.Overlay.ItemsSide == "left";
+        var delta = onLeft ? e.HorizontalChange : -e.HorizontalChange;
+
+        var width = Math.Clamp(_settings.Overlay.ItemsWidth + delta, 90, Math.Max(120, ActualWidth - 140));
+
+        // Saved as it moves rather than at the end. A drag that is only committed on release loses
+        // everything if the mouse leaves the window, which over a game it frequently does.
+        Remember(_settings.Overlay with { ItemsWidth = width });
+        ApplyItemsWidth();
+    }
+
+    /// <summary>Puts the stored width onto whichever column the list is in.</summary>
+    private void ApplyItemsWidth()
+    {
+        var onLeft = _settings.Overlay.ItemsSide == "left";
+        var width = new GridLength(_settings.Overlay.ItemsWidth);
+
+        LeftSlot.Width = onLeft ? width : new GridLength(0);
+        RightSlot.Width = onLeft ? new GridLength(0) : width;
     }
 
     /// <summary>Moves the list to the other side of the map. The overlay can sit against either edge.</summary>

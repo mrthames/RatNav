@@ -387,7 +387,9 @@ public sealed record RatNavSettings
         /// How wide the items list is, in pixels. Dragged by the divider between it and the map,
         /// and remembered — item names vary enough in length that one fixed width suits nobody.
         /// </summary>
-        public double ItemsWidth { get; init; } = 170;
+        /// <para>Wide enough for a name like "Chekannaya 15 apartment key" without trimming it,
+        /// because a list of truncated names is a list you have to hover to read.</para>
+        public double ItemsWidth { get; init; } = 235;
 
         /// <summary>
         /// Sections of the items list that are folded away, by title. Remembered, because the
