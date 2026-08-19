@@ -15,7 +15,7 @@ public sealed record GameData
     /// until the six-hour age check happens to fire — so a new layer looks broken rather than
     /// absent, and the person who has it worst is whoever just updated.</para>
     /// </summary>
-    public const int CurrentSchema = 2;
+    public const int CurrentSchema = 3;
 
     /// <summary>The schema this copy was written with. Zero on anything written before schemas.</summary>
     public int Schema { get; init; }
@@ -30,6 +30,8 @@ public sealed record GameData
     public IReadOnlyList<HideoutStation> HideoutStations { get; init; } = [];
     public IReadOnlyList<MapDef> Maps { get; init; } = [];
     public IReadOnlyList<BarterDef> Barters { get; init; } = [];
+
+    public IReadOnlyList<CraftDef> Crafts { get; init; } = [];
     public IReadOnlyList<TraderDef> Traders { get; init; } = [];
 }
 
@@ -78,6 +80,24 @@ public sealed record BarterDef
 /// that way — "155.1" is real data, not a mistake.
 /// </summary>
 public readonly record struct BarterItem(string ItemId, double Count);
+
+/// <summary>
+/// A hideout craft: what it consumes, what it produces, and the station level that can run it.
+/// </summary>
+public sealed record CraftDef
+{
+    public required string Id { get; init; }
+    public required string StationId { get; init; }
+    public string? StationName { get; init; }
+
+    /// <summary>The station level needed. A craft you cannot run is not one to be hoarding for.</summary>
+    public int StationLevel { get; init; }
+
+    public TimeSpan Duration { get; init; }
+
+    public IReadOnlyList<BarterItem> RequiredItems { get; init; } = [];
+    public BarterItem? ProducedItem { get; init; }
+}
 
 /// <summary>A quest, as tarkov.dev models it.</summary>
 public sealed record TaskDef

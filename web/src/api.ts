@@ -66,6 +66,11 @@ export interface TrackedItem {
   remaining: number
   foundInRaid: boolean
   isKey: boolean
+  /** How many the barters and crafts you are working towards want. */
+  tradeNeeded: number
+  /** Which trades want it — "Therapist LL2 · Dorm room 303 key". */
+  tradeFor: string[]
+  tradeIsCraftOnly: boolean
   watched: boolean
   watchNote: string | null
   watchTarget: number | null
@@ -207,6 +212,30 @@ export interface PlannableObjective {
   place: string | null
   neededKeyItemIds: string[]
   itemIds: string[]
+}
+
+export interface Trade {
+  id: string
+  /** "barter" or "craft". */
+  kind: 'barter' | 'craft'
+  /** The trader or station offering it. */
+  source: string
+  /** Loyalty level for a barter, station level for a craft. */
+  level: number
+  makes: string
+  makesItemId: string | null
+  costs: TradeCost[]
+  /** Whether you can actually do it today. */
+  available: boolean
+  tracked: boolean
+  times: number
+}
+
+export interface TradeCost {
+  itemId: string
+  name: string
+  count: number
+  have: number
 }
 
 export interface RaidStop {
@@ -382,6 +411,24 @@ export const api = {
   targetUpgrade: (stationId: string, level: number, targeted: boolean) =>
     post<unknown>(
       `/api/hideout/${encodeURIComponent(stationId)}/levels/${level}/target`, { targeted }),
+
+  /**
+   * Barters and crafts on offer, and which you are working towards.
+   *
+   * Gated by default to what you can actually do today — 789 barters and 214 crafts, and an
+   * ungated list is mostly things you cannot do, which is the same as no list.
+   */
+  trades: (options?: { q?: string; all?: boolean }) => {
+    const params = new URLSearchParams()
+    if (options?.q) params.set('q', options.q)
+    if (options?.all) params.set('all', 'true')
+
+    return get<Trade[]>(`/api/trades${params.size ? `?${params}` : ''}`)
+  },
+
+  trackTrade: (id: string, kind: 'barter' | 'craft', tracked: boolean, times = 1) =>
+    post<{ id: string; tracked: boolean }>(
+      `/api/trades/${encodeURIComponent(id)}`, { tracked, kind, times }),
 
   /** Quests whose every planned objective is done, waiting on a trader. */
   turnIns: () => get<TurnIn[]>('/api/raid/turn-ins'),

@@ -232,6 +232,50 @@ public sealed class TarkovDevClient(HttpClient http)
     }
 
     /// <summary>
+    /// Hideout crafts — what each one consumes, and the station level that can run it.
+    ///
+    /// <para>The level matters as much as the recipe. Two hundred crafts exist and most of them
+    /// need a station past where any given hideout is, so a list that ignores level is a list of
+    /// things to collect for a machine you do not own.</para>
+    /// </summary>
+    public async Task<IReadOnlyList<CraftDef>> GetCraftsAsync(CancellationToken ct = default)
+    {
+        var payload = await GetAsync<Envelope<List<CraftDto>>>($"{GameMode}/crafts", ct);
+        var crafts = payload.Data ?? [];
+
+        // Station names come from the hideout document, so a craft reads "Workbench 2" rather
+        // than a hex id and a number.
+        var (stations, text) = await FetchAsync<Dictionary<string, StationDto?>>($"{GameMode}/hideout", ct);
+
+        var names = stations
+            .Where(pair => pair.Value is not null)
+            .ToDictionary(pair => pair.Key, pair => text.Of(pair.Value!.Name) ?? pair.Key);
+
+        return
+        [
+            .. crafts
+                .Where(c => c.Id is { Length: > 0 } && c.Station is { Length: > 0 })
+                .Select(c => new CraftDef
+                {
+                    Id = c.Id!,
+                    StationId = c.Station!,
+                    StationName = names.GetValueOrDefault(c.Station!),
+                    StationLevel = c.Level,
+                    Duration = TimeSpan.FromSeconds(c.Duration),
+                    RequiredItems =
+                    [
+                        .. (c.RequiredItems ?? [])
+                            .Where(r => r.Item is { Length: > 0 })
+                            .Select(r => new BarterItem(r.Item!, r.Count))
+                    ],
+                    ProducedItem = c.ProductItem?.Item is { Length: > 0 } made
+                        ? new BarterItem(made, c.ProductItem.Count)
+                        : null,
+                })
+        ];
+    }
+
+    /// <summary>
     /// Traders, with what each loyalty level costs.
     ///
     /// <para>Loyalty gates quests, so without this RatNav offers work you cannot take yet. It
@@ -476,6 +520,10 @@ public sealed class TarkovDevClient(HttpClient http)
     // the source — it is how tarkov.dev records trades priced in currency, and 313 of the 789
     // barters have one. Reading them as integers failed the whole document.
     private sealed record BarterItemDto(string? Item, double Count);
+
+    private sealed record CraftDto(
+        string? Id, string? Station, int Level, double Duration,
+        List<BarterItemDto>? RequiredItems, BarterItemDto? ProductItem);
 
     private sealed record MapDto(
         string? Name, string? NormalizedName, string? NameId,

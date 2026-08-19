@@ -64,10 +64,11 @@ public static class ApiEndpoints
             if (state.Index is not { } index) return Results.Ok(Array.Empty<object>());
 
             var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
+            var trades = state.TradeDemand(tracker);
 
             var results = index.Search(q, limit ?? 25)
                 .Select(item => index.GetNeeds(item.Id) ?? new ItemNeeds { Item = item })
-                .Select(needs => TrackedItemView.From(tracker.Track(needs, progress, hideout)));
+                .Select(needs => TrackedItemView.From(tracker.Track(needs, progress, hideout, trades)));
 
             return Results.Ok(results);
         });
@@ -84,8 +85,10 @@ public static class ApiEndpoints
             var hideout = HideoutPlanner.Demand(
                 state.Upcoming(progress, lookAhead ?? settings.HideoutLookAhead));
 
+            var trades = state.TradeDemand(tracker);
+
             var rows = index.AllNeeded()
-                .Select(n => tracker.Track(n, progress, hideout))
+                .Select(n => tracker.Track(n, progress, hideout, trades))
                 .Where(t => t.Remaining > 0);
 
             // "next" answers a different question from the default. The default is what to grab if
@@ -107,6 +110,7 @@ public static class ApiEndpoints
             if (state.Index is not { } index) return Results.Ok(Array.Empty<object>());
 
             var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
+            var trades = state.TradeDemand(tracker);
 
             // The watchlist counts *your* number.
             //
@@ -119,7 +123,7 @@ public static class ApiEndpoints
                 var needs = index.GetNeeds(entry.ItemId)
                     ?? new ItemNeeds { Item = index.GetItem(entry.ItemId) ?? Unknown(entry.ItemId) };
 
-                var tracked = tracker.Track(needs, progress, hideout);
+                var tracked = tracker.Track(needs, progress, hideout, trades);
                 var target = entry.Target ?? 0;
 
                 return TrackedItemView.From(tracked) with
@@ -158,6 +162,106 @@ public static class ApiEndpoints
 
             ItemsChanged?.Invoke();
             return Results.Ok(Track(state, tracker, progress, settings, id));
+        });
+
+        // ---- barters and crafts you are working towards
+
+        // What is offerable, and what is already picked.
+        //
+        // Gated by what you can actually do: a barter needs the trader at that loyalty level, a
+        // craft needs the station built to that level. There are 789 barters and 214 crafts, and
+        // an ungated list is mostly things you cannot do — which is the same as no list.
+        api.MapGet("/trades", (
+            RatNavState state, ItemTracker tracker, ProgressStore progress,
+            string? q, bool? all) =>
+        {
+            if (state.Cache.Current is not { } data) return Results.Ok(Array.Empty<object>());
+
+            var picked = tracker.Trades.ToDictionary(t => t.Id, StringComparer.Ordinal);
+            var levels = progress.HideoutLevels;
+            var traderLevels = progress.TraderLevels;
+            var index = state.Index;
+
+            string? NameOf(string id) => index?.GetItem(id)?.Name;
+
+            var barters = data.Barters.Select(b => new TradeView
+            {
+                Id = b.Id,
+                Kind = "barter",
+                Source = b.TraderName ?? "a trader",
+                Level = b.MinTraderLevel,
+                Makes = b.OfferedItem is { } o ? NameOf(o.ItemId) ?? "something" : "something",
+                MakesItemId = b.OfferedItem?.ItemId,
+                Costs = [.. b.RequiredItems.Select(r => new TradeCost
+                {
+                    ItemId = r.ItemId,
+                    Name = NameOf(r.ItemId) ?? r.ItemId,
+                    Count = (int)Math.Ceiling(r.Count),
+                    Have = tracker.GetHave(r.ItemId),
+                })],
+
+                // Trader loyalty is something the player tells us, so an unset trader reads as
+                // level 1 rather than as locked. Guessing the other way would hide trades from
+                // anyone who has not filled the Traders tab in.
+                Available = b.MinTraderLevel
+                    <= Math.Max(1, traderLevels.GetValueOrDefault(b.TraderName ?? "", 1)),
+                Tracked = picked.TryGetValue(b.Id, out var pickedBarter),
+                Times = pickedBarter?.Times ?? 1,
+            });
+
+            var crafts = data.Crafts.Select(c => new TradeView
+            {
+                Id = c.Id,
+                Kind = "craft",
+                Source = c.StationName ?? "a station",
+                Level = c.StationLevel,
+                Makes = c.ProducedItem is { } made ? NameOf(made.ItemId) ?? "something" : "something",
+                MakesItemId = c.ProducedItem?.ItemId,
+                Costs = [.. c.RequiredItems.Select(r => new TradeCost
+                {
+                    ItemId = r.ItemId,
+                    Name = NameOf(r.ItemId) ?? r.ItemId,
+                    Count = (int)Math.Ceiling(r.Count),
+                    Have = tracker.GetHave(r.ItemId),
+                })],
+                Available = levels.GetValueOrDefault(c.StationId) >= c.StationLevel,
+                Tracked = picked.TryGetValue(c.Id, out var pickedCraft),
+                Times = pickedCraft?.Times ?? 1,
+            });
+
+            var rows = barters.Concat(crafts)
+                .Where(t => all == true || t.Available || t.Tracked)
+                .Where(t => q is not { Length: > 0 }
+                    || SearchText.Contains(t.Makes, q)
+                    || SearchText.Contains(t.Source, q)
+                    || t.Costs.Any(c => SearchText.Contains(c.Name, q)))
+
+                // Picked first, then by what it makes. Whatever you are working towards is the
+                // reason you opened this.
+                .OrderByDescending(t => t.Tracked)
+                .ThenBy(t => t.Makes, StringComparer.OrdinalIgnoreCase)
+                .Take(200);
+
+            return Results.Ok(rows);
+        });
+
+        api.MapPost("/trades/{id}", (ItemTracker tracker, string id, TradeRequest request) =>
+        {
+            if (request.Tracked)
+            {
+                var kind = request.Kind?.Equals("craft", StringComparison.OrdinalIgnoreCase) == true
+                    ? TradeKind.Craft
+                    : TradeKind.Barter;
+
+                tracker.TrackTrade(id, kind, request.Times ?? 1);
+            }
+            else
+            {
+                tracker.UntrackTrade(id);
+            }
+
+            ItemsChanged?.Invoke();
+            return Results.Ok(new { id, tracked = request.Tracked });
         });
 
         api.MapGet("/items/{id}", (RatNavState state, ItemTracker tracker, string id) =>
@@ -358,6 +462,7 @@ public static class ApiEndpoints
 
             // Split by reachability, not by depth. Wave 1 is what nothing is standing in the way
             // of; the rest is gated behind an upgrade you have not built.
+            var trades = state.TradeDemand(tracker);
             var now = HideoutPlanner.Demand(upcoming.Where(u => u.Wave == 1));
             var later = HideoutPlanner.Demand(upcoming.Where(u => u.Wave > 1));
 
@@ -382,7 +487,7 @@ public static class ApiEndpoints
                 // item might also belong — otherwise unchecking it appears to do nothing.
                 if (watched.Contains(id)) continue;
 
-                var tracked = tracker.Track(needs, progress, now);
+                var tracked = tracker.Track(needs, progress, now, trades);
 
                 if (tracked.Remaining > 0 && (tracked.QuestNeeded > 0 || tracked.HideoutNeeded > 0))
                 {
@@ -442,8 +547,36 @@ public static class ApiEndpoints
                 });
             }
 
+            // The barters and crafts being worked towards, as their own sections under the
+            // watchlist.
+            //
+            // Their own rows rather than folded into the counts above, and deliberately so: an
+            // item wanted three times for a quest and seven for a barter is two reasons, and one
+            // row reading "10" would hide that finishing the quest leaves seven still to find.
+            foreach (var (itemId, need) in trades)
+            {
+                var item = index.GetItem(itemId) ?? Unknown(itemId);
+                var short_ = Readable(item);
+                var left = Math.Max(0, need.Count - tracker.GetHave(itemId));
+
+                var row = new PanelRow
+                {
+                    Id = itemId,
+                    Name = short_,
+                    FullName = item.Name,
+                    Count = left,
+                    Tracked = true,
+                    Reason = string.Join(" · ", need.For),
+                    FoundInRaid = false,
+                };
+
+                (need.CraftOnly ? panel.Crafting : panel.Barter).Add(row);
+            }
+
             // Found-in-raid first: it is the one thing you cannot buy your way out of later.
             panel.Now.Sort(ByUrgency);
+            panel.Barter.Sort(ByUrgency);
+            panel.Crafting.Sort(ByUrgency);
             panel.Later.Sort(ByUrgency);
 
             // A glanceable panel has a length past which it stops being glanceable. Cut, and said
@@ -1234,7 +1367,7 @@ public static class ApiEndpoints
 
         var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
 
-        return TrackedItemView.From(tracker.Track(needs, progress, hideout));
+        return TrackedItemView.From(tracker.Track(needs, progress, hideout, state.TradeDemand(tracker)));
     }
 
     private static MapInkLevel ParseInk(string? ink) => ink?.ToLowerInvariant() switch
@@ -1290,6 +1423,15 @@ public sealed record TrackedItemView
     /// <summary>How far out that upgrade is. 1 means you could build it today.</summary>
     public int? HideoutWave { get; init; }
 
+    /// <summary>How many the barters and crafts being worked towards want.</summary>
+    public int TradeNeeded { get; init; }
+
+    /// <summary>Which trades want it — "Therapist LL2 · Dorm room 303 key".</summary>
+    public IReadOnlyList<string> TradeFor { get; init; } = [];
+
+    /// <summary>True when only crafts want it, which is what splits Barter from Crafting.</summary>
+    public bool TradeIsCraftOnly { get; init; }
+
     public int Needed { get; init; }
     public int Have { get; init; }
     public int Remaining { get; init; }
@@ -1311,6 +1453,9 @@ public sealed record TrackedItemView
         HideoutNeeded = t.HideoutNeeded,
         HideoutUpgrade = t.HideoutUpgrade,
         HideoutWave = t.HideoutWave,
+        TradeNeeded = t.TradeNeeded,
+        TradeFor = t.TradeFor,
+        TradeIsCraftOnly = t.TradeIsCraftOnly,
         Needed = t.Needed,
         Have = t.Have,
         Remaining = t.Remaining,
@@ -1470,6 +1615,13 @@ public sealed record ItemPanel
 {
     public List<PanelRow> Now { get; init; } = [];
     public List<PanelRow> Watchlist { get; init; } = [];
+
+    /// <summary>What the trader barters you are working towards want.</summary>
+    public List<PanelRow> Barter { get; init; } = [];
+
+    /// <summary>What the hideout crafts you are working towards want.</summary>
+    public List<PanelRow> Crafting { get; init; } = [];
+
     public List<PanelRow> Later { get; init; } = [];
 
     /// <summary>How many rows were cut from <see cref="Later"/> to keep the panel readable.</summary>
@@ -1580,6 +1732,42 @@ public sealed record PlaceLabel
     public required double X { get; init; }
     public required double Y { get; init; }
 }
+
+/// <summary>A barter or craft, as the picker shows it.</summary>
+public sealed record TradeView
+{
+    public required string Id { get; init; }
+
+    /// <summary>"barter" or "craft".</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>The trader or station offering it.</summary>
+    public required string Source { get; init; }
+
+    /// <summary>Loyalty level for a barter, station level for a craft.</summary>
+    public required int Level { get; init; }
+
+    public required string Makes { get; init; }
+    public string? MakesItemId { get; init; }
+    public required IReadOnlyList<TradeCost> Costs { get; init; }
+
+    /// <summary>Whether you can actually do it today.</summary>
+    public required bool Available { get; init; }
+
+    public required bool Tracked { get; init; }
+    public required int Times { get; init; }
+}
+
+/// <summary>One input to a trade, with how many you already have.</summary>
+public sealed record TradeCost
+{
+    public required string ItemId { get; init; }
+    public required string Name { get; init; }
+    public required int Count { get; init; }
+    public required int Have { get; init; }
+}
+
+public sealed record TradeRequest(bool Tracked, string? Kind, int? Times);
 
 /// <summary>A spawn area, placed on the map image.</summary>
 public sealed record SpawnPin

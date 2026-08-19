@@ -127,17 +127,20 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         var hideoutQuery = Try("hideout", () => client.GetHideoutStationsAsync(ct));
         var mapsQuery = Try("maps", () => client.GetMapsAsync(ct));
         var bartersQuery = Try("barters", () => client.GetBartersAsync(ct));
+        var craftsQuery = Try("crafts", () => client.GetCraftsAsync(ct));
         var tradersQuery = Try("traders", () => client.GetTradersAsync(ct));
         var calibrationQuery = Try("map calibration", () => mapAssets.GetCalibrationAsync(ct));
 
         await Task.WhenAll(
-            tasksQuery, itemsQuery, hideoutQuery, mapsQuery, bartersQuery, tradersQuery, calibrationQuery);
+            tasksQuery, itemsQuery, hideoutQuery, mapsQuery, bartersQuery, craftsQuery,
+            tradersQuery, calibrationQuery);
 
         var fetchedTasks = await tasksQuery;
         var fetchedItems = await itemsQuery;
         var fetchedHideout = await hideoutQuery;
         var fetchedMaps = await mapsQuery;
         var fetchedBarters = await bartersQuery;
+        var fetchedCrafts = await craftsQuery;
         var fetchedTraders = await tradersQuery;
         var calibration = await calibrationQuery;
 
@@ -154,6 +157,7 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         var items = fetchedItems ?? previous?.Items;
         var hideout = fetchedHideout ?? previous?.HideoutStations;
         var barters = fetchedBarters ?? previous?.Barters;
+        var crafts = fetchedCrafts ?? previous?.Crafts;
         var traders = fetchedTraders ?? previous?.Traders;
         var mapsQueryResult = fetchedMaps ?? [];
         var calibrations = calibration ?? [];
@@ -228,6 +232,7 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
             HideoutStations = hideout ?? [],
             Maps = maps,
             Barters = barters ?? [],
+            Crafts = crafts ?? [],
             Traders = traders ?? [],
         };
     }

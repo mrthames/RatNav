@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, type TrackedItem } from './api'
+import { api, type TrackedItem, type Trade } from './api'
 
-type Tab = 'needed' | 'watchlist' | 'search'
+type Tab = 'needed' | 'watchlist' | 'trades' | 'search'
 
 export function ItemsView() {
   const [tab, setTab] = useState<Tab>('needed')
@@ -20,7 +20,10 @@ export function ItemsView() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      if (tab === 'search') {
+      if (tab === 'trades') {
+        // Its own component, with its own data. Nothing to load here.
+        setRows([])
+      } else if (tab === 'search') {
         setRows(query.trim() ? await api.searchItems(query) : [])
       } else {
         setRows(tab === 'needed'
@@ -61,7 +64,7 @@ export function ItemsView() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-px">
-          {(['needed', 'watchlist', 'search'] as Tab[]).map((id) => (
+          {(['needed', 'watchlist', 'trades', 'search'] as Tab[]).map((id) => (
             <button
               key={id}
               type="button"
@@ -71,7 +74,7 @@ export function ItemsView() {
                          hover:text-ink aria-pressed:bg-accent aria-pressed:text-ground
                          focus-visible:outline-2 focus-visible:outline-accent"
             >
-              {id}
+              {id === 'trades' ? 'barters & crafts' : id}
             </button>
           ))}
         </div>
@@ -134,9 +137,11 @@ export function ItemsView() {
           />
         )}
 
-        <p className="ml-auto font-mono text-xs text-muted tabular-nums">
-          {totals.items} items · {totals.remaining} still needed · {totals.fir} found-in-raid
-        </p>
+        {tab !== 'trades' && (
+          <p className="ml-auto font-mono text-xs text-muted tabular-nums">
+            {totals.items} items · {totals.remaining} still needed · {totals.fir} found-in-raid
+          </p>
+        )}
       </div>
 
       {tab === 'watchlist' && (
@@ -147,9 +152,11 @@ export function ItemsView() {
         </p>
       )}
 
-      {loading && <Empty>loading…</Empty>}
+      {tab === 'trades' && <Trades />}
 
-      {!loading && rows.length === 0 && (
+      {tab !== 'trades' && loading && <Empty>loading…</Empty>}
+
+      {tab !== 'trades' && !loading && rows.length === 0 && (
         <Empty>
           {tab === 'needed'
             ? 'Nothing needed. Mark some quests active on the Quests view and they will appear here.'
@@ -159,7 +166,7 @@ export function ItemsView() {
         </Empty>
       )}
 
-      {!loading && rows.length > 0 && (
+      {tab !== 'trades' && !loading && rows.length > 0 && (
         <div className="overflow-x-auto border border-line">
           <table className="w-full border-collapse text-sm">
             <thead>
@@ -178,6 +185,133 @@ export function ItemsView() {
             </tbody>
           </table>
         </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The barters and crafts on offer, and the ones you have decided to work towards.
+ *
+ * <p>Picking one puts its inputs on your list, counted apart from what quests and the hideout
+ * want. That separation is the point: an item wanted three times for a quest and seven for a
+ * barter is two reasons, and a single "10" hides that finishing the quest leaves seven to
+ * find.</p>
+ */
+function Trades() {
+  const [rows, setRows] = useState<Trade[]>([])
+  const [query, setQuery] = useState('')
+
+  /** Trades you cannot do yet — the trader is not high enough, or the station is not built. */
+  const [all, setAll] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      setRows(await api.trades({ q: query.trim() || undefined, all }))
+    } catch {
+      setRows([])
+    } finally {
+      setLoading(false)
+    }
+  }, [query, all])
+
+  useEffect(() => {
+    const timer = setTimeout(load, query ? 200 : 0)
+    return () => clearTimeout(timer)
+  }, [load, query])
+
+  async function pick(trade: Trade, tracked: boolean) {
+    await api.trackTrade(trade.id, trade.kind, tracked, trade.times)
+    setRows((current) => current.map((r) => (r.id === trade.id ? { ...r, tracked } : r)))
+  }
+
+  const picked = rows.filter((r) => r.tracked).length
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="What it makes, who offers it, or what it costs…"
+          className="min-w-56 flex-1 rounded-sm border border-line bg-panel px-3 py-1.5 text-sm
+                     text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
+        />
+
+        <label className="flex items-center gap-2 text-xs text-muted">
+          <input
+            type="checkbox"
+            checked={all}
+            onChange={(e) => setAll(e.target.checked)}
+            className="accent-accent"
+          />
+          Include ones I cannot do yet
+        </label>
+
+        <p className="ml-auto font-mono text-xs text-muted tabular-nums">
+          {picked} being worked towards
+        </p>
+      </div>
+
+      <p className="text-xs text-muted">
+        Only what your traders and hideout can actually offer, unless you ask for the rest. Pick one
+        and what it costs joins your list — <b>counted apart</b> from quests and the hideout, so
+        finishing a quest does not make a barter look done.
+      </p>
+
+      {loading && <Empty>loading…</Empty>}
+
+      {!loading && rows.length === 0 && (
+        <Empty>
+          {query.trim()
+            ? 'Nothing on offer matches that.'
+            : 'No barters or crafts available. Set your trader levels on the Quests view and your '
+              + 'station levels on the Hideout view, and what you can do will appear here.'}
+        </Empty>
+      )}
+
+      {!loading && rows.length > 0 && (
+        <ul className="flex flex-col gap-px border border-line">
+          {rows.map((trade) => (
+            <li
+              key={trade.id}
+              className={`flex flex-wrap items-start gap-x-4 gap-y-1 px-3 py-2
+                          ${trade.tracked ? 'bg-accent/5' : ''}`}
+            >
+              <label className="flex cursor-pointer items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={trade.tracked}
+                  onChange={(e) => void pick(trade, e.target.checked)}
+                  className="accent-accent"
+                />
+                <span className="text-sm">{trade.makes}</span>
+              </label>
+
+              <span className="font-mono text-[11px] text-muted">
+                {trade.kind === 'barter'
+                  ? `${trade.source} LL${trade.level}`
+                  : `${trade.source} ${trade.level}`}
+                {!trade.available && ' · not yet'}
+              </span>
+
+              {/* What it costs, and how much of that you already have. */}
+              <span className="ml-auto flex flex-wrap justify-end gap-x-3 font-mono text-[11px]">
+                {trade.costs.map((cost) => (
+                  <span
+                    key={cost.itemId}
+                    className={cost.have >= cost.count ? 'text-have' : 'text-muted'}
+                  >
+                    {cost.count}× {cost.name}
+                    {cost.have > 0 && ` (${Math.min(cost.have, cost.count)})`}
+                  </span>
+                ))}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )
@@ -279,6 +413,11 @@ function Row({
                 row.hideoutNeeded > 0 && (row.hideoutUpgrade
                   ? `${row.hideoutNeeded} for ${row.hideoutUpgrade}`
                   : `${row.hideoutNeeded} for hideout`),
+
+                // Named the same way, and separately — the whole reason trades are counted apart
+                // is so this line can say which of the two the number is for.
+                row.tradeNeeded > 0
+                  && `${row.tradeNeeded} for ${row.tradeFor.join(', ') || 'a trade'}`,
                 row.watchNote,
               ].filter(Boolean).join(' · ') || row.shortName}
             </div>
@@ -291,7 +430,7 @@ function Row({
           Quest and hideout needs are worked out; a watchlist target is not, so it is editable.
           Showing a derived number in a box you can type in would be a lie about what it is.
         */}
-        {!watchlist && (row.questNeeded > 0 || row.hideoutNeeded > 0) ? (
+        {!watchlist && (row.questNeeded > 0 || row.hideoutNeeded > 0 || row.tradeNeeded > 0) ? (
           <span className="font-mono text-xs tabular-nums">{row.needed}</span>
         ) : (
           <input

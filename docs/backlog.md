@@ -612,7 +612,7 @@ The research is kept below in case it is ever wanted again.
 
 ### Barter tracking
 
-- [ ] **Barters you are working towards, tracked separately from quests and the hideout.**
+- [x] **Barters you are working towards, tracked separately from quests and the hideout.**
   - Example: Therapist's Dorm 303 key barter wants 7 plugs and 3 blue tapes. Picking that barter
     should put those on your list.
   - **Counted apart.** Those finds must not be folded into quest or hideout totals — an item wanted
@@ -625,11 +625,12 @@ The research is kept below in case it is ever wanted again.
 
 ### Crafts, and the shape of the items list
 
-- [ ] **Hideout crafts, tracked the same way as barters.** Pick a craft — a Toolset on the
+- [x] **Hideout crafts, tracked the same way as barters.** Pick a craft — a Toolset on the
   Workbench — and the items needed to start it appear on the list.
   - Gated by station level, so only crafts your hideout can actually run should be offerable.
   - tarkov.dev has a `crafts` document alongside `barters`; it is not fetched yet.
-- [ ] **Restructure the items list around this.** Justin's proposed shape, which supersedes the
+- [x] **Restructure the items list around this.** Built as: watchlist, then Barter, then Crafting
+  (both appearing only once you have picked something), then quests & hideout, then Later. Justin's proposed shape, which supersedes the
   three-section split built in Round 5:
   - **Quests & hideout** — as now.
   - **Watchlist** — items of interest, with **subsections for Barter and Crafting**. Each names the

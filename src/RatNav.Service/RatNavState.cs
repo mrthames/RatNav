@@ -1,6 +1,7 @@
 using RatNav.Core.Data;
 using RatNav.Core.Planning;
 using RatNav.Core.Progress;
+using RatNav.Core.Tracking;
 using RatNav.Core.Model;
 
 namespace RatNav.Service;
@@ -56,6 +57,22 @@ public sealed class RatNavState(GameDataCache cache)
             progress.HideoutLevels,
             lookAhead,
             progress.HideoutTargets);
+
+    /// <summary>
+    /// What the barters and crafts being worked towards want, keyed by item.
+    ///
+    /// <para>Single source for the same reason <see cref="Upcoming"/> is: the items list, the
+    /// overlay panel and a search result all have to agree about why an item is wanted.</para>
+    /// </summary>
+    public IReadOnlyDictionary<string, TradeNeed> TradeDemand(ItemTracker tracker)
+    {
+        var data = cache.Current;
+
+        if (data is null) return new Dictionary<string, TradeNeed>();
+
+        return TradeDemands.From(
+            tracker.Trades, data.Barters, data.Crafts, id => Index?.GetItem(id)?.Name);
+    }
 
     public DataStatus Status(RefreshResult? lastRefresh = null)
     {

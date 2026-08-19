@@ -807,6 +807,18 @@ public partial class OverlayWindow : Window
                 // hideout are worked out and far longer, and putting them above meant scrolling
                 // past forty derived rows to reach three deliberate ones.
                 Section("WATCHLIST", panel.Watchlist, label: "WATCHLIST · your targets"),
+
+                // The trades you chose, directly under it. They are the same kind of thing — a
+                // decision you made rather than one derived from your progress — and they only
+                // exist at all once you have picked one, so an empty section costs nothing.
+                .. panel.Barter.Count > 0
+                    ? new[] { Section("BARTER", panel.Barter, label: "BARTER · what your trades want") }
+                    : [],
+
+                .. panel.Crafting.Count > 0
+                    ? new[] { Section("CRAFTING", panel.Crafting, label: "CRAFTING · what your crafts want") }
+                    : [],
+
                 Section("QUESTS & HIDEOUT", panel.Now, label: $"QUESTS & HIDEOUT · {scope}"),
 
                 // Gated upgrades and quests you could accept but have not. Folded by default: it

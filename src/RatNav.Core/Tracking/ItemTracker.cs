@@ -121,6 +121,35 @@ public sealed class ItemTracker(string dataDirectory)
         Save();
     }
 
+    /// <summary>The barters and crafts being worked towards.</summary>
+    public IReadOnlyList<TrackedTrade> Trades
+    {
+        get { lock (_gate) return [.. _state.Trades]; }
+    }
+
+    /// <summary>
+    /// Start working towards a trade, or change how many times over. Re-adding edits rather than
+    /// duplicating, the same way the watchlist does.
+    /// </summary>
+    public void TrackTrade(string id, TradeKind kind, int times = 1)
+    {
+        lock (_gate)
+        {
+            var at = _state.Trades.FindIndex(t => t.Id == id);
+            var entry = new TrackedTrade { Id = id, Kind = kind, Times = Math.Max(1, times) };
+
+            if (at >= 0) _state.Trades[at] = entry;
+            else _state.Trades.Add(entry);
+        }
+        Save();
+    }
+
+    public void UntrackTrade(string id)
+    {
+        lock (_gate) _state.Trades.RemoveAll(t => t.Id == id);
+        Save();
+    }
+
     /// <summary>
     /// What you still need of an item, given your progress.
     ///
@@ -132,7 +161,8 @@ public sealed class ItemTracker(string dataDirectory)
     public TrackedItem Track(
         ItemNeeds needs,
         IProgressView progress,
-        IReadOnlyDictionary<string, HideoutDemand>? hideout = null)
+        IReadOnlyDictionary<string, HideoutDemand>? hideout = null,
+        IReadOnlyDictionary<string, TradeNeed>? trades = null)
     {
         var questNeeded = needs.Quests
             .Where(q => progress.IsActive(q.TaskId))
@@ -146,9 +176,15 @@ public sealed class ItemTracker(string dataDirectory)
         var demand = hideout is null ? null : hideout.GetValueOrDefault(needs.Item.Id);
         var hideoutNeeded = demand?.Count ?? 0;
 
+        // Barters and crafts you chose to work towards. Counted apart from the two above, because
+        // an item wanted three times for a quest and seven for a barter is two reasons rather than
+        // one ten — and only the split says that finishing the quest leaves seven still to find.
+        var trade = trades?.GetValueOrDefault(needs.Item.Id);
+        var tradeNeeded = trade?.Count ?? 0;
+
         var watch = Watchlist.FirstOrDefault(w => w.ItemId == needs.Item.Id);
         var have = GetHave(needs.Item.Id);
-        var total = questNeeded + hideoutNeeded + (watch?.Target ?? 0);
+        var total = questNeeded + hideoutNeeded + tradeNeeded + (watch?.Target ?? 0);
 
         return new TrackedItem
         {
@@ -157,6 +193,9 @@ public sealed class ItemTracker(string dataDirectory)
             HideoutNeeded = hideoutNeeded,
             HideoutUpgrade = demand?.UpgradeName,
             HideoutWave = demand?.Wave,
+            TradeNeeded = tradeNeeded,
+            TradeFor = trade?.For ?? [],
+            TradeIsCraftOnly = trade?.CraftOnly ?? false,
             WatchTarget = watch?.Target,
             WatchNote = watch?.Note,
             Watched = watch is not null,
@@ -197,6 +236,7 @@ public sealed class ItemTracker(string dataDirectory)
     {
         public Dictionary<string, int> Have { get; init; } = [];
         public List<WatchlistEntry> Watchlist { get; init; } = [];
+        public List<TrackedTrade> Trades { get; init; } = [];
     }
 }
 
@@ -242,6 +282,15 @@ public sealed record TrackedItem
 
     /// <summary>How far out that upgrade is. 1 means you could build it today.</summary>
     public int? HideoutWave { get; init; }
+    /// <summary>How many are wanted by the barters and crafts being worked towards.</summary>
+    public int TradeNeeded { get; init; }
+
+    /// <summary>Which trades want it, named the way a player would say them.</summary>
+    public IReadOnlyList<string> TradeFor { get; init; } = [];
+
+    /// <summary>True when only crafts want it — which decides which subsection it sits in.</summary>
+    public bool TradeIsCraftOnly { get; init; }
+
     public int? WatchTarget { get; init; }
     public string? WatchNote { get; init; }
     public bool Watched { get; init; }
@@ -253,6 +302,6 @@ public sealed record TrackedItem
 
     public bool IsKey { get; init; }
 
-    public int Needed => QuestNeeded + HideoutNeeded + (WatchTarget ?? 0);
+    public int Needed => QuestNeeded + HideoutNeeded + TradeNeeded + (WatchTarget ?? 0);
     public bool Done => Needed > 0 && Remaining == 0;
 }
