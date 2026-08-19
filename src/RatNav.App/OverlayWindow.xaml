@@ -40,6 +40,56 @@
         </Style>
 
         <!--
+            One row of the items list. Shared by the panel beside the map and the window it tears
+            off into: the same list in two places has to look like the same list.
+        -->
+        <DataTemplate x:Key="ItemRowTemplate">
+            <Grid Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Count first and right-aligned in a fixed column, so the numbers line up. -->
+                <TextBlock Grid.Column="0"
+                           FontFamily="Consolas" FontSize="11"
+                           Foreground="{Binding Colour}"
+                           MinWidth="26" TextAlignment="Right" Margin="0,0,7,0"
+                           Text="{Binding Count}" />
+
+                <TextBlock Grid.Column="1"
+                           FontFamily="Segoe UI" FontSize="11"
+                           Foreground="{StaticResource Ink}"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding Name}"
+                           ToolTip="{Binding Reason}" />
+            </Grid>
+        </DataTemplate>
+
+        <!-- A section: a header you can click to fold it away, and its rows. -->
+        <DataTemplate x:Key="ItemSectionTemplate">
+            <StackPanel Margin="0,0,0,5">
+                <Button Command="{Binding Toggle}" Cursor="Hand" HorizontalContentAlignment="Stretch">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="Transparent" Padding="0,1">
+                                <ContentPresenter />
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+
+                    <TextBlock FontFamily="Consolas" FontSize="10"
+                               Foreground="{StaticResource Muted}"
+                               Text="{Binding Heading}" />
+                </Button>
+
+                <ItemsControl ItemsSource="{Binding Rows}"
+                              Visibility="{Binding Visibility}"
+                              ItemTemplate="{StaticResource ItemRowTemplate}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!--
             Controls exist only in interact mode, so they are styled for a moment of deliberate
             fiddling rather than for glanceability. Flat, square, and quiet until hovered.
         -->
@@ -100,59 +150,48 @@
                                Foreground="{StaticResource Accent}" Text="" />
                 </StackPanel>
 
-                <Border x:Name="MapFrame" Grid.Row="1" Margin="0,8"
-                        Background="#33141b21"
-                        BorderBrush="{StaticResource Line}"
-                        BorderThickness="1">
-                    <Canvas x:Name="MapCanvas" ClipToBounds="True" />
-                </Border>
-
                 <!--
-                    What to pick up, when you want it. Collapsed by default: during a raid the map
-                    is the point, and a list of thirty items over the screen is the opposite of
-                    glanceable. Opened from the controls, or torn off into its own window for a
-                    second monitor.
+                    Map and items side by side. The list is a narrow strip rather than a block
+                    under the map, because that is the shape that leaves the map its height — and
+                    which side it sits on is the player's call, since the overlay could be against
+                    either edge of the screen.
                 -->
-                <Border x:Name="ItemsPanel" Grid.Row="2" Visibility="Collapsed"
-                        MaxHeight="190" Margin="0,0,0,6" Padding="6,4"
-                        Background="#33141b21" BorderBrush="{StaticResource Line}" BorderThickness="1">
-                    <DockPanel>
-                        <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
-                            <TextBlock x:Name="ItemsHeading" Style="{StaticResource Label}"
-                                       HorizontalAlignment="Left" Text="WATCHLIST" />
-                            <Button x:Name="DetachItems" Style="{StaticResource Chip}"
-                                    HorizontalAlignment="Right" Content="open window"
-                                    Visibility="Collapsed" />
-                        </Grid>
+                <Grid Grid.Row="1" Margin="0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="LeftSlot" Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition x:Name="RightSlot" Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ItemsControl x:Name="ItemsList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="0,1">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
+                    <Border x:Name="MapFrame" Grid.Column="1"
+                            Background="#33141b21"
+                            BorderBrush="{StaticResource Line}"
+                            BorderThickness="1">
+                        <Canvas x:Name="MapCanvas" ClipToBounds="True" />
+                    </Border>
 
-                                            <TextBlock Grid.Column="0"
-                                                       FontFamily="Segoe UI" FontSize="11"
-                                                       Foreground="{StaticResource Ink}"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Text="{Binding Name}"
-                                                       ToolTip="{Binding Reason}" />
+                    <Border x:Name="ItemsPanel" Grid.Column="2" Visibility="Collapsed"
+                            Width="152" Margin="6,0,0,0" Padding="6,4"
+                            Background="#33141b21" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                        <DockPanel>
+                            <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
+                                <Button x:Name="SwapSide" Style="{StaticResource Chip}"
+                                        HorizontalAlignment="Left" Content="⇄"
+                                        ToolTip="Move the list to the other side"
+                                        Visibility="Collapsed" />
+                                <Button x:Name="DetachItems" Style="{StaticResource Chip}"
+                                        HorizontalAlignment="Right" Content="pop out"
+                                        Visibility="Collapsed" />
+                            </Grid>
 
-                                            <TextBlock Grid.Column="1" Margin="8,0,0,0"
-                                                       FontFamily="Consolas" FontSize="11"
-                                                       Foreground="{Binding Colour}"
-                                                       Text="{Binding Count}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </DockPanel>
-                </Border>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl x:Name="ItemsList"
+                                              ItemTemplate="{StaticResource ItemSectionTemplate}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                </Grid>
 
                 <Grid x:Name="StatusRow" Grid.Row="3">
                     <TextBlock x:Name="ProgressText" Style="{StaticResource Label}" HorizontalAlignment="Left" />
@@ -249,6 +288,23 @@
 
                     <TextBlock Style="{StaticResource Label}" Text="MAP" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <Button x:Name="FollowButton" Style="{StaticResource Chip}" Content="still" MinWidth="62" />
+
+                    <!-- The crosshair every mapping app has: put it back on me and lock it there. -->
+                    <Button x:Name="RecentreButton" Style="{StaticResource Chip}" Content="⌖"
+                            ToolTip="Recentre on you and follow again"
+                            Visibility="Collapsed" />
+
+                    <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
+
+                    <TextBlock Style="{StaticResource Label}" Text="LINE" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <Button x:Name="WeightDown" Style="{StaticResource Chip}" Content="−" />
+                    <TextBlock x:Name="WeightText" Style="{StaticResource Label}"
+                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                               MinWidth="42" TextAlignment="Center" Text="1.00×" />
+                    <Button x:Name="WeightUp" Style="{StaticResource Chip}" Content="+" />
+                    <Button x:Name="HaloButton" Style="{StaticResource Chip}" Content="halo on"
+                            MinWidth="62" Margin="6,0,0,0"
+                            ToolTip="A dark edge behind every line, so the map reads on snow and in basements" />
 
                     <Rectangle Width="1" Margin="10,2" Fill="{StaticResource Line}" />
 

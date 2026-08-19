@@ -306,15 +306,45 @@ public sealed record RatNavSettings
         public string Ink { get; init; } = "structure";
 
         /// <summary>
-        /// Whether the map slides to keep you centred, or holds still while your marker moves
-        /// across it.
-        ///
-        /// <para>Still is the default. A map that re-centres on every fix means the same building
-        /// is somewhere new each time you look, and rebuilding your sense of where you are costs
-        /// more than the marker drifting toward a corner. Following earns its place when zoomed
-        /// in far enough that you would otherwise lose yourself off the edge.</para>
+        /// Whether the small corner map keeps you centred. On by default: it is too small to
+        /// hold a whole map usefully, so its job is to show where you are and what is around you.
         /// </summary>
-        public bool FollowPlayer { get; init; }
+        public bool FollowInBox { get; init; } = true;
+
+        /// <summary>
+        /// Whether the large centred map keeps you centred. Off by default: it is big enough to
+        /// read as a map, and one that re-centres on every fix puts the same building somewhere
+        /// new each time you look.
+        /// </summary>
+        public bool FollowInWireframe { get; init; }
+
+        /// <summary>
+        /// How far the map has been dragged from where it would otherwise sit, as a fraction of
+        /// the map image. Dragging is how you look at one corner while zoomed in.
+        ///
+        /// <para>Remembered, because setting up a view of Dorms and losing it on the next fix
+        /// would make the feature pointless.</para>
+        /// </summary>
+        public double PanX { get; init; }
+        public double PanY { get; init; }
+
+        /// <summary>Which side of the map the items list sits on — "left" or "right".</summary>
+        public string ItemsSide { get; init; } = "right";
+
+        /// <summary>
+        /// Sections of the items list that are folded away, by title. Remembered, because the
+        /// list is rebuilt on every position fix and folding would otherwise undo itself.
+        /// </summary>
+        public IReadOnlyList<string> CollapsedSections { get; init; } = ["LATER"];
+
+        /// <summary>
+        /// Draw a dark halo behind map lines. Outline ink over a bright snowfield is otherwise
+        /// close to invisible, and the halo is what makes one set of colours work on every map.
+        /// </summary>
+        public bool Halo { get; init; } = true;
+
+        /// <summary>Line weight multiplier, for making the map heavier or lighter over the game.</summary>
+        public double LineWeight { get; init; } = 1.0;
 
         /// <summary>
         /// Which extracts to draw: "pmc", "scav", or "off". Shared extracts show for either

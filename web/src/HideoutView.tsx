@@ -77,6 +77,12 @@ export function HideoutView() {
         </p>
       </section>
 
+      {state.upcoming.length === 0 && (
+        <p className="font-mono text-xs text-muted">
+          Nothing to build — either the hideout is finished, or the levels below need setting.
+        </p>
+      )}
+
       {waves.map((wave) => (
         <section key={wave} className="flex flex-col gap-2">
           <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">
@@ -89,6 +95,7 @@ export function HideoutView() {
                 key={`${upgrade.stationId}-${upgrade.level}`}
                 upgrade={upgrade}
                 onToggle={() => void toggleTarget(upgrade)}
+                onBuilt={() => void setLevel(upgrade.stationId, upgrade.level)}
               />
             ))}
           </div>
@@ -97,37 +104,62 @@ export function HideoutView() {
 
       <section className="flex flex-col gap-2">
         <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Where you are</h2>
+        <p className="text-xs text-muted">
+          Set each station to the level it is built to. Everything above works out from these, so
+          an upgrade marked by mistake is worth putting back — use the arrows.
+        </p>
 
         <div className="grid gap-px sm:grid-cols-2">
           {state.stations.map((station) => (
-            <div key={station.id} className="flex items-center justify-between bg-panel px-3 py-2">
-              <span className="text-sm">{station.name}</span>
+            <div key={station.id} className="flex items-center justify-between gap-3 bg-panel px-3 py-2">
+              <span className="truncate text-sm">{station.name}</span>
 
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs tabular-nums text-muted">
-                  {station.builtLevel}/{station.maxLevel}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={station.builtLevel <= 0}
+                  onClick={() => void setLevel(station.id, station.builtLevel - 1)}
+                  aria-label={`Lower ${station.name}`}
+                  className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                             hover:text-ink disabled:opacity-30
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  −
+                </button>
+
+                <span className="w-10 text-center font-mono text-xs tabular-nums text-ink">
+                  {station.builtLevel}
+                  <span className="text-muted">/{station.maxLevel}</span>
                 </span>
 
-                <input
-                  type="number"
-                  min={0}
-                  max={station.maxLevel}
-                  value={station.builtLevel}
-                  onChange={(e) => void setLevel(station.id, Number(e.target.value))}
-                  className="w-14 border border-line bg-ground px-2 py-1 text-right font-mono text-xs
-                             tabular-nums text-ink focus-visible:outline-2 focus-visible:outline-accent"
-                  aria-label={`${station.name} level`}
-                />
+                <button
+                  type="button"
+                  disabled={station.builtLevel >= station.maxLevel}
+                  onClick={() => void setLevel(station.id, station.builtLevel + 1)}
+                  aria-label={`Raise ${station.name}`}
+                  className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                             hover:text-ink disabled:opacity-30
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  +
+                </button>
               </div>
             </div>
           ))}
         </div>
       </section>
+
     </div>
   )
 }
 
-function UpgradeRow({ upgrade, onToggle }: { upgrade: HideoutUpgrade; onToggle: () => void }) {
+function UpgradeRow({
+  upgrade, onToggle, onBuilt,
+}: {
+  upgrade: HideoutUpgrade
+  onToggle: () => void
+  onBuilt: () => void
+}) {
   const short = upgrade.items.filter((i) => i.have < i.count)
 
   return (
@@ -153,6 +185,17 @@ function UpgradeRow({ upgrade, onToggle }: { upgrade: HideoutUpgrade; onToggle: 
             needs {blocker.text}
           </span>
         ))}
+
+        {/* The moment you would want to record it is the moment you are looking at it. */}
+        <button
+          type="button"
+          onClick={onBuilt}
+          className="ml-auto font-mono text-[11px] uppercase tracking-wider text-muted
+                     underline-offset-4 hover:text-ink hover:underline
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Built it
+        </button>
       </div>
 
       {short.length > 0 && (

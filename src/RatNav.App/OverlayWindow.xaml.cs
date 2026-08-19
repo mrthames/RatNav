@@ -17,6 +17,7 @@ using Size = System.Windows.Size;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using FontFamily = System.Windows.Media.FontFamily;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
 namespace RatNav.App;
 
@@ -83,16 +84,25 @@ public partial class OverlayWindow : Window
         ResizeGrip.DragDelta += OnResize;
         MouseWheel += OnWheel;
 
+        MouseRightButtonDown += OnPanStart;
+        MouseRightButtonUp += OnPanEnd;
+        MouseMove += OnPanMove;
+
         FloorUp.Click += (_, _) => StepFloor(+1);
         FloorDown.Click += (_, _) => StepFloor(-1);
         InkButton.Click += (_, _) => CycleInk();
         FadeUp.Click += (_, _) => StepFade(+0.1);
         FadeDown.Click += (_, _) => StepFade(-0.1);
         ZoomReset.Click += (_, _) => SetZoom(1);
-        FollowButton.Click += (_, _) => ToggleFollow();
+        FollowButton.Click += (_, _) => ToggleFollowing();
+        RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
+        HaloButton.Click += (_, _) => ToggleHalo();
+        WeightUp.Click += (_, _) => StepWeight(+0.25);
+        WeightDown.Click += (_, _) => StepWeight(-0.25);
         ItemsButton.Click += (_, _) => ToggleItems();
         DetachItems.Click += (_, _) => DetachItemsPanel();
+        SwapSide.Click += (_, _) => SwapItemsSide();
     }
 
     public event EventHandler? ExpandRequested;
@@ -257,6 +267,46 @@ public partial class OverlayWindow : Window
     {
         Width = Math.Max(220, Width + e.HorizontalChange);
         Height = Math.Max(160, Height + e.VerticalChange);
+    }
+
+    private Point? _panFrom;
+
+    /// <summary>
+    /// Starts a drag. Right button, and only while interactive — right-click is aim-down-sights,
+    /// and an overlay that swallowed it during a raid would be worse than one that cannot pan.
+    /// </summary>
+    private void OnPanStart(object sender, MouseButtonEventArgs e)
+    {
+        if (_clickThrough) return;
+
+        _panFrom = e.GetPosition(this);
+        CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void OnPanMove(object sender, MouseEventArgs e)
+    {
+        if (_panFrom is not { } from || e.RightButton != MouseButtonState.Pressed) return;
+
+        var to = e.GetPosition(this);
+        _panFrom = to;
+
+        // Looking somewhere else is a decision. Leaving following on would snap the map back on
+        // the next fix and undo the drag a second after it was made.
+        if (Following) Remember(_settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe
+            ? _settings.Overlay with { FollowInWireframe = false }
+            : _settings.Overlay with { FollowInBox = false });
+
+        Pan(to.X - from.X, to.Y - from.Y);
+    }
+
+    private void OnPanEnd(object sender, MouseButtonEventArgs e)
+    {
+        if (_panFrom is null) return;
+
+        _panFrom = null;
+        ReleaseMouseCapture();
+        e.Handled = true;
     }
 
     private void OnWheel(object sender, MouseWheelEventArgs e)
@@ -432,14 +482,21 @@ public partial class OverlayWindow : Window
 
         ItemsPanel.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
 
-        // Tearing off is a deliberate act, offered only while the overlay accepts the mouse.
-        DetachItems.Visibility = inline && !_clickThrough ? Visibility.Visible : Visibility.Collapsed;
+        var onLeft = _settings.Overlay.ItemsSide == "left";
+        Grid.SetColumn(ItemsPanel, onLeft ? 0 : 2);
+        ItemsPanel.Margin = onLeft ? new Thickness(0, 0, 6, 0) : new Thickness(6, 0, 0, 0);
+
+        // Moving and tearing off are deliberate acts, offered only while the overlay takes the mouse.
+        var editing = inline && !_clickThrough;
+        DetachItems.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+        SwapSide.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>
-    /// Fills the items list: the watchlist first, then anything active quests and hideout modules
-    /// still want. Fetched only when a list is actually on screen — during a raid with the panel
-    /// closed this costs nothing at all.
+    /// Fills the items list.
+    ///
+    /// <para>Fetched only when a list is actually on screen — during a raid with the panel closed
+    /// this costs nothing at all.</para>
     /// </summary>
     private void RefreshItems()
     {
@@ -447,36 +504,34 @@ public partial class OverlayWindow : Window
 
         _ = Dispatcher.InvokeAsync(async () =>
         {
-            var rows = await LoadItemsAsync();
+            var sections = await LoadSectionsAsync();
 
-            ItemsList.ItemsSource = rows;
-            ItemsHeading.Text = rows.Count == 0 ? "NOTHING WANTED" : $"WANTED · {rows.Count}";
-
-            _itemsWindow?.Show(rows);
+            ItemsList.ItemsSource = sections;
+            _itemsWindow?.Show(sections);
         });
     }
 
-    private async Task<IReadOnlyList<ItemRow>> LoadItemsAsync()
+    private async Task<IReadOnlyList<ItemSection>> LoadSectionsAsync()
     {
         try
         {
-            var root = $"http://localhost:{ServiceHost.DefaultPort}/api";
+            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/items/panel";
+            var panel = await _http.GetFromJsonAsync<ItemPanel>(url) ?? new ItemPanel();
 
-            var watchlist = await _http.GetFromJsonAsync<List<TrackedItemView>>($"{root}/items/watchlist") ?? [];
-            var needed = await _http.GetFromJsonAsync<List<TrackedItemView>>($"{root}/items/needed") ?? [];
+            return
+            [
+                Section("QUESTS & HIDEOUT", panel.Now),
+                Section("WATCHLIST", panel.Watchlist),
 
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var rows = new List<ItemRow>();
-
-            // Watchlist first. It is the shorter list and the one you chose deliberately, so it
-            // should not be buried under forty quest items.
-            foreach (var entry in watchlist.Concat(needed))
-            {
-                if (!seen.Add(entry.Id)) continue;
-                rows.Add(ItemRow.From(entry));
-            }
-
-            return rows;
+                // Gated upgrades and quests you could accept but have not. Folded by default: it
+                // is the longest of the three and the least actionable, and an overlay that opens
+                // with sixty rows on it is one people turn off.
+                Section(
+                    "LATER",
+                    panel.Later,
+                    expandedByDefault: false,
+                    label: panel.LaterHidden > 0 ? $"LATER (+{panel.LaterHidden} more)" : null),
+            ];
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
@@ -484,11 +539,50 @@ public partial class OverlayWindow : Window
         }
     }
 
+    /// <param name="title">
+    /// Stable name, used to remember whether the section is folded. Kept separate from what is
+    /// shown, because the heading carries a count that changes and folding must not reset with it.
+    /// </param>
+    /// <param name="label">What to display, when that differs from the title.</param>
+    private ItemSection Section(
+        string title, List<PanelRow> rows, bool expandedByDefault = true, string? label = null)
+    {
+        var section = new ItemSection(
+            label ?? title,
+            [.. rows.Select(ItemRow.From)],
+            _settings.Overlay.CollapsedSections.Contains(title) ? false : expandedByDefault);
+
+        // Folding is a preference, not a per-refresh state — it has to survive the list reloading
+        // every time a fix comes in.
+        section.Toggled += (_, _) =>
+        {
+            var collapsed = _settings.Overlay.CollapsedSections.ToList();
+
+            if (section.Expanded) collapsed.Remove(title);
+            else if (!collapsed.Contains(title)) collapsed.Add(title);
+
+            Remember(_settings.Overlay with { CollapsedSections = collapsed });
+        };
+
+        return section;
+    }
+
+    /// <summary>Moves the list to the other side of the map. The overlay can sit against either edge.</summary>
+    private void SwapItemsSide()
+    {
+        Remember(_settings.Overlay with
+        {
+            ItemsSide = _settings.Overlay.ItemsSide == "left" ? "right" : "left",
+        });
+
+        ApplyItemsPanel();
+    }
+
     /// <summary>
     /// Reads whatever the mouse is hovering and says what it is for.
     ///
     /// <para>The capture is of the desktop, the same pixels a screenshot tool sees, and the OCR is
-    /// Windows' own. Nothing is read from the game, injected into it, or asked of it — this is
+    /// Windows' own. Nothing is read from the game, injected into it, or asked of it â€” this is
     /// looking at the screen, which is what the player is already doing.</para>
     ///
     /// <para>Pressing the key again puts the card away, so one key both asks and dismisses.</para>
@@ -502,7 +596,7 @@ public partial class OverlayWindow : Window
         }
 
         // Reading the screen needs Windows 10 2004 or later. RatNav itself runs further back than
-        // that, so this is checked rather than assumed — the rest of the app is unaffected.
+        // that, so this is checked rather than assumed â€” the rest of the app is unaffected.
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041) || !ScreenTextReader.Available)
         {
             ShowIdentifyCard(
@@ -516,7 +610,7 @@ public partial class OverlayWindow : Window
 
         // Shown before the work starts. OCR takes a moment, and a key that appears to do nothing
         // gets pressed again.
-        ShowIdentifyCard("Reading…", "", []);
+        ShowIdentifyCard("Readingâ€¦", "", []);
 
         _ = Dispatcher.InvokeAsync(async () =>
         {
@@ -534,7 +628,7 @@ public partial class OverlayWindow : Window
             {
                 ShowIdentifyCard(
                     "No item matched",
-                    $"Read: {string.Join(" · ", lines.Take(3))}",
+                    $"Read: {string.Join(" Â· ", lines.Take(3))}",
                     []);
                 return;
             }
@@ -542,7 +636,7 @@ public partial class OverlayWindow : Window
             // A hedge rather than silent confidence. OCR is wrong often enough that presenting a
             // guess as fact would eventually cost someone a quest item.
             var hedge = match.Confidence is { } confidence && confidence < 0.85
-                ? $"best guess · {confidence * 100:F0}% sure"
+                ? $"best guess Â· {confidence * 100:F0}% sure"
                 : null;
 
             ShowIdentifyCard(match.Item.Name, hedge, IdentifyCard.Reasons(match));
@@ -585,16 +679,26 @@ public partial class OverlayWindow : Window
     /// <summary>What the identify endpoint returns.</summary>
     private sealed record IdentifyResponse(List<ItemDetail>? Matches, List<string>? ReadText);
 
+    private void ToggleHalo()
+    {
+        Remember(_settings.Overlay with { Halo = !_settings.Overlay.Halo });
+        Draw();
+    }
+
+    private void StepWeight(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            LineWeight = Math.Clamp(_settings.Overlay.LineWeight + by, 0.5, 4.0),
+        });
+
+        Draw();
+    }
+
     private void CycleExtracts()
     {
         var at = Array.IndexOf(ExtractModes, _settings.Overlay.Extracts);
         Remember(_settings.Overlay with { Extracts = ExtractModes[(at + 1 + ExtractModes.Length) % ExtractModes.Length] });
-        Draw();
-    }
-
-    private void ToggleFollow()
-    {
-        Remember(_settings.Overlay with { FollowPlayer = !_settings.Overlay.FollowPlayer });
         Draw();
     }
 
@@ -671,8 +775,14 @@ public partial class OverlayWindow : Window
         InkButton.Content = _settings.Overlay.Ink;
         FadeText.Text = $"{_settings.Overlay.MapOpacity * 100:F0}%";
         ZoomReset.Content = $"{_settings.Overlay.Zoom:0.0}×";
-        FollowButton.Content = _settings.Overlay.FollowPlayer ? "follows you" : "still";
+        FollowButton.Content = Following ? "follows you" : "still";
+
+        // Only worth offering when it would do something. A crosshair that is always lit teaches
+        // people to ignore it.
+        RecentreButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
         ExtractButton.Content = _settings.Overlay.Extracts;
+        HaloButton.Content = _settings.Overlay.Halo ? "halo on" : "halo off";
+        WeightText.Text = $"{_settings.Overlay.LineWeight:0.00}×";
         ItemsButton.Content = _settings.Overlay.ShowItems ? "items ▾" : "items ▸";
     }
 
@@ -713,22 +823,48 @@ public partial class OverlayWindow : Window
                 _ => ((Brush?)FindResource("Terrain"), null, 0.6),
             };
 
+            // Outline draws edges only, so a busy map reduces to the shapes you navigate by.
+            var outline = ink == "outline";
+            var weight = thickness * _settings.Overlay.LineWeight / fit;
+
+            var shapeOpacity = opacity * shape.Role switch
+            {
+                MapShapeRole.Terrain => 0.10,
+                MapShapeRole.Structure => outline ? 0.85 : 0.30,
+                MapShapeRole.Hazard => 0.35,
+                MapShapeRole.Other => 0.22,
+                _ => 0.85,
+            };
+
+            // A dark stroke underneath, drawn first and wider.
+            //
+            // This is the one thing that makes a translucent map readable over Tarkov, whose
+            // backgrounds run from snowfield to unlit basement. No single line colour survives
+            // both, and turning the opacity up until it does buries the game instead. A halo
+            // separates the line from whatever is behind it, so the line itself can stay thin.
+            if (_settings.Overlay.Halo && stroke is not null && weight > 0)
+            {
+                var halo = new Path
+                {
+                    Data = shape.Geometry,
+                    RenderTransform = transform,
+                    Stroke = (Brush)FindResource("Ground"),
+                    StrokeThickness = weight * 3.2,
+                    Opacity = Math.Min(1, shapeOpacity * 1.4),
+                    IsHitTestVisible = false,
+                };
+
+                MapCanvas.Children.Add(halo);
+            }
+
             var path = new Path
             {
                 Data = shape.Geometry,
                 RenderTransform = transform,
                 Stroke = stroke,
-                StrokeThickness = thickness / fit,   // constant on screen however far you zoom
-                // Outline draws edges only, so a busy map reduces to the shapes you navigate by.
-                Fill = ink == "outline" ? null : fill,
-                Opacity = opacity * shape.Role switch
-                {
-                    MapShapeRole.Terrain => 0.10,
-                    MapShapeRole.Structure => 0.30,
-                    MapShapeRole.Hazard => 0.35,
-                    MapShapeRole.Other => 0.22,
-                    _ => 0.85,
-                },
+                StrokeThickness = weight,   // constant on screen however far you zoom
+                Fill = outline ? null : fill,
+                Opacity = shapeOpacity,
                 IsHitTestVisible = false,
             };
 
@@ -794,9 +930,75 @@ public partial class OverlayWindow : Window
     private double FitScale(double width, double height) =>
         Math.Min(width / _mapViewBox.Width, height / _mapViewBox.Height) * _settings.Overlay.Zoom;
 
-    /// <summary>What sits at the centre of the canvas: you, or the middle of the map.</summary>
-    private (double X, double Y) Focus(RaidView view) =>
-        _settings.Overlay.FollowPlayer ? (view.X ?? 0.5, view.Y ?? 0.5) : (0.5, 0.5);
+    /// <summary>
+    /// Whether the map keeps you centred, for whichever presentation is on screen.
+    ///
+    /// <para>Two settings rather than one, because the right answer differs. The corner box is too
+    /// small to hold a map usefully, so it follows; the centred map is big enough to read as a
+    /// map, and one that re-centres on every fix puts the same building somewhere new each time
+    /// you look.</para>
+    /// </summary>
+    private bool Following => _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe
+        ? _settings.Overlay.FollowInWireframe
+        : _settings.Overlay.FollowInBox;
+
+    /// <summary>Whether the map has been dragged away from where it would otherwise sit.</summary>
+    private bool Panned => _settings.Overlay.PanX != 0 || _settings.Overlay.PanY != 0;
+
+    /// <summary>
+    /// What sits at the centre of the canvas: you, or the middle of the map — plus however far it
+    /// has been dragged.
+    /// </summary>
+    private (double X, double Y) Focus(RaidView view)
+    {
+        var (x, y) = Following ? (view.X ?? 0.5, view.Y ?? 0.5) : (0.5, 0.5);
+        return (x + _settings.Overlay.PanX, y + _settings.Overlay.PanY);
+    }
+
+    /// <summary>
+    /// Drags the map. Offsets are in map space rather than pixels, so a drag means the same
+    /// distance across the map however far you are zoomed in.
+    /// </summary>
+    private void Pan(double dxPixels, double dyPixels)
+    {
+        var fit = FitScale(MapCanvas.ActualWidth, MapCanvas.ActualHeight);
+        if (fit <= 0) return;
+
+        Remember(_settings.Overlay with
+        {
+            PanX = _settings.Overlay.PanX - dxPixels / (fit * _mapViewBox.Width),
+            PanY = _settings.Overlay.PanY - dyPixels / (fit * _mapViewBox.Height),
+        });
+
+        Draw();
+    }
+
+    /// <summary>
+    /// Puts the map back on you and locks it there — the crosshair, in the sense every mapping
+    /// app uses it. Dragging is a deliberate look somewhere else, so it switches following off;
+    /// this is how you say you are done looking.
+    /// </summary>
+    private void Recentre()
+    {
+        var bounds = _settings.Overlay with { PanX = 0, PanY = 0 };
+
+        Remember(_settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe
+            ? bounds with { FollowInWireframe = true }
+            : bounds with { FollowInBox = true });
+
+        Draw();
+    }
+
+    private void ToggleFollowing()
+    {
+        var bounds = _settings.Overlay with { PanX = 0, PanY = 0 };
+
+        Remember(_settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe
+            ? bounds with { FollowInWireframe = !bounds.FollowInWireframe }
+            : bounds with { FollowInBox = !bounds.FollowInBox });
+
+        Draw();
+    }
 
     private void DrawRoute(RaidView view)
     {

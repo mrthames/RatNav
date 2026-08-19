@@ -4,6 +4,39 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
+### The map
+
+- **Drag it.** Right-click and hold to move the map, so you can look at one corner while zoomed
+  in. Dragging switches following off — looking somewhere else is a decision — and a crosshair
+  appears to put the map back on you and lock it there, the way every mapping app works.
+  Panning needs interact mode (`F6`): right-click is aim-down-sights, and an overlay that
+  swallowed it mid-raid would be worse than one that cannot pan.
+- **Following is per presentation.** The corner box follows you by default — it is too small to
+  hold a map usefully. The centred map holds still by default — it is big enough to read as a map,
+  and one that re-centres on every fix puts the same building somewhere new each time you look.
+- **A halo behind every line.** This is what makes a translucent map readable over Tarkov, whose
+  backgrounds run from snowfield to unlit basement — no single line colour survives both, and
+  turning the opacity up until it does buries the game instead. With a **Line** weight control
+  beside it.
+
+### The items list
+
+- Sits **beside the map** as a narrow strip rather than under it, on whichever side you put it.
+- **Three foldable sections.** *Quests & hideout* is what active quests and buildable-now upgrades
+  want. *Watchlist* is what you chose by hand. *Later* is upgrades gated behind something unbuilt
+  and quests you could accept but have not — folded by default, and capped with the number of
+  rows it left out rather than stopping silently.
+- Rows are short names with the count in a fixed column, so the numbers line up. The full name
+  and the reason are on hover.
+- The pop-out window is **the overlay's list, parked elsewhere** — borderless, same ground, same
+  rows, draggable anywhere, narrow enough for the edge of a screen.
+
+### The hideout
+
+- **Level controls that are actually controls**: `+` and `−` per station, so an upgrade marked by
+  mistake can be put back. And a **Built it** button on each upgrade, because the moment you want
+  to record one is while you are looking at it.
+
 ### Setup
 
 - **Setup can now set things**, not just report them. The Escape from Tarkov folder, the

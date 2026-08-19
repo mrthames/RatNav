@@ -235,6 +235,106 @@ public static class ApiEndpoints
             return Results.Ok(new { stationId, level, targeted = request.Targeted });
         });
 
+        // The overlay's items list, already grouped.
+        //
+        // Grouping lives here rather than in the overlay because the rule for which section a row
+        // belongs to is real domain logic — active quests and buildable-now upgrades are things
+        // you can finish this raid; everything else is things you cannot — and the overlay should
+        // not be re-deriving that from a flat list.
+        api.MapGet("/items/panel", (
+            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
+            int? lookAhead) =>
+        {
+            if (state.Index is not { } index)
+                return Results.Ok(new ItemPanel());
+
+            var upcoming = state.Upcoming(progress, lookAhead ?? settings.HideoutLookAhead);
+
+            // Split by reachability, not by depth. Wave 1 is what nothing is standing in the way
+            // of; the rest is gated behind an upgrade you have not built.
+            var now = HideoutPlanner.Demand(upcoming.Where(u => u.Wave == 1));
+            var later = HideoutPlanner.Demand(upcoming.Where(u => u.Wave > 1));
+
+            var watched = tracker.Watchlist.Select(w => w.ItemId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // Quests you could accept today, not every quest in the game. Without this the section
+            // is several thousand rows — everything the whole wipe will ever ask for — which is not
+            // something anyone can read, let alone act on.
+            var acceptable = progress
+                .AvailableNow(state.Cache.Current?.Tasks ?? [])
+                .Select(t => t.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var placed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var panel = new ItemPanel();
+
+            foreach (var needs in index.AllNeeded())
+            {
+                var id = needs.Item.Id;
+
+                // The watchlist is what you chose by hand, so it wins the row wherever else the
+                // item might also belong — otherwise unchecking it appears to do nothing.
+                if (watched.Contains(id)) continue;
+
+                var tracked = tracker.Track(needs, progress, now);
+
+                if (tracked.Remaining > 0 && (tracked.QuestNeeded > 0 || tracked.HideoutNeeded > 0))
+                {
+                    panel.Now.Add(PanelRow.From(tracked, Why(tracked, needs, progress)));
+                    placed.Add(id);
+                    continue;
+                }
+
+                // Everything else: gated hideout upgrades, and quests you have not accepted. Worth
+                // knowing about before you vendor something, not worth reading mid-raid.
+                var gated = later.GetValueOrDefault(id);
+                var future = needs.Quests.Where(q => acceptable.Contains(q.TaskId)).ToList();
+
+                if (gated is null && future.Count == 0) continue;
+
+                var reason = gated is not null
+                    ? gated.UpgradeName
+                    : $"{future[0].TaskName}{(future.Count > 1 ? $" +{future.Count - 1}" : "")}";
+
+                panel.Later.Add(new PanelRow
+                {
+                    Id = id,
+                    Name = Short(needs.Item),
+                    FullName = needs.Item.Name,
+                    Count = gated?.Count ?? future.Sum(q => q.Count),
+                    Reason = reason,
+                    FoundInRaid = gated?.FoundInRaid ?? future.Any(q => q.FoundInRaid),
+                });
+            }
+
+            foreach (var entry in tracker.Watchlist)
+            {
+                var needs = index.GetNeeds(entry.ItemId)
+                    ?? new ItemNeeds { Item = index.GetItem(entry.ItemId) ?? Unknown(entry.ItemId) };
+
+                var tracked = tracker.Track(needs, progress, now);
+
+                panel.Watchlist.Add(PanelRow.From(
+                    tracked, entry.Note is { Length: > 0 } note ? note : Why(tracked, needs, progress)));
+            }
+
+            // Found-in-raid first: it is the one thing you cannot buy your way out of later.
+            panel.Now.Sort(ByUrgency);
+            panel.Later.Sort(ByUrgency);
+
+            // A glanceable panel has a length past which it stops being glanceable. Cut, and said
+            // so — a list that silently stops reads as "that is everything".
+            const int mostRowsWorthShowing = 60;
+
+            if (panel.Later.Count > mostRowsWorthShowing)
+            {
+                panel.LaterHidden = panel.Later.Count - mostRowsWorthShowing;
+                panel.Later.RemoveRange(mostRowsWorthShowing, panel.LaterHidden);
+            }
+
+            return Results.Ok(panel);
+        });
+
         // ---- progress
 
         api.MapGet("/progress", (RatNavState state, ProgressStore progress) =>
@@ -773,6 +873,26 @@ public static class ApiEndpoints
     /// <summary>Empty is a real answer — it means "detect it" — so it is stored as null, not "".</summary>
     private static string? Blank(string value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+    /// <summary>Why a row is on the list, in as few words as a narrow panel can show.</summary>
+    private static string Why(TrackedItem tracked, ItemNeeds needs, ProgressStore progress)
+    {
+        if (tracked.HideoutUpgrade is { Length: > 0 } upgrade) return upgrade;
+
+        var quest = needs.Quests.FirstOrDefault(q => progress.IsActive(q.TaskId));
+        if (quest is not null) return quest.TaskName;
+
+        return needs.AsKey.Count > 0 ? "key" : "";
+    }
+
+    /// <summary>The name players use, which is also the one that fits a narrow column.</summary>
+    private static string Short(ItemDef item) =>
+        item.ShortName is { Length: > 0 } and not "?" ? item.ShortName : item.Name;
+
+    private static int ByUrgency(PanelRow a, PanelRow b) =>
+        a.FoundInRaid != b.FoundInRaid
+            ? b.FoundInRaid.CompareTo(a.FoundInRaid)
+            : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+
     private static ItemDef Unknown(string itemId) => new() { Id = itemId, Name = "Unknown item" };
 
     private static object? Track(
@@ -988,6 +1108,47 @@ public sealed record SettingsView
             GameDirectoryDetected = settings.GameDirectory is null && resolved is not null,
         };
     }
+}
+
+/// <summary>
+/// The overlay's items list, in the three groups it shows.
+///
+/// <para>The split is by what you can act on. <b>Now</b> is active quests and upgrades nothing is
+/// standing in the way of. <b>Watchlist</b> is what you chose by hand. <b>Later</b> is upgrades
+/// gated behind something unbuilt and quests you have not accepted — worth knowing before you
+/// vendor something, not worth reading mid-raid, which is why it starts collapsed.</para>
+/// </summary>
+public sealed record ItemPanel
+{
+    public List<PanelRow> Now { get; init; } = [];
+    public List<PanelRow> Watchlist { get; init; } = [];
+    public List<PanelRow> Later { get; init; } = [];
+
+    /// <summary>How many rows were cut from <see cref="Later"/> to keep the panel readable.</summary>
+    public int LaterHidden { get; set; }
+}
+
+/// <summary>One line: what it is, how many more, and why — nothing else fits.</summary>
+public sealed record PanelRow
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required string FullName { get; init; }
+    public required int Count { get; init; }
+    public required string Reason { get; init; }
+    public bool FoundInRaid { get; init; }
+
+    public static PanelRow From(TrackedItem tracked, string reason) => new()
+    {
+        Id = tracked.Item.Id,
+        Name = tracked.Item.ShortName is { Length: > 0 } and not "?"
+            ? tracked.Item.ShortName
+            : tracked.Item.Name,
+        FullName = tracked.Item.Name,
+        Count = tracked.Remaining,
+        Reason = reason,
+        FoundInRaid = tracked.FoundInRaid,
+    };
 }
 
 /// <summary>How many hideout upgrades deep the items list should reach.</summary>
