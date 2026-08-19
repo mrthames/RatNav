@@ -131,6 +131,19 @@ public sealed record MapImage
 
     public int PixelWidth { get; init; }
     public int PixelHeight { get; init; }
+
+    /// <summary>
+    /// Whether this map's calibration has been checked against a real in-game position.
+    ///
+    /// The rule for turning world coordinates into image coordinates was derived from marked
+    /// positions on maps declaring 180° and 90°. Two rules fit that evidence — <c>180 − r</c> and
+    /// <c>|180 − r|</c> — and they agree everywhere except 270°, where they point opposite ways.
+    /// The Lab is the only 270° map in the game, so it is the only place the remaining ambiguity
+    /// can show up, and the only place it can be resolved.
+    ///
+    /// Surfaced rather than hidden: a pin that might be wrong should say so.
+    /// </summary>
+    public bool CalibrationVerified => CoordinateRotation is 0 or 90 or 180;
 }
 
 public sealed record MapExtract

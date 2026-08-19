@@ -311,12 +311,16 @@ public sealed record MapSummary
     public int CoordinateRotation { get; init; }
     public int ExtractCount { get; init; }
 
+    /// <summary>False where the coordinate rule has not been checked against a real position.</summary>
+    public bool CalibrationVerified { get; init; }
+
     public static MapSummary From(MapDef map) => new()
     {
         Id = map.Id,
         Name = map.Name,
         NormalizedName = map.NormalizedName,
         Calibrated = map.Image is not null,
+        CalibrationVerified = map.Image?.CalibrationVerified ?? false,
         ImageUrl = map.Image?.SourceUrl,
         CoordinateRotation = map.Image?.CoordinateRotation ?? 0,
         ExtractCount = map.Extracts.Count,
