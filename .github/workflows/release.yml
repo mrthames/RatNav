@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the web app
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Test before shipping
+        run: dotnet test --configuration Release
+
+      # Self-contained so there is no runtime to install first. Someone downloading a Tarkov
+      # tool should be able to unzip it and run it.
+      - name: Publish
+        run: >
+          dotnet publish src/RatNav.App
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          --output publish
+
+      - name: Package
+        run: Compress-Archive -Path publish/* -DestinationPath RatNav-${{ github.ref_name }}-win-x64.zip
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: RatNav-${{ github.ref_name }}-win-x64.zip
+          generate_release_notes: true

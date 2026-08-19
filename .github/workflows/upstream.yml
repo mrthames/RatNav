@@ -1,0 +1,70 @@
+name: Upstream data
+
+# RatNav depends on data other people maintain. A schema change upstream should become an issue
+# here rather than a stranger's bug report, so this runs the real queries against the live
+# services on a schedule and fails loudly when something moves.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: tarkov.dev serves the documents RatNav reads
+        run: |
+          set -euo pipefail
+          for path in regular/tasks regular/items regular/hideout regular/maps regular/traders; do
+            echo "checking $path"
+            curl -sfL --max-time 120 "https://json.tarkov.dev/$path" -o /dev/null
+            curl -sfL --max-time 120 "https://json.tarkov.dev/${path}_en" -o /dev/null
+          done
+
+      - name: The fields RatNav depends on are still there
+        run: |
+          set -euo pipefail
+          curl -sfL --max-time 120 https://json.tarkov.dev/regular/tasks -o tasks.json
+          python3 - <<'PY'
+          import json, sys
+
+          tasks = json.load(open("tasks.json"))["data"]["tasks"]
+          if not tasks:
+              sys.exit("no tasks returned")
+
+          # An objective's position lives on zones, and its keys on requiredKeys. Both are what
+          # make a quest plannable; losing either silently would empty every map of pins.
+          positioned = sum(
+              1
+              for t in tasks.values()
+              for o in (t.get("objectives") or [])
+              if any(z.get("position") for z in (o.get("zones") or []))
+          )
+
+          print(f"{len(tasks)} tasks, {positioned} positioned objectives")
+          if positioned < 100:
+              sys.exit(f"only {positioned} positioned objectives — the shape has probably changed")
+          PY
+
+      - name: Map calibration is still published
+        run: |
+          set -euo pipefail
+          curl -sfL --max-time 120 \
+            https://raw.githubusercontent.com/the-hideout/tarkov-dev/main/src/data/maps.json -o maps.json
+          python3 - <<'PY'
+          import json, sys
+
+          groups = json.load(open("maps.json"))
+          interactive = [
+              m for g in groups for m in g.get("maps", [])
+              if m.get("projection") == "interactive" and m.get("bounds")
+          ]
+
+          print(f"{len(interactive)} calibrated maps")
+          if len(interactive) < 8:
+              sys.exit("fewer calibrated maps than expected")
+          PY

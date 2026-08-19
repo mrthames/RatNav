@@ -1,0 +1,31 @@
+name: Something is wrong
+description: RatNav did something unexpected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations: { required: true }
+
+  - type: input
+    id: version
+    attributes:
+      label: RatNav version
+      placeholder: from the tray menu, or the tag you downloaded
+    validations: { required: true }
+
+  - type: input
+    id: game
+    attributes:
+      label: Game version
+      description: The version in your log folder name, e.g. 1.1.0.1.46777.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: |
+        If a position landed in the wrong place, the screenshot **filename** is the most useful
+        thing you can paste — it carries the coordinates. The image itself is not needed.
