@@ -1,6 +1,8 @@
-var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
+using RatNav.Service;
 
-app.MapGet("/", () => "Hello World!");
+// Standalone entry point, for developing the web app without launching the overlay.
+// In normal use the WPF app hosts this same service in-process.
+var app = ServiceHost.Build(args);
 
+Console.WriteLine($"RatNav service listening on http://localhost:{ServiceHost.DefaultPort}");
 app.Run();
