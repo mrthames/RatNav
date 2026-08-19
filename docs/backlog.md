@@ -121,11 +121,11 @@ for the list, plan-page key warnings, and the quest wiki carousel.
 These three are probably one underlying problem. Worth investigating together before fixing any of
 them separately.
 
-- [ ] **Tooltips flash and vanish.** Hovering a waypoint in the F5 view shows a tooltip for an
-  instant, then it disappears. Same unresponsiveness in F9.
-  - Hypothesis: the overlay is `Topmost` with `WS_EX_NOACTIVATE`, and a WPF `ToolTip` is a popup
-    owned by a window that never activates — so it opens and is immediately dismissed. If that is
-    it, tooltips cannot be made reliable and the label has to be drawn **into the canvas** instead.
+- [x] **Tooltips flash and vanish.** **The hypothesis was right.** A WPF `ToolTip` is a popup owned
+  by a window that never activates, so it opened and was dismissed in the same frame. Not fixable
+  while the window keeps the properties that make it an overlay, so the label is drawn into the
+  scene instead — its own layer above the map, hit-test invisible, folding back inside the map near
+  the edges.
 - [x] **The cursor vanishes and stutters over the map in F6.** It flickers as it crosses lines
   versus open areas, and near the edges — exactly where you need it for dragging and resizing — it
   disappears often enough to be hard to locate.
