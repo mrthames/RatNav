@@ -265,6 +265,12 @@ export interface QuestBriefing {
   images: WikiImage[]
 }
 
+/** One line of the key-bind reminder strip. */
+export interface HotkeyHint {
+  key: string
+  does: string
+}
+
 export interface WikiImage {
   title: string
   url: string
@@ -669,6 +675,9 @@ export const api = {
    * titles. Going through the service also means each picture is fetched once and kept.
    */
   wikiPictureUrl: (url: string) => `/api/wiki/picture?url=${encodeURIComponent(url)}`,
+
+  /** The key-bind reminder strip, the same list the overlay shows along its own footer. */
+  hotkeyHints: () => get<HotkeyHint[]>('/api/hotkeys/hints'),
 }
 
 /** "3 minutes ago" — the app should always be able to say how old its data is. */

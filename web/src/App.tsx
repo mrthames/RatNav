@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ago, api, type DataStatus, type MapSummary, type RaidView } from './api'
 import { HeldBack } from './HeldBack'
+import { HotkeyBar } from './HotkeyBar'
 import { MapPicker } from './MapPicker'
 import { MapView } from './MapView'
 import { HideoutView } from './HideoutView'
@@ -178,6 +179,8 @@ export default function App() {
         : <p className="font-mono text-xs text-muted">no maps loaded</p>)}
 
       {view === 'maps' && <HeldBack onSettled={reloadMaps} />}
+
+      <HotkeyBar />
     </div>
   )
 }

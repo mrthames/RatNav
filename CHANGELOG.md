@@ -35,6 +35,13 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### The overlay
 
+- **A key-bind reminder along the bottom**, up with the controls rather than over the game all
+  raid. It names the keys you actually bound, including your in-game screenshot key — the one
+  people forget. The buddy app carries the same strip stuck to the bottom of the window, from the
+  same source, so the two cannot drift.
+- **The item card takes itself away after five seconds.** You read it in a moment and then it is
+  over the game, and dismissing it by hand is a keypress nobody wants to spend mid-raid.
+
 - **The strip above the map is half as tall.** The name and the bearing were stacked on two lines
   for two short pieces of text, costing the top of the overlay twice what the strip at the bottom
   costs. They share a line now, and every pixel saved is one the map gets.

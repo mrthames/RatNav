@@ -30,6 +30,7 @@ using Image = System.Windows.Controls.Image;
 using Panel = System.Windows.Controls.Panel;
 using Cursors = System.Windows.Input.Cursors;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using System.Windows.Threading;
 
 namespace RatNav.App;
 
@@ -168,6 +169,10 @@ public partial class OverlayWindow : Window
         // scroll, so the wheel zoomed the map while the pointer was over a list you were trying
         // to read.
         MapFrame.MouseWheel += OnWheel;
+
+        _identifyCardTimer.Tick += (_, _) => HideIdentifyCard();
+
+        _ = LoadHotkeyHintsAsync();
 
         // The canvas is a bare drawing surface, so WPF leaves the cursor to whatever was last
         // set — which over a transparent window is nothing at all. Stating it keeps the pointer
@@ -350,6 +355,9 @@ public partial class OverlayWindow : Window
             BindHotKeys(onProblem);
             ApplyBounds();
             Draw();
+
+            // Rebinding a key changes what the reminder strip should say.
+            _ = LoadHotkeyHintsAsync();
         });
     }
 
@@ -1468,6 +1476,17 @@ public partial class OverlayWindow : Window
 
     private bool IdentifyCardPanelVisible => IdentifyCardPanel.Visibility == Visibility.Visible;
 
+    /// <summary>
+    /// Takes the identify card away again on its own.
+    ///
+    /// <para>You read it in a moment and then it is sitting over the game. Dismissing it by hand is
+    /// a keypress nobody wants to spend mid-raid, so it goes by itself.</para>
+    /// </summary>
+    private readonly DispatcherTimer _identifyCardTimer = new()
+    {
+        Interval = TimeSpan.FromSeconds(5),
+    };
+
     private void ShowIdentifyCard(string name, string? hedge, IReadOnlyList<IdentifyReason> reasons)
     {
         IdentifyName.Text = name;
@@ -1477,9 +1496,18 @@ public partial class OverlayWindow : Window
 
         IdentifyCardPanel.Visibility = Visibility.Visible;
         Show();
+
+        // Restarted rather than left running, so reading item after item does not make one of them
+        // vanish early — and so the "Reading…" card does not take the answer with it.
+        _identifyCardTimer.Stop();
+        _identifyCardTimer.Start();
     }
 
-    private void HideIdentifyCard() => IdentifyCardPanel.Visibility = Visibility.Collapsed;
+    private void HideIdentifyCard()
+    {
+        _identifyCardTimer.Stop();
+        IdentifyCardPanel.Visibility = Visibility.Collapsed;
+    }
 
     /// <summary>What the identify endpoint returns.</summary>
     private sealed record IdentifyResponse(List<ItemDetail>? Matches, List<string>? ReadText);
@@ -1516,6 +1544,30 @@ public partial class OverlayWindow : Window
         ApplyControlStack();
     }
 
+    /// <summary>One line of the key-bind reminder strip.</summary>
+    private sealed record HotkeyHint(string Key, string Does);
+
+    /// <summary>
+    /// Fills the reminder strip from the service.
+    ///
+    /// <para>From the same endpoint the buddy app's footer reads, rather than a list written out
+    /// twice — two copies of "which key does what" is exactly the pair that drifts.</para>
+    /// </summary>
+    private async Task LoadHotkeyHintsAsync()
+    {
+        try
+        {
+            var hints = await _http.GetFromJsonAsync<List<HotkeyHint>>(
+                $"http://127.0.0.1:{ServiceHost.DefaultPort}/api/hotkeys/hints");
+
+            if (hints is { Count: > 0 }) HotkeyHints.ItemsSource = hints;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            // A missing reminder strip is not worth a word about.
+        }
+    }
+
     private void ApplyControlStack()
     {
         // Only ever while the overlay takes the mouse. Controls you cannot click have no business
@@ -1524,6 +1576,10 @@ public partial class OverlayWindow : Window
         var open = _settings.Overlay.ShowControls;
 
         ControlStack.Visibility = editing && open ? Visibility.Visible : Visibility.Collapsed;
+
+        // The reminder strip comes up with the controls. Six pieces of text you already know,
+        // sitting over the game for a whole raid, is not a reminder — it is clutter.
+        HotkeyHints.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
 
         // The gear stays wherever interact mode is on, open or closed. Hiding it when the stack
         // opened made the row reflow and the quests and items buttons slide across underneath the

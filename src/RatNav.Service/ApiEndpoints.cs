@@ -796,6 +796,27 @@ public static class ApiEndpoints
             return Results.Ok(SettingsView.From(settings));
         });
 
+        // The key-bind reminder strip, shown along the bottom of the overlay and stuck to the
+        // bottom of the buddy app.
+        //
+        // Built here so the two cannot drift, and read from the settings rather than written out
+        // as text — the whole point is to name the keys *you* bound, including the screenshot key,
+        // which is the one people forget.
+        api.MapGet("/hotkeys/hints", (RatNavSettings settings) =>
+        {
+            var keys = settings.Hotkeys;
+
+            return Results.Ok(new[]
+            {
+                new { key = settings.ScreenshotKey, does = "where am I" },
+                new { key = keys.ToggleOverlay, does = "show/hide" },
+                new { key = keys.ToggleInteract, does = "controls" },
+                new { key = keys.ToggleMode, does = "panel/map" },
+                new { key = keys.IdentifyItem, does = "what is this" },
+                new { key = keys.ReadExtracts, does = "extracts" },
+            }.Where(h => h.key is { Length: > 0 }));
+        });
+
         // ---- setup
 
         api.MapGet("/diagnostics", (RatNavSettings settings, RatNavState state, RaidHost host) =>

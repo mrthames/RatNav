@@ -146,6 +146,7 @@
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!--
@@ -406,6 +407,34 @@
 
                     <TextBlock x:Name="FixAgeText" Style="{StaticResource Label}" HorizontalAlignment="Right" />
                 </Grid>
+
+                <!--
+                    The key-bind reminder, along the very bottom.
+
+                    Shown only while the controls are up: the whole list on screen during a raid is
+                    six pieces of text you already know, over the game. It names the keys actually
+                    bound, including the in-game screenshot key, which is the one people forget.
+                -->
+                <ItemsControl x:Name="HotkeyHints" Grid.Row="4" Margin="0,4,0,0"
+                              Visibility="Collapsed">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                <TextBlock Text="{Binding Key}" FontFamily="Consolas" FontSize="10"
+                                           Foreground="{StaticResource Ink}" />
+                                <TextBlock Text="{Binding Does}" Margin="4,0,0,0"
+                                           FontFamily="Consolas" FontSize="10"
+                                           Foreground="{StaticResource Muted}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Grid>
         </Border>
 
