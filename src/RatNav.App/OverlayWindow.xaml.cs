@@ -238,6 +238,8 @@ public partial class OverlayWindow : Window
         MarkerDown.Click += (_, _) => StepMarker(-0.5);
         TextUp.Click += (_, _) => StepText(+0.5);
         TextDown.Click += (_, _) => StepText(-0.5);
+        PlaceNameUp.Click += (_, _) => StepPlaceNames(+0.5);
+        PlaceNameDown.Click += (_, _) => StepPlaceNames(-0.5);
         ShrinkUp.Click += (_, _) => StepShrink(+0.1);
         ShrinkDown.Click += (_, _) => StepShrink(-0.1);
         YouUp.Click += (_, _) => StepPlayer(+0.5);
@@ -1913,6 +1915,16 @@ public partial class OverlayWindow : Window
         Draw();
     }
 
+    private void StepPlaceNames(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            PlaceNameScale = Math.Clamp(_settings.Overlay.PlaceNameScale + by, 1.0, 6.0),
+        });
+
+        Draw();
+    }
+
     /// <summary>
     /// Folds the control stack away, leaving one button to bring it back.
     ///
@@ -2161,6 +2173,7 @@ public partial class OverlayWindow : Window
         OfferedButton.Content = $"showing {offered} · all";
         MarkerText.Text = $"{_settings.Overlay.MarkerScale:0.0}×";
         TextScaleText.Text = $"{_settings.Overlay.TextScale:0.0}×";
+        PlaceNameText.Text = $"{_settings.Overlay.PlaceNameScale:0.0}×";
         ShrinkText.Text = $"{_settings.Overlay.ScaleWithZoom:0.00}";
         YouText.Text = $"{_settings.Overlay.PlayerScale:0.0}×";
         HaloButton.Content = _settings.Overlay.Halo ? "halo on" : "halo off";
@@ -2621,13 +2634,17 @@ public partial class OverlayWindow : Window
             Stroke = (Brush)FindResource("Ground"),
             StrokeThickness = 1,
 
-            // Smaller than a real marker on purpose: it is a direction, not a position, and it
-            // should not be mistaken for something you have actually found.
+            // The same size as everything else on the map.
+            //
+            // It used to be drawn at 0.7 on the theory that a direction should not be mistaken for
+            // a position. In practice it just made the one marker you cannot see the position of
+            // the hardest one to read, next to full-size pins and place names — and an arrow is
+            // already unmistakably an arrow.
             RenderTransform = new TransformGroup
             {
                 Children =
                 {
-                    new ScaleTransform(scale * 0.7, scale * 0.7),
+                    new ScaleTransform(scale, scale),
                     new RotateTransform(bearing),
                 },
             },
@@ -2645,7 +2662,7 @@ public partial class OverlayWindow : Window
         {
             Text = label,
             FontFamily = new FontFamily("Consolas"),
-            FontSize = 9 * _settings.Overlay.TextScale * 0.8,
+            FontSize = 9 * _settings.Overlay.TextScale,
             FontWeight = FontWeights.Bold,
             Foreground = colour,
             IsHitTestVisible = false,
@@ -2655,19 +2672,19 @@ public partial class OverlayWindow : Window
 
         // Nudged back toward the middle, so the label sits inside the view rather than half off it.
         Canvas.SetLeft(text, at.X - text.DesiredSize.Width / 2);
-        Canvas.SetTop(text, at.Y + 6 * scale * 0.7);
+        Canvas.SetTop(text, at.Y + 6 * scale);
         MapCanvas.Children.Add(text);
     }
-
-    /// <summary>Where a caption has already been drawn this frame.</summary>
-    private readonly List<Rect> _labelled = [];
 
     /// <summary>
     /// A short caption on the map, with a dark backing so it survives whatever is behind it.
     ///
-    /// <para>Captions claim their space. Extracts cluster along the edges of a map and their names
-    /// piled on top of each other into something unreadable; one that cannot find room is dropped
-    /// instead, because a legible half is worth more than an illegible whole.</para>
+    /// <para><b>Every caption is drawn, overlaps and all.</b> They used to claim their space and a
+    /// caption that could not find room was dropped, on the theory that a legible half beats an
+    /// illegible whole. It does not: overlapping text is ugly, but a label that is not there
+    /// cannot be read at all, and reading them is the entire reason they exist. Worse, which ones
+    /// vanished depended on draw order, so the same map lost different names at different
+    /// zooms.</para>
     /// </summary>
     private void Label(string text, double x, double y, Brush colour, double size)
     {
@@ -2692,19 +2709,8 @@ public partial class OverlayWindow : Window
 
         label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 
-        var at = new Rect(
-            x - label.DesiredSize.Width / 2, y,
-            label.DesiredSize.Width, label.DesiredSize.Height);
-
-        // A little breathing room, so two captions that merely touch are still treated as a clash.
-        var claim = Rect.Inflate(at, 2, 1);
-
-        if (_labelled.Any(taken => taken.IntersectsWith(claim))) return;
-
-        _labelled.Add(claim);
-
-        Canvas.SetLeft(label, at.X);
-        Canvas.SetTop(label, at.Y);
+        Canvas.SetLeft(label, x - label.DesiredSize.Width / 2);
+        Canvas.SetTop(label, y);
         MapCanvas.Children.Add(label);
     }
 
@@ -2749,9 +2755,9 @@ public partial class OverlayWindow : Window
         var scale = _settings.Overlay.MarkerScale * relative;
         var textScale = _settings.Overlay.TextScale * relative;
 
-        // Cleared each draw, so a label that had room last frame is not blocked by a ghost of
-        // itself this one.
-        _labelled.Clear();
+        // Place names have their own dial. They are the backdrop rather than a destination, and
+        // want a different size from the captions on the things you are walking to.
+        var placeScale = _settings.Overlay.PlaceNameScale * relative;
 
         // Place names first — they are the backdrop. Drawn after the pins they sat on top of the
         // thing you were navigating to, which is exactly backwards.
@@ -2763,7 +2769,7 @@ public partial class OverlayWindow : Window
 
                 // White. At full ink the map's own roads and rock are pale enough that a muted
                 // grey caption disappears into them.
-                Label(place.Text, at.X, at.Y, Brushes.White, 9 * textScale);
+                Label(place.Text, at.X, at.Y, Brushes.White, 9 * placeScale);
             }
         }
 

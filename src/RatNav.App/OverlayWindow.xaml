@@ -837,13 +837,31 @@
                                 <Button x:Name="MarkerUp" Style="{StaticResource Chip}" Content="+" />
                             </StackPanel>
 
-                            <TextBlock Style="{StaticResource Label}" Text="TEXT" Margin="0,0,0,2" />
+                            <!--
+                                Two dials rather than one, because the two kinds of text are doing
+                                opposite jobs: the map's place names are the backdrop you read to
+                                know which end of the map you are on, and a waypoint's caption is
+                                the thing you are walking to. One control for both meant neither
+                                was ever the right size.
+                            -->
+                            <TextBlock Style="{StaticResource Label}" Text="WAYPOINTS" Margin="0,0,0,2"
+                                       ToolTip="Captions on stops, extracts, marks and edge arrows" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <Button x:Name="TextDown" Style="{StaticResource Chip}" Content="−" />
                                 <TextBlock x:Name="TextScaleText" Style="{StaticResource Label}"
                                            Foreground="{StaticResource Ink}" VerticalAlignment="Center"
                                            MinWidth="46" TextAlignment="Center" Text="2.0×" />
                                 <Button x:Name="TextUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource Label}" Text="MAP LABELS" Margin="0,0,0,2"
+                                       ToolTip="The place names drawn from the map itself" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="PlaceNameDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="PlaceNameText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="2.0×" />
+                                <Button x:Name="PlaceNameUp" Style="{StaticResource Chip}" Content="+" />
                             </StackPanel>
 
                             <TextBlock Style="{StaticResource Label}" Text="YOU" Margin="0,0,0,2"

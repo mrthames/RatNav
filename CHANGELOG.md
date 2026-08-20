@@ -16,6 +16,17 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **Edge arrows are drawn at full size.** The arrows that point at waypoints off the edge of the
+  view were drawn at 0.7 with their text smaller again, on the theory that a direction should not
+  be mistaken for a position. In practice it made the one marker whose position you cannot see the
+  hardest thing on the map to read. An arrow is already unmistakably an arrow.
+- **Every map caption is drawn, overlaps and all.** A caption that could not find clear space used
+  to be dropped. Overlapping text is worse to look at, but a label that is not there cannot be read
+  at all — and which ones vanished depended on draw order, so the same map lost different names at
+  different zooms.
+- **Two text dials instead of one.** **Map labels** sizes the place names the map itself carries;
+  **Waypoints** sizes the captions on stops, extracts, marks and edge arrows. They are the backdrop
+  and the destination respectively, and one control for both meant neither was ever right.
 - **A floor dropdown on the quick panel**, per map, with **Stacked** first and default. Every floor
   is drawn over the other unless you say otherwise; isolating one is now one click away instead of
   buried in the controls drawer, and a position fix never changes it underneath you. The drawer's

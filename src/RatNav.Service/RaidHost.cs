@@ -620,6 +620,16 @@ public sealed record RatNavSettings
         public double TextScale { get; init; } = 2.0;
 
         /// <summary>
+        /// How big the map's own place names are.
+        ///
+        /// <para>Its own dial rather than sharing one with the waypoint captions, because the two
+        /// are doing opposite jobs. Place names are the backdrop you read at a glance to know
+        /// which end of the map you are looking at; a waypoint's caption is the thing you are
+        /// navigating to. One control for both meant neither was ever the right size.</para>
+        /// </summary>
+        public double PlaceNameScale { get; init; } = 2.0;
+
+        /// <summary>
         /// How much markers and text shrink as the map is zoomed out, 0 to 1.
         ///
         /// <para>Markers sized for a zoomed-in view cover a zoomed-out one — pins and captions

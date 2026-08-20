@@ -147,8 +147,13 @@ Press `F7`, then turn **Size** up in the row along the top of the overlay. RatNa
 drawn for 1080p; a 4K screen has four times the pixels in the same physical space, so everything
 lands at a quarter of the area until you say otherwise.
 
-The map's own markers and captions have their own dials — **Pins**, **Text** and **You** — in the
-control stack.
+The map's own markers and captions have their own dials in the control stack — **Pins** for the
+markers, **Waypoints** for the captions on stops, extracts and marks, **Map labels** for the place
+names the map itself carries, and **You** for your own marker.
+
+Waypoints and map labels are separate because they do opposite jobs: the place names are the
+backdrop you read to know which end of the map you are on, and a waypoint's caption is the thing
+you are walking to.
 
 ## A hotkey does nothing
 
