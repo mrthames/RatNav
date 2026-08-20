@@ -1,14 +1,8 @@
-# Most of what arrives as an issue is already answered. Pointing at the answer first is kinder
-# than letting someone wait a day for a link.
+# Most of what would arrive here is already answered, and pointing at the answer is faster for
+# everybody than a round trip.
 blank_issues_enabled: false
 
 contact_links:
-  - name: A note on what to expect
-    url: https://github.com/mrthames/RatNav/blob/main/CONTRIBUTING.md
-    about: >-
-      RatNav is one person's side project. Issues are read — bug reports especially — but a reply
-      is not guaranteed and a fix is not promised. Pull requests are not taken; forking is welcome.
-
   - name: Read the FAQ first
     url: https://github.com/mrthames/RatNav/blob/main/docs/FAQ.md
     about: >-
@@ -17,4 +11,10 @@ contact_links:
 
   - name: How to use it
     url: https://github.com/mrthames/RatNav/blob/main/docs/GUIDE.md
-    about: Setup, planning, the overlay, items, barters, the hideout, and sharing plans.
+    about: Setup, planning, the overlay, items, the hideout, and sharing plans.
+
+  - name: What to expect
+    url: https://github.com/mrthames/RatNav/blob/main/CONTRIBUTING.md
+    about: >-
+      RatNav is one person's side project. Bug reports are read; a reply is not guaranteed and a
+      fix is not promised.

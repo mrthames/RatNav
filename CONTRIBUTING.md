@@ -8,21 +8,17 @@ tradeable. [How it works](docs/SAFETY.md) sets out where the line is and why it 
 
 ## How this project is run
 
-RatNav is one person's side project, kept free under
-[PolyForm Noncommercial](LICENSE). Two things follow from that, and both are worth knowing before
-you spend an evening on something.
+RatNav is one person's side project, kept free under [PolyForm Noncommercial](LICENSE).
 
-**Forking is welcome; there is no review queue here.** Pull requests are not the way in — not
-because contributions are unwelcome, but because running a review process is a commitment this
-project cannot make. If you want a change, the licence lets you fork and make it. Give your version
-its own name.
+**Bug reports are read.** A marker in the wrong place, a map that will not load, a quest that reads
+incorrectly — those are worth knowing about, and an issue is the way to say so. A reply is not
+guaranteed and a fix is not promised, which is the honest position for a project of one.
 
-**Issues are read.** Bug reports especially: a wrong marker, a map that will not load, a quest that
-reads incorrectly. Those are how anything gets found. A reply is not guaranteed and a fix is not
-promised, which is the honest position for a project of one.
+**There is no review queue.** Pull requests are not the way in, and feature requests are not being
+gathered. If you want RatNav to do something it does not, the [licence](LICENSE) lets you fork it
+for anything noncommercial — give your version its own name.
 
-The most useful thing anybody can send is in [Sharing a map calibration](#sharing-a-map-calibration)
-below — one screenshot settles a map for everyone.
+The rest of this file is for anyone building it themselves.
 
 ## Getting it running
 
@@ -90,8 +86,8 @@ from the implementation only proves the implementation agrees with itself.
 **Comments explain why, not what.** The code says what. Comments are for the reason a decision was
 made, especially where the obvious approach was tried and failed.
 
-**Say when something might be wrong.** A map whose calibration could not be established says so
-in the UI. Confidently displaying a pin that might be 75 metres out is worse than admitting doubt.
+**Do not ship what cannot be trusted.** A map whose position cannot be established is held back
+rather than shown with a warning. A pin that might be wrong is worse than no pin.
 
 ## Data sources
 
@@ -99,11 +95,3 @@ Game data comes from [tarkov.dev](https://tarkov.dev), maps and their calibratio
 [tarkov-dev repo](https://github.com/the-hideout/tarkov-dev), both maintained by volunteers.
 Cache politely, do not poll hard, and credit the map authors — every map carries its author in the
 data and RatNav shows it.
-
-## Sharing a map calibration
-
-If you have a map RatNav marks as uncertain, `tools/make-calibration-page.py` builds a one-click
-page for settling it — though **Maps → Settle it** in the app does the same job without leaving it.
-
-Either way, open an issue with the map and the position you used. A calibration solved once ships
-for everyone.
