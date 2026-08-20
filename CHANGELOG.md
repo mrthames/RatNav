@@ -2,7 +2,10 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
-## Unreleased
+## 0.3.0-alpha.1 — 2026-08-20
+
+The first public release. Alpha: it works and is used daily, but it is early.
+
 
 ### Maps you can trust
 
