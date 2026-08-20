@@ -82,7 +82,7 @@ public class ScreenshotFilenameTests
     [Fact]
     public void Turning_right_in_game_increases_the_heading()
     {
-        // Ground truth, from two screenshots taken four seconds apart on Factory: Justin stood
+        // Ground truth, from two screenshots taken four seconds apart on Factory: the player stood
         // still and turned 90 degrees to his right. The position moved 0.25 m, so this really is
         // one spot and two facings — which is the only way to tell a correct heading sign from an
         // inverted one. An inverted formula would report roughly -92 here and the overlay's facing

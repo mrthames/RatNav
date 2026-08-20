@@ -25,13 +25,13 @@ public class PlanSharingTests
     public void A_plan_survives_the_trip_to_a_file_and_back()
     {
         var plan = RaidPlanner.Plan(Customs, [At("a", 0, 0, "dorm-114"), At("b", 100, 50)]);
-        var document = PlanDocument.From(plan, "justin", ["salewa"]);
+        var document = PlanDocument.From(plan, "you", ["salewa"]);
 
         var restored = PlanDocument.FromJson(document.ToJson(), out var problem);
 
         Assert.Null(problem);
         Assert.NotNull(restored);
-        Assert.Equal("justin", restored.Owner);
+        Assert.Equal("you", restored.Owner);
         Assert.Equal("customs", restored.MapId);
         Assert.Equal(2, restored.Stops.Count);
         Assert.Contains("dorm-114", restored.RequiredKeyItemIds);
@@ -65,22 +65,22 @@ public class PlanSharingTests
     [Fact]
     public void Merging_keeps_every_objective_and_says_whose_it_is()
     {
-        var mine = DocumentFor("justin", At("a", 0, 0), At("b", 100, 0));
-        var theirs = DocumentFor("the tester", At("c", 200, 0), At("d", 300, 0));
+        var mine = DocumentFor("you", At("a", 0, 0), At("b", 100, 0));
+        var theirs = DocumentFor("a friend", At("c", 200, 0), At("d", 300, 0));
 
         var squad = PlanMerger.Merge(Customs, [mine, theirs]);
 
         // Nothing dropped: the whole point is that neither player gives up their own raid.
         Assert.Equal(4, squad.Plan.Waypoints.Count);
-        Assert.Equal(["justin", "the tester"], squad.Owners);
+        Assert.Equal(["you", "a friend"], squad.Owners);
         Assert.All(squad.Plan.Waypoints, w => Assert.False(string.IsNullOrEmpty(w.Owner)));
     }
 
     [Fact]
     public void An_objective_you_both_picked_becomes_one_shared_stop()
     {
-        var mine = DocumentFor("justin", At("shared", 50, 0), At("mine", 0, 0));
-        var theirs = DocumentFor("the tester", At("shared", 50, 0), At("theirs", 200, 0));
+        var mine = DocumentFor("you", At("shared", 50, 0), At("mine", 0, 0));
+        var theirs = DocumentFor("a friend", At("shared", 50, 0), At("theirs", 200, 0));
 
         var squad = PlanMerger.Merge(Customs, [mine, theirs]);
 
@@ -92,34 +92,34 @@ public class PlanSharingTests
         Assert.Equal(2, shared.Owners.Count);
 
         var stop = squad.Plan.Waypoints.Single(w => w.ObjectiveId == "shared");
-        Assert.Contains("justin", stop.Owner);
-        Assert.Contains("the tester", stop.Owner);
+        Assert.Contains("you", stop.Owner);
+        Assert.Contains("a friend", stop.Owner);
     }
 
     [Fact]
     public void Items_you_are_both_hunting_are_flagged()
     {
-        var mine = PlanDocument.From(RaidPlanner.Plan(Customs, [At("a", 0, 0)]), "justin", ["salewa", "watch"]);
-        var theirs = PlanDocument.From(RaidPlanner.Plan(Customs, [At("b", 100, 0)]), "the tester", ["salewa", "bolts"]);
+        var mine = PlanDocument.From(RaidPlanner.Plan(Customs, [At("a", 0, 0)]), "you", ["salewa", "watch"]);
+        var theirs = PlanDocument.From(RaidPlanner.Plan(Customs, [At("b", 100, 0)]), "a friend", ["salewa", "bolts"]);
 
         var squad = PlanMerger.Merge(Customs, [mine, theirs]);
 
         var contested = Assert.Single(squad.Overlap.ContestedItems);
         Assert.Equal("salewa", contested.ItemId);
-        Assert.Equal(["the tester", "justin"], contested.Owners);
+        Assert.Equal(["a friend", "you"], contested.Owners);
     }
 
     [Fact]
     public void A_key_you_would_both_have_carried_names_one_carrier()
     {
-        var mine = DocumentFor("justin", At("a", 0, 0, "dorm-114", "dorm-220"));
-        var theirs = DocumentFor("the tester", At("b", 100, 0, "dorm-114"));
+        var mine = DocumentFor("you", At("a", 0, 0, "dorm-114", "dorm-220"));
+        var theirs = DocumentFor("a friend", At("b", 100, 0, "dorm-114"));
 
         var squad = PlanMerger.Merge(Customs, [mine, theirs]);
 
         var redundant = Assert.Single(squad.Overlap.RedundantKeys);
         Assert.Equal("dorm-114", redundant.ItemId);
-        Assert.Equal("the tester", redundant.Carrier);
+        Assert.Equal("a friend", redundant.Carrier);
 
         // The key only one player needed is not redundant and stays their problem.
         Assert.DoesNotContain(squad.Overlap.RedundantKeys, k => k.ItemId == "dorm-220");
@@ -128,9 +128,9 @@ public class PlanSharingTests
     [Fact]
     public void An_updated_plan_from_the_same_player_replaces_the_old_one()
     {
-        var first = DocumentFor("the tester", At("old", 0, 0)) with { CreatedAt = DateTimeOffset.UtcNow.AddHours(-1) };
-        var second = DocumentFor("the tester", At("new", 100, 0)) with { CreatedAt = DateTimeOffset.UtcNow };
-        var mine = DocumentFor("justin", At("mine", 200, 0));
+        var first = DocumentFor("a friend", At("old", 0, 0)) with { CreatedAt = DateTimeOffset.UtcNow.AddHours(-1) };
+        var second = DocumentFor("a friend", At("new", 100, 0)) with { CreatedAt = DateTimeOffset.UtcNow };
+        var mine = DocumentFor("you", At("mine", 200, 0));
 
         var squad = PlanMerger.Merge(Customs, [mine, first, second]);
 
@@ -143,8 +143,8 @@ public class PlanSharingTests
     [Fact]
     public void Merging_leaves_the_original_plans_untouched()
     {
-        var mine = DocumentFor("justin", At("a", 0, 0));
-        var theirs = DocumentFor("the tester", At("b", 100, 0));
+        var mine = DocumentFor("you", At("a", 0, 0));
+        var theirs = DocumentFor("a friend", At("b", 100, 0));
         var before = mine.ToJson();
 
         PlanMerger.Merge(Customs, [mine, theirs]);
@@ -157,8 +157,8 @@ public class PlanSharingTests
     {
         // Your arrangement survives, and theirs follows in the order they arranged it. Re-sorting
         // the pair into a shorter route would throw away two people's decisions to save a walk.
-        var mine = DocumentFor("justin", At("c", 200, 0), At("a", 0, 0));
-        var theirs = DocumentFor("the tester", At("d", 300, 0), At("b", 100, 0));
+        var mine = DocumentFor("you", At("c", 200, 0), At("a", 0, 0));
+        var theirs = DocumentFor("a friend", At("d", 300, 0), At("b", 100, 0));
 
         var squad = PlanMerger.Merge(Customs, [mine, theirs]);
 
@@ -170,8 +170,8 @@ public class PlanSharingTests
     {
         // The same stop, not two — and it stays where you put it. Moving it to where they put it
         // would rearrange your plan on their say-so.
-        var mine = DocumentFor("justin", At("a", 0, 0), At("shared", 50, 0));
-        var theirs = DocumentFor("the tester", At("shared", 50, 0), At("b", 100, 0));
+        var mine = DocumentFor("you", At("a", 0, 0), At("shared", 50, 0));
+        var theirs = DocumentFor("a friend", At("shared", 50, 0), At("b", 100, 0));
 
         var squad = PlanMerger.Merge(Customs, [mine, theirs]);
 

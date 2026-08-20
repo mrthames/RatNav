@@ -6,7 +6,7 @@ This exists because a long working session gets summarised as it runs, and anyth
 conversation can be lost when that happens. A request that made it to this file survives; one that
 did not, might not. So: capture first, then execute, then tick.
 
-Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[?]` needs a decision from Justin
+Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[?]` needs a decision
 
 ---
 
@@ -78,7 +78,7 @@ for the list, plan-page key warnings, and the quest wiki carousel.
 - [x] **Building interiors are missing on Streets.** Walking through a door, no internal layout
   appeared on either the ground or second floor — no hallways, no walkable areas, nothing to say
   where to go or where a dead end is.
-  - **Investigated: the data is fine, and Justin's instinct was right.** Streets' `Ground_Level`
+  - **Investigated: the data is fine, and the author's instinct was right.** Streets' `Ground_Level`
     holds 484 paths but its `buildings` group is footprints only — no interiors. The interiors
     live one level up, in `Second_Floor` → `Floor-2` (98 paths). Standing inside a building at
     street level puts you at a height that resolves to `Ground_Level`, which has nothing indoors
@@ -282,7 +282,7 @@ them separately.
   - Push is the better answer than polling and the plumbing already exists: the raid session
     publishes to every surface over a WebSocket. Item changes should publish the same way, rather
     than the overlay waking up on a timer to ask.
-  - Justin's stated fallback: a periodic refresh, or a toggle for one.
+  - The stated fallback: a periodic refresh, or a toggle for one.
 
 ### Item identification (F10) card
 
@@ -404,7 +404,7 @@ them separately.
 
 ### Raster tiles as a base layer — built, then removed
 
-**Reverted at Justin's call.** The tiles extended well past the playable area and read as a
+**Reverted.** The tiles extended well past the playable area and read as a
 photograph under a diagram; what the map is for is structures, landmarks and roads, and the vector
 says those precisely. The graphical ink level stays — that is the map's *own* palette, which is
 what made Woods legible — but the tile layer, its endpoint and its cache are gone.
@@ -669,7 +669,7 @@ The research is kept below in case it is ever wanted again.
   - Gated by station level, so only crafts your hideout can actually run should be offerable.
   - tarkov.dev has a `crafts` document alongside `barters`; it is not fetched yet.
 - [x] **Restructure the items list around this.** Built as: watchlist, then Barter, then Crafting
-  (both appearing only once you have picked something), then quests & hideout, then Later. Justin's proposed shape, which supersedes the
+  (both appearing only once you have picked something), then quests & hideout, then Later. The proposed shape, which supersedes the
   three-section split built in Round 5:
   - **Quests & hideout** — as now.
   - **Watchlist** — items of interest, with **subsections for Barter and Crafting**. Each names the

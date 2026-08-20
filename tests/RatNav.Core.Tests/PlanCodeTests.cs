@@ -27,7 +27,7 @@ public class PlanCodeTests
         },
     };
 
-    private static PlanDocument Document(string owner = "justin") => PlanDocument.From(
+    private static PlanDocument Document(string owner = "you") => PlanDocument.From(
         RaidPlanner.Plan(Customs,
         [
             new Waypoint
@@ -58,7 +58,7 @@ public class PlanCodeTests
 
         Assert.Null(problem);
         Assert.NotNull(restored);
-        Assert.Equal("justin", restored.Owner);
+        Assert.Equal("you", restored.Owner);
         Assert.Equal("customs", restored.MapId);
         Assert.Equal(["o1", "o2"], restored.Stops.Select(s => s.ObjectiveId));
         Assert.Contains("dorm-114", restored.RequiredKeyItemIds);
