@@ -296,6 +296,39 @@ public sealed class RaidSession
         Publish();
     }
 
+    /// <summary>
+    /// Ticks off — or puts back — every objective of a quest at once.
+    ///
+    /// <para>One re-plan and one publish for the whole set, rather than one of each per objective:
+    /// a quest with four stops would otherwise reroute four times and push four updates at the
+    /// overlay, and the three in the middle describe a route nobody is ever going to walk.</para>
+    ///
+    /// <para>Objectives that are not in the plan are still recorded. That is the point of doing
+    /// this from the quest — a quest is finished in objectives you never planned as well as the
+    /// ones you did, and the next plan should not route you back through any of them.</para>
+    /// </summary>
+    public void CompleteAll(IEnumerable<string> objectiveIds, bool done = true)
+    {
+        var ids = objectiveIds.ToArray();
+        if (ids.Length == 0) return;
+
+        lock (_gate)
+        {
+            foreach (var id in ids)
+            {
+                if (done) _completed.Add(id);
+                else _completed.Remove(id);
+            }
+
+            if (_plan is not null && _fix is not null)
+                _plan = RaidPlanner.Reroute(_plan, _fix.Position, _completed);
+        }
+
+        foreach (var id in ids) _progress.CompleteObjective(id, done);
+
+        Publish();
+    }
+
     public RaidView View()
     {
         lock (_gate)

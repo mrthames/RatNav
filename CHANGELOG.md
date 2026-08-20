@@ -4,6 +4,16 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
+### Plan
+
+- **No checkbox on an in-raid stop, and Quest done clears the plan instead.** Ticking a stop meant
+  alt-tabbing out of a raid to do it, so it never happened and a plan stayed lit through raids it
+  had nothing to do with. **Quest done** on the right of the row now retires every objective of
+  that quest — including the ones that were never planned, so the next plan does not route you back
+  through them — and un-marking the quest puts them back. The number stays, because it is what ties
+  the row to the overlay and to the map. Checkboxes remain where choosing happens: the list you
+  pick a plan's stops from.
+
 ### Overlay
 
 - **Popped-out panels resize.** The quest log and the items list, torn off into windows of their

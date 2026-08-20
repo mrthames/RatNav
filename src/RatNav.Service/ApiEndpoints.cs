@@ -641,12 +641,32 @@ public static class ApiEndpoints
             });
         });
 
-        api.MapPost("/progress/tasks/{id}", (ProgressStore progress, string id, TaskStateRequest request) =>
+        api.MapPost("/progress/tasks/{id}", (
+            RatNavState state, ProgressStore progress, RaidSession session, string id, TaskStateRequest request) =>
         {
             if (!Enum.TryParse<QuestState>(request.State, ignoreCase: true, out var parsed))
                 return Results.BadRequest(new { error = $"Unknown quest state '{request.State}'." });
 
             progress.SetManual(id, parsed);
+
+            // Finishing the quest finishes its stops, and un-finishing it puts them back.
+            //
+            // This is how a plan gets cleared now. The in-raid strip used to carry a checkbox on
+            // every stop, which asked you to alt-tab out of the game to tick one — so nobody did,
+            // and the plan stayed lit forever. Reconciling afterwards, from the quest, is the move
+            // that actually happens, and it knows more than a per-stop tick did: a quest that is
+            // done is done in every objective, including the ones you never planned.
+            //
+            // Objectives are still stored separately from quests, which the direction here
+            // respects. Quest complete implies its objectives; an objective ticked off implies
+            // nothing about the quest, because a plan is usually a part of one.
+            var objectives = (state.Cache.Current?.Tasks ?? [])
+                .Where(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(t => t.Objectives)
+                .Select(o => o.Id)
+                .ToArray();
+
+            session.CompleteAll(objectives, done: parsed == QuestState.Completed);
 
             ItemsChanged?.Invoke();
             return Results.Ok(new { id, state = parsed.ToString() });

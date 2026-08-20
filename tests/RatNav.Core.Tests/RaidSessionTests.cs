@@ -106,6 +106,108 @@ public class RaidSessionTests : IDisposable
         Assert.NotNull(session.View().X);
     }
 
+    /// <summary>
+    /// Finishing a quest finishes its stops.
+    ///
+    /// <para>This is the only route a plan has to being cleared now. The in-raid strip used to
+    /// carry a checkbox per stop, and ticking one meant alt-tabbing out of a raid — so it never
+    /// happened, and the plan stayed lit through raids it had nothing to do with. Marking the
+    /// quest done afterwards is the move that actually gets made.</para>
+    /// </summary>
+    [Fact]
+    public async Task Completing_every_objective_of_a_quest_strikes_its_stops()
+    {
+        var cache = CacheFor(Streets());
+        await cache.EnsureFreshAsync("1.0.0");
+
+        var progress = new ProgressStore(new RatNavProfile(_dir));
+        var session = new RaidSession(new RatNavState(cache), progress);
+
+        session.OnRaidStarted("TarkovStreets");
+        session.UsePlan(PlanWith(("obj-1", "task-a"), ("obj-2", "task-a"), ("obj-3", "task-b")), StreetsMap());
+
+        session.CompleteAll(["obj-1", "obj-2"]);
+
+        var stops = session.View().Stops.ToDictionary(s => s.ObjectiveId);
+        Assert.True(stops["obj-1"].Done);
+        Assert.True(stops["obj-2"].Done);
+        Assert.False(stops["obj-3"].Done);
+    }
+
+    /// <summary>
+    /// A quest is finished in objectives that were never planned, too, and the next plan must not
+    /// route back through any of them.
+    /// </summary>
+    [Fact]
+    public async Task Objectives_outside_the_plan_are_still_recorded()
+    {
+        var cache = CacheFor(Streets());
+        await cache.EnsureFreshAsync("1.0.0");
+
+        var progress = new ProgressStore(new RatNavProfile(_dir));
+        var session = new RaidSession(new RatNavState(cache), progress);
+
+        session.OnRaidStarted("TarkovStreets");
+        session.UsePlan(PlanWith(("obj-1", "task-a")), StreetsMap());
+
+        session.CompleteAll(["obj-1", "never-planned"]);
+
+        Assert.True(progress.IsObjectiveComplete("never-planned"));
+    }
+
+    /// <summary>Un-marking a quest puts its stops back, or a misclick is permanent.</summary>
+    [Fact]
+    public async Task Un_completing_a_quest_puts_its_stops_back()
+    {
+        var cache = CacheFor(Streets());
+        await cache.EnsureFreshAsync("1.0.0");
+
+        var progress = new ProgressStore(new RatNavProfile(_dir));
+        var session = new RaidSession(new RatNavState(cache), progress);
+
+        session.OnRaidStarted("TarkovStreets");
+        session.UsePlan(PlanWith(("obj-1", "task-a")), StreetsMap());
+
+        session.CompleteAll(["obj-1"]);
+        session.CompleteAll(["obj-1"], done: false);
+
+        Assert.False(session.View().Stops.Single().Done);
+        Assert.False(progress.IsObjectiveComplete("obj-1"));
+    }
+
+    /// <summary>Nothing to do is not the same as a plan to wipe.</summary>
+    [Fact]
+    public async Task A_quest_with_no_objectives_changes_nothing()
+    {
+        var cache = CacheFor(Streets());
+        await cache.EnsureFreshAsync("1.0.0");
+
+        var session = new RaidSession(new RatNavState(cache), new ProgressStore(new RatNavProfile(_dir)));
+
+        session.OnRaidStarted("TarkovStreets");
+        session.UsePlan(PlanWith(("obj-1", "task-a")), StreetsMap());
+
+        session.CompleteAll([]);
+
+        Assert.False(session.View().Stops.Single().Done);
+    }
+
+    private static MapDef StreetsMap() => Streets().Maps[0];
+
+    private static RaidPlan PlanWith(params (string ObjectiveId, string TaskId)[] stops) => new()
+    {
+        MapId = "streets",
+        MapName = "Streets of Tarkov",
+        Waypoints = [.. stops.Select(s => new Waypoint
+        {
+            ObjectiveId = s.ObjectiveId,
+            TaskId = s.TaskId,
+            TaskName = s.TaskId,
+            Description = s.ObjectiveId,
+            Position = new GamePosition(0, 0, 0),
+        })],
+    };
+
     [Fact]
     public async Task Reports_no_raid_for_a_map_it_has_no_image_for()
     {

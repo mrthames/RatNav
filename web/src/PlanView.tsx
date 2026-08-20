@@ -998,7 +998,15 @@ function RaidPanel({ raid }: { raid: RaidView }) {
       </div>
       </div>
 
-      {/* Stops are strikeable between raids, which is what makes a plan worth keeping. */}
+      {/*
+        Stops are strikeable between raids, which is what makes a plan worth keeping.
+
+        No checkbox on a row, deliberately. There was one, and ticking it meant alt-tabbing out of
+        a raid to do it — so it never got used and the plan stayed lit. **Quest done** on the right
+        is the move that actually happens, afterwards, and it retires every objective of that quest
+        including the ones that were never planned. The number stays because it is what ties this
+        list to the overlay and to the map.
+      */}
       {raid.stops.length > 0 && (
         <ul className="flex flex-col gap-px">
           {ordered.map(({ stop, number }) => (
@@ -1011,19 +1019,6 @@ function RaidPanel({ raid }: { raid: RaidView }) {
               <span className="w-3 text-right font-mono text-[11px] tabular-nums text-accent">
                 {number ?? ''}
               </span>
-
-              {/*
-                This ticks off the stop, not the quest. Handing something to a trader is a
-                different act and has its own button — a checkbox that quietly retired a quest's
-                item needs would be a trap.
-              */}
-              <input
-                type="checkbox"
-                checked={stop.done}
-                onChange={() => void api.completeObjective(stop.objectiveId, !stop.done)}
-                aria-label={`Mark ${stop.taskName} done — the stop, not the quest`}
-                className="accent-accent"
-              />
 
               <span className={`text-sm ${stop.done ? 'text-muted line-through' : ''}`}>
                 {stop.place ?? stop.taskName}
