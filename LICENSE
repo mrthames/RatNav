@@ -1,21 +1,53 @@
-MIT License
+RatNav License
 
-Copyright (c) 2026 Justin Thames
+Copyright (c) 2026 Justin Thames. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+RatNav is free to use and its source is published so that anyone can check what it
+does. It is not open source: the project is maintained by its owner and the
+contributors he invites, and the rights below are what is granted to everybody else.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+WHAT YOU MAY DO
+
+- Download, install and use RatNav, free of charge, for as long as you like.
+- Use it while streaming, recording, or anything else you happen to be doing.
+- Read the source, in full, and build it yourself to run your own copy.
+- Report problems, ask for features, and submit contributions.
+
+
+WHAT YOU MAY NOT DO WITHOUT WRITTEN PERMISSION
+
+- Redistribute RatNav, or any part of it, modified or unmodified.
+- Publish a modified version, a fork, or anything derived from it.
+- Sell it, charge for access to it, or include it in anything sold.
+- Remove or alter this notice, or the attributions RatNav shows in the app.
+
+
+CONTRIBUTIONS
+
+By submitting a contribution you confirm it is yours to give, and you grant the
+copyright holder a perpetual, worldwide, irrevocable right to use, modify and
+distribute it as part of RatNav under this licence or any later version of it.
+
+You keep your own copyright in what you wrote.
+
+
+NO WARRANTY
+
+RatNav is provided "as is", without warranty of any kind, express or implied,
+including but not limited to the warranties of merchantability, fitness for a
+particular purpose and non-infringement.
+
+In no event shall the copyright holder be liable for any claim, damages or other
+liability, whether in an action of contract, tort or otherwise, arising from, out of
+or in connection with RatNav or its use.
+
+
+THE GAME
+
+Escape from Tarkov is a trademark of Battlestate Games. RatNav is an unofficial fan
+project with no affiliation, and nothing here grants any right in their work.
+
+RatNav uses data from community projects that publish it under their own terms, and
+credits them in the app and in the README. This licence covers RatNav itself and says
+nothing about theirs.

@@ -50,4 +50,5 @@ icon. **If you change one, change the other**; they are three path strings and t
 
 ## Licence
 
-The mark is part of RatNav and carries the same MIT licence as the rest of the repository.
+The mark is part of RatNav and carries the same licence as the rest of the repository. It is
+RatNav's identity rather than a free asset — please do not use it for anything else.

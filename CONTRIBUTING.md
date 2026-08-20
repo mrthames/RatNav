@@ -6,6 +6,21 @@ input to the game — and it never will. **A contribution that changes that will
 however useful the feature. The value of this project rests on being safe to run, and that is not
 tradeable.
 
+## How this project is run
+
+RatNav is **free to use and source-published, but not open source**. It is maintained by its owner
+and a small number of invited contributors, and the [licence](LICENSE) does not grant a right to
+fork or redistribute it.
+
+That is not a reason not to contribute. Issues, ideas and pull requests are all welcome and all
+read. It does mean two things worth knowing before you spend an evening on something:
+
+- **Ask first for anything large.** Open an issue and let us agree the shape of it. A big change
+  that does not fit the project is a waste of your time, and that is on us to prevent rather than
+  on you to guess.
+- **A contribution is licensed to the project.** You keep your copyright; you grant the right to
+  ship what you wrote as part of RatNav. The [licence](LICENSE) says this in one paragraph.
+
 ## Getting it running
 
 ```

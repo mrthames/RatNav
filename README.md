@@ -224,6 +224,14 @@ There are twenty more in the **[FAQ](docs/FAQ.md)**.
 
 Nothing needs to be installed alongside it — no .NET runtime, no OCR download, no account.
 
+## Support it
+
+RatNav is free, has no ads, no accounts, and nothing that phones home. It is built and maintained
+by one person on his own time.
+
+☕ **[Buy me a coffee](https://buymeacoffee.com/thames_)** — it keeps this and the other things I
+make free for everyone.
+
 ## Credits
 
 RatNav is built on data generously maintained by the community:
@@ -243,4 +251,11 @@ affiliation.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+**Free to use, source published, not open source.**
+
+RatNav costs nothing and always will. The source is here so anyone can check what it does — which
+matters more than usual for a tool that runs alongside a game people can be banned from. What it is
+not is a project anyone can fork and redistribute: it is maintained by its owner and the
+contributors he invites.
+
+The full terms are short and in plain language — see [LICENSE](LICENSE).

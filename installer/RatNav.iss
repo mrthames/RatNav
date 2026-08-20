@@ -20,7 +20,7 @@
 AppId={{8F3A1C42-9B7E-4D65-AE10-2C7F5D9B4E31}
 AppName=RatNav
 AppVersion={#AppVersion}
-AppPublisher=RatNav contributors
+AppPublisher=Justin Thames
 AppPublisherURL=https://github.com/mrthames/RatNav
 AppSupportURL=https://github.com/mrthames/RatNav/issues
 AppUpdatesURL=https://github.com/mrthames/RatNav/releases
