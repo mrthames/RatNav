@@ -55,6 +55,28 @@ export function SetupView() {
       </ul>
 
       {settings && <SettingsForm settings={settings} onSaved={(s) => { setSettings(s); load() }} />}
+
+      {/*
+        Asked for once, at the bottom of the page nobody visits twice. RatNav is free and stays
+        free; this is a place to say thank you, not a thing to be nudged about.
+      */}
+      <div className="flex flex-wrap items-center gap-3 border border-line bg-panel p-4">
+        <p className="min-w-56 flex-1 text-sm text-muted">
+          RatNav is free, has no ads, no accounts, and nothing that phones home. It is built and
+          maintained by one person on his own time.
+        </p>
+
+        <a
+          href="https://buymeacoffee.com/thames_"
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-sm bg-route px-3 py-2 font-mono text-[11px] uppercase tracking-wider
+                     text-ground transition-opacity hover:opacity-90
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          ☕ Buy me a coffee
+        </a>
+      </div>
     </div>
   )
 }

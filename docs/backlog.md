@@ -320,6 +320,23 @@ What to change:
 
 ---
 
+## Round 13 — 2026-08-20
+
+### Licence and support
+
+- [x] **Not open source after all.** Free to use, source published so anyone can check what it
+  does, maintained by its owner and invited contributors. MIT let anyone fork, rebrand, sell or
+  redistribute a modified copy — and for a tool that runs alongside a game people can be banned
+  from, a modified copy carrying this name is a real risk to everyone who trusts it.
+  - `[?]` Not lawyer-drafted, and it says so. If it ever has to hold up under pressure, PolyForm
+    publish off-the-shelf source-available licences written by people who are.
+- [x] **Buy me a coffee**, in the README and at the foot of Setup. Asked once, on the page nobody
+  visits twice — RatNav is free and stays free, so this is somewhere to say thank you rather than
+  something to be nudged about.
+- [ ] **The same on the website**, when there is one.
+
+---
+
 ## Round 12 — 2026-08-20
 
 ### Disk space
