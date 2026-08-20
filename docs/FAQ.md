@@ -176,7 +176,8 @@ So have-counts are typed, and the app is built around that being true — the wa
 count separately, so what is promised to the hideout is not silently counted as available for a
 goal.
 
-`F8` over an item is the fast way to check one thing without going near the number.
+`F8` over an item is the fast way to check one thing without going near the number, and
+**Items → Scan** reads a scav box or a block of stash off a screenshot for a first import.
 
 ## Why can't it read my trader loyalty or my level?
 

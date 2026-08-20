@@ -24,6 +24,14 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 - **An info control on every item row**, saying which quests and which hideout levels want it.
   Quest names open the quest.
 
+### Reading your stash
+
+- **Scan a container from a screenshot** — a scav junk box, or a block of stash. Items are named by
+  matching against the icons of what you already track, and nothing is written until you confirm
+  it.
+- **A row of one repeated item reads as a divider**, so a block taller than the screen can be shot
+  in pieces without counting the overlap twice.
+
 ### Goals
 
 - **Name what you are collecting for**, and list what it takes. This replaces the searchable

@@ -12,6 +12,7 @@ Everything RatNav does, in the order you would meet it. If you have just install
 - [Marking your own spots](#marking-your-own-spots)
 - [Items, and why they are needed](#items-and-why-they-are-needed)
 - [Goals](#goals)
+- [Reading your stash from a screenshot](#reading-your-stash-from-a-screenshot)
 - [The hideout as a build order](#the-hideout-as-a-build-order)
 - [Quests and traders](#quests-and-traders)
 - [Identifying loot](#identifying-loot)
@@ -197,7 +198,8 @@ floor controls the overlay has, and every quest objective and extract for the ma
 The filter row shows only what is found-in-raid, or for quests, or for the hideout, or for a trade,
 or keys. Each filter carries its count, so the row doubles as a summary before you touch it.
 
-Have-counts are typed by hand. Your stash is not in any file on disk, and RatNav will not guess.
+Have-counts are typed by hand — your stash is not in any file on disk, and RatNav will not guess.
+For a first import, **Scan** reads them off a screenshot instead.
 
 ---
 
@@ -215,6 +217,31 @@ seven for a goal is two reasons, not a single ten — and only the split tells y
 quest leaves seven still to find.
 
 ---
+
+## Reading your stash from a screenshot
+
+**Items → Scan** turns a picture of a container into counts, so a first import is not thirty
+numbers typed by hand.
+
+It rests on one thing, and it is something you do rather than something the software works out:
+**give it a fixed rectangle**, not a scrolling page.
+
+- **A scav junk box** is exactly that. Open it, take a screenshot, done.
+- **No scav box yet?** Group what you want counted into one block of your stash and shoot that.
+- **A block taller than the screen?** Fill one whole row with a single cheap item — bandages —
+  and shoot it in pieces with that row visible each time. RatNav reads a row where every cell holds
+  the same thing as a **divider**: it is never counted, and two screenshots that both show it are
+  known to overlap exactly there.
+
+Items are named by matching each cell against the icons of the items **you already track**. If
+nothing on your list wants it, RatNav says so and leaves the cell alone rather than guessing.
+
+**Nothing is written until you say so.** Recognition from an icon is never perfect, so the review
+screen shows what it read, how sure it is, and lets you correct or skip any cell. Confirmed counts
+**replace** what you had for those items rather than adding — a scan is a reading of what is there,
+and adding would double everything the second time you scanned the same box.
+
+The first scan downloads the icons it needs, which takes a moment. After that it is instant.
 
 ## The hideout as a build order
 
