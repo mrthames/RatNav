@@ -2,12 +2,100 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
-## 0.3.0-alpha.1 — 2026-08-20
+## 0.4.0-alpha.1 — 2026-08-20
 
-The first public release. Alpha: it works and is used daily, but it is early.
+Alpha: it works and is used daily, but it is early.
 
+A large batch. Three characters are tracked separately, the Plan page was rebuilt around a strip
+that does not move, reading a stash from a screenshot was removed, and the app stopped being called
+the buddy app. Several things found while testing are fixed.
+
+
+### Three characters
+
+
+- **PvE, PvP and PvP Seasonal, tracked separately.** The game gives you three characters that share
+  nothing — different quests accepted, different hideout, different loyalty — and RatNav was
+  tracking them against one set of files, so quests finished on one read as done on the others.
+  Switch between them from the menu at the right of the navigation, and RatNav opens on whichever
+  you chose last.
+- **Character level moved with them.** It belongs to a character, not to a machine. Your game's
+  install path, your hotkeys and the cached copy of tarkov.dev stay shared, because none of that
+  changes when you switch.
+- **Start a character over**, from Setup. It names the profile, says what goes, and will not act
+  until you type the name back — a confirmation you can dismiss by reflex is not one.
+- **An existing install keeps its progress**, adopted into PvP. The files are copied rather than
+  moved, so the originals are still there if anything goes wrong.
+
+### Plan
+
+
+- **One strip that does not move.** How many objectives are picked, what they need you to bring —
+  keys in red — an explanation of the ordering, and **Plan this raid**, all in a row that stays
+  exactly where it is as you tick things. The three panels used to resize as you worked, so
+  whatever you were about to click had gone somewhere else.
+- **The map is on the Plan page**, folded away by default and showing the waypoints of the quests
+  you have ticked. Zoom and right-drag to pan; click a waypoint to read the quest.
+- **Sharing and importing moved into a menu**, so the maps stay one click away and two occasional
+  controls stop looking as important as the choice you make first.
+
+### Items
+
+
+- **Each item counts down.** Every item in a collection has a `+`/`−` of its own, and the number
+  it shows is what is **left** — found four of six and the list asks for two. The count belongs to
+  that collection rather than to a stash total, so two collections wanting the same item are two
+  separate answers: plugs set aside for the document case are not also available for the workbench.
+- **The overlay shows a foldable section for each**, so the one you are working on stays open
+  while the rest are out of the way.
+
+- **Reading a stash from a screenshot is gone.** It was built to fill in have-counts quickly, and
+  have-counts are not the point of the list — what is still *needed* is. A feature kept because it
+  works, rather than because it earns its place, is one more thing to explain and maintain.
+
+### Tracking something yourself
+
+
+- **Items → Custom → Add tracking.** Name it, search for the items, say how many. This replaces the
+  searchable catalogue of 789 barters and 214 crafts: finding the one you meant needed you to
+  already know which of Therapist's four Dorm 303 trades it was.
+
+### The items list
+
+
+- **Items are named in full.** "Elite" is elite cutters, "Access" is a TerraGroup Labs access
+  keycard, "Chek. 15" is the Chekannaya 15 apartment key. The game prints those short names on a
+  stash cell, where they are exactly right and where RatNav still reads them; in a list you are
+  scanning for a name you have in mind, they are not.
+- **One alphabetical list**, on the overlay and in the app. Found-in-raid items are no longer
+  lifted into their own block — the colour says which they are wherever they sit, and two alphabets
+  meant looking twice.
+
+### Quests and maps
+
+
+- **Maps can show active quests, all quests, or none.** Streets with every quest in the game pinned
+  on it is a map you cannot read.
+- **The hideout page drops the watchlist star.** Watchlisting belongs on Items; this page is for
+  what to build.
+
+- **What to bring, named.** The quest modal lists what a quest needs carried in, keys first — and
+  the Plan page says it on the row you tick, before you queue rather than after. It used to read
+  "needs a key", which told you there was a problem; "Dorm room 314 marked key" tells you whether
+  you already have it.
+- **The steps in a quest modal are clickable**, so reading a neighbouring step no longer means
+  closing it, going back to the map and hunting for that waypoint.
+
+- **The Quests list says less, on purpose.** The "available" tag and the "needs Prapor LL2" gate
+  reasons are gone. Both were RatNav guessing at a screen you are looking at — you can see the
+  trader, RatNav cannot. **All** is a searchable list of every quest; make one active and it moves
+  to **Active**, complete it and it moves to **Complete**.
+- **Coming soon is a list, not a job.** Settling a map's orientation is work for whoever builds
+  RatNav, not for somebody who installed it, so the control asking you to do it is gone. Those maps
+  arrive finished.
 
 ### Maps
+
 
 - **One Ground Zero, not two.** Ground Zero 21+ is the same buildings, the same streets, the same
   drawing and the same six extracts as Ground Zero — the game splits the location to decide who
@@ -22,18 +110,14 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Reading a quest
 
+
 - **Click a waypoint to open its quest** — on the overlay and on the Maps page. What it wants,
   which step this pin serves, a link to the wiki, and the wiki's screenshots of the place.
 - **An info control on every item row**, saying which quests and which hideout levels want it.
   Quest names open the quest.
 
-### Tracking something yourself
-
-- **Items → Custom → Add tracking.** Name it, search for the items, say how many. This replaces the
-  searchable catalogue of 789 barters and 214 crafts: finding the one you meant needed you to
-  already know which of Therapist's four Dorm 303 trades it was.
-
 ### The overlay
+
 
 - **Click a quest in the quest log to read it, in raid.** What it wants, which step this stop is,
   and the wiki's pictures of the place — the same panel a waypoint on the map opens. Press your
@@ -60,78 +144,29 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **Spawn locations removed.** Built twice, as regions and as points, and neither read well on a
   map you are navigating.
 
-### The items list
+### The app
 
-- **Items are named in full.** "Elite" is elite cutters, "Access" is a TerraGroup Labs access
-  keycard, "Chek. 15" is the Chekannaya 15 apartment key. The game prints those short names on a
-  stash cell, where they are exactly right and where RatNav still reads them; in a list you are
-  scanning for a name you have in mind, they are not.
-- **One alphabetical list**, on the overlay and in the app. Found-in-raid items are no longer
-  lifted into their own block — the colour says which they are wherever they sit, and two alphabets
-  meant looking twice.
 
-### Three characters
+- **Character level in the top navigation**, where it can keep up with you.
+- **Traders as cards** with their portraits and one level control each.
+- **The hideout as a grid** with the game's own station icons, an **Upgrade** control, and **max**
+  where there is nothing left to do.
+- **The Maps page matches the overlay** — same four draw levels under the same names, same
+  waypoint, extract and mark symbols, same place labels.
+- **Your marks can join a plan**, and come in two kinds: a place, or something to pick up.
 
-- **PvE, PvP and PvP Seasonal, tracked separately.** The game gives you three characters that share
-  nothing — different quests accepted, different hideout, different loyalty — and RatNav was
-  tracking them against one set of files, so quests finished on one read as done on the others.
-  Switch between them from the menu at the right of the navigation, and RatNav opens on whichever
-  you chose last.
-- **Character level moved with them.** It belongs to a character, not to a machine. Your game's
-  install path, your hotkeys and the cached copy of tarkov.dev stay shared, because none of that
-  changes when you switch.
-- **Start a character over**, from Setup. It names the profile, says what goes, and will not act
-  until you type the name back — a confirmation you can dismiss by reflex is not one.
-- **An existing install keeps its progress**, adopted into PvP. The files are copied rather than
-  moved, so the originals are still there if anything goes wrong.
+### Setup, cut back
 
-### Items
 
-- **Each item counts down.** Every item in a collection has a `+`/`−` of its own, and the number
-  it shows is what is **left** — found four of six and the list asks for two. The count belongs to
-  that collection rather than to a stash total, so two collections wanting the same item are two
-  separate answers: plugs set aside for the document case are not also available for the workbench.
-- **The overlay shows a foldable section for each**, so the one you are working on stays open
-  while the rest are out of the way.
-
-- **Reading a stash from a screenshot is gone.** It was built to fill in have-counts quickly, and
-  have-counts are not the point of the list — what is still *needed* is. A feature kept because it
-  works, rather than because it earns its place, is one more thing to explain and maintain.
-
-### Plan
-
-- **One strip that does not move.** How many objectives are picked, what they need you to bring —
-  keys in red — an explanation of the ordering, and **Plan this raid**, all in a row that stays
-  exactly where it is as you tick things. The three panels used to resize as you worked, so
-  whatever you were about to click had gone somewhere else.
-- **The map is on the Plan page**, folded away by default and showing the waypoints of the quests
-  you have ticked. Zoom and right-drag to pan; click a waypoint to read the quest.
-- **Sharing and importing moved into a menu**, so the maps stay one click away and two occasional
-  controls stop looking as important as the choice you make first.
-
-### Quests and maps
-
-- **Maps can show active quests, all quests, or none.** Streets with every quest in the game pinned
-  on it is a map you cannot read.
-- **The hideout page drops the watchlist star.** Watchlisting belongs on Items; this page is for
-  what to build.
-
-- **What to bring, named.** The quest modal lists what a quest needs carried in, keys first — and
-  the Plan page says it on the row you tick, before you queue rather than after. It used to read
-  "needs a key", which told you there was a problem; "Dorm room 314 marked key" tells you whether
-  you already have it.
-- **The steps in a quest modal are clickable**, so reading a neighbouring step no longer means
-  closing it, going back to the map and hunting for that waypoint.
-
-- **The Quests list says less, on purpose.** The "available" tag and the "needs Prapor LL2" gate
-  reasons are gone. Both were RatNav guessing at a screen you are looking at — you can see the
-  trader, RatNav cannot. **All** is a searchable list of every quest; make one active and it moves
-  to **Active**, complete it and it moves to **Complete**.
-- **Coming soon is a list, not a job.** Settling a map's orientation is work for whoever builds
-  RatNav, not for somebody who installed it, so the control asking you to do it is gone. Those maps
-  arrive finished.
+- The banner that said RatNav could see the game while the game was closed.
+- The multiple-install section; one folder, detected, with a **Browse…** picker.
+- The second-screen instructions, which were useless read from inside the thing they describe.
+- The quest and item counts in the navigation.
+- **Hotkeys are set by pressing the key**, not by typing its name. Two are gone — opening the panel
+  and ticking an objective off — and what is left runs `F5` to `F9`.
 
 ### Fixed
+
 
 - **The Maps controls stay where you left them.** They shared one wrapping row with the map's own
   size deciding how it broke, so changing map moved everything. Search now has a row of its own —
@@ -164,25 +199,6 @@ The first public release. Alpha: it works and is used daily, but it is early.
   which also means each one is fetched once and kept instead of pulled again on every view.
 - **Quest photos fit their window.** They are 7000-pixel screenshots, and the picture was asking
   for the whole width of the box *and* a share of what was left over, so it pushed past the edge.
-
-### The app
-
-- **Character level in the top navigation**, where it can keep up with you.
-- **Traders as cards** with their portraits and one level control each.
-- **The hideout as a grid** with the game's own station icons, an **Upgrade** control, and **max**
-  where there is nothing left to do.
-- **The Maps page matches the overlay** — same four draw levels under the same names, same
-  waypoint, extract and mark symbols, same place labels.
-- **Your marks can join a plan**, and come in two kinds: a place, or something to pick up.
-
-### Setup, cut back
-
-- The banner that said RatNav could see the game while the game was closed.
-- The multiple-install section; one folder, detected, with a **Browse…** picker.
-- The second-screen instructions, which were useless read from inside the thing they describe.
-- The quest and item counts in the navigation.
-- **Hotkeys are set by pressing the key**, not by typing its name. Two are gone — opening the panel
-  and ticking an objective off — and what is left runs `F5` to `F9`.
 
 ## 0.2.0 — 2026-08-20
 
