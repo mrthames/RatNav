@@ -10,6 +10,8 @@
 - [A map I play is not in the list](#a-map-i-play-is-not-in-the-list)
 - [My marker is in the wrong place](#my-marker-is-in-the-wrong-place)
 - [Everything is tiny on my 4K screen](#everything-is-tiny-on-my-4k-screen)
+- [I pressed the interact key and there are no map controls](#i-pressed-the-interact-key-and-there-are-no-map-controls)
+- [RatNav says it is on a different port](#ratnav-says-it-is-on-a-different-port)
 - [A hotkey does nothing](#a-hotkey-does-nothing)
 - [The items list is enormous](#the-items-list-is-enormous)
 - [Why do I have to type my quests in?](#why-do-i-have-to-type-my-quests-in)
@@ -77,9 +79,9 @@ to catch. Every tool in this space that is safe to use works the same way — in
 ones.
 
 So the design leans into it: one thumb button, and every press does as much as possible. Your
-marker snaps, the remaining route re-orders from where you actually are, and the bearing and
-distance to your next stop update. Between presses nothing moves, and the overlay says how old the
-reading is rather than pretending.
+marker snaps, the remaining route re-orders from where you actually are, and — in the centred view
+— the map turns to face the way you were looking. Between presses nothing moves, and the overlay
+says how old the reading is rather than pretending.
 
 ## Nothing appears over the game
 
@@ -149,13 +151,29 @@ Press `F7`, then turn **Size** up in the row along the top of the overlay. RatNa
 drawn for 1080p; a 4K screen has four times the pixels in the same physical space, so everything
 lands at a quarter of the area until you say otherwise.
 
-The map's own markers and captions have their own dials in the control stack — **Pins** for the
+The map's own markers and captions have their own dials behind the gear — **Pins** for the
 markers, **Waypoints** for the captions on stops, extracts and marks, **Map labels** for the place
 names the map itself carries, and **You** for your own marker.
 
 Waypoints and map labels are separate because they do opposite jobs: the place names are the
 backdrop you read to know which end of the map you are on, and a waypoint's caption is the thing
 you are walking to.
+
+## I pressed the interact key and there are no map controls
+
+That is deliberate. `F7` hands the overlay your mouse and shows the **handles** — the grab bar, the
+drawer buttons, the gear. The map settings live behind the **gear**, because a stack of settings
+over the map every time you reach for the mouse is not what you reached for the mouse to do.
+
+Press the gear once and it stays open until you fold it away again.
+
+## RatNav says it is on a different port
+
+Something else on your machine had the one it wanted, so it took the next free one rather than
+refusing to start. The tray balloon names it. Everything RatNav opens itself already follows —
+what does not is a bookmark you saved, or the address you typed on a phone.
+
+**Setup → Port** pins a specific one if you would rather choose.
 
 ## A hotkey does nothing
 

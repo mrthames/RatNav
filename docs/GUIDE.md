@@ -58,6 +58,8 @@ hardcoded, and RatNav says which is which.
 | **Hotkeys** | Click a field and press the key you want. Defaults are `F5`–`F9`. Changes take effect at once, and RatNav says if another application already owns a combination. |
 | **Game edition** | Sets your starting stash level. It never lowers a stash you have already raised. |
 | **Your name on shared plans** | Only matters if you swap plans with someone. |
+| **Reach RatNav from a phone or tablet** | Off by default. On, RatNav answers on your machine's network address as well as its own, so another device on the same wifi can open it in a browser — nothing installed there, and nothing reachable from outside your network. There is no password: anyone on your wifi can open it. Setup shows the address to type, and offers to open the Windows Firewall if it is in the way. |
+| **Port** | Which port RatNav listens on. Leave it alone unless something else on the machine already wants 8722 — and if something does, RatNav takes the next free one and says so rather than refusing to start. |
 
 Setup re-checks itself every few seconds, so you can leave it open, launch the game, and watch the
 checks go green.
@@ -84,9 +86,14 @@ the first time you take a position fix. Ones you have ticked off stay put.
 
 ### Finishing things
 
-- **The tick on a stop** marks that objective done. It strikes through and drops to the bottom.
-- **Quest done** marks the whole quest complete, which retires its item needs. It asks first,
-  because that is not a thing you want to do by accident.
+- **Quest done** marks the whole quest complete. It retires the quest's item needs *and* its
+  stops — including objectives you never planned, so the next plan does not route you back through
+  them. It asks first, because that is not a thing you want to do by accident, and un-marking the
+  quest puts everything back.
+- **There is no tick on a stop.** Ticking one meant alt-tabbing out of a raid to do it, so nobody
+  did and the plan stayed lit through raids it had nothing to do with. Reconciling afterwards, from
+  the quest, is the move that actually gets made. Ticking belongs where you *choose* — the list you
+  pick a plan's stops from.
 - When every planned objective of a quest is done, a **turn-in prompt** appears saying which trader
   to hand it to — and warns you if the plan only covered part of the quest.
 
@@ -99,13 +106,26 @@ the first time you take a position fix. Ones you have ticked off stay put.
 | *your screenshot key* | Take a position fix |
 | `F5` | Show or hide the overlay |
 | `F6` | Switch between the corner box and the centred map |
-| `F7` | Let the mouse reach it — move, resize, and use the map controls |
+| `F7` | Let the mouse reach it — move and resize the corner panel, and open the map controls |
 | `F8` | Say what the item under your cursor is for |
 | `F9` | Read the game's extract list |
 
 **Two presentations, remembered separately.** The corner panel is small and out of the way; `F6`
-swaps it for the map itself, large and translucent over the centre. Position, size, zoom, pan and
-opacity are kept per presentation, so setting up one does not disturb the other.
+swaps it for the map itself, over the centre of the screen. Position, size, zoom, pan and opacity
+are kept per presentation, so setting up one does not disturb the other.
+
+The centred view has a **Coverage** dial. Turn it to 100% and it becomes a full-screen HUD: the
+map drawn as glowing outlines over the game, dissolving toward the edges rather than stopping at a
+border, and **turned so what is in front of you is up the screen**. Below 100% it is a window in
+the middle of the screen, which is what it has always been. Clicks pass straight through the HUD
+everywhere except on a control, so it can be up while you play.
+
+The corner panel never turns. It is a small still map you glance at to orient against buildings,
+and its cone already says which way you are facing.
+
+**RatNav says when it does not know where you are.** Load into a raid and the map draws before you
+have taken a position, so it says so over the map and names your screenshot key. It goes when the
+first position lands.
 
 **Nothing animates.** The overlay is a still image between fixes. Your marker snaps when you take
 one and at no other time, and the line at the bottom says how long ago that was — because a marker
@@ -128,22 +148,34 @@ Every panel edge that meets the map is draggable, on both sides.
 
 ## Reading the map
 
-Press `F7` and a control stack appears down the side.
+Press `F7` to let the mouse reach the overlay, then the **gear** for the map controls. They stay
+folded until you ask: the interact key hands over the mouse and shows the handles, and a stack of
+map settings is a thing you go and get. Once opened it is remembered.
 
 | Control | What it does |
 |---|---|
-| **Floor** | Steps through the map's levels. A position fix picks the floor from the height you are at; choosing one by hand lasts until your next fix, and the name turns amber while you are looking at a level you are not standing on. Other floors draw solid where nothing on yours sits above them, dashed and dim only where they genuinely stack. |
-| **Draw** | `graphical` uses the map's own palette — the way its author drew it. `full`, `structure` and `outline` progressively drop categories of detail rather than fading everything, which is what you want over a firefight. |
+| **Floor** | Every floor is drawn stacked unless you say otherwise. The dropdown on the quick panel lists **Stacked** first, then the map's own levels; a position fix never changes it underneath you. |
+| **Draw** | `Graphical` uses the map's own palette — the way its author drew it. `Full`, `Structure` and `Outline` progressively drop categories of detail rather than fading everything, which is what you want over a firefight. |
 | **Ghost / names / halo** | Whether other floors show through, whether place names are drawn, and whether text gets a dark backing. |
-| **Fade** | How strongly the whole overlay is drawn over the game. |
+| **Fade** | How strongly the map is drawn over the game. The controls stay solid whatever you set. |
 | **Line** | Stroke weight of the map itself. |
-| **Pins / Text / You** | Separate size dials for markers, captions, and your own marker. |
+| **Pins / Waypoints / Map labels / You** | Separate size dials for markers, the captions on stops and extracts, the map's own place names, and your own marker. |
 | **Shrink** | How much all of those ease off as you zoom out. At zero they stay the size you set; at one they scale with the map. |
 | **Map** | `still` holds the map and lets your marker travel across it. `follows you` keeps you centred. A recentre button appears once you have dragged away. |
-| **Exits** | `pmc`, `scav`, `both`, or `off`. Shared extracts show under either faction. |
+| **Exits** | `PMC`, `Scav`, `Both`, or `Off`. Shared extracts show under either faction. |
+| **Quests** | `Active` is your plan's stops. `All` adds every other started quest's objective on this map, drawn hollow and unnumbered. `Off` leaves the map clean. |
+| **Coverage / Edge fade / Glow** | The centred view only. How much of the screen it takes, where the drawing starts dissolving, and how much the lines bloom. |
 
-Right-drag pans. The wheel zooms. Anything off the visible area gets an arrow at the edge pointing
-at where it really is, with the name abbreviated.
+These are the same controls under the same names as the app's **Maps** page, so what you can turn
+on and off reads the same in both places.
+
+Right-drag pans and the wheel zooms — in the corner panel and in the windowed centred view. In the
+full-screen HUD the map passes clicks through to the game, so zoom from the quick panel instead.
+
+**In the corner panel**, anything off the visible area gets an arrow at the edge pointing at where
+it really is, with the name abbreviated. The centred view does not draw them: it is large enough to
+show the ground you are crossing already, and a ring of arrows around the edge sits exactly where
+the drawing is meant to be fading out.
 
 Hovering a pin, an extract or a mark names it — drawn into the map rather than as a tooltip,
 because a tooltip belonging to a window that never takes focus opens and vanishes in the same
@@ -153,7 +185,8 @@ frame.
 
 A map has every extract it has ever had — seventeen on Streets — and a raid offers a handful.
 Double-tap `O` in game to bring up the list, then press `F9`. RatNav reads the names off the
-screen and draws only those. A `showing N · all` button puts everything back.
+screen and draws only those. **all exits / my exits** on the quick panel switches between the two,
+both ways, so a reading is never a one-way trip.
 
 It is a keypress rather than something detected, because knowing you pressed `O` would mean
 watching your keyboard, which RatNav will not do.
@@ -173,9 +206,14 @@ of six identical buildings you are looking for. They load from the wiki and are 
 
 Find something worth remembering — a spawn, a stash, a good angle — and put it on the map.
 
-On the **Maps** page: choose **A place** or **An item** under *Mark*, click the spot, and name it.
-A place draws as a diamond and an item as a box, both purple so neither reads as a quest. It appears on the
-overlay from then on, in purple and diamond-shaped so it never reads as a quest objective.
+Choose **A place** or **An item** under *Mark*, click the spot, and name it. The control is on the
+**Maps** page and on the **Plan** page's map, because "I want to go here as well" is part of
+building a raid and should not need two navigations.
+
+A place draws as a diamond and an item as a box, both **orange** — its own colour, so a mark never
+reads as a quest objective, and its own shape, because colour alone fails for anyone who cannot
+separate the hues and a navigation overlay is a bad place to learn that. It appears on the overlay
+from then on.
 
 Marks live per map and draw whenever that map is on screen, whether or not a plan is loaded — "car
 batteries behind the garage" is true every raid.

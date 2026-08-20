@@ -6,8 +6,8 @@ A raid planner and navigation overlay for Escape from Tarkov.
 
 Plan your raid before you queue — pick the map, check off the quest objectives you're pushing, and RatNav
 builds a route with the keys you need to bring and the items you're hunting. In raid, a hotkey-toggled
-overlay shows that route on the map, tells you the bearing and distance to your next stop, and re-plans from
-wherever you actually are.
+overlay draws that route on the map, numbered in the order to walk it, and re-plans from wherever you
+actually are.
 
 [![Latest release](https://img.shields.io/github/v/release/mrthames/RatNav?display_name=tag&label=latest&color=8ec8ff)](https://github.com/mrthames/RatNav/releases/latest)
 [![Licence](https://img.shields.io/badge/licence-PolyForm%20Noncommercial-8ec8ff)](LICENSE)
@@ -105,10 +105,10 @@ place players actually call it — Depot, Dorms, Old Construction — with the q
 each. Tick what you are pushing and it builds a route, aggregates the keys you need to bring, and
 assembles the shopping list.
 
-**During the raid.** A hotkey-toggled overlay shows the route, your position, and the distance and
-bearing to your next stop: *Dorms · 140 m · 30° right*. Tap your screenshot key and the marker
-snaps, the route re-orders from where you actually are, and the screenshot is archived so the
-folder never fills up.
+**During the raid.** A hotkey-toggled overlay shows the route and your position on the real map —
+either as a small panel in a corner or as a full-screen HUD turned to face the way you are. Tap
+your screenshot key and the marker snaps, the route re-orders from where you actually are, and the
+screenshot is archived so the folder never fills up.
 
 **Between raids.** What every active quest needs, minus what you have, with a watchlist for
 anything else worth remembering — filtered to found-in-raid, or keys, or whatever a trade is
@@ -175,6 +175,15 @@ checklist under that.
 
 ![The Plan page: a strip showing two objectives picked and what they need you to bring, a folded map, and the Customs checklist grouped by place beneath it](docs/app/plan.png)
 
+**On a phone or tablet, if you want it.** **Setup → Reach RatNav from a phone or tablet** makes the
+service answer on your machine's network address as well as its own, so an iPad on the same wifi
+can open it in a browser. Nothing is installed on the other device, and a plan you build there
+reaches the overlay in game immediately — both are looking at the same RatNav.
+
+It is off until you turn it on, and **nothing outside your network can reach it**: port forwarding
+is a router-to-internet thing and is not part of this. There is no password either, which Setup
+says out loud — anyone already on your wifi can open it.
+
 ## How position works
 
 Escape from Tarkov writes your coordinates into the filename of every screenshot you take. So your
@@ -184,9 +193,8 @@ screenshot key **is** RatNav's "where am I" key:
    works well — it is reachable without letting go of movement. Steam users should avoid `F12`.
 2. Tell RatNav which key that is, in Setup. It never presses it; it just names it in prompts.
 3. Tap it in raid.
-4. RatNav parses the filename, snaps your marker to that spot with your facing, re-plans the
-   remaining route from where you now stand, and tells you the bearing and distance to your next
-   objective.
+4. RatNav parses the filename, snaps your marker to that spot with your facing, and re-plans the
+   remaining route from where you now stand.
 
 Position updates when you tap, and only when you tap. There is no continuous tracking, because reading
 position continuously would require reading game memory — which is what anti-cheat exists to catch. Every
@@ -215,7 +223,7 @@ two.
 | *your in-game screenshot key* | take a position fix |
 | `F5` | show or hide the overlay |
 | `F6` | switch between the corner box and the centred map |
-| `F7` | let the mouse reach the overlay — move, resize, zoom, and the map controls |
+| `F7` | let the mouse reach the overlay — move and resize the corner panel, zoom, and the map controls |
 | `F8` | say what the item under your cursor is for |
 | `F9` | read the extract list the game is showing, and draw only those |
 
@@ -237,21 +245,33 @@ OCR misreads, so RatNav says how sure it is rather than presenting a guess as fa
 
 ## The map
 
-The overlay draws the real map, and how it draws is yours to set. Press `F7` and a control stack
-appears down the side:
+The overlay draws the real map, and how it draws is yours to set. Press `F7` for the mouse, then
+the **gear** for the controls:
 
 | | |
 |---|---|
-| **Floor** | Steps through the map's levels. A fix picks the floor on its own from the height you are at; choosing one by hand lasts until your next fix. Other floors draw solid where nothing on yours sits above them, dashed and dim only where they genuinely stack. |
-| **Draw** | `graphical` uses the map's own palette, the way its author drew it. `full`, `structure` and `outline` drop whole categories of detail rather than fading everything — which is what you want over a firefight. |
-| **Fade / Line** | How strongly the overlay is drawn over the game, and how heavy the map's own strokes are. |
-| **Pins / Text / You** | Separate size dials for markers, captions, and your own marker — with **Shrink** deciding how much they ease off as you zoom out. |
+| **Floor** | Every floor is drawn stacked unless you say otherwise. The dropdown on the quick panel lists **Stacked** first, then the map's own levels, and a position fix never changes it underneath you. |
+| **Draw** | `Graphical` uses the map's own palette, the way its author drew it. `Full`, `Structure` and `Outline` drop whole categories of detail rather than fading everything — which is what you want over a firefight. |
+| **Fade / Line** | How strongly the map is drawn over the game, and how heavy its strokes are. The controls stay solid whatever the map is set to. |
+| **Pins / Waypoints / Map labels / You** | Separate size dials for markers, the captions on stops and extracts, the map's own place names, and your own marker — with **Shrink** deciding how much they ease off as you zoom out. |
 | **Map** | `still` holds the map and lets your marker travel across it; `follows you` keeps you centred. |
-| **Exits** | `pmc`, `scav`, `both`, or `off`. Shared extracts show under either. `F9` narrows it to the ones the game says are open this raid. |
+| **Exits** | `PMC`, `Scav`, `Both`, or `Off`. Shared extracts show under either. `F9` narrows it to the ones the game says are open this raid. |
+| **Quests** | `Active` is your plan's stops; `All` adds every other started quest's objective on this map; `Off` leaves the map clean. |
+| **Coverage / Edge fade / Glow** | The centred view only — how much of the screen it takes, where the drawing dissolves, how much the lines bloom. |
 | **Size** | How large RatNav draws its own controls. The defaults suit 1080p; turn it up on a bigger screen. |
 
-Two drawers open from the bottom-left: the **quest log** and the **items list**. Either can swap
-sides, collapse, or tear off into its own window for a second monitor.
+These are the same controls under the same names as the app's Maps page, so what you can turn on
+and off reads the same in both places.
+
+**The centred view goes to full screen.** Turn **Coverage** to 100% and it becomes a HUD: glowing
+outlines over the game, dissolving toward the edges rather than stopping at a border, turned so
+what is in front of you is up the screen. Clicks pass straight through it except on a control, so
+it can be up while you play. The corner panel stays north-up and still, which is what a small map
+you glance at should be.
+
+Three drawers open from the bottom-left: the **quest log**, the **items list**, and the **map**
+itself. Either list can swap sides, collapse, or tear off into its own window for a second monitor;
+folding the map leaves a narrow strip of just the two lists.
 
 Everything here is remembered — placement, zoom and opacity per presentation, so setting up the
 corner box does not disturb the centred map.

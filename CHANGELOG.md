@@ -16,6 +16,12 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### App
 
+- **Mark a spot from the Plan page.** The *Mark* control was on the Maps page only, so noting "I
+  want to go here as well" while building a raid meant going to Maps to place it and back to Plan
+  to add it — two navigations for one thought. It is on both maps now.
+- **Your own marks are orange.** They were purple, which is a fine hue and the wrong one: it is the
+  quest objectives they have to be told apart from at a glance, and orange against their red-orange
+  reads faster. Yellow was the obvious alternative and is already what a scav extract is.
 - **Reach RatNav from a phone or tablet.** **Setup → Reach RatNav from a phone or tablet** makes
   the service answer on your machine's network address as well as its own, so an iPad on the same
   wifi can open it in a browser. Nothing is installed on the other device, and a plan built there
