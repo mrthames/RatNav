@@ -253,6 +253,14 @@ export function MapView({
 
   return (
     <div className="flex flex-col gap-3">
+      {/*
+        Two rows, so the controls stop moving when the map does.
+
+        Everything that toggles something wraps on the first row — it does not matter much where a
+        checkbox lands, because you read the label to find it. Search does matter: it is reached by
+        aiming rather than reading, so it gets a row of its own on the left, where nothing above it
+        can push it sideways.
+      */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         {/* Maps-page furniture. The Plan page wants the map, the pins, and nothing else. */}
         {!minimal && (<>
@@ -332,13 +340,28 @@ export function MapView({
           </label>
         )}
 
-        {places.length > 0 && (
-          <div className="relative">
+        {/* Straight onto the overlay, no plan required — for a look before you queue. */}
+        <button
+          type="button"
+          onClick={() => void api.showMap(map.id)}
+          className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Show on overlay
+        </button>
+
+
+        </>)}
+      </div>
+
+      {!minimal && places.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="relative w-full max-w-xs">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={`Find a place… (${places.length})`}
-              className="w-44 rounded-sm border border-line bg-panel px-2.5 py-1.5 text-xs text-ink
+              className="w-full rounded-sm border border-line bg-panel px-2.5 py-1.5 text-xs text-ink
                          placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
             />
 
@@ -360,7 +383,6 @@ export function MapView({
               </ul>
             )}
           </div>
-        )}
 
         {/* Two kinds, chosen before the click rather than corrected after it. */}
         <Segment
@@ -371,20 +393,8 @@ export function MapView({
         />
 
         {placing && <span className="text-xs text-mark">Click the map…</span>}
-
-        {/* Straight onto the overlay, no plan required — for a look before you queue. */}
-        <button
-          type="button"
-          onClick={() => void api.showMap(map.id)}
-          className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
-                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          Show on overlay
-        </button>
-
-
-        </>)}
-      </div>
+        </div>
+      )}
 
       <div
         ref={frame}

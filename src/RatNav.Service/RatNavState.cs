@@ -8,7 +8,7 @@ namespace RatNav.Service;
 
 /// <summary>
 /// The single source of truth all three surfaces read from — compact overlay, expanded
-/// overlay, and the buddy web app. Holding it in one place is what makes a change in one
+/// overlay, and the app. Holding it in one place is what makes a change in one
 /// surface appear in the others rather than each keeping its own drifting copy.
 /// </summary>
 public sealed class RatNavState(GameDataCache cache)

@@ -412,6 +412,9 @@ function Custom() {
                     <span className={`min-w-0 truncate text-sm
                                       ${left === 0 ? 'text-muted line-through' : ''}`}>
                       {item.name}
+                      {item.foundInRaid && (
+                        <span className="ml-1.5 font-mono text-[10px] text-need">FIR</span>
+                      )}
                     </span>
 
                     <span className="ml-auto flex items-center gap-1">
@@ -469,8 +472,11 @@ function GoalForm({
   onSaved: () => void
 }) {
   const [name, setName] = useState(goal?.name ?? '')
-  const [items, setItems] = useState<{ itemId: string; name: string; count: number }[]>(
-    goal?.items.map((i) => ({ itemId: i.itemId, name: i.name, count: i.count })) ?? [])
+  const [items, setItems] = useState<
+    { itemId: string; name: string; count: number; foundInRaid: boolean }[]
+  >(goal?.items.map((i) => ({
+    itemId: i.itemId, name: i.name, count: i.count, foundInRaid: i.foundInRaid,
+  })) ?? [])
 
   const [query, setQuery] = useState('')
   const [found, setFound] = useState<TrackedItem[]>([])
@@ -493,7 +499,9 @@ function GoalForm({
       id: goal?.id,
       name,
       times: 1,
-      items: items.map((i) => ({ itemId: i.itemId, count: i.count })),
+      items: items.map((i) => ({
+        itemId: i.itemId, count: i.count, foundInRaid: i.foundInRaid,
+      })),
     })
 
     onSaved()
@@ -556,6 +564,23 @@ function GoalForm({
 
                 <span className="min-w-0 flex-1 truncate text-xs">{item.name}</span>
 
+                {/*
+                  Yours to say, because RatNav cannot know: a barter may demand found-in-raid
+                  where a kit you are building for yourself does not, and the same item is either
+                  depending on what you are collecting it for. It colours the number on the
+                  overlay the red the quest and hideout lists already use for the same meaning.
+                */}
+                <label className="flex flex-none items-center gap-1 font-mono text-[10px] text-muted">
+                  <input
+                    type="checkbox"
+                    checked={item.foundInRaid}
+                    onChange={(e) => setItems(items.map((it, i) =>
+                      i === index ? { ...it, foundInRaid: e.target.checked } : it))}
+                    className="accent-need"
+                  />
+                  <span className={item.foundInRaid ? 'text-need' : ''}>FIR</span>
+                </label>
+
                 <button
                   type="button"
                   onClick={() => setItems(items.filter((_, i) => i !== index))}
@@ -589,7 +614,9 @@ function GoalForm({
                   type="button"
                   onClick={() => {
                     if (!items.some((i) => i.itemId === item.id)) {
-                      setItems([...items, { itemId: item.id, name: item.name, count: 1 }])
+                      setItems([...items, {
+                        itemId: item.id, name: item.name, count: 1, foundInRaid: false,
+                      }])
                     }
 
                     setQuery('')

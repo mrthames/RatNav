@@ -1,14 +1,22 @@
 namespace RatNav.Core.Tracking;
 
 /// <summary>
-/// One item a goal needs, how many, and how many of them you have found for <i>this</i> goal.
+/// One item a goal needs, how many, how many you have found for <i>this</i> goal, and whether it
+/// has to be found in raid.
 ///
 /// <para><c>Found</c> is counted per goal rather than against a single stash total on purpose.
 /// The question a collection answers is "how many more for this", and two goals wanting the same
 /// item are two separate answers — three plugs set aside for the document case are not also
 /// available for the workbench.</para>
+///
+/// <para><c>FoundInRaid</c> is yours to set, because RatNav cannot know: a barter may demand it
+/// where a kit you are building for yourself does not, and the same item can be either depending
+/// on what you are collecting it for. It colours the number on the overlay the same red the quest
+/// and hideout lists use, which is the one colour there meaning "you cannot buy your way out of
+/// this later".</para>
 /// </summary>
-public readonly record struct GoalItem(string ItemId, int Count, int Found = 0);
+public readonly record struct GoalItem(
+    string ItemId, int Count, int Found = 0, bool FoundInRaid = false);
 
 /// <summary>
 /// Something you have decided to collect for, named by you.

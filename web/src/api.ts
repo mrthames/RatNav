@@ -323,8 +323,10 @@ export interface GoalView {
     name: string
     iconUrl: string | null
     count: number
-    /** How many you have found for *this* collection. Not a stash total. */
+    /** How many you have found for *this* one. Not a stash total. */
     found: number
+    /** Whether it has to be found in raid. Yours to set — RatNav cannot know. */
+    foundInRaid: boolean
   }[]
 }
 
@@ -529,7 +531,7 @@ export const api = {
     id?: string
     name: string
     times?: number
-    items: { itemId: string; count: number }[]
+    items: { itemId: string; count: number; foundInRaid?: boolean }[]
   }) => post<unknown>('/api/goals', goal),
 
   removeGoal: (id: string) => del<unknown>(`/api/goals/${encodeURIComponent(id)}`),

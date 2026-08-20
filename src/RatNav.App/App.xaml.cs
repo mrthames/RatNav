@@ -81,7 +81,7 @@ public partial class App : Application
         ApiEndpoints.HotkeysChanged += updated =>
             _overlay?.Apply(updated, problem => _tray?.Warn(problem));
 
-        // Starring an item in the buddy app now reaches the overlay immediately, in a raid or out
+        // Starring an item in the app now reaches the overlay immediately, in a raid or out
         // of one, rather than waiting for the next thing the raid happens to do.
         ApiEndpoints.ItemsChanged += () => _overlay?.RefreshItemsNow();
         ApiEndpoints.WaypointsChanged += () => _overlay?.RefreshWaypointsNow();
@@ -111,7 +111,7 @@ public partial class App : Application
         });
 
         _overlay.ExpandRequested += (_, _) => ToggleExpanded();
-        _overlay.OpenBuddyAppRequested += (_, _) => OpenInBrowser();
+        _overlay.OpenAppRequested += (_, _) => OpenInBrowser();
 
         // Push, not poll: the overlay redraws when something happens and at no other time.
         session.Changed += (_, view) => _overlay.Update(view);
@@ -126,10 +126,11 @@ public partial class App : Application
             onOpenBrowser: OpenInBrowser,
             onQuit: Shutdown);
 
-        // The buddy app opens with RatNav. The hotkey that used to put the panel over the game is
+        // The app opens with RatNav. The hotkey that used to put the panel over the game is
         // gone, and something has to bring up the half of the app that does the planning — being
         // told to type a localhost address is not that.
-        if (settings.OpenBuddyAppAtStart) OpenInBrowser();
+        // The legacy key wins when it is present, so a choice made before the rename survives it.
+        if (settings.OpenBuddyAppAtStartLegacy ?? settings.OpenAppAtStart) OpenInBrowser();
     }
 
     /// <summary>

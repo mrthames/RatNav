@@ -42,7 +42,7 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 - **A key-bind reminder along the bottom**, up with the controls rather than over the game all
   raid. It names the keys you actually bound, including your in-game screenshot key — the one
-  people forget. The buddy app carries the same strip stuck to the bottom of the window, from the
+  people forget. The app carries the same strip stuck to the bottom of the window, from the
   same source, so the two cannot drift.
 - **The item card takes itself away after five seconds.** You read it in a moment and then it is
   over the game, and dismissing it by hand is a keypress nobody wants to spend mid-raid.
@@ -56,7 +56,7 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **The gear stays put** when the control stack opens, and closes it again on a second click.
 - **Panel opacity stopped resizing the window.**
 - **Hover labels are drawn into the scene**, so they no longer flash and vanish.
-- **An open planner button** in the control drawer, and the buddy app opens with RatNav.
+- **An open planner button** in the control drawer, and the app opens with RatNav.
 - **Spawn locations removed.** Built twice, as regions and as points, and neither read well on a
   map you are navigating.
 
@@ -66,7 +66,7 @@ The first public release. Alpha: it works and is used daily, but it is early.
   keycard, "Chek. 15" is the Chekannaya 15 apartment key. The game prints those short names on a
   stash cell, where they are exactly right and where RatNav still reads them; in a list you are
   scanning for a name you have in mind, they are not.
-- **One alphabetical list**, on the overlay and in the buddy app. Found-in-raid items are no longer
+- **One alphabetical list**, on the overlay and in the app. Found-in-raid items are no longer
   lifted into their own block — the colour says which they are wherever they sit, and two alphabets
   meant looking twice.
 
@@ -133,6 +133,13 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Fixed
 
+- **The Maps controls stay where you left them.** They shared one wrapping row with the map's own
+  size deciding how it broke, so changing map moved everything. Search now has a row of its own —
+  it is the one control you reach for by aiming rather than by reading.
+- **Custom tracking can mark an item found-in-raid**, which colours its number on the overlay the
+  same red the quest and hideout lists use. RatNav cannot know: a barter may demand it where a kit
+  you are building for yourself does not.
+
 - **The overlay draws Customs in its own colours again.** The **Graphical** level is meant to use
   the map's own palette, and it was drawing the flat wireframe one instead — the overlay was
   fetching a map the service had already restyled, so the palette it read back was RatNav's, not
@@ -158,7 +165,7 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **Quest photos fit their window.** They are 7000-pixel screenshots, and the picture was asking
   for the whole width of the box *and* a share of what was left over, so it pushed past the edge.
 
-### The buddy app
+### The app
 
 - **Character level in the top navigation**, where it can keep up with you.
 - **Traders as cards** with their portraits and one level control each.
@@ -187,7 +194,7 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **Hideout crafts too**, which were never fetched at all — 214 recipes and the station level each
   one needs.
 - **Counted apart** from quests and the hideout, in their own sections on the overlay and their own
-  line on a buddy-app row. An item wanted three times for a quest and seven for a barter is two
+  line on a row in the app. An item wanted three times for a quest and seven for a barter is two
   reasons, not a single ten, and one number would hide that finishing the quest leaves seven still
   to find.
 - The picker offers only what your traders and hideout can actually do, with a checkbox for the
@@ -244,7 +251,7 @@ The first public release. Alpha: it works and is used daily, but it is early.
   be dragged back, and the only fix was editing settings.json by hand.
 - **The game data cache carries a schema number.** Adding a field used to mean every existing
   install served a cache missing it until the six-hour age check happened to fire.
-- Place names draw on the buddy app's map, and a search takes you to one by name.
+- Place names draw on the app's map, and a search takes you to one by name.
 
 
 ### The map

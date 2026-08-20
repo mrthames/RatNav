@@ -205,7 +205,7 @@ public partial class OverlayWindow : Window
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
         OfferedButton.Click += (_, _) => ForgetOfferedExtracts();
-        OpenBuddyButton.Click += (_, _) => OpenBuddyAppRequested?.Invoke(this, EventArgs.Empty);
+        OpenAppButton.Click += (_, _) => OpenAppRequested?.Invoke(this, EventArgs.Empty);
         HaloButton.Click += (_, _) => ToggleHalo();
         GhostButton.Click += (_, _) => ToggleGhost();
         PlacesButton.Click += (_, _) => TogglePlaces();
@@ -242,8 +242,8 @@ public partial class OverlayWindow : Window
 
     public event EventHandler? ExpandRequested;
 
-    /// <summary>Raised when someone asks for the buddy app, from the control drawer.</summary>
-    public event EventHandler? OpenBuddyAppRequested;
+    /// <summary>Raised when someone asks for the app, from the control drawer.</summary>
+    public event EventHandler? OpenAppRequested;
 
     /// <summary>
     /// Binds the configured hotkeys, reporting any that could not be set. Safe to call again
@@ -1143,7 +1143,7 @@ public partial class OverlayWindow : Window
     /// Re-reads the marks for the map on screen and redraws.
     ///
     /// <para>Marks are fetched with the rest of a map's furniture and cached against the map id,
-    /// so adding one in the buddy app would otherwise not show until the map changed. Clearing
+    /// so adding one in the app would otherwise not show until the map changed. Clearing
     /// the cache key is what makes the next draw go and look again.</para>
     /// </summary>
     public void RefreshWaypointsNow() => Dispatcher.Invoke(() =>
@@ -1599,7 +1599,7 @@ public partial class OverlayWindow : Window
     /// <summary>
     /// Fills the reminder strip from the service.
     ///
-    /// <para>From the same endpoint the buddy app's footer reads, rather than a list written out
+    /// <para>From the same endpoint the app's footer reads, rather than a list written out
     /// twice — two copies of "which key does what" is exactly the pair that drifts.</para>
     /// </summary>
     private async Task LoadHotkeyHintsAsync()

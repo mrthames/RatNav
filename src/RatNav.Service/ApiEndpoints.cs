@@ -27,14 +27,14 @@ public static class ApiEndpoints
     /// count, a hideout level or target, a quest state.
     ///
     /// <para>The overlay used to reload its items only when the <i>raid</i> changed, so starring
-    /// something in the buddy app never reached it. Pushed rather than polled: the plumbing to
+    /// something in the app never reached it. Pushed rather than polled: the plumbing to
     /// tell every surface at once already exists, and a timer would be slower and busier.</para>
     /// </summary>
     public static event Action? ItemsChanged;
 
     /// <summary>
     /// Raised when a mark of your own is added, renamed or removed, so the overlay redraws without
-    /// waiting for a raid to change. Marking a spot in the buddy app and then having to take a
+    /// waiting for a raid to change. Marking a spot in the app and then having to take a
     /// position fix before it appeared would defeat the point of marking it.
     /// </summary>
     public static event Action? WaypointsChanged;
@@ -214,9 +214,10 @@ public static class ApiEndpoints
                             iconUrl = def?.IconUrl,
                             item.Count,
 
-                            // This collection's own count, not a stash total. Items put aside for
-                            // one collection are not also available for another.
+                            // This one's own count, not a stash total. Items put aside for one
+                            // are not also available for another.
                             item.Found,
+                            item.FoundInRaid,
                         },
                 });
         });
@@ -226,7 +227,8 @@ public static class ApiEndpoints
             var goal = tracker.SaveGoal(
                 request.Id,
                 request.Name ?? "",
-                [.. (request.Items ?? []).Select(i => new GoalItem(i.ItemId, i.Count, i.Found))],
+                [.. (request.Items ?? []).Select(
+                    i => new GoalItem(i.ItemId, i.Count, i.Found, i.FoundInRaid))],
                 request.Times ?? 1);
 
             ItemsChanged?.Invoke();
@@ -592,7 +594,10 @@ public static class ApiEndpoints
                         Count = left,
                         Tracked = true,
                         Reason = $"{want.Found} of {want.Count * Math.Max(1, goal.Times)} for {goal.Name}",
-                        FoundInRaid = false,
+
+                        // Yours to say, and it colours the number the same red the quest and
+                        // hideout lists use for the same meaning.
+                        FoundInRaid = want.FoundInRaid,
                     });
                 }
 
@@ -843,7 +848,7 @@ public static class ApiEndpoints
         });
 
         // The key-bind reminder strip, shown along the bottom of the overlay and stuck to the
-        // bottom of the buddy app.
+        // bottom of the app.
         //
         // Built here so the two cannot drift, and read from the settings rather than written out
         // as text — the whole point is to name the keys *you* bound, including the screenshot key,
@@ -858,7 +863,7 @@ public static class ApiEndpoints
                 new { key = keys.ToggleOverlay, does = "show/hide" },
                 new { key = keys.ToggleInteract, does = "controls" },
                 new { key = keys.ToggleMode, does = "panel/map" },
-                new { key = keys.IdentifyItem, does = "what is this" },
+                new { key = keys.IdentifyItem, does = "check item" },
                 new { key = keys.ReadExtracts, does = "update extracts" },
             }.Where(h => h.key is { Length: > 0 }));
         });
@@ -2298,7 +2303,8 @@ public sealed record PlaceLabel
 public sealed record GoalRequest(
     string? Id, string? Name, int? Times, IReadOnlyList<GoalItemRequest>? Items);
 
-public sealed record GoalItemRequest(string ItemId, int Count, int Found = 0);
+public sealed record GoalItemRequest(
+    string ItemId, int Count, int Found = 0, bool FoundInRaid = false);
 
 /// <summary>How far to move one item's found count: +1, -1, or any step.</summary>
 public sealed record GoalItemAdjust(int By);

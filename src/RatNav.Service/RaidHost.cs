@@ -277,12 +277,23 @@ public sealed record RatNavSettings
     public Dictionary<string, string> ConfirmedMaps { get; set; } = [];
 
     /// <summary>
-    /// Whether to open the buddy app in a browser when RatNav starts.
+    /// Whether to open the app in a browser when RatNav starts.
     ///
     /// <para>On, because the panel hotkey that used to do this is gone and something has to. Off
     /// for anyone who would rather open it themselves.</para>
     /// </summary>
-    public bool OpenBuddyAppAtStart { get; set; } = true;
+    public bool OpenAppAtStart { get; set; } = true;
+
+    /// <summary>
+    /// The name this had before the app stopped being called the buddy app.
+    ///
+    /// <para>Kept only so a settings file written by an older RatNav still says what it meant.
+    /// Renaming the property renamed the JSON key, and a key nothing reads is a choice silently
+    /// discarded — which for this one means the browser opening on launch after somebody turned
+    /// it off.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonPropertyName("openBuddyAppAtStart")]
+    public bool? OpenBuddyAppAtStartLegacy { get; set; }
 
     public OverlayBounds Overlay { get; set; } = new();
 
@@ -630,7 +641,7 @@ public sealed record RatNavSettings
     /// <summary>
     /// Closes the gaps left by the two hotkeys that were removed.
     ///
-    /// <para>Opening the panel and ticking an objective off are gone — the buddy app opens with
+    /// <para>Opening the panel and ticking an objective off are gone — the app opens with
     /// RatNav, and ticking is better done by hand where you can see the list — which left F7 and
     /// F8 empty and the rest stranded at F9 to F11.</para>
     ///
