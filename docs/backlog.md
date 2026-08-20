@@ -173,8 +173,15 @@ Captured before execution.
 
 ### The Maps page
 
-- [ ] **Match the overlay.** Art style, zoom, click-and-drag, layering, extracts, place labels and
+- [x] **Match the overlay.** Art style, zoom, click-and-drag, layering, extracts, place labels and
   quest markers — all of it.
+  - Same four draw levels under the same names, same default. Same waypoint pin, extract door and
+    mark shapes. Place labels drawn. Floors with ghosting, right-drag pan, wheel zoom. Clicking a
+    waypoint opens the quest on both.
+  - Still overlay-only, and deliberately: **halo**, **fade**, and the **pin/text/you/shrink**
+    dials. Every one exists because the overlay draws over an unpredictable game scene at a
+    distance. A browser on a second monitor has a known background and a readable distance, and a
+    control that does nothing useful is worse than a missing one.
 - [x] **Same iconography.** The buddy app draws circles where the overlay draws waypoint symbols.
 - [x] **Mark newer maps `[WIP]`** beside the name. A hand-kept list, because nothing in the data
   marks it — Ground Zero 21+, the Ground Zero tutorial and Terminal today. When a map settles, take
