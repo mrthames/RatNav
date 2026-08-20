@@ -35,6 +35,11 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### The overlay
 
+- **Click a quest in the quest log to read it, in raid.** What it wants, which step this stop is,
+  and the wiki's pictures of the place — the same panel a waypoint on the map opens. Press your
+  interact key, click the stop, read it, dismiss it. On a single screen this was the one thing you
+  had to leave the game for.
+
 - **A key-bind reminder along the bottom**, up with the controls rather than over the game all
   raid. It names the keys you actually bound, including your in-game screenshot key — the one
   people forget. The buddy app carries the same strip stuck to the bottom of the window, from the

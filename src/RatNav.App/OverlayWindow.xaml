@@ -54,7 +54,38 @@
             One row of the items list. Shared by the panel beside the map and the window it tears
             off into: the same list in two places has to look like the same list.
         -->
+        <!--
+            A row is a button when there is something behind it and plain text otherwise. WPF
+            disables a button whose Command is null, so rows with nothing to open simply do not
+            respond — no second flag to keep in step with the first.
+        -->
+        <Style x:Key="RowButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Hit" Background="{TemplateBinding Background}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hit" Property="Background" Value="#22ffffff" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <DataTemplate x:Key="ItemRowTemplate">
+          <Button Style="{StaticResource RowButton}" Command="{Binding Activate}">
             <Grid Margin="0,1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -75,6 +106,7 @@
                            Text="{Binding Name}"
                            ToolTip="{Binding Reason}" />
             </Grid>
+          </Button>
         </DataTemplate>
 
         <!-- A section: a header you can click to fold it away, and its rows. -->

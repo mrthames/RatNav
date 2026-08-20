@@ -1,3 +1,4 @@
+using System.Windows.Input;
 using System.Windows.Media;
 using RatNav.Service;
 
@@ -26,6 +27,18 @@ public sealed record ItemRow
     public required string Reason { get; init; }
 
     public required Brush Colour { get; init; }
+
+    /// <summary>
+    /// What to do when the row is clicked, or null when there is nothing to open.
+    ///
+    /// <para>Null on every item row — a shopping list is read, not operated. Set on the quest log,
+    /// where clicking a stop opens the quest: what it wants, which step this one is, and the wiki's
+    /// pictures of the place. In raid on one screen that is the only way to reach any of it.</para>
+    ///
+    /// <para>A null command leaves the button disabled, which is exactly the behaviour wanted:
+    /// rows with nothing behind them do not light up under the cursor.</para>
+    /// </summary>
+    public ICommand? Activate { get; init; }
 
     public static ItemRow From(PanelRow row) => new()
     {

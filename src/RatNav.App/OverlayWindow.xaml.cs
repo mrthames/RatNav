@@ -1371,6 +1371,8 @@ public partial class OverlayWindow : Window
         {
             if (!stop.Done) order++;
 
+            var opened = stop;
+
             rows.Add(new ItemRow
             {
                 Count = stop.Done ? "\u2713" : order.ToString(),
@@ -1379,6 +1381,14 @@ public partial class OverlayWindow : Window
                     ? $"{stop.Place ?? stop.TaskName} — {stop.Description}"
                     : stop.Place ?? stop.TaskName,
                 Colour = (Brush)FindResource(stop.Done ? "Muted" : "Route"),
+
+                // Clicking a stop opens its quest, the same panel a waypoint on the map
+                // opens. On one screen this is the only way to reach the wiki's pictures of
+                // the place without leaving the game, and those pictures are what turn
+                // "walk to this pin" into "find this door".
+                Activate = opened.TaskId is { Length: > 0 }
+                    ? new RelayCommand(() => ShowQuestBrief(opened))
+                    : null,
             });
         }
 
