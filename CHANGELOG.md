@@ -72,6 +72,9 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Fixed
 
+- **Zoom follows the pointer on the Maps page.** Scrolling zoomed about the top-left corner, so
+  whatever you were pointing at slid away from under the cursor.
+
 - **Quest photos load.** Both carousels showed the right titles over broken pictures: the wiki's
   CDN answers a request carrying a foreign address with a placeholder rather than the screenshot,
   so loading them straight from the page could never have worked. They come through RatNav now,

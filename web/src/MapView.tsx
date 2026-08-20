@@ -97,8 +97,10 @@ export function MapView({ map }: { map: MapSummary }) {
     // of it off the edge. A closer look is what "take me there" means.
     const next = Math.max(zoom, 2.5)
 
-    setZoom(next)
-    setPan({ x: box.width / 2 - x * box.width * next, y: box.height / 2 - y * box.height * next })
+    setView({
+      zoom: next,
+      pan: { x: box.width / 2 - x * box.width * next, y: box.height / 2 - y * box.height * next },
+    })
   }
 
   const loadMarks = useCallback(
@@ -134,8 +136,11 @@ export function MapView({ map }: { map: MapSummary }) {
   }
 
   // Zoom and pan, to match the overlay. A map you can only see whole is not much use on Streets.
-  const [zoom, setZoom] = useState(1)
-  const [pan, setPan] = useState({ x: 0, y: 0 })
+  //
+  // One piece of state rather than two, because zooming about the pointer moves both at once and
+  // has to move them from the same starting values.
+  const [view, setView] = useState({ zoom: 1, pan: { x: 0, y: 0 } })
+  const { zoom, pan } = view
   const dragging = useRef<{ x: number; y: number } | null>(null)
   const host = useRef<HTMLDivElement>(null)
   const frame = useRef<HTMLDivElement>(null)
@@ -231,7 +236,7 @@ export function MapView({ map }: { map: MapSummary }) {
         {(zoom !== 1 || pan.x !== 0 || pan.y !== 0) && (
           <button
             type="button"
-            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }) }}
+            onClick={() => setView({ zoom: 1, pan: { x: 0, y: 0 } })}
             className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
                        hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
           >
@@ -316,9 +321,36 @@ export function MapView({ map }: { map: MapSummary }) {
       <div
         ref={frame}
         className="relative overflow-hidden border border-line bg-[#0e1317]"
+        // Zoom about the pointer, not the corner.
+        //
+        // The content is drawn as translate(pan) then scale(z) from the top-left, so a point c in
+        // the content sits at pan + c*z on screen. Changing z alone therefore pulls everything
+        // toward the top-left corner, which is what this used to do. Holding the point under the
+        // cursor still means moving pan by the same amount the scale moved it:
+        //
+        //     c = (m - pan) / z          the content point currently under the cursor
+        //     pan' = m - c * z'          where it has to be for that point to stay at m
         onWheel={(e) => {
           e.preventDefault()
-          setZoom((z) => Math.min(8, Math.max(1, z * (e.deltaY < 0 ? 1.15 : 1 / 1.15))))
+
+          const box = frame.current?.getBoundingClientRect()
+          if (!box) return
+
+          const mouseX = e.clientX - box.left
+          const mouseY = e.clientY - box.top
+
+          setView((v) => {
+            const next = Math.min(8, Math.max(1, v.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
+            const ratio = next / v.zoom
+
+            return {
+              zoom: next,
+              pan: {
+                x: mouseX - (mouseX - v.pan.x) * ratio,
+                y: mouseY - (mouseY - v.pan.y) * ratio,
+              },
+            }
+          })
         }}
         // Right-drag to pan, same as the overlay. The context menu would otherwise open on
         // release and swallow the gesture.
@@ -332,7 +364,10 @@ export function MapView({ map }: { map: MapSummary }) {
           const from = dragging.current
           if (!from) return
 
-          setPan((p) => ({ x: p.x + e.clientX - from.x, y: p.y + e.clientY - from.y }))
+          setView((v) => ({
+            ...v,
+            pan: { x: v.pan.x + e.clientX - from.x, y: v.pan.y + e.clientY - from.y },
+          }))
           dragging.current = { x: e.clientX, y: e.clientY }
         }}
         onPointerUp={(e) => {
