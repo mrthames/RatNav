@@ -1,4 +1,5 @@
 using System.Windows.Media;
+using RatNav.Core.Tracking;
 using RatNav.Service;
 
 // WinForms is referenced for the tray icon and brings clashing drawing types with it.
@@ -17,10 +18,13 @@ public sealed record IdentifyReason
 /// <summary>
 /// Turns an item into the handful of lines worth reading while standing over a pile of loot.
 ///
-/// <para>Ordered by how much it changes what you do. A quest that wants the item found in raid is
-/// the strongest reason not to sell it; a hideout module is next, because it names the station and
-/// level; barters last, because they are a standing offer rather than something you can finish.
-/// Anything nothing wants says so plainly, which is just as useful an answer.</para>
+/// <para>The service works out <i>what</i> to say — which of the reasons are things you are
+/// actually working on, and which are background — because that is domain logic and all three
+/// surfaces have to agree about it. This decides what colour each line is and nothing else.</para>
+///
+/// <para>The card used to list every quest that has ever wanted the item, every hideout level, and
+/// every barter it appears in. All of that is true and almost none of it is the question: you are
+/// reading this over a pile of loot with footsteps nearby, and it was answering by listing.</para>
 /// </summary>
 public static class IdentifyCard
 {
@@ -31,85 +35,53 @@ public static class IdentifyCard
 
     public static IReadOnlyList<IdentifyReason> Reasons(ItemDetail detail)
     {
-        var rows = new List<IdentifyReason>();
-
-        foreach (var quest in detail.Quests)
+        // Falls back to the full lists when the service did not reach a verdict — an item it has
+        // no needs for at all. Saying something is better than an empty card.
+        if (detail.Verdict is not { } verdict)
         {
-            var fir = quest.FoundInRaid ? " (found in raid)" : "";
-            var trader = quest.TraderName is { Length: > 0 } who ? $"{who} · " : "";
-
-            rows.Add(new IdentifyReason
-            {
-                Text = $"QUEST  {trader}{quest.TaskName} ×{quest.Count}{fir}",
-                Colour = quest.FoundInRaid ? Need : Route,
-            });
+            return
+            [
+                new IdentifyReason
+                {
+                    Text = detail.Item.Avg24hPrice is { } price and > 0
+                        ? $"Nothing needs this. Flea around {price:N0} ₽."
+                        : "Nothing needs this.",
+                    Colour = Muted,
+                },
+            ];
         }
 
-        // The specific thing the player wants to know: which station, and which level of it.
-        foreach (var hideout in detail.Hideout)
+        var rows = new List<IdentifyReason>
         {
-            rows.Add(new IdentifyReason
+            new()
             {
-                Text = $"HIDEOUT  {hideout.StationName} level {hideout.Level} ×{hideout.Count}",
-                Colour = Route,
-            });
-        }
+                Text = verdict.Headline,
+                Colour = Colour(verdict.Weight),
+            },
+        };
 
-        foreach (var key in detail.AsKey)
+        rows.AddRange(verdict.Lines.Select(line => new IdentifyReason
         {
-            rows.Add(new IdentifyReason
-            {
-                Text = $"KEY  opens the way for {key.TaskName}",
-                Colour = Accent,
-            });
-        }
+            Text = line.Text,
+            Colour = Colour(line.Weight),
+        }));
 
-        // Barters are capped rather than listed in full: a common item can appear in a dozen, and
-        // a card that runs off the screen answers nothing.
-        foreach (var barter in detail.Barters.Take(4))
+        // What you hold, last. It qualifies everything above it rather than competing with it.
+        if (detail.Have > 0)
         {
-            var gets = barter.OfferedItemName is { Length: > 0 } offered
-                ? $" → {offered}{(barter.OfferedCount > 1 ? $" ×{barter.OfferedCount}" : "")}"
-                : "";
-
-            rows.Add(new IdentifyReason
-            {
-                Text = $"BARTER  {barter.TraderName} LL{barter.TraderLevel} ×{barter.Count}{gets}",
-                Colour = Accent,
-            });
-        }
-
-        if (detail.Barters.Count > 4)
-        {
-            rows.Add(new IdentifyReason
-            {
-                Text = $"BARTER  and {detail.Barters.Count - 4} more",
-                Colour = Muted,
-            });
-        }
-
-        if (rows.Count == 0)
-        {
-            // "Nothing wants this" is a real answer and worth saying, not an empty card.
-            rows.Add(new IdentifyReason
-            {
-                Text = detail.Item.Avg24hPrice is { } price and > 0
-                    ? $"Nothing needs this. Flea around {price:N0} ₽."
-                    : "Nothing needs this.",
-                Colour = Muted,
-            });
-        }
-        else if (detail.Have > 0)
-        {
-            rows.Add(new IdentifyReason
-            {
-                Text = $"You have {detail.Have}.",
-                Colour = Muted,
-            });
+            rows.Add(new IdentifyReason { Text = $"You have {detail.Have}.", Colour = Muted });
         }
 
         return rows;
     }
+
+    private static Brush Colour(VerdictWeight weight) => weight switch
+    {
+        VerdictWeight.Critical => Need,
+        VerdictWeight.Wanted => Route,
+        VerdictWeight.Background => Accent,
+        _ => Muted,
+    };
 
     private static Brush Frozen(byte r, byte g, byte b)
     {

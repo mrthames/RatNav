@@ -281,8 +281,11 @@ them separately.
 
 ### Item identification (F10) card
 
-- [ ] **The card shows far too much.** It lists every quest, every hideout level, every barter it
-  can find, which is not what the question is.
+- [x] **The card shows far too much.** Rebuilt around a verdict rather than a list: a headline
+  (`Keep`, `Keep — found in raid`, `Not now`, `Leave it`), then only the reasons that are things you
+  are working on, then one counted line for everything else. Measured on Bundle of wires: the old
+  card listed eight quests, five barters and every hideout level; the new one says
+  `HIDEOUT 60 for Security 3` and `ALSO 8 quests you have not started, 5 barters`.
   - What is actually wanted, in this order:
     1. **Is this needed for anything I am working on** — an active quest, a hideout upgrade in
        view, or a barter being tracked?

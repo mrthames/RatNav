@@ -286,7 +286,9 @@ public static class ApiEndpoints
         //
         // The text is supplied by the caller rather than captured here, which keeps every pixel
         // that touches the screen in the desktop app and leaves this side testable with strings.
-        api.MapPost("/items/identify", (RatNavState state, ItemTracker tracker, IdentifyRequest request) =>
+        api.MapPost("/items/identify", (
+            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
+            IdentifyRequest request) =>
         {
             if (state.Index is not { } index) return Results.NotFound();
 
@@ -301,7 +303,10 @@ public static class ApiEndpoints
             {
                 // Every candidate, not just the winner. OCR misreads, and being able to say "no,
                 // the one below it" is the difference between a useful tool and a frustrating one.
-                matches = matches.Select(m => Detail(index, tracker, m.Item, m.Confidence)),
+                matches = matches.Select(m => Detail(index, tracker, m.Item, m.Confidence) with
+                {
+                    Verdict = Verdict(state, tracker, progress, settings, m.Item.Id),
+                }),
                 readText = lines,
             });
         });
@@ -1292,6 +1297,48 @@ public static class ApiEndpoints
     /// tarkov.dev is down the only id a map has is its tarkovdata key — and a URL that stops
     /// working during someone else's outage is a URL that was wrong to begin with.
     /// </summary>
+    /// <summary>
+    /// Whether to pick something up, answered in the order the question is actually asked.
+    ///
+    /// <para>Built here rather than in the overlay because deciding what counts as "something you
+    /// are working on" is domain logic — active quests, upgrades within the look-ahead, trades you
+    /// picked — and the overlay should not be re-deriving it from a list of everything.</para>
+    /// </summary>
+    private static ItemVerdict? Verdict(
+        RatNavState state,
+        ItemTracker tracker,
+        ProgressStore progress,
+        RatNavSettings settings,
+        string itemId)
+    {
+        if (state.Index is not { } index) return null;
+
+        var needs = index.GetNeeds(itemId);
+        if (needs is null) return null;
+
+        var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
+        var trades = state.TradeDemand(tracker);
+        var tracked = tracker.Track(needs, progress, hideout, trades);
+
+        var activeQuests = needs.Quests.Where(q => progress.IsActive(q.TaskId)).ToList();
+        var nearestQuest = activeQuests.OrderByDescending(q => q.FoundInRaid).FirstOrDefault();
+
+        var watch = tracker.Watchlist.FirstOrDefault(w => w.ItemId == itemId);
+        var trade = trades.GetValueOrDefault(itemId);
+
+        return LootVerdict.For(
+            (tracked.QuestNeeded, nearestQuest?.TaskName),
+            (tracked.HideoutNeeded, tracked.HideoutUpgrade),
+            (tracked.TradeNeeded, trade?.For.FirstOrDefault()),
+            watch is { Target: { } target } ? (target, watch.Have) : null,
+            tracked.FoundInRaid,
+
+            // Counted, not listed. A common item is wanted by half the quest tree eventually, and
+            // the card has one glance to work with.
+            needs.Quests.Count(q => !progress.IsActive(q.TaskId)),
+            needs.Barters.Count);
+    }
+
     /// <summary>An item card with everything a player asks about it in one shape.</summary>
     private static ItemDetail Detail(ItemIndex index, ItemTracker tracker, ItemDef item, double? confidence)
     {
@@ -1776,6 +1823,14 @@ public sealed record ItemDetail
 
     /// <summary>Set when this came from reading the screen: 0 to 1, so the UI can hedge honestly.</summary>
     public double? Confidence { get; init; }
+
+    /// <summary>
+    /// Whether to pick it up, and why, strongest reason first.
+    ///
+    /// <para>Set when the question is "I am standing over this". The lists above are the whole
+    /// truth about an item; this is the part of it that changes what you do next.</para>
+    /// </summary>
+    public ItemVerdict? Verdict { get; init; }
 
     public static ItemDetail From(ItemDef item, ItemNeeds? needs) => new()
     {
