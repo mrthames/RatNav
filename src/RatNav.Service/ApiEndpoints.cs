@@ -854,12 +854,12 @@ public static class ApiEndpoints
 
             return Results.Ok(new[]
             {
-                new { key = settings.ScreenshotKey, does = "where am I" },
+                new { key = settings.ScreenshotKey, does = "update location" },
                 new { key = keys.ToggleOverlay, does = "show/hide" },
                 new { key = keys.ToggleInteract, does = "controls" },
                 new { key = keys.ToggleMode, does = "panel/map" },
                 new { key = keys.IdentifyItem, does = "what is this" },
-                new { key = keys.ReadExtracts, does = "extracts" },
+                new { key = keys.ReadExtracts, does = "update extracts" },
             }.Where(h => h.key is { Length: > 0 }));
         });
 

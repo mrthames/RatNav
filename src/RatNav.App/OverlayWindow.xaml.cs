@@ -958,7 +958,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            UiScale = Math.Clamp(_settings.Overlay.UiScale + by, 1.0, 3.0),
+            UiScale = Math.Clamp(EffectiveUiScale + by, 1.0, 3.0),
         });
 
         ApplyUiScale();
@@ -972,9 +972,36 @@ public partial class OverlayWindow : Window
     /// the map inside it is already sized by the window and the zoom. Scaling the lot would make
     /// "bigger buttons" mean "more zoomed in", which is a different control.</para>
     /// </summary>
+    /// <summary>
+    /// The scale in use: whatever was chosen, or one worked out from the screen.
+    ///
+    /// <para>A fixed default is a guess about somebody else's monitor. A 4K panel has four times
+    /// the pixels of a 1080p one at much the same physical size, so chrome sized for one is either
+    /// unreadable or overbearing on the other — and the default was sized for the machine it was
+    /// written on. Taking it from the screen's height puts the overlay at roughly the same
+    /// physical size everywhere, and the quick controls are still there for anyone who wants it
+    /// bigger or smaller.</para>
+    /// </summary>
+    private double EffectiveUiScale =>
+        _settings.Overlay.UiScale ?? ScaleForScreen();
+
+    private double ScaleForScreen()
+    {
+        // Device-independent pixels, so Windows' own display scaling is already accounted for and
+        // this is not applied twice on a laptop set to 150%.
+        var height = SystemParameters.PrimaryScreenHeight;
+
+        return height switch
+        {
+            >= 2000 => 2.0,     // 4K and up
+            >= 1300 => 1.5,     // 1440p
+            _ => 1.25,          // 1080p and below, where the panel is a bigger share of the screen
+        };
+    }
+
     private void ApplyUiScale()
     {
-        var scale = Math.Clamp(_settings.Overlay.UiScale, 1.0, 3.0);
+        var scale = Math.Clamp(EffectiveUiScale, 1.0, 3.0);
 
         foreach (var element in new FrameworkElement[]
                  { Readout, StatusRow, ControlStack, QuickBar, LeftDrawers, RightDrawers, ExpandControls })
@@ -1598,9 +1625,10 @@ public partial class OverlayWindow : Window
 
         ControlStack.Visibility = editing && open ? Visibility.Visible : Visibility.Collapsed;
 
-        // The reminder strip comes up with the controls. Six pieces of text you already know,
-        // sitting over the game for a whole raid, is not a reminder — it is clutter.
-        HotkeyHints.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+        // Filled here as well as at start-up. The first attempt runs while the window is being
+        // built, which can be before Kestrel is listening — and a strip that lost that race stayed
+        // empty for the rest of the session, which looks exactly like the feature not existing.
+        if (HotkeyHints.ItemsSource is null) _ = LoadHotkeyHintsAsync();
 
         // The gear stays wherever interact mode is on, open or closed. Hiding it when the stack
         // opened made the row reflow and the quests and items buttons slide across underneath the

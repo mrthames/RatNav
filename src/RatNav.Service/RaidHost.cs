@@ -479,7 +479,11 @@ public sealed record RatNavSettings
         /// <para>Separate from the marker and text dials, which size what is drawn on the map. This
         /// is the app's chrome.</para>
         /// </summary>
-        public double UiScale { get; init; } = 1.0;
+        /// <summary>
+        /// Null until somebody chooses one, which is what lets the first run pick a scale from
+        /// the screen rather than from a guess about who is running it.
+        /// </summary>
+        public double? UiScale { get; init; }
 
         /// <summary>
         /// Extract names read off the game's own list, when you have asked RatNav to read it.
