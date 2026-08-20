@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using RatNav.App.Interop;
@@ -27,6 +28,14 @@ public partial class ItemsWindow : Window
         };
 
         DockBack.Click += (_, _) => Close();
+
+        // The same corner the main overlay uses. The invisible edges stay underneath — they cost
+        // nothing and they are what a window normally does; what was missing was something to see.
+        ResizeGrip.DragDelta += (_, e) =>
+        {
+            Width = Math.Max(MinWidth, Width + e.HorizontalChange);
+            Height = Math.Max(MinHeight, Height + e.VerticalChange);
+        };
     }
 
     /// <summary>
@@ -41,6 +50,18 @@ public partial class ItemsWindow : Window
         base.OnSourceInitialized(e);
         ResizeBorder.Attach(this);
     }
+
+    /// <summary>
+    /// Shows or hides the scroll bar, following the overlay's interact mode.
+    ///
+    /// <para>Hidden rather than disabled: the list still scrolls on the wheel, so the bar is only
+    /// the mark that says there is more — and a mark over a raid that cannot be dragged is one
+    /// more thing on screen for nothing.</para>
+    /// </summary>
+    public void ShowScrollBar(bool visible) =>
+        Scroll.VerticalScrollBarVisibility = visible
+            ? ScrollBarVisibility.Auto
+            : ScrollBarVisibility.Hidden;
 
     public void Show(IReadOnlyList<ItemSection> sections)
     {

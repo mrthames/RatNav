@@ -196,6 +196,11 @@ public partial class OverlayWindow : Window
         };
         SizeChanged += (_, _) => Draw();
 
+        // The quest log's ceiling is a fraction of the side's height, so it has to be worked out
+        // again whenever that height changes — the overlay is resized, or a panel opens beside it.
+        LeftDrawers.SizeChanged += (_, _) => ApplyQuestCeiling();
+        RightDrawers.SizeChanged += (_, _) => ApplyQuestCeiling();
+
         DragHandle.MouseLeftButtonDown += (_, _) => DragMove();
         ResizeGrip.DragDelta += OnResize;
         // On the map, not on the window. Handled at window level it beat the items list to every
@@ -1746,6 +1751,12 @@ public partial class OverlayWindow : Window
         var height = side.ActualHeight;
         if (height <= 0) return;
 
+        // Dragging down with nothing hidden does nothing on screen, so it does not move the
+        // setting either. Left to accumulate, the ceiling would climb somewhere far above the
+        // content and the first inch of the drag back up would have no effect — a divider that
+        // ignores you for a while is one you stop trusting.
+        if (e.VerticalChange > 0 && QuestScroll.ScrollableHeight <= 0) return;
+
         var share = Math.Clamp(_settings.Overlay.QuestShare + e.VerticalChange / height, 0.15, 0.85);
 
         Remember(_settings.Overlay with { QuestShare = share });
@@ -1813,6 +1824,8 @@ public partial class OverlayWindow : Window
 
             top.Height = new GridLength(1, GridUnitType.Star);
             bottom.Height = new GridLength(0);
+
+            ApplyQuestCeiling();
             return;
         }
 
@@ -1824,10 +1837,45 @@ public partial class OverlayWindow : Window
             Grid.SetRow(panel, quests ? 0 : 2);
         }
 
-        var share = _settings.Overlay.QuestShare;
+        // The divider is a ceiling, not a split.
+        //
+        // Two star rows gave the quest log its share of the height whether or not it had anything
+        // to put there, so three quests sat in a section sized for ten and the items list below
+        // was squeezed for nothing. Auto over star means it takes what it needs; the ceiling is
+        // what stops a long plan from taking the whole side, and hitting it is what turns the
+        // quest log into something that scrolls.
+        top.Height = GridLength.Auto;
+        bottom.Height = new GridLength(1, GridUnitType.Star);
 
-        top.Height = new GridLength(share, GridUnitType.Star);
-        bottom.Height = new GridLength(1 - share, GridUnitType.Star);
+        ApplyQuestCeiling();
+    }
+
+    /// <summary>
+    /// Caps the quest log at the fraction the divider was dragged to — and only when it is sharing
+    /// a side.
+    ///
+    /// <para>Read from whichever side the panel is actually in rather than from both in turn, or
+    /// the second one to be laid out wins and the ceiling comes from a column the quest log is not
+    /// in. Alone on a side there is nothing to share with, so the cap comes off entirely: it
+    /// should use the height it has.</para>
+    /// </summary>
+    private void ApplyQuestCeiling()
+    {
+        if (QuestPanel.Parent is not FrameworkElement side
+            || !ItemsPanel.IsVisible
+            || !ReferenceEquals(ItemsPanel.Parent, side))
+        {
+            QuestPanel.MaxHeight = double.PositiveInfinity;
+            return;
+        }
+
+        var available = side.ActualHeight;
+        if (available <= 0) return;
+
+        // A floor under it, because a ceiling of nothing is a panel that is on screen and cannot
+        // show a single row of what it is for.
+        QuestPanel.MaxHeight =
+            Math.Max(48, available * Math.Clamp(_settings.Overlay.QuestShare, 0.15, 0.85));
     }
 
     /// <summary>
@@ -2206,6 +2254,26 @@ public partial class OverlayWindow : Window
         ControlStack.MaxHeight = centred
             ? Math.Max(200, ActualHeight * 0.75)
             : double.PositiveInfinity;
+
+        // The bar goes with the rest of the furniture.
+        //
+        // With interact mode off there is nothing it can do — it cannot be dragged, and the wheel
+        // is the game's — so it was a mark sitting over a raid for no reason. Hidden rather than
+        // disabled, because Hidden still scrolls: the wheel keeps working the instant the mouse
+        // comes back, and the bar reappears with it.
+        // Read from the mouse alone, not from `editing`, which also means "the map is showing".
+        // With the map folded away the lists *are* the overlay, and they still scroll.
+        var bars = _clickThrough
+            ? ScrollBarVisibility.Hidden
+            : ScrollBarVisibility.Auto;
+
+        QuestScroll.VerticalScrollBarVisibility = bars;
+        ItemsScroll.VerticalScrollBarVisibility = bars;
+        ControlScroll.VerticalScrollBarVisibility = bars;
+        QuestBriefScroll.VerticalScrollBarVisibility = bars;
+
+        _itemsWindow?.ShowScrollBar(!_clickThrough);
+        _questWindow?.ShowScrollBar(!_clickThrough);
 
         // The grab bar runs the width of the window across the row the drawer handles live in.
         // Interact mode pushes the content clear by a full button height rather than a hair — a

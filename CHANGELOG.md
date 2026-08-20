@@ -40,6 +40,20 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **A short quest log takes the room it needs and no more.** It used to hold open a fixed share of
+  the side whatever it had in it, so three quests sat in a section sized for ten and the items list
+  below was squeezed for nothing. The divider is a **ceiling** now rather than a split: drag it
+  below the contents and the log scrolls, and dragging it above them does nothing, because there is
+  nothing to reveal.
+- **Scroll bars are a thumb and nothing else** — no track, no arrows, four pixels wide, and only
+  when something is actually hidden. WPF's own is a chunky light column with a button at each end,
+  which over a dark translucent overlay reads as a control from another application. **They also
+  disappear with the rest of the controls**: with the mouse back in the game a bar cannot be
+  dragged and the wheel is not the overlay's, so it was a mark sitting over a raid for no reason.
+  The wheel still works the instant interact mode returns.
+- **Popped-out panels carry the main overlay's handles** — the same solid light-blue bar to drag
+  and the same light-blue corner to pull, instead of a faint strip and an invisible edge. The
+  edges still resize; what was missing was something to see.
 - **The centred map turns with you.** Your heading points up the screen, so what is drawn at the
   top is what is in front of you — no more reading a route that runs behind you off the top of a
   monitor that is in front of you. Your cone points straight up, because up is now where you are

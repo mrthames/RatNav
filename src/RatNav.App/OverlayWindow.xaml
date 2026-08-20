@@ -165,6 +165,83 @@
         </Style>
 
         <!--
+            A scroll bar that is nearly not there.
+
+            WPF's own is a chunky light-grey column with an arrow button at each end, which over a
+            dark translucent overlay reads as a control from another application dropped into it.
+            Removing it entirely was the first instinct and is one thing short of right: without
+            any mark at all a list that continues below the fold looks like a list that ends, and
+            you stop reading at a boundary that is not there.
+
+            So: the thumb and nothing else. No track, no arrows, no border, four pixels wide, and
+            present only when something is actually hidden — which is what Auto already decides.
+            It brightens under the pointer, because at four pixels the thing you are aiming at
+            should say it has been found.
+        -->
+        <Style x:Key="ThinScroll" TargetType="ScrollBar">
+            <Setter Property="Width" Value="4" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <!--
+                            One row, not the usual three. The arrow buttons are not hidden, they
+                            are absent: a hidden button still takes its height, which at the top
+                            and bottom of a short list is most of the bar.
+                        -->
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border x:Name="Bar"
+                                                    Background="#4d8ec8ff"
+                                                    CornerRadius="2"
+                                                    Margin="1,0" />
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bar" Property="Background" Value="#b38ec8ff" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+
+                            <!--
+                                Clicking the empty part of the track still pages, as it always
+                                did. The buttons that do it are transparent and have no size of
+                                their own, so the behaviour survives without the furniture.
+                            -->
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseRepeatButton>
+
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseRepeatButton>
+                        </Track>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Every ScrollViewer in the overlay, without naming them one at a time. -->
+        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScroll}" />
+
+        <!--
             A dropdown that looks like the rest of the overlay.
 
             Templated rather than styled, because WPF's own ComboBox brings a light chrome with it
@@ -454,7 +531,8 @@
                                                    HorizontalAlignment="Center" VerticalAlignment="Bottom" />
                                     </Grid>
 
-                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                    <ScrollViewer x:Name="QuestBriefScroll"
+                                                  VerticalScrollBarVisibility="Auto"
                                                   HorizontalScrollBarVisibility="Disabled">
                                         <ItemsControl x:Name="QuestBriefSteps">
                                             <ItemsControl.ItemTemplate>

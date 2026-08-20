@@ -33,6 +33,83 @@
         <SolidColorBrush x:Key="Muted" Color="#7b8c9b" />
         <SolidColorBrush x:Key="Accent" Color="#8ec8ff" />
 
+        <!--
+            A scroll bar that is nearly not there.
+
+            WPF's own is a chunky light-grey column with an arrow button at each end, which over a
+            dark translucent overlay reads as a control from another application dropped into it.
+            Removing it entirely was the first instinct and is one thing short of right: without
+            any mark at all a list that continues below the fold looks like a list that ends, and
+            you stop reading at a boundary that is not there.
+
+            So: the thumb and nothing else. No track, no arrows, no border, four pixels wide, and
+            present only when something is actually hidden — which is what Auto already decides.
+            It brightens under the pointer, because at four pixels the thing you are aiming at
+            should say it has been found.
+        -->
+        <Style x:Key="ThinScroll" TargetType="ScrollBar">
+            <Setter Property="Width" Value="4" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <!--
+                            One row, not the usual three. The arrow buttons are not hidden, they
+                            are absent: a hidden button still takes its height, which at the top
+                            and bottom of a short list is most of the bar.
+                        -->
+                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border x:Name="Bar"
+                                                    Background="#4d8ec8ff"
+                                                    CornerRadius="2"
+                                                    Margin="1,0" />
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bar" Property="Background" Value="#b38ec8ff" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+
+                            <!--
+                                Clicking the empty part of the track still pages, as it always
+                                did. The buttons that do it are transparent and have no size of
+                                their own, so the behaviour survives without the furniture.
+                            -->
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseRepeatButton>
+
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseRepeatButton>
+                        </Track>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Every ScrollViewer in the overlay, without naming them one at a time. -->
+        <Style TargetType="ScrollBar" BasedOn="{StaticResource ThinScroll}" />
+
         <Style x:Key="Chip" TargetType="Button">
             <Setter Property="FontFamily" Value="Consolas" />
             <Setter Property="FontSize" Value="11" />
@@ -105,19 +182,26 @@
             BorderBrush="{StaticResource Line}"
             BorderThickness="1"
             CornerRadius="2">
+        <!--
+            The same handles the main overlay uses, in the same colour.
+
+            This window had its own quieter versions of both — a faint strip to drag, and edges you
+            could resize by if you found them — which made a panel that is meant to read as part of
+            the overlay behave like something else. The overlay already has a vocabulary for "this
+            is a handle": a solid light-blue bar to move, a light-blue corner to pull.
+        -->
+        <Grid>
         <DockPanel x:Name="Root" Margin="8,6">
-            <Grid x:Name="TitleStrip" DockPanel.Dock="Top" Margin="0,0,0,5"
-                  Background="#1a8ec8ff" Cursor="SizeAll">
-                <TextBlock Text=" ITEMS · drag to move"
+            <Border x:Name="TitleStrip" DockPanel.Dock="Top" Margin="0,0,0,5"
+                    Height="22" CornerRadius="2,2,0,0"
+                    Background="#cc8ec8ff" Cursor="SizeAll">
+                <TextBlock Text="  drag to move  ·  corner to resize"
                            FontFamily="Consolas" FontSize="10"
-                           Foreground="{StaticResource Muted}"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="#0b0f13"
                            VerticalAlignment="Center" />
 
-                <!-- Back onto the map, collapsed. Tearing off was a one-way trip without it. -->
-                <Button x:Name="DockBack" Style="{StaticResource Chip}"
-                        HorizontalAlignment="Right" Content="✕"
-                        ToolTip="Put the list back on the map, collapsed" />
-            </Grid>
+            </Border>
 
             <!-- A legend, because the colours mean something and nothing said what. -->
             <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0"
@@ -127,10 +211,30 @@
                 <Run Foreground="#ff5a3c">■</Run><Run Text=" must be found in raid" />
             </TextBlock>
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto"
+            <ScrollViewer x:Name="Scroll"
+                          VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl x:Name="Sections" ItemTemplate="{StaticResource ItemSectionTemplate}" />
             </ScrollViewer>
         </DockPanel>
+
+        <!-- Back onto the map, collapsed. Tearing off was a one-way trip without it. -->
+        <Button x:Name="DockBack" Style="{StaticResource Chip}"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,6,8,0" Content="✕"
+                ToolTip="Put the list back on the map, collapsed" />
+
+        <!-- The main overlay's corner, at the same size and in the same blue. -->
+        <Thumb x:Name="ResizeGrip"
+               Width="16" Height="16"
+               HorizontalAlignment="Right" VerticalAlignment="Bottom"
+               Cursor="SizeNWSE">
+            <Thumb.Template>
+                <ControlTemplate TargetType="Thumb">
+                    <Path Data="M 16,0 L 16,16 L 0,16 Z" Fill="#cc8ec8ff" />
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
+        </Grid>
     </Border>
 </Window>
