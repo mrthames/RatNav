@@ -1295,8 +1295,8 @@ public static class ApiEndpoints
             return Results.Ok(new { id = markId });
         });
 
-        // Roughly where the other players started. Areas rather than points, and only the ones a
-        // player can appear at — see SpawnAreas for why.
+        // Every place a player can spawn in. Bot-only spawns are already dropped by the time the
+        // data reaches here.
         api.MapGet("/maps/{id}/spawns", (RatNavState state, string id) =>
         {
             var map = FindMap(state, id);
@@ -1305,21 +1305,14 @@ public static class ApiEndpoints
             var transform = new CoordinateTransform(map.Image);
 
             return Results.Ok(
-                from area in map.SpawnAreas
-                let point = transform.ToNormalized(area.Centre)
-
-                // The spread converted the same way the centre is, so a circle drawn at this
-                // radius covers the same ground the area does rather than a fixed screen size.
-                let edge = transform.ToNormalized(
-                    area.Centre with { X = area.Centre.X + area.Spread })
+                from spawn in map.Spawns
+                let point = transform.ToNormalized(spawn.Position)
                 select new SpawnPin
                 {
-                    Faction = area.Faction == SpawnFaction.Pmc ? "pmc" : "scav",
+                    Faction = spawn.Faction == SpawnFaction.Pmc ? "pmc" : "scav",
                     X = point.X,
                     Y = point.Y,
-                    Radius = Math.Abs(edge.X - point.X),
-                    Points = area.Points,
-                    Elevation = area.Centre.Y,
+                    Elevation = spawn.Position.Y,
                 });
         });
 
@@ -1966,7 +1959,7 @@ public sealed record TradeRequest(bool Tracked, string? Kind, int? Times);
 
 public sealed record WaypointRequest(string? Label, double X, double Y, string? Floor);
 
-/// <summary>A spawn area, placed on the map image.</summary>
+/// <summary>One spawn, placed on the map image.</summary>
 public sealed record SpawnPin
 {
     /// <summary>"pmc" or "scav".</summary>
@@ -1974,13 +1967,6 @@ public sealed record SpawnPin
 
     public required double X { get; init; }
     public required double Y { get; init; }
-
-    /// <summary>How far the area reaches, in the same normalised units as X and Y.</summary>
-    public required double Radius { get; init; }
-
-    /// <summary>How many individual spawn points it covers — a rough read on how busy it is.</summary>
-    public required int Points { get; init; }
-
     public double Elevation { get; init; }
 }
 

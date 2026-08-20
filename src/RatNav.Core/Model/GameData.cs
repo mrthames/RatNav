@@ -15,7 +15,7 @@ public sealed record GameData
     /// until the six-hour age check happens to fire — so a new layer looks broken rather than
     /// absent, and the person who has it worst is whoever just updated.</para>
     /// </summary>
-    public const int CurrentSchema = 3;
+    public const int CurrentSchema = 4;
 
     /// <summary>The schema this copy was written with. Zero on anything written before schemas.</summary>
     public int Schema { get; init; }
@@ -226,8 +226,8 @@ public sealed record MapDef
 
     public IReadOnlyList<MapExtract> Extracts { get; init; } = [];
 
-    /// <summary>Roughly where the other players in your raid started.</summary>
-    public IReadOnlyList<MapSpawnArea> SpawnAreas { get; init; } = [];
+    /// <summary>Every place a player can spawn in on this map.</summary>
+    public IReadOnlyList<MapSpawnPoint> Spawns { get; init; } = [];
 
     /// <summary>Named places on this map, for naming route stops the way a player would.</summary>
     public IReadOnlyList<MapLabel> Labels { get; init; } = [];
@@ -369,23 +369,11 @@ public enum SpawnFaction
     Scav,
 }
 
-/// <summary>
-/// Roughly where a group of players starts a raid, grouped from tarkov.dev's individual spawn
-/// points. See <c>SpawnAreas</c> for why this is areas rather than points.
-/// </summary>
-public sealed record MapSpawnArea
+/// <summary>One place a player can spawn in.</summary>
+public sealed record MapSpawnPoint
 {
-    public required GamePosition Centre { get; init; }
+    public required GamePosition Position { get; init; }
     public required SpawnFaction Faction { get; init; }
-
-    /// <summary>How far the furthest member sits from the centre, in metres.</summary>
-    public required double Spread { get; init; }
-
-    /// <summary>How many individual spawns this area covers.</summary>
-    public required int Points { get; init; }
-
-    /// <summary>The game's internal zone name, where the members agree on one.</summary>
-    public string? Zone { get; init; }
 }
 
 public sealed record MapExtract

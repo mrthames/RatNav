@@ -2099,12 +2099,14 @@ public partial class OverlayWindow : Window
             }
         }
 
-        // Spawn areas, under everything else. They are ground rather than furniture — a region of
-        // the map that means something, not a thing standing on it — so they draw first and stay
-        // faint enough to read the map through.
+        // Spawn points, under everything else. They are ground rather than furniture — places
+        // something happens, not things standing on the map — so they draw first and stay small.
         if (_settings.Overlay.Spawns is var spawnMode && spawnMode != "off")
         {
-            var fit = FitScale(width, height);
+            // Deliberately small and fixed, not scaled with the marker dial. There are 140 of
+            // these on Woods and 196 on Streets; at waypoint size they are a rash across the map,
+            // and what you want from one is a location rather than something to aim at.
+            var dot = Math.Max(1.5, 2.6 * Math.Sqrt(scale));
 
             foreach (var spawn in _spawns)
             {
@@ -2115,30 +2117,27 @@ public partial class OverlayWindow : Window
                 var scav = spawn.Faction.Equals("scav", StringComparison.OrdinalIgnoreCase);
                 var at = Place(spawn.X, spawn.Y);
 
-                // Drawn at the size of the ground it covers, so it grows and shrinks with the map
-                // the way a place does. A fixed screen size would say every spawn area is the same
-                // shape, which is the one thing the clustering worked out that they are not.
-                var radius = Math.Max(6, spawn.Radius * _mapViewBox.Width * fit);
+                if (at.X < -dot || at.Y < -dot || at.X > width + dot || at.Y > height + dot)
+                    continue;
 
                 var colour = (Brush)FindResource(scav ? "ScavExit" : "PmcExit");
 
                 MapCanvas.Children.Add(Positioned(
                     new Ellipse
                     {
-                        Width = radius * 2,
-                        Height = radius * 2,
-                        Stroke = colour,
-                        StrokeThickness = 1,
-                        StrokeDashArray = [3, 3],
+                        Width = dot * 2,
+                        Height = dot * 2,
                         Fill = colour,
-                        Opacity = 0.14,
-                    },
-                    at.X - radius,
-                    at.Y - radius));
 
-                Hoverable(
-                    at, radius,
-                    $"{(scav ? "Scav" : "PMC")} spawn area · {spawn.Points} spawn points");
+                        // A dark rim, so a dot over pale ground is still a dot rather than a
+                        // smudge. Cheaper than a halo and it survives every ink level.
+                        Stroke = (Brush)FindResource("Ground"),
+                        StrokeThickness = 0.8,
+                        Opacity = 0.85,
+                        IsHitTestVisible = false,
+                    },
+                    at.X - dot,
+                    at.Y - dot));
             }
         }
 

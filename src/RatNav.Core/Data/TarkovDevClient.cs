@@ -216,13 +216,13 @@ public sealed class TarkovDevClient(HttpClient http)
                             })
                     ],
 
-                    // Clustered here rather than on the way out. The raw list runs to four hundred
-                    // points a map and none of them are individually interesting, so the cache
-                    // holds the dozen areas they amount to instead.
-                    SpawnAreas = SpawnAreas.From(
+                    // Filtered here rather than on the way out: the raw list is mostly bot
+                    // spawns, and the cache has no reason to hold three hundred points it will
+                    // never draw.
+                    Spawns = SpawnPoints.From(
                         from spawn in pair.Value.Spawns ?? []
                         where spawn.Position is not null
-                        select new SpawnAreas.RawSpawn(
+                        select new SpawnPoints.RawSpawn(
                             spawn.Position!.ToGamePosition(),
                             spawn.Sides ?? [],
                             spawn.Categories ?? [],

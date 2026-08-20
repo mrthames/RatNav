@@ -67,6 +67,51 @@ Captured before execution.
 - [ ] **Match the overlay exactly**, visually and functionally. Same drawing, same controls, same
   behaviour — choosing a map on the Maps page should look like what the overlay puts on screen.
 
+### Quests tab
+
+- [ ] **Traders should look like traders.** The current row of names and numbers is not it. Wanted:
+  each trader's **portrait**, small, with a **level indicator underneath** and a simple control to
+  raise or lower it — including reverting a mistake.
+  - Stop showing "level 1" as though it were a statement when the trader is at 2. The indicator
+    should read the level it is at.
+- [ ] **Drop the "ready" count.** It is left over from a workflow that no longer exists — quests
+  are managed by activating them and searching the **All** tab, and a count of "ready" answers a
+  question nobody is asking any more.
+
+### Hideout
+
+- [ ] **A grid, not a list, for what you have now.** With **the game's own iconography** for each
+  station where that is possible; bold text where it is not.
+  - **Future upgrades stay a list.** That is a list of work to do, and a list is the right shape
+    for it.
+- [ ] **"Build it" should say "Upgrade"**, and raise the level.
+- [ ] **A station at max level says so** and drops the upgrade control entirely. As minimal as
+  possible — no button, just a mark that there is nothing left to do.
+
+### Barters and crafts, rethought
+
+- [ ] **Replace the searchable trade picker with custom entries.** *(Supersedes the picker built in
+  round 6.)*
+  - Name it yourself — "Document case" — and enter the items it needs and how many. No searching a
+    catalogue of 789 barters for the one you meant.
+  - Tracked on the overlay in **its own section**, outside the watchlist. The watchlist is for
+    specific one-off needs; this is a standing goal with a recipe.
+  - Quests and hideout stay strictly what the game asks for.
+
+### Knowing why an item is on the list
+
+- [ ] **An info control on each item row** — quest and hideout list, overlay and buddy app —
+  opening what it belongs to. Which quest, or which station and level.
+
+### The quest log
+
+- [ ] **Open the wiki from the overlay**, not only from the buddy app.
+- [ ] **Click a quest to get its brief.** The instructions that matter for finishing it, and — most
+  importantly — **the carousel of the wiki's images**, so the landmarks around the waypoint are
+  recognisable before you are standing in them.
+  - Wanted on the overlay as well as the buddy app. The buddy app half already exists as `photos`
+    on the Quests tab; the overlay half does not, and the quest log is where it belongs.
+
 ### Custom waypoints, second pass
 
 - [ ] **Choose custom waypoints as part of a plan**, from the Plan page, alongside quest
