@@ -211,12 +211,17 @@ export function ItemsView() {
       */}
       {tab === 'needed' && (
         <p className="text-xs text-muted">
-          Showing what <b>active quests</b> and{' '}
+          {/*
+            Two sentences, one per setting, rather than one sentence with holes punched in it. The
+            spliced version read "what active quests and upgrades you could build today want", which
+            makes "want" arrive far too late to attach to anything.
+          */}
           {lookAhead <= 1
-            ? <>upgrades you could <b>build today</b></>
-            : <>the next <b>{lookAhead} hideout upgrades</b></>}{' '}
-          want. Look-ahead moves both: it also follows the quest chain{' '}
-          {lookAhead <= 1 ? 'no further than what you could accept now' : `${lookAhead} steps out`}.
+            ? <>Showing only what you can finish now: <b>active quests</b>, and{' '}
+              <b>hideout upgrades you could build today</b>.</>
+            : <>Looking <b>{lookAhead} deep</b>: active quests and the{' '}
+              <b>{lookAhead} quests</b> they unlock, plus the next{' '}
+              <b>{lookAhead} hideout upgrades</b>.</>}
         </p>
       )}
 

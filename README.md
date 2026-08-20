@@ -19,10 +19,9 @@ expect a version that is not yet the one it will settle into.
 
 Concretely, that means:
 
-- **Nine maps.** The rest are held back until their calibration is settled — a marker that might be
-  on the wrong side of a map is worse than no map, and Setup shows which they are and how to fix one.
-- **Some of it is unverified against the real game.** Where that is true, the docs say so rather
-  than implying otherwise.
+- **Not every map is in yet.** The ones still being worked on are marked `[WIP]`, and a stable
+  release only ever contains finished ones.
+- **Features are still arriving**, and some of them change shape between versions.
 - **Your data is yours and stays put.** Progress, counts and plans live in
   `%LOCALAPPDATA%\RatNav` and survive updates and uninstalls alike.
 
@@ -155,15 +154,13 @@ Position updates when you tap, and only when you tap. There is no continuous tra
 position continuously would require reading game memory — which is what anti-cheat exists to catch. Every
 ban-safe tool in this space works the same way.
 
-## Built to be right
+## How it behaves
 
-- **Every map RatNav offers is calibrated.** Your marker lands where you are. Maps whose layout
-  cannot yet be established are held back rather than shipped with a warning — and Setup shows
-  which they are, along with the one screenshot that settles each.
 - **Your corrections stick.** Quest progress read from the game's logs sits *under* anything you
   set by hand, so a later log replay can never undo it.
 - **Offline keeps working.** When tarkov.dev is unreachable the last good data keeps being served
   and the app says how old it is.
+- **A map marked `[WIP]` is one still being worked on.** Those are not in a stable release.
 
 ![RatNav's overlay over a raid on Streets of Tarkov: the quest log numbered to match the pins on the map, the items to look for, and the map itself with extracts and place names](docs/screenshot-overlay.png)
 

@@ -9,6 +9,7 @@ using RatNav.Core.Model;
 using RatNav.Core.Planning;
 using RatNav.Core.Progress;
 using RatNav.Core.Sharing;
+using RatNav.Core.Stash;
 using RatNav.Core.Tracking;
 using RatNav.Core.Watchers;
 
@@ -41,6 +42,15 @@ public static class ApiEndpoints
 
     /// <summary>Raised when someone asks for the overlay to be put back where it started.</summary>
     public static event Action? OverlayResetRequested;
+
+    /// <summary>
+    /// Reads every word on a picture, with where it sits.
+    ///
+    /// <para>A hook rather than a call, because the OCR belongs to Windows and reaching it needs
+    /// the desktop app's target framework. Same shape as the folder picker above, and the same
+    /// reason: every pixel RatNav looks at stays on the desktop side.</para>
+    /// </summary>
+    public static Func<byte[], Task<IReadOnlyList<TextBlock>>>? ReadImageText { get; set; }
 
     /// <summary>
     /// Opens a folder picker and returns what was chosen, or null if it was cancelled.
@@ -187,15 +197,22 @@ public static class ApiEndpoints
 
         // ---- reading a container out of a screenshot
 
-        // Takes a screenshot of a scav box, or of one block of a stash, and says what is in it.
+        // Reads what is in a container from the labels the game prints on it.
         //
-        // Nothing here writes a count. It produces a list to be looked at, because accuracy is
-        // never perfect and silently overwriting numbers somebody spent weeks accumulating is far
-        // worse than making them confirm a list.
+        // Escape from Tarkov writes each item's short name across the top of its cell — "Sodium",
+        // "OScope", "T-Plug". That is the field RatNav already holds for every item, so this reads
+        // a printed label rather than comparing pictures: more accurate, nothing to download, and
+        // it fails into "I could not read that" rather than into a confident wrong answer.
+        //
+        // What counts depends on what the picture is of, and the caller says which — a container
+        // window, a block of stash bounded by bandages, or an inventory screen where only what is
+        // carried counts. See LabelReader.
         api.MapPost("/stash/scan", async (
-            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
-            StashScanner scanner, HttpRequest request, CancellationToken ct) =>
+            RatNavState state, HttpRequest request, string? kind, CancellationToken ct) =>
         {
+            if (ReadImageText is not { } read)
+                return Results.BadRequest(new { error = "Reading pictures needs the desktop app." });
+
             if (!request.HasFormContentType) return Results.BadRequest(new { error = "Send an image." });
 
             var form = await request.ReadFormAsync(ct);
@@ -206,32 +223,41 @@ public static class ApiEndpoints
 
             if (state.Index is not { } index) return Results.BadRequest(new { error = "No item data yet." });
 
-            // Only items something actually wants. If nothing on your list needs it, RatNav has no
-            // reason to count it — and a few hundred candidates is a different problem from five
-            // thousand, in accuracy as much as in how many icons have to be fetched.
-            var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
-            var goals = state.GoalDemand(tracker);
+            using var memory = new MemoryStream();
+            await file.CopyToAsync(memory, ct);
 
-            var wanted = index.AllNeeded()
-                .Select(needs => tracker.Track(needs, progress, hideout, goals))
-                .Where(t => t.Needed > 0 || t.Watched)
-                .Select(t => t.Item)
-                .DistinctBy(i => i.Id)
-                .ToList();
+            var blocks = await read(memory.ToArray());
 
-            if (wanted.Count == 0)
+            if (blocks.Count == 0)
             {
-                return Results.Ok(new StashScan
+                return Results.Ok(new
                 {
-                    Found = false,
-                    Problem = "Nothing is on your list yet, so there is nothing to recognise. "
-                        + "Mark some quests active, or add a goal, and try again.",
+                    found = false,
+                    problem = "Nothing readable in that picture. Windows needs an OCR language pack, "
+                        + "and the screenshot needs to be the game at its own resolution.",
                 });
             }
 
-            using var stream = file.OpenReadStream();
+            var reading = LabelReader.Read(
+                blocks,
+                kind?.ToLowerInvariant() switch
+                {
+                    "stash" => ImportKind.Stash,
+                    "carried" => ImportKind.Carried,
+                    _ => ImportKind.Container,
+                },
+                label => index.ByShortName(label) is { } item ? (item.Id, item.Name) : null);
 
-            return Results.Ok(await scanner.ScanAsync(stream, wanted, ct));
+            return Results.Ok(new
+            {
+                found = reading.Items.Count > 0,
+                reading.ContainerName,
+                items = reading.Items,
+
+                // Said out loud rather than swallowed. A label RatNav could not place is either an
+                // item it does not know or a word OCR got wrong, and both are worth seeing.
+                reading.Unrecognised,
+            });
         }).DisableAntiforgery();
 
         // Applies what was confirmed on the review screen, and only that.
@@ -1588,7 +1614,8 @@ public static class ApiEndpoints
     /// </summary>
     private static bool Trustworthy(MapDef map) =>
         map.Image is { } image
-        && image.Confidence is CalibrationConfidence.Verified or CalibrationConfidence.Derived;
+        && image.Confidence is CalibrationConfidence.Verified or CalibrationConfidence.Derived
+        && !(map.NormalizedName is { Length: > 0 } key && MapSummary.NotPlayed.Contains(key));
 
     /// <summary>
     /// Looks a map up by tarkov.dev id or by its normalized name. Both work, because when
@@ -2278,8 +2305,18 @@ public sealed record MapSummary
     private static readonly HashSet<string> StillSettling = new(StringComparer.OrdinalIgnoreCase)
     {
         "ground-zero-21",
-        "ground-zero-tutorial",
         "terminal",
+    };
+
+    /// <summary>
+    /// Locations that are not maps anybody plays.
+    ///
+    /// <para>The Ground Zero tutorial is a scripted introduction you pass through once. Listing it
+    /// beside Customs makes the map picker longer without making it more useful.</para>
+    /// </summary>
+    internal static readonly HashSet<string> NotPlayed = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ground-zero-tutorial",
     };
 
 

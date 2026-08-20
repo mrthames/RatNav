@@ -349,6 +349,32 @@ What to change:
 
 ---
 
+## Round 14 — 2026-08-20
+
+### Say less about accuracy
+
+- [ ] **Take the calibration talk out of the README.** It reads as though inaccuracy is a thing to
+  be discussed, and it is not: a map that cannot be trusted does not ship. Nothing should imply
+  other tools are wrong either.
+- [ ] **Uncalibrated means `[WIP]`, and `[WIP]` means not in a stable release.** That is the whole
+  policy, and it needs saying once rather than explaining repeatedly.
+- [ ] **Drop the tutorial map.** This is for the maps people actually play.
+
+### Seasons and profiles
+
+The game wipes. People also run more than one account, and they are not the same tracking problem.
+
+- [ ] **Three kinds of progress, kept apart:** a **PvE** account, a **PvP** account, and a **PvP
+  seasonal** one. Quest state, hideout levels, item counts and trader levels all belong to one of
+  them, not to the machine.
+- [ ] **Starting a new season**, from settings: clear progress and begin again.
+- [ ] **Keep a little of what is gone.** Not the raw counts — a short record of what a past season
+  reached, so the wipe is a line in a history rather than an erasure.
+- [ ] **Explain it where it is needed**: in the repo's instructions, and plainly in the app at the
+  moment somebody is about to wipe something.
+
+---
+
 ## Round 12 — 2026-08-20
 
 ### Disk space

@@ -4,6 +4,7 @@ using System.Windows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using RatNav.Core;
+using RatNav.App.Interop;
 using RatNav.Service;
 
 // WinForms is here only for the tray icon, and its Application type would otherwise shadow WPF's.
@@ -89,6 +90,10 @@ public partial class App : Application
         // A folder picker, for the drive somebody keeps their games on. Marshalled onto the UI
         // thread because it puts a window on screen, and the request that asked for it arrives on
         // a Kestrel thread that has no business doing that.
+        // Windows' own OCR, which lives on this side of the app. The service asks; the pixels
+        // never leave here.
+        ApiEndpoints.ReadImageText = ScreenTextReader.ReadImageAsync;
+
         ApiEndpoints.BrowseForFolder = start => Dispatcher.Invoke(() =>
         {
             using var dialog = new System.Windows.Forms.FolderBrowserDialog

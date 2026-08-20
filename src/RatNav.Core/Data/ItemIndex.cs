@@ -145,6 +145,42 @@ public sealed class ItemIndex
     /// not something you go looking for in a raid — it comes from selling what you found — and a
     /// line reading "2,857,000 Roubles" beside three bolts buries the things you can act on.</para>
     /// </summary>
+    /// <summary>
+    /// An item by the short name the game prints on its cell — "Sodium", "T-Plug", "Duct tape".
+    ///
+    /// <para>Built lazily and kept, because a stash scan asks this a few hundred times in a row and
+    /// walking five thousand items for each would be five thousand times more work than needed.</para>
+    ///
+    /// <para>Where two items share a short name the first wins, which is the honest limit of what a
+    /// short name can tell you. The review screen is where that gets corrected.</para>
+    /// </summary>
+    public ItemDef? ByShortName(string? shortName)
+    {
+        if (shortName is not { Length: > 0 }) return null;
+
+        _byShortName ??= BuildShortNames();
+
+        return _byShortName.GetValueOrDefault(SearchText.Normalize(shortName));
+    }
+
+    private Dictionary<string, ItemDef>? _byShortName;
+
+    private Dictionary<string, ItemDef> BuildShortNames()
+    {
+        var names = new Dictionary<string, ItemDef>(StringComparer.Ordinal);
+
+        foreach (var item in _itemsById.Values)
+        {
+            if (item.ShortName is not { Length: > 0 } shortName) continue;
+
+            var key = SearchText.Normalize(shortName);
+
+            if (key.Length > 0) names.TryAdd(key, item);
+        }
+
+        return names;
+    }
+
     public IEnumerable<ItemNeeds> AllNeeded() =>
         _needsByItemId.Values.Where(n => !Currency.Is(n.Item.Id));
 
