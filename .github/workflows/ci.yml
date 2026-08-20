@@ -12,6 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # First, and on every push. This is a public repository for a tool other people download, and
+      # what belongs in it is what somebody needs to understand, build and install RatNav — nothing
+      # about the machine it happens to be developed on. A rule nobody checks is a rule that holds
+      # until the first time somebody is in a hurry.
+      - name: Nothing personal in the repository
+        shell: bash
+        run: tools/check-for-personal-data.sh
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'

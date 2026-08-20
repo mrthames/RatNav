@@ -147,7 +147,7 @@ Captured before execution.
 
 ### Stash import, scoped so it is buildable
 
-Captured before execution. The framing is what makes this tractable, and it came from Justin
+Captured before execution. The framing is what makes this tractable, and it came from the person using it
 rather than from the code:
 
 - [x] **Scan a scav box, not a stash.** A scav junk box is a **fixed grid** — same size, same shape,
@@ -156,7 +156,7 @@ rather than from the code:
 - [x] **For anyone without a scav box: a defined area of the inventory.** Group the items that
   would normally live in a box into one block and scan that. Same property, same result: **a fixed
   area rather than a scrolling page.**
-- [x] **A separator row, for a stash that has to be shot in pieces.** *(Justin's idea, and the
+- [x] **A separator row, for a stash that has to be shot in pieces.** *(A player's idea, and the
   thing that makes a scrolling inventory work at all.)* Fill one whole row with a single cheap
   identical item — bandages — and it reads as a divider: a row where every cell holds the same
   thing is not loot, it is a boundary. Two screenshots that both show the same separator can be
@@ -265,7 +265,7 @@ Three 4K screenshots settled several questions and overturned one decision.
 
 ### Classifying the import
 
-*(Justin's, and what makes the region rules possible.)*
+*(From use, and what makes the region rules possible.)*
 
 - [ ] **Say what is being imported**, because each kind means a different part of the screen:
   - **A container modal** — the grid inside the modal, named by its title bar.
@@ -276,7 +276,7 @@ Three 4K screenshots settled several questions and overturned one decision.
 
 ### Named containers
 
-*(Justin's, after tagging two junk boxes "junk one" and "junk two".)*
+*(From use, after tagging two junk boxes "junk one" and "junk two".)*
 
 - [ ] **A scan targets a named container**, not the stash in general. Rescanning *junk one* replaces
   what junk one holds; it does not touch junk two.
@@ -372,6 +372,25 @@ The game wipes. People also run more than one account, and they are not the same
   reached, so the wipe is a line in a history rather than an erasure.
 - [ ] **Explain it where it is needed**: in the repo's instructions, and plainly in the app at the
   moment somebody is about to wipe something.
+
+---
+
+## Round 15 — 2026-08-20
+
+- [ ] **A key hint along the bottom of the overlay.** Small, quiet, and out of the way: which key
+  does what, **including the in-game screenshot key**, since that one is bound in Tarkov and set in
+  the buddy app and is exactly the one somebody forgets.
+- [x] **Nothing personal in the repository, checked rather than remembered.**
+  `tools/check-for-personal-data.sh` runs first in CI on every push. It looks for names, contact
+  addresses, developer paths, private network addresses, anything shaped like a credential, files
+  holding a player's own progress, and game screenshots.
+  - It caught three of its own false positives on the first run, which is the point of running it:
+    "adjusting" matches "justin" without a word boundary, "10.0.19041" is a Windows version and not
+    a private address, and a copyright line has to name the copyright holder.
+  - `.gitignore` now also refuses progress, tracking, plans and game screenshots by name.
+- [ ] **The README screenshot shows an older build.** Re-cropped so it is no longer clipped, but it
+  still shows the Barter section that goals replaced, and hazard zones from before they were drawn
+  translucent. Worth retaking next time somebody is in a raid.
 
 ---
 
@@ -1048,7 +1067,7 @@ The research is kept below in case it is ever wanted again.
 ### Bulk item import from a screenshot
 
 - [x] **Read a stash or scav-box screenshot and set have-counts from it.** Built in round 9, once
-  Justin's framing made it tractable: a fixed grid rather than a scrolling page., as a first import rather
+  The framing made it tractable: a fixed grid rather than a scrolling page., as a first import rather
   than typing thirty numbers in by hand.
   - This is the **inventory OCR** that was deliberately left out of the original plan, now being
     asked for. Worth re-reading that reasoning before starting: it is grid detection plus icon

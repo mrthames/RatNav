@@ -25,6 +25,21 @@ web/dist/
 src/RatNav.Service/wwwroot/
 *.local
 
+# Nothing of a player's own, ever. These live in %LOCALAPPDATA%\RatNav; a copy here would be
+# somebody's stash, progress and position history in a public repository.
+settings.json
+tracking.json
+progress.json
+waypoints.json
+screenshots-read.log
+/plans/
+gamedata-*.json
+
+# Screenshots from the game. The filename carries world coordinates and the picture carries a stash.
+*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][[]*.png
+/screenshots/
+*.local.json
+
 # OS
 Thumbs.db
 .DS_Store
