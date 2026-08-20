@@ -374,9 +374,6 @@ export interface RaidView {
   floor: string | null
   stops: RaidStop[]
   completedObjectiveIds: string[]
-  nextStopName: string | null
-  nextStopMetres: number | null
-  nextStopRelativeBearing: number | null
   trail: { x: number; y: number }[]
 }
 

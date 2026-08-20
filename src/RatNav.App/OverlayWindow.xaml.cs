@@ -201,6 +201,11 @@ public partial class OverlayWindow : Window
         LeftDrawers.SizeChanged += (_, _) => ApplyQuestCeiling();
         RightDrawers.SizeChanged += (_, _) => ApplyQuestCeiling();
 
+        // The stack is placed from the measured height of its neighbours, and both of them change
+        // size — the footer wraps, the quick bar grows with the size dial.
+        QuickBar.SizeChanged += (_, _) => ClearNeighbours();
+        StatusRow.SizeChanged += (_, _) => ClearNeighbours();
+
         DragHandle.MouseLeftButtonDown += (_, _) => DragMove();
         ResizeGrip.DragDelta += OnResize;
         // On the map, not on the window. Handled at window level it beat the items list to every
@@ -726,6 +731,61 @@ public partial class OverlayWindow : Window
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Keeps the controls stack clear of the things above and below it.
+    ///
+    /// <para>Its margins were fixed numbers — six from the top, twenty-six from the bottom — and
+    /// both were right once. The footer has grown a second row since, and every piece of RatNav's
+    /// furniture scales with the size dial, so any number written down here is wrong at some
+    /// scale. The neighbours know how tall they are; this asks them.</para>
+    ///
+    /// <para>Measured in window space rather than from <c>ActualHeight</c>, because the pieces
+    /// carry layout transforms and their own idea of their height is the one before scaling.</para>
+    /// </summary>
+    private void ClearNeighbours()
+    {
+        const double gap = 6;
+
+        // The stack sits in the row under the grab bar, so its margin is measured from there
+        // rather than from the top of the window.
+        var rowTop = Bounds(DragHandle)?.Bottom ?? 0;
+
+        var top = Math.Max(gap, (Bounds(QuickBar)?.Bottom ?? 0) + gap - rowTop);
+        var bottom = Bounds(StatusRow) is { } footer
+            ? Math.Max(gap, ActualHeight - footer.Top + gap)
+            : gap;
+
+        // The centred view's gear floats where the stack starts, so the stack starts under it.
+        if (Bounds(CentredControls) is { } gear) top = Math.Max(top, gear.Bottom + gap - rowTop);
+
+        var wanted = new Thickness(gap, top, 0, bottom);
+
+        // Assigning triggers a layout pass, which is what measured these in the first place —
+        // so only when it would actually move.
+        if (Math.Abs(ControlStack.Margin.Top - wanted.Top) < 0.5
+            && Math.Abs(ControlStack.Margin.Bottom - wanted.Bottom) < 0.5)
+        {
+            return;
+        }
+
+        ControlStack.Margin = wanted;
+    }
+
+    /// <summary>Where a piece of chrome sits in the window, transforms and all, or null if it is not showing.</summary>
+    private Rect? Bounds(FrameworkElement element)
+    {
+        if (!element.IsVisible) return null;
+
+        try
+        {
+            return element.TransformToAncestor(this).TransformBounds(new Rect(element.RenderSize));
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     /// <summary>How much of the screen the centred view takes, clamped to something usable.</summary>
@@ -2242,18 +2302,16 @@ public partial class OverlayWindow : Window
 
         // A panel over the map rather than a column down the side of it. Stretched, it runs the
         // whole height of a screen-filling view, which is most of the game covered by controls
-        // nobody is reading. Placed clear of the gear so the two do not sit on top of each other.
+        // nobody is reading.
         ControlStack.VerticalAlignment = centred
             ? System.Windows.VerticalAlignment.Top
             : System.Windows.VerticalAlignment.Stretch;
 
-        ControlStack.Margin = centred
-            ? new Thickness(6, 34, 0, 0)
-            : new Thickness(6, 6, 0, 26);
-
         ControlStack.MaxHeight = centred
             ? Math.Max(200, ActualHeight * 0.75)
             : double.PositiveInfinity;
+
+        ClearNeighbours();
 
         // The bar goes with the rest of the furniture.
         //
@@ -2376,16 +2434,11 @@ public partial class OverlayWindow : Window
         // want to see one.
         if (view is null || !view.HasMap)
         {
-            BearingText.Text = "";
             ProgressText.Text = "";
             FixAgeText.Text = "";
             UpdateControls(null);
             return;
         }
-
-        BearingText.Text = view.NextStopMetres is { } metres && view.NextStopRelativeBearing is { } bearing
-            ? $"{metres:F0} m · {Math.Abs(bearing):F0}° {(bearing > 0 ? "right" : "left")}"
-            : "";
 
         // Only stops in *this* plan count. Completed objectives outlive the plan they were
         // finished under, so counting all of them against the current plan's stops produced
@@ -2408,6 +2461,14 @@ public partial class OverlayWindow : Window
                 // Rather than telling someone to press a key that will do nothing: outside a raid
                 // the game writes no position for RatNav to read.
                 : "not in raid";
+
+        // Said loudly, and only while it is true: in a raid, with a map, and no position taken
+        // yet. The footer carries the same words in small text; this is the one moment they are
+        // worth the middle of the map.
+        var lost = view.InRaid && view.X is null;
+
+        NoFixPrompt.Visibility = lost ? Visibility.Visible : Visibility.Collapsed;
+        if (lost) NoFixKey.Text = $"press {_settings.ScreenshotKey}";
 
         DrawMap(view);
         DrawRoute(view);

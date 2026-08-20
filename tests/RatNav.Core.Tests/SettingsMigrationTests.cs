@@ -65,6 +65,52 @@ public sealed class SettingsMigrationTests : IDisposable
         Assert.Equal("F7", again.Hotkeys.ToggleMode);
     }
 
+    /// <summary>
+    /// A later migration must not drag an earlier one along with it.
+    ///
+    /// <para>Gated on the current round rather than on their own, adding a second migration
+    /// re-runs the first — so a key deliberately bound back after round 1 is taken away again the
+    /// day round 2 ships. That is the stickiness the revision stamp exists to prevent, arriving by
+    /// the back door.</para>
+    /// </summary>
+    [Fact]
+    public void A_later_migration_does_not_re_run_an_earlier_one()
+    {
+        // Through round 1, and deliberately back on the old pair afterwards.
+        WriteSettings(new
+        {
+            revision = 1,
+            hotkeys = new { toggleInteract = "F6", toggleMode = "F7" },
+        });
+
+        var settings = RatNavSettings.Load(_dir);
+
+        Assert.Equal("F6", settings.Hotkeys.ToggleInteract);
+        Assert.Equal("F7", settings.Hotkeys.ToggleMode);
+
+        // Round 2 still ran.
+        Assert.False(settings.Overlay.ShowControls);
+        Assert.Equal(2, settings.Revision);
+    }
+
+    /// <summary>The map settings stack shipped open and should not have; files on it come along.</summary>
+    [Fact]
+    public void The_controls_stack_is_folded_on_a_file_that_never_chose_it()
+    {
+        WriteSettings(new { overlay = new { showControls = true } });
+
+        Assert.False(RatNavSettings.Load(_dir).Overlay.ShowControls);
+    }
+
+    /// <summary>And having been folded once, opening it is a choice that sticks.</summary>
+    [Fact]
+    public void An_opened_controls_stack_stays_open()
+    {
+        WriteSettings(new { revision = 2, overlay = new { showControls = true } });
+
+        Assert.True(RatNavSettings.Load(_dir).Overlay.ShowControls);
+    }
+
     [Fact]
     public void A_half_match_is_somebody_elses_arrangement_and_is_left_alone()
     {
@@ -93,13 +139,12 @@ public sealed class SettingsMigrationTests : IDisposable
         Assert.Equal("F9", settings.Hotkeys.ReadExtracts);
     }
 
-    private void WriteHotkeys(object hotkeys, int? revision = null)
+    private void WriteHotkeys(object hotkeys, int? revision = null) =>
+        WriteSettings(revision is { } r ? new { revision = r, hotkeys } : (object)new { hotkeys });
+
+    private void WriteSettings(object document)
     {
         Directory.CreateDirectory(_dir);
-
-        var document = revision is { } r
-            ? (object)new { revision = r, hotkeys }
-            : new { hotkeys };
 
         File.WriteAllText(
             Path.Combine(_dir, "settings.json"),

@@ -422,10 +422,14 @@
                                FontFamily="Consolas" FontSize="13" FontWeight="Bold"
                                Foreground="{StaticResource Muted}" />
 
-                    <TextBlock x:Name="BearingText" Margin="10,0,0,0" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"
-                               FontFamily="Consolas" FontSize="14"
-                               Foreground="{StaticResource Accent}" Text="" />
+                    <!--
+                        No distance and bearing to the next stop here any more.
+
+                        It read as useful and was not: a straight line to a pin through whatever
+                        walls are between you and it, on a bearing relative to a heading that was
+                        current at your last position fix. Precise about something nobody can walk,
+                        and stale the moment you turn. The map answers the same question honestly.
+                    -->
                 </DockPanel>
 
                 <!--
@@ -547,6 +551,44 @@
                                         </ItemsControl>
                                     </ScrollViewer>
                                 </DockPanel>
+                            </Border>
+
+                            <!--
+                                What to press, while the map does not know where you are.
+
+                                A raid loads and the map draws immediately, centred on the middle
+                                of itself, which looks like a map that has decided something when
+                                what it has done is wait. The footer says the same thing in small
+                                text at the bottom; this is the moment it is worth saying loudly,
+                                and it is over the map because that is where the eye already is.
+
+                                Hit-test invisible, so it cannot get between the pointer and
+                                anything, and gone for good once the first fix lands.
+                            -->
+                            <Border x:Name="NoFixPrompt"
+                                    Visibility="Collapsed"
+                                    IsHitTestVisible="False"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Background="#e60b0f13"
+                                    BorderBrush="{StaticResource Accent}"
+                                    BorderThickness="1"
+                                    CornerRadius="2"
+                                    Padding="14,10">
+                                <StackPanel>
+                                    <TextBlock x:Name="NoFixKey"
+                                               FontFamily="Consolas" FontSize="18" FontWeight="Bold"
+                                               Foreground="{StaticResource Accent}"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="to place yourself on the map"
+                                               FontFamily="Segoe UI" FontSize="12"
+                                               Foreground="{StaticResource Ink}"
+                                               Margin="0,3,0,0"
+                                               HorizontalAlignment="Center" />
+                                    <TextBlock Text="the game's screenshot key — RatNav reads where it was taken"
+                                               Style="{StaticResource Label}"
+                                               Margin="0,5,0,0"
+                                               HorizontalAlignment="Center" />
+                                </StackPanel>
                             </Border>
 
                             <Border x:Name="HoverCard"

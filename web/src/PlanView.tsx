@@ -935,9 +935,6 @@ function RaidPanel({ raid }: { raid: RaidView }) {
     ]
   }, [raid.stops])
 
-  const bearing = raid.nextStopRelativeBearing
-  const direction = bearing == null ? null : `${Math.abs(Math.round(bearing))}° ${bearing > 0 ? 'right' : 'left'}`
-
   return (
     <div className="flex flex-col gap-2 border border-accent/40 bg-accent/5 px-3 py-2">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -951,13 +948,15 @@ function RaidPanel({ raid }: { raid: RaidView }) {
         <span className="font-mono text-xs text-warn">plan is for {raid.planMapName}</span>
       )}
 
-      {raid.nextStopName && (
-        <span className="font-mono text-sm tabular-nums">
-          next: {raid.nextStopName}
-          {raid.nextStopMetres != null && ` · ${Math.round(raid.nextStopMetres)}m`}
-          {direction && ` · ${direction}`}
-        </span>
-      )}
+      {/*
+        No "next: Dorms · 455m · 43° right" here any more.
+
+        It read as useful and was not: a straight line to a pin through whatever walls are between
+        you and it, on a bearing relative to a heading that was current at your last position fix.
+        Precise about something nobody can walk, and stale the moment you turn. What is left says
+        only things that stay true — which map, how much of the plan is done, and how old the
+        position is.
+      */}
 
       <span className="font-mono text-xs text-muted tabular-nums">
         {/*

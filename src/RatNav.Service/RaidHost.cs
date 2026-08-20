@@ -607,10 +607,15 @@ public sealed record RatNavSettings
         public double? FoldedWidth { get; init; }
 
         /// <summary>
-        /// Whether the map controls are showing while the overlay takes the mouse. Folding them
-        /// away leaves one button; how you like to work is worth remembering.
+        /// Whether the map settings stack is open while the overlay takes the mouse.
+        ///
+        /// <para><b>Closed by default.</b> The interact key hands over the mouse and shows the
+        /// handles — the grab bar, the drawer chips, the gear. A stack of map settings is a thing
+        /// you go and get, not a thing you are handed every time you reach for the mouse.</para>
+        ///
+        /// <para>Remembered once opened, because how you like to work is worth keeping.</para>
         /// </summary>
-        public bool ShowControls { get; init; } = true;
+        public bool ShowControls { get; init; }
 
         /// <summary>Which side of the map the items list sits on — "left" or "right".</summary>
         public string ItemsSide { get; init; } = "left";
@@ -768,8 +773,9 @@ public sealed record RatNavSettings
     /// Bumped whenever a migration is added below, so it runs once and then stops.
     ///
     /// <para>1 — the hotkeys renumbered down from F9–F11, and the F6/F7 pair swapped.</para>
+    /// <para>2 — the map settings stack starts folded.</para>
     /// </summary>
-    private const int CurrentRevision = 1;
+    private const int CurrentRevision = 2;
 
     public static RatNavSettings Load(string dataDirectory)
     {
@@ -804,7 +810,15 @@ public sealed record RatNavSettings
 
         if (settings.Revision >= CurrentRevision) return settings;
 
-        Renumber(settings.Hotkeys);
+        // Each migration is gated on its own round, not on the current one.
+        //
+        // Gated on the current round together, adding a second migration re-runs the first — so
+        // somebody who deliberately bound the old F6/F7 pair back after round 1 would have it
+        // taken off them again the day round 2 shipped. That is exactly the stickiness the
+        // revision stamp exists to prevent, arriving by the back door.
+        if (settings.Revision < 1) Renumber(settings.Hotkeys);
+        if (settings.Revision < 2) FoldControls(settings);
+
         settings.Revision = CurrentRevision;
 
         // Written back so a migration runs once rather than on every launch. That is what stops
@@ -863,6 +877,20 @@ public sealed record RatNavSettings
 
         keys.ToggleMode = "F6";
         keys.ToggleInteract = "F7";
+    }
+
+    /// <summary>
+    /// Closes the map settings stack on files that never chose to have it open.
+    ///
+    /// <para>It shipped open, so every existing file says open whether or not anyone decided
+    /// that — and what it actually did was cover the map with settings every time you reached for
+    /// the mouse. Same reasoning as the hotkey swap: the shipped default is changing, so files
+    /// still carrying it come along, and the revision stamp means anyone who opens it afterwards
+    /// keeps it open for good.</para>
+    /// </summary>
+    private static void FoldControls(RatNavSettings settings)
+    {
+        if (settings.Overlay.ShowControls) settings.Overlay = settings.Overlay with { ShowControls = false };
     }
 
     public void Save(string dataDirectory)

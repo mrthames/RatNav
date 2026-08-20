@@ -44,10 +44,12 @@ public sealed record RaidView
     public IReadOnlyList<RaidStop> Stops { get; init; } = [];
     public IReadOnlyList<string> CompletedObjectiveIds { get; init; } = [];
 
-    /// <summary>Distance and direction to the next stop — what the HUD actually reads out.</summary>
-    public string? NextStopName { get; init; }
-    public double? NextStopMetres { get; init; }
-    public double? NextStopRelativeBearing { get; init; }
+    // No distance and direction to the next stop.
+    //
+    // Both surfaces showed it and neither should have: a straight line to a pin through whatever
+    // walls are between you and it, on a bearing relative to a heading that was current at the
+    // last position fix. Precise about something nobody can walk, and stale the moment you turn.
+    // Computed on every publish for two readouts that have gone, so it goes too.
 
     /// <summary>Past fixes, for a breadcrumb trail.</summary>
     public IReadOnlyList<Breadcrumb> Trail { get; init; } = [];
@@ -363,9 +365,6 @@ public sealed class RaidSession
                 });
             }
 
-            var next = applies
-                ? _plan?.Waypoints.FirstOrDefault(w => !_completed.Contains(w.ObjectiveId))
-                : null;
             var here = _fix is null ? (MapPoint?)null : transform.ToNormalized(_fix.Position);
 
             return new RaidView
@@ -387,15 +386,6 @@ public sealed class RaidSession
                 Stops = stops,
                 CompletedObjectiveIds = [.. _completed],
                 Trail = [.. _trail],
-                NextStopName = next is null ? null : map.NearestLabel(next.Position)?.Text ?? next.TaskName,
-                NextStopMetres = next is null || _fix is null
-                    ? null
-                    : CoordinateTransform.GroundDistance(_fix.Position, next.Position),
-                NextStopRelativeBearing = next is null || _fix is null
-                    ? null
-                    : CoordinateTransform.RelativeBearing(
-                        _fix.HeadingDegrees,
-                        CoordinateTransform.BearingTo(_fix.Position, next.Position)),
             };
         }
     }

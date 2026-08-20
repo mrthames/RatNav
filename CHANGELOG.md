@@ -40,6 +40,23 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **The interact key no longer opens the map settings.** Pressing it hands over the mouse and shows
+  the handles — the grab bar, the drawer chips, the gear. The stack of map settings behind the gear
+  is a thing you go and get, not a thing you are handed every time you reach for the mouse. It is
+  remembered once you open it. Existing settings still on the shipped value come along.
+- **The controls stack stops colliding with its neighbours.** It ran from the top of the window to
+  a few pixels off the bottom, overlapping the quick bar above it and the footer below. Its margins
+  were fixed numbers that were right once — the footer has grown a second row since, and everything
+  scales with the size dial. It measures the neighbours now.
+- **Say what to press when RatNav does not know where you are.** Load into a raid and the map draws
+  centred on the middle of itself, which looks like a map that has decided something when what it
+  has done is wait. It now says so over the map, naming your own screenshot key, until the first
+  position lands.
+- **No more "455 m · 43° right".** Gone from the overlay's header and from the Plan page's in-raid
+  strip. It read as useful and was not: a straight line to a pin through whatever walls are between
+  you and it, on a bearing relative to a heading that was current at your last fix. Precise about
+  something nobody can walk, and stale the moment you turn — and the map answers the same question
+  honestly.
 - **A short quest log takes the room it needs and no more.** It used to hold open a fixed share of
   the side whatever it had in it, so three quests sat in a section sized for ten and the items list
   below was squeezed for nothing. The divider is a **ceiling** now rather than a split: drag it
