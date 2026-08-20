@@ -559,7 +559,7 @@
                 the map is zoomed, and whether it follows you. Everything else lives in the stack,
                 which can stay folded.
             -->
-            <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+            <Border x:Name="QuickBar" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top"
                     Margin="0,6,26,0" Padding="4,3"
                     Background="#e60b0f13"
                     BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
@@ -579,6 +579,20 @@
                                Foreground="{StaticResource Ink}" VerticalAlignment="Center"
                                MinWidth="38" TextAlignment="Center" Text="1.0×" />
                     <Button x:Name="QuickZoomUp" Style="{StaticResource Chip}" Content="+" />
+
+                    <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
+
+                    <!--
+                        How big everything RatNav draws is. Defaults are sized for 1080p; a 4K
+                        screen has four times the pixels in the same physical space, so without
+                        this everything lands at a quarter of the area.
+                    -->
+                    <TextBlock Style="{StaticResource Label}" Text="SIZE" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <Button x:Name="QuickScaleDown" Style="{StaticResource Chip}" Content="−" />
+                    <TextBlock x:Name="QuickScaleText" Style="{StaticResource Label}"
+                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                               MinWidth="38" TextAlignment="Center" Text="1.0×" />
+                    <Button x:Name="QuickScaleUp" Style="{StaticResource Chip}" Content="+" />
 
                     <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
 

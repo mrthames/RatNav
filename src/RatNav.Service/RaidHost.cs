@@ -410,6 +410,18 @@ public sealed record RatNavSettings
         public string Spawns { get; init; } = "off";
 
         /// <summary>
+        /// How large the overlay's own furniture is drawn — buttons, labels, lists, headings.
+        ///
+        /// <para>One at 1080p, which is what the defaults are sized for. A 4K screen has four
+        /// times the pixels and the same physical size, so everything on it lands at a quarter of
+        /// the area unless it is told otherwise; two is about right there.</para>
+        ///
+        /// <para>Separate from the marker and text dials, which size what is drawn on the map. This
+        /// is the app's chrome.</para>
+        /// </summary>
+        public double UiScale { get; init; } = 1.0;
+
+        /// <summary>
         /// Extract names read off the game's own list, when you have asked RatNav to read it.
         ///
         /// <para>Empty means "not read this raid", which is a different thing from "none are

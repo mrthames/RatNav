@@ -216,6 +216,8 @@ public partial class OverlayWindow : Window
         QuickFadeUp.Click += (_, _) => StepWindowOpacity(+0.1);
         QuickZoomDown.Click += (_, _) => SetZoom(Placement.Zoom / 1.25);
         QuickZoomUp.Click += (_, _) => SetZoom(Placement.Zoom * 1.25);
+        QuickScaleDown.Click += (_, _) => StepUiScale(-0.25);
+        QuickScaleUp.Click += (_, _) => StepUiScale(+0.25);
         QuickFollow.Click += (_, _) => ToggleFollowing();
         CollapseItems.Click += (_, _) => ToggleItems();
         ItemsDrawer.Click += (_, _) => ToggleItems();
@@ -224,7 +226,7 @@ public partial class OverlayWindow : Window
         SwapQuestsSide.Click += (_, _) => SwapQuestsToOtherSide();
         DetachQuests.Click += (_, _) => DetachQuestPanel();
         CollapseControls.Click += (_, _) => ShowControls(false);
-        ExpandControls.Click += (_, _) => ShowControls(true);
+        ExpandControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
     }
 
     public event EventHandler? ExpandRequested;
@@ -407,7 +409,8 @@ public partial class OverlayWindow : Window
         }
 
         // The window itself, not the map inside it.
-        Opacity = Math.Clamp(placement.WindowOpacity, 0.2, 1.0);
+        ApplyWindowOpacity();
+        ApplyUiScale();
 
         if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
         {
@@ -781,8 +784,46 @@ public partial class OverlayWindow : Window
     {
         Place(p => p with { WindowOpacity = Math.Clamp(p.WindowOpacity + by, 0.2, 1.0) });
 
-        ApplyBounds();
+        // Opacity only. This used to go through ApplyBounds, which re-applies the stored position
+        // and size — so nudging the fade while the window was being arranged snapped it back to
+        // wherever it had last been recorded. Changing how see-through something is has no
+        // business moving it.
+        ApplyWindowOpacity();
         Draw();
+    }
+
+    private void ApplyWindowOpacity() =>
+        Opacity = Math.Clamp(Placement.WindowOpacity, 0.2, 1.0);
+
+    private void StepUiScale(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            UiScale = Math.Clamp(_settings.Overlay.UiScale + by, 1.0, 3.0),
+        });
+
+        ApplyUiScale();
+        Draw();
+    }
+
+    /// <summary>
+    /// Sizes RatNav's own furniture — the controls, the drawers, the headings.
+    ///
+    /// <para>A layout transform on each piece of chrome rather than on the whole window, because
+    /// the map inside it is already sized by the window and the zoom. Scaling the lot would make
+    /// "bigger buttons" mean "more zoomed in", which is a different control.</para>
+    /// </summary>
+    private void ApplyUiScale()
+    {
+        var scale = Math.Clamp(_settings.Overlay.UiScale, 1.0, 3.0);
+
+        foreach (var element in new FrameworkElement[]
+                 { Readout, StatusRow, ControlStack, QuickBar, LeftDrawers, RightDrawers, ExpandControls })
+        {
+            element.LayoutTransform = scale == 1 ? Transform.Identity : new ScaleTransform(scale, scale);
+        }
+
+        QuickScaleText.Text = $"{scale:0.0}×";
     }
 
     private void StepFade(double by)
@@ -1342,7 +1383,12 @@ public partial class OverlayWindow : Window
         var open = _settings.Overlay.ShowControls;
 
         ControlStack.Visibility = editing && open ? Visibility.Visible : Visibility.Collapsed;
-        ExpandControls.Visibility = editing && !open ? Visibility.Visible : Visibility.Collapsed;
+
+        // The gear stays wherever interact mode is on, open or closed. Hiding it when the stack
+        // opened made the row reflow and the quests and items buttons slide across underneath the
+        // cursor — and left no way back except the collapse arrow, which is somewhere else.
+        ExpandControls.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+        ExpandControls.ToolTip = open ? "Hide the map controls" : "Show the map controls";
 
         // The grab bar runs the width of the window across the row the drawer handles live in.
         // Interact mode pushes the content clear by a full button height rather than a hair — a
