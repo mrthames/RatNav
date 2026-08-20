@@ -38,6 +38,50 @@ public static class ServiceHost
     /// </summary>
     public static string Root => $"http://127.0.0.1:{Port}";
 
+    /// <summary>
+    /// The port that was asked for, when something else already had it and RatNav moved.
+    ///
+    /// <para>Null when it got what it wanted, which is almost always. Worth surfacing when it is
+    /// not: a bookmark to the old port stops working, and silently answering somewhere else is
+    /// how you spend an evening debugging a browser tab.</para>
+    /// </summary>
+    public static int? MovedFrom { get; private set; }
+
+    /// <summary>
+    /// The first port at or after <paramref name="wanted"/> that nothing else is using.
+    ///
+    /// <para>Tested by binding it, because that is the only question that matters and the only
+    /// one with a reliable answer — a port can be free a moment before it is not. The window
+    /// between the test and Kestrel's own bind is small and the alternative is not starting.</para>
+    /// </summary>
+    private static int FirstFree(int wanted, bool anyAddress)
+    {
+        for (var port = wanted; port < wanted + 24 && port <= 65535; port++)
+        {
+            var listener = new System.Net.Sockets.TcpListener(
+                anyAddress ? System.Net.IPAddress.Any : System.Net.IPAddress.Loopback,
+                port);
+
+            try
+            {
+                listener.Start();
+                return port;
+            }
+            catch (System.Net.Sockets.SocketException)
+            {
+                // Taken. Try the next one.
+            }
+            finally
+            {
+                try { listener.Stop(); } catch (System.Net.Sockets.SocketException) { }
+            }
+        }
+
+        // Two dozen consecutive ports in use is not a conflict, it is something else wrong. Let
+        // Kestrel fail on the one that was asked for, so the error names the real port.
+        return wanted;
+    }
+
     public static WebApplication Build(string[]? args = null, int port = DefaultPort)
     {
         // The content root has to be the assembly's folder, not the working directory. `dotnet
@@ -62,7 +106,16 @@ public static class ServiceHost
         var settings = RatNavSettings.Load(dataDirectory);
         var lan = settings.Lan;
 
-        Port = lan.Port > 0 ? lan.Port : port;
+        // Moved out of the way if something already has it, rather than refusing to start.
+        //
+        // This is what makes the port worth putting on the Setup page at all: the page lives
+        // inside the service, so a port conflict that stops the service is a conflict you cannot
+        // reach the setting to fix. RatNav would be telling you to edit settings.json by hand,
+        // which is the thing the setting was added to avoid.
+        var wanted = lan.Port > 0 ? lan.Port : port;
+
+        Port = FirstFree(wanted, lan.Enabled);
+        MovedFrom = Port == wanted ? null : wanted;
 
         builder.WebHost.ConfigureKestrel(options =>
         {

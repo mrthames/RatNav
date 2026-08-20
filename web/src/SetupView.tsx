@@ -410,10 +410,22 @@ function LanPanel() {
 
   if (!info) return null
 
-  async function toggle(enabled: boolean) {
+  async function savePort(text: string) {
+    const port = Number(text)
+
+    // Empty means "whatever RatNav ships with", which is a real answer and not an error.
+    if (text.trim() === '') return void save({ port: 0 })
+    if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+      return setNote('Pick a whole number between 1024 and 65535.')
+    }
+
+    await save({ port })
+  }
+
+  async function save(change: { enabled?: boolean; port?: number }) {
     setWorking(true)
     try {
-      await api.saveLan({ enabled })
+      await api.saveLan(change)
       setNote('Saved. Restart RatNav for it to take effect — the port is claimed at start-up.')
       load()
     } finally {
@@ -448,7 +460,7 @@ function LanPanel() {
           type="checkbox"
           checked={info.enabled}
           disabled={working}
-          onChange={(e) => void toggle(e.target.checked)}
+          onChange={(e) => void save({ enabled: e.target.checked })}
           className="mt-1 accent-accent"
         />
         <span className="text-sm">
@@ -522,6 +534,30 @@ function LanPanel() {
           </p>
         </div>
       )}
+
+      {/*
+        Outside the switch, because the port matters whether or not the network is invited in —
+        it is the address the overlay and this page are already talking to.
+
+        Committed on blur rather than on every keystroke: saving "8" on the way to "8722" writes a
+        port nobody asked for and, worse, one RatNav would try to bind next time it started.
+      */}
+      <label className="flex flex-wrap items-center gap-2 text-xs text-muted">
+        <span>Port</span>
+        <input
+          type="number"
+          min={1024}
+          max={65535}
+          defaultValue={info.port}
+          disabled={working}
+          onBlur={(e) => void savePort(e.target.value)}
+          className="w-24 rounded-sm border border-line bg-panel px-2 py-1 font-mono text-xs text-ink
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        />
+        <span>
+          Leave it alone unless something else on this machine already wants {info.port}.
+        </span>
+      </label>
 
       {note && <p className="font-mono text-xs text-have">{note}</p>}
     </div>

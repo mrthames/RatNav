@@ -126,6 +126,16 @@ public partial class App : Application
             onOpenBrowser: OpenInBrowser,
             onQuit: Shutdown);
 
+        // Said out loud, because everything that reaches RatNav by address stops working when it
+        // moves — a bookmark, and the address Setup told you to type on your phone. Silently
+        // answering somewhere else is how you spend an evening debugging a browser tab.
+        if (ServiceHost.MovedFrom is { } taken)
+        {
+            _tray.Warn(
+                $"Port {taken} was already in use, so RatNav is on {ServiceHost.Port} instead. "
+                + "Setup can pin a different one.");
+        }
+
         // The app opens with RatNav. The hotkey that used to put the panel over the game is
         // gone, and something has to bring up the half of the app that does the planning — being
         // told to type a localhost address is not that.

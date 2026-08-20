@@ -28,9 +28,11 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
   Windows Firewall usually blocks the port. Setup checks, stays quiet when there is nothing to fix,
   and otherwise offers to add the rule — with a permission prompt, because opening a port always
   needs one — and prints the command for anyone who would rather run it themselves.
-- **The port is configurable**, since 8722 can already be taken. Everything that talks to the
-  service reads the port in use rather than the built-in constant, which eleven call sites were
-  previously ignoring.
+- **The port is configurable**, on the Setup page, since 8722 can already be taken. Everything that
+  talks to the service reads the port in use rather than the built-in constant, which eleven call
+  sites were previously ignoring. If the port RatNav wants is already in use it **moves to the next
+  free one and says so** rather than refusing to start — the Setup page lives inside the service,
+  so a conflict that stopped the service would be one you could not reach the setting to fix.
 - **The header stops wrapping when the clock ticks.** Pressing refresh turned "updated never" into
   "updated just now" and pushed the character level, the timestamp, the refresh button and the
   profile menu onto a line of their own below the navigation. The timestamp now has a width that
