@@ -2,9 +2,10 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
-## 0.4.0-alpha.1 — 2026-08-20
+## 0.4.0 — 2026-08-20
 
-Alpha: it works and is used daily, but it is early.
+Still alpha in the sense that matters — it is early, and it is being built as it is used — but this
+is the version to install.
 
 A large batch. Three characters are tracked separately, the Plan page was rebuilt around a strip
 that does not move, reading a stash from a screenshot was removed, and the app stopped being called
