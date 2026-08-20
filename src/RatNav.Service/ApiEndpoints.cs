@@ -1386,11 +1386,38 @@ public static class ApiEndpoints
                 : (request.Text ?? "").Split(
                     ['\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            var offered = ExtractMatcher.Match(lines, map.Extracts);
+            // The list has a shape, and reading it as loose text throws it away. Each row is an
+            // EXFIL01-style id, a name, and sometimes a time — which says which ways out are in
+            // play, which are conditional, and which rows are not ways out at all.
+            var rows = ExtractList.Read(lines);
+
+            // Transits leave for another map rather than ending the raid. Offering one as an
+            // extract sends somebody across the map to go and play somewhere else.
+            var ways = rows.Where(r => r.Kind != ExtractRowKind.Transit).ToList();
+
+            // Everything the game listed, conditional included: a "??:??:??" row is one whose
+            // condition might be met — a car paid for, a switch, an item you are carrying or could
+            // still find. What is genuinely out of reach is what the game left off the list.
+            var offered = ways.Count > 0
+                ? ExtractMatcher.Match(ways.Select(r => r.Name), map.Extracts)
+                : ExtractMatcher.Match(lines, map.Extracts);
 
             settings.Remember(s => s.Overlay = s.Overlay with { OfferedExtracts = offered });
 
-            return Results.Ok(new { offered, readText = lines, of = map.Extracts.Count });
+            return Results.Ok(new
+            {
+                offered,
+
+                // Said back so the reading can be checked against what is on screen.
+                conditional = ExtractMatcher.Match(
+                    ways.Where(r => r.Kind == ExtractRowKind.Conditional).Select(r => r.Name),
+                    map.Extracts),
+
+                transits = rows.Where(r => r.Kind == ExtractRowKind.Transit).Select(r => r.Name),
+
+                readText = lines,
+                of = map.Extracts.Count,
+            });
         });
 
         // Back to showing every extract the map has. What the game offered is forgotten with it —

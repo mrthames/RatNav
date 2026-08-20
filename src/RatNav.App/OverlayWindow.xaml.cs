@@ -227,8 +227,8 @@ public partial class OverlayWindow : Window
         QuickFadeUp.Click += (_, _) => StepWindowOpacity(+0.1);
         QuickZoomDown.Click += (_, _) => SetZoom(Placement.Zoom / 1.25);
         QuickZoomUp.Click += (_, _) => SetZoom(Placement.Zoom * 1.25);
-        QuickScaleDown.Click += (_, _) => StepUiScale(-0.25);
-        QuickScaleUp.Click += (_, _) => StepUiScale(+0.25);
+        QuickScaleDown.Click += (_, _) => StepUiScale(-0.1);
+        QuickScaleUp.Click += (_, _) => StepUiScale(+0.1);
         QuickFollow.Click += (_, _) => ToggleFollowing();
         CollapseItems.Click += (_, _) => ToggleItems();
         ItemsDrawer.Click += (_, _) => ToggleItems();
@@ -958,7 +958,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            UiScale = Math.Clamp(EffectiveUiScale + by, 1.0, 3.0),
+            UiScale = Math.Clamp(EffectiveUiScale + by, 0.7, 3.0),
         });
 
         ApplyUiScale();
@@ -991,17 +991,20 @@ public partial class OverlayWindow : Window
         // this is not applied twice on a laptop set to 150%.
         var height = SystemParameters.PrimaryScreenHeight;
 
+        // Raised by a third from the first attempt at these, which came out small enough on a real
+        // screen to be worth turning up by hand every time. The scale can still go below them —
+        // the range runs down to 0.7 — so the old sizes are a few steps away rather than gone.
         return height switch
         {
-            >= 2000 => 2.0,     // 4K and up
-            >= 1300 => 1.5,     // 1440p
-            _ => 1.25,          // 1080p and below, where the panel is a bigger share of the screen
+            >= 2000 => 2.6,     // 4K and up
+            >= 1300 => 1.95,    // 1440p
+            _ => 1.6,           // 1080p and below, where the panel is a bigger share of the screen
         };
     }
 
     private void ApplyUiScale()
     {
-        var scale = Math.Clamp(EffectiveUiScale, 1.0, 3.0);
+        var scale = Math.Clamp(EffectiveUiScale, 0.7, 3.0);
 
         foreach (var element in new FrameworkElement[]
                  { Readout, StatusRow, ControlStack, QuickBar, LeftDrawers, RightDrawers, ExpandControls })

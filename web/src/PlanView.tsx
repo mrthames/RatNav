@@ -84,6 +84,24 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   // told there was none to share was the obvious next thing to happen.
   const [planned, setPlanned] = useState(0)
 
+  /**
+   * Quests whose planned objectives are all done, waiting to be handed in.
+   *
+   * <p>This used to be a banner across the top of the page — a whole heading and a row per quest,
+   * for what is one control belonging to a quest already listed below it. The row names the quest
+   * and the trader; the only thing the banner added was the action, so the action moved to the
+   * row.</p>
+   */
+  const [turnIns, setTurnIns] = useState<TurnIn[]>([])
+
+  const loadTurnIns = useCallback(
+    () => api.turnIns().then(setTurnIns).catch(() => setTurnIns([])), [])
+
+  useEffect(() => { void loadTurnIns() }, [loadTurnIns, planned])
+
+  const turnInFor = useMemo(
+    () => new Map(turnIns.map((t) => [t.taskId, t])), [turnIns])
+
   const calibrated = useMemo(() => maps.filter((m) => m.calibrated), [maps])
 
   useEffect(() => {
@@ -228,6 +246,26 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
     return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   }, [objectives])
 
+  /**
+   * The one row each ready-to-hand-in quest shows its control on.
+   *
+   * <p>A quest with stops in two places appears twice, and two controls doing the same thing is
+   * one too many. Decided here rather than by ticking a set off as the rows render, because a
+   * render that mutates as it goes is a render that behaves differently the second time React
+   * runs it.</p>
+   */
+  const turnInRow = useMemo(() => {
+    const first = new Map<string, string>()
+
+    for (const [, group] of byPlace) {
+      for (const o of group) {
+        if (turnInFor.has(o.taskId) && !first.has(o.taskId)) first.set(o.taskId, o.objectiveId)
+      }
+    }
+
+    return first
+  }, [byPlace, turnInFor])
+
   return (
     <div className="flex flex-col gap-4">
 
@@ -237,7 +275,6 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         the rest — which needs the plan still on screen.
       */}
       {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
-      <TurnIns />
       {/*
         Which map, and what you can do with the plan as a whole.
 
@@ -494,6 +531,46 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                             </span>
                           )}
                         </span>
+
+                        {/*
+                          Handing the quest in, on the quest's own row.
+
+                          Only on the first row a quest appears on: one with stops in two places
+                          would otherwise offer the same control twice, and pressing either does
+                          the same thing. Outside the label's text column so a click on it does
+                          not also toggle the checkbox.
+                        */}
+                        {(() => {
+                          const ready = turnInFor.get(o.taskId)
+                          if (!ready || turnInRow.get(o.taskId) !== o.objectiveId) return null
+
+                          const partial = ready.objectiveCount < ready.totalObjectiveCount
+
+                          return (
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.preventDefault()
+                                await api.markTaskState(o.taskId, 'Completed')
+                                void loadTurnIns()
+                              }}
+                              title={partial
+                                ? `You planned ${ready.objectiveCount} of `
+                                  + `${ready.totalObjectiveCount} objectives — marking it complete `
+                                  + 'retires the items for the ones you did not.'
+                                : `Hand to ${ready.traderName ?? 'the trader'}`}
+                              className={`ml-auto shrink-0 self-center rounded-sm px-2.5 py-1
+                                          font-mono text-[11px] uppercase tracking-wider
+                                          transition-colors focus-visible:outline-2
+                                          focus-visible:outline-accent
+                                          ${partial
+                                            ? 'bg-panel-hi text-warn hover:bg-warn hover:text-ground'
+                                            : 'bg-panel-hi text-route hover:bg-accent hover:text-ground'}`}
+                            >
+                              Turned in{partial ? ' ?' : ''}
+                            </button>
+                          )
+                        })()}
                       </label>
                     </li>
                   ))}
@@ -822,65 +899,6 @@ function Modal({
 
         {children}
       </div>
-    </div>
-  )
-}
-
-/**
- * Quests whose every planned objective is done, waiting on a trader.
- *
- * RatNav will not mark these complete on its own. Finishing the objectives and handing the quest
- * in are different events, the game does not reliably log the second, and a completed quest
- * retires its item needs — so guessing wrong quietly deletes a shopping list. It asks instead.
- */
-function TurnIns() {
-  const [ready, setReady] = useState<TurnIn[]>([])
-
-  const load = () => api.turnIns().then(setReady).catch(() => setReady([]))
-  useEffect(() => { void load() }, [])
-
-  async function confirm(task: TurnIn) {
-    await api.markTaskState(task.taskId, 'Completed')
-    await load()
-  }
-
-  if (ready.length === 0) return null
-
-  return (
-    <div className="flex flex-col gap-2 border border-route/40 bg-route/5 px-3 py-2">
-      <span className="font-mono text-[11px] uppercase tracking-wider text-route">
-        Done in raid — turned in?
-      </span>
-
-      {ready.map((task) => (
-        <div key={task.taskId} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-sm">{task.taskName}</span>
-
-          {task.traderName && (
-            <span className="font-mono text-xs text-muted">hand to {task.traderName}</span>
-          )}
-
-          {/*
-            Said plainly when the plan only covered part of the quest. Marking it complete would
-            retire item needs for objectives you never selected.
-          */}
-          {task.objectiveCount < task.totalObjectiveCount && (
-            <span className="font-mono text-xs text-warn">
-              you planned {task.objectiveCount} of {task.totalObjectiveCount} objectives
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={() => void confirm(task)}
-            className="ml-auto rounded-sm bg-panel-hi px-2.5 py-1 font-mono text-[11px] uppercase
-                       tracking-wider text-muted transition-colors hover:bg-accent hover:text-ground
-                       focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            Mark turned in
-          </button>
-        </div>
-      ))}
     </div>
   )
 }

@@ -275,8 +275,17 @@
 
                                     <!-- The pictures take the space: they are the half that turns
                                          "walk to this pin" into "find this door". -->
-                                    <Grid DockPanel.Dock="Bottom" Margin="0,6,0,0">
-                                        <Image x:Name="QuestBriefImage" Stretch="Uniform" MinHeight="120" />
+                                    <!--
+                                        A fixed box, with the picture fitted inside it.
+
+                                        The box used to take its height from the picture, and wiki
+                                        screenshots are all shapes — so the back and next controls,
+                                        centred against it, moved every time one loaded. You cannot
+                                        flick through pictures whose buttons are somewhere new each
+                                        time; you have to find them again first.
+                                    -->
+                                    <Grid DockPanel.Dock="Bottom" Margin="0,6,0,0" Height="210">
+                                        <Image x:Name="QuestBriefImage" Stretch="Uniform" />
 
                                         <Button x:Name="QuestBriefBack" Style="{StaticResource Chip}"
                                                 Content="‹" HorizontalAlignment="Left"
