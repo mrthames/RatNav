@@ -143,6 +143,36 @@ Captured before execution.
 
 ---
 
+## Round 9 — 2026-08-20
+
+### Stash import, scoped so it is buildable
+
+Captured before execution. The framing is what makes this tractable, and it came from Justin
+rather than from the code:
+
+- [ ] **Scan a scav box, not a stash.** A scav junk box is a **fixed grid** — same size, same shape,
+  every time — so there is no scrolling, no layout to infer, and no ambiguity about where the
+  container starts and ends. Several boxes are several screenshots.
+- [ ] **For anyone without a scav box: a defined area of the inventory.** Group the items that
+  would normally live in a box into one block and scan that. Same property, same result: **a fixed
+  area rather than a scrolling page.**
+- [ ] **Review before applying, always.** Never write counts somebody spent weeks accumulating
+  without showing them the list first.
+
+The pieces:
+
+- [ ] **Grid detection.** Find the cells, and which are occupied. This is the part everything else
+  stands on and the part that can be tested without a single real screenshot.
+- [ ] **Stack counts.** The number in the corner of a stack, read per cell.
+- [ ] **Naming the item.** `[?]` Container cells show icons and no text, so OCR cannot name
+  anything here — this needs icon matching. **Match against the items you already track**, not all
+  5,312: if it is not on your list, RatNav has no reason to count it, and a few hundred candidates
+  is a different problem from five thousand.
+- [ ] **The review screen**, with the grid as read, each cell's best guesses, and a way to correct
+  one before anything is written.
+
+---
+
 ## Round 8 — 2026-08-20
 
 Captured before execution.
