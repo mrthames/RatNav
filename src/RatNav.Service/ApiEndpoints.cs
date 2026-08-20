@@ -652,6 +652,7 @@ public static class ApiEndpoints
             panel.Now.Sort(ByName);
             panel.Goals.Sort(ByName);
             panel.Later.Sort(ByName);
+            panel.Watchlist.Sort(ByName);
 
             // A glanceable panel has a length past which it stops being glanceable. Cut, and said
             // so — a list that silently stops reads as "that is everything".
