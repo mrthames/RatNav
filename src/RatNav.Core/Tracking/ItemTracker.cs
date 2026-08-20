@@ -23,7 +23,7 @@ namespace RatNav.Core.Tracking;
 /// Keeping them apart is what lets quest data refresh under a player's own counts without
 /// clobbering them.
 /// </summary>
-public sealed class ItemTracker(string dataDirectory)
+public sealed class ItemTracker(RatNavProfile profile)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -33,14 +33,21 @@ public sealed class ItemTracker(string dataDirectory)
     private readonly object _gate = new();
     private TrackingState _state = new();
 
-    private string StatePath => Path.Combine(dataDirectory, "tracking.json");
+    private string StatePath => Path.Combine(profile.Directory, "tracking.json");
 
     /// <summary>Loads saved counts and watchlist. Missing or corrupt state starts empty rather than throwing.</summary>
     public void Load()
     {
         try
         {
-            if (!File.Exists(StatePath)) return;
+            // An empty state rather than the one already in memory. Load runs again on every
+            // character switch, and a profile with no file yet has to read as a fresh character —
+            // keeping the last one's data would show it under the new name and then save it there.
+            if (!File.Exists(StatePath))
+            {
+                lock (_gate) _state = new TrackingState();
+                return;
+            }
 
             var loaded = JsonSerializer.Deserialize<TrackingState>(File.ReadAllText(StatePath), Json);
             if (loaded is not null)
@@ -260,7 +267,7 @@ public sealed class ItemTracker(string dataDirectory)
     {
         try
         {
-            Directory.CreateDirectory(dataDirectory);
+            Directory.CreateDirectory(profile.Directory);
 
             string json;
             lock (_gate) json = JsonSerializer.Serialize(_state, Json);

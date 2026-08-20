@@ -265,6 +265,12 @@ export interface QuestBriefing {
   images: WikiImage[]
 }
 
+/** Which character RatNav is tracking. */
+export interface Profiles {
+  current: string
+  all: { id: string; name: string }[]
+}
+
 /** One line of the key-bind reminder strip. */
 export interface HotkeyHint {
   key: string
@@ -691,6 +697,17 @@ export const api = {
 
   /** The key-bind reminder strip, the same list the overlay shows along its own footer. */
   hotkeyHints: () => get<HotkeyHint[]>('/api/hotkeys/hints'),
+
+  /** Which character is being tracked, and which others there are. */
+  profiles: () => get<Profiles>('/api/profiles'),
+
+  useProfile: (id: string) =>
+    post<{ current: string; name: string }>(`/api/profiles/${encodeURIComponent(id)}`, {}),
+
+  /** Back to a fresh character. Names the profile rather than assuming the current one. */
+  wipeProfile: (id: string) =>
+    post<{ wiped: string; name: string }>(
+      `/api/profiles/${encodeURIComponent(id)}/wipe`, {}),
 }
 
 /** "3 minutes ago" — the app should always be able to say how old its data is. */

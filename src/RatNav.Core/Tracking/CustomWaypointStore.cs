@@ -53,7 +53,7 @@ public sealed record CustomWaypoint
 /// batteries spawn behind the garage" is true every raid, and having to re-add it each time is how
 /// a feature stops being used.</para>
 /// </summary>
-public sealed class CustomWaypointStore(string dataDirectory)
+public sealed class CustomWaypointStore(RatNavProfile profile)
 {
     private static readonly JsonSerializerOptions Json =
         new(JsonSerializerDefaults.Web) { WriteIndented = true };
@@ -61,13 +61,20 @@ public sealed class CustomWaypointStore(string dataDirectory)
     private readonly object _gate = new();
     private List<CustomWaypoint> _marks = [];
 
-    private string StatePath => Path.Combine(dataDirectory, "waypoints.json");
+    private string StatePath => Path.Combine(profile.Directory, "waypoints.json");
 
     public void Load()
     {
         try
         {
-            if (!File.Exists(StatePath)) return;
+            // An empty state rather than the one already in memory. Load runs again on every
+            // character switch, and a profile with no file yet has to read as a fresh character —
+            // keeping the last one's data would show it under the new name and then save it there.
+            if (!File.Exists(StatePath))
+            {
+                lock (_gate) _marks = [];
+                return;
+            }
 
             var loaded = JsonSerializer.Deserialize<List<CustomWaypoint>>(File.ReadAllText(StatePath), Json);
             lock (_gate) _marks = loaded ?? [];
@@ -172,7 +179,7 @@ public sealed class CustomWaypointStore(string dataDirectory)
     {
         try
         {
-            Directory.CreateDirectory(dataDirectory);
+            Directory.CreateDirectory(profile.Directory);
 
             string json;
             lock (_gate) json = JsonSerializer.Serialize(_marks, Json);

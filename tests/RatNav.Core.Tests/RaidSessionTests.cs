@@ -8,6 +8,8 @@ using RatNav.Service;
 
 namespace RatNav.Core.Tests;
 
+using RatNav.Core;
+
 /// <summary>
 /// The startup race, which cost a real raid before it was found. RatNav's watchers begin the
 /// instant the app opens, but the game data they are matched against is downloaded — so when the
@@ -68,7 +70,7 @@ public class RaidSessionTests : IDisposable
     public async Task Finds_the_map_when_the_raid_starts_before_the_data_loads()
     {
         var cache = CacheFor(Streets());
-        var session = new RaidSession(new RatNavState(cache), new ProgressStore(_dir));
+        var session = new RaidSession(new RatNavState(cache), new ProgressStore(new RatNavProfile(_dir)));
 
         // The order that actually happens on a mid-raid start: log first, data second.
         session.OnRaidStarted("TarkovStreets");
@@ -87,7 +89,7 @@ public class RaidSessionTests : IDisposable
         var cache = CacheFor(Streets());
         await cache.EnsureFreshAsync("1.0.0");
 
-        var session = new RaidSession(new RatNavState(cache), new ProgressStore(_dir));
+        var session = new RaidSession(new RatNavState(cache), new ProgressStore(new RatNavProfile(_dir)));
         session.OnRaidStarted("TarkovStreets");
         session.OnPositionFixed(new PositionFix
         {
@@ -110,7 +112,7 @@ public class RaidSessionTests : IDisposable
         var cache = CacheFor(Streets());
         await cache.EnsureFreshAsync("1.0.0");
 
-        var session = new RaidSession(new RatNavState(cache), new ProgressStore(_dir));
+        var session = new RaidSession(new RatNavState(cache), new ProgressStore(new RatNavProfile(_dir)));
         session.OnRaidStarted("laboratory");
 
         Assert.False(session.View().InRaid);
@@ -122,7 +124,7 @@ public class RaidSessionTests : IDisposable
         var cache = CacheFor(Streets());
         await cache.EnsureFreshAsync("1.0.0");
 
-        var session = new RaidSession(new RatNavState(cache), new ProgressStore(_dir));
+        var session = new RaidSession(new RatNavState(cache), new ProgressStore(new RatNavProfile(_dir)));
         session.OnRaidStarted("TarkovStreets");
         Assert.True(session.View().InRaid);
 
@@ -140,7 +142,7 @@ public class RaidSessionTests : IDisposable
         var cache = CacheFor(Streets());
         await cache.EnsureFreshAsync("1.0.0");
 
-        var progress = new ProgressStore(_dir);
+        var progress = new ProgressStore(new RatNavProfile(_dir));
         var session = new RaidSession(new RatNavState(cache), progress);
 
         session.OnRaidStarted("TarkovStreets");
@@ -158,7 +160,7 @@ public class RaidSessionTests : IDisposable
         var cache = CacheFor(Streets());
         await cache.EnsureFreshAsync("1.0.0");
 
-        var progress = new ProgressStore(_dir);
+        var progress = new ProgressStore(new RatNavProfile(_dir));
         progress.CompleteObjective("objective-1");
 
         var session = new RaidSession(new RatNavState(cache), progress);

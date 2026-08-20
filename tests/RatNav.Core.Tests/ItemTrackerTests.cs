@@ -5,6 +5,8 @@ using RatNav.Core.Tracking;
 
 namespace RatNav.Core.Tests;
 
+using RatNav.Core;
+
 public class ItemTrackerTests : IDisposable
 {
     private readonly string _dir = Path.Combine(
@@ -16,8 +18,8 @@ public class ItemTrackerTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private ItemTracker Tracker() => new(_dir);
-    private ProgressStore Progress() => new(_dir);
+    private ItemTracker Tracker() => new(new RatNavProfile(_dir));
+    private ProgressStore Progress() => new(new RatNavProfile(_dir));
 
     private static ItemNeeds Watch() => new()
     {
@@ -211,7 +213,7 @@ public class ProgressStoreTests : IDisposable
     [Fact]
     public void A_hand_correction_beats_what_the_logs_said()
     {
-        var store = new ProgressStore(_dir);
+        var store = new ProgressStore(new RatNavProfile(_dir));
         store.RecordFromLogs("task", QuestState.Active);
         store.SetManual("task", QuestState.Completed);
 
@@ -223,7 +225,7 @@ public class ProgressStoreTests : IDisposable
     {
         // The whole reason the two layers are separate. The game does not always write in-raid
         // quest changes, so corrections are unavoidable — and a later import must not revert them.
-        var store = new ProgressStore(_dir);
+        var store = new ProgressStore(new RatNavProfile(_dir));
         store.SetManual("task", QuestState.Completed);
 
         store.RecordFromLogs("task", QuestState.Active);
@@ -235,7 +237,7 @@ public class ProgressStoreTests : IDisposable
     [Fact]
     public void Clearing_a_correction_hands_the_quest_back_to_the_logs()
     {
-        var store = new ProgressStore(_dir);
+        var store = new ProgressStore(new RatNavProfile(_dir));
         store.RecordFromLogs("task", QuestState.Active);
         store.SetManual("task", QuestState.Failed);
         store.ClearManual("task");
@@ -246,11 +248,11 @@ public class ProgressStoreTests : IDisposable
     [Fact]
     public void Progress_survives_a_restart()
     {
-        var first = new ProgressStore(_dir);
+        var first = new ProgressStore(new RatNavProfile(_dir));
         first.SetManual("task", QuestState.Active);
         first.SetHideoutLevel("workbench", 3);
 
-        var second = new ProgressStore(_dir);
+        var second = new ProgressStore(new RatNavProfile(_dir));
         second.Load();
 
         Assert.Equal(QuestState.Active, second.StateOf("task"));
@@ -261,7 +263,7 @@ public class ProgressStoreTests : IDisposable
     [Fact]
     public void A_station_built_to_a_level_counts_every_level_below_it()
     {
-        var store = new ProgressStore(_dir);
+        var store = new ProgressStore(new RatNavProfile(_dir));
         store.SetHideoutLevel("workbench", 3);
 
         Assert.True(store.IsHideoutLevelBuilt("workbench", 1));
@@ -279,7 +281,7 @@ public class ProgressStoreTests : IDisposable
             new() { Id = "third", Name = "Shootout", PrerequisiteTaskIds = ["second"] },
         ];
 
-        var store = new ProgressStore(_dir);
+        var store = new ProgressStore(new RatNavProfile(_dir));
         store.SetManual("first", QuestState.Completed);
 
         var available = store.AvailableNow(tasks).Select(t => t.Id).ToArray();
@@ -295,7 +297,7 @@ public class ProgressStoreTests : IDisposable
             new() { Id = "a", Name = "A" }, new() { Id = "b", Name = "B" }, new() { Id = "c", Name = "C" },
         ];
 
-        var store = new ProgressStore(_dir);
+        var store = new ProgressStore(new RatNavProfile(_dir));
         store.SetManual("a", QuestState.Active);
         store.SetManual("b", QuestState.Completed);
 

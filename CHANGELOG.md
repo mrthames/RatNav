@@ -70,6 +70,20 @@ The first public release. Alpha: it works and is used daily, but it is early.
   lifted into their own block — the colour says which they are wherever they sit, and two alphabets
   meant looking twice.
 
+### Three characters
+
+- **PvE, PvP and PvP Seasonal, tracked separately.** The game gives you three characters that share
+  nothing — different quests accepted, different hideout, different loyalty — and RatNav was
+  tracking them against one set of files, so quests finished on one read as done on the others.
+  Switch between them in the top navigation, beside character level.
+- **Character level moved with them.** It belongs to a character, not to a machine. Your game's
+  install path, your hotkeys and the cached copy of tarkov.dev stay shared, because none of that
+  changes when you switch.
+- **Start a character over**, from Setup. It names the profile, says what goes, and will not act
+  until you type the name back — a confirmation you can dismiss by reflex is not one.
+- **An existing install keeps its progress**, adopted into PvP. The files are copied rather than
+  moved, so the originals are still there if anything goes wrong.
+
 ### Items
 
 - **Collections count down.** Every item in a collection has a `+`/`−` of its own, and the number

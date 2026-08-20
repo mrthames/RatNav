@@ -1,5 +1,7 @@
 namespace RatNav.Core.Tests;
 
+using RatNav.Core;
+
 using RatNav.Core.Tracking;
 
 /// <summary>
@@ -65,7 +67,7 @@ public class GoalStoreTests : IDisposable
 
     private ItemTracker New()
     {
-        var tracker = new ItemTracker(_directory);
+        var tracker = new ItemTracker(new RatNavProfile(_directory));
         tracker.Load();
 
         return tracker;

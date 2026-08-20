@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, type Diagnostics, type HotKeys, type Settings } from './api'
+import { api, type Diagnostics, type HotKeys, type Profiles, type Settings } from './api'
 
 /**
  * Everything RatNav needs to know about your machine, and whether it has it.
@@ -279,7 +279,109 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
 
         <p className="font-mono text-[11px] text-muted">Leave a folder empty to go back to detecting it.</p>
       </div>
+
+      <WipeProfile />
     </section>
+  )
+}
+
+/**
+ * Putting a character back to the start.
+ *
+ * <p>The only genuinely destructive control in RatNav, so it names the profile it is about to
+ * clear, says what goes, and will not act until the name is typed back. A confirm dialog you can
+ * dismiss by reflex is not a confirmation.</p>
+ */
+function WipeProfile() {
+  const [profiles, setProfiles] = useState<Profiles | null>(null)
+  const [wiping, setWiping] = useState<string | null>(null)
+  const [typed, setTyped] = useState('')
+  const [note, setNote] = useState<string | null>(null)
+
+  useEffect(() => { api.profiles().then(setProfiles).catch(() => setProfiles(null)) }, [])
+
+  if (!profiles) return null
+
+  const target = profiles.all.find((p) => p.id === wiping)
+
+  async function wipe() {
+    if (!target || typed.trim().toLowerCase() !== target.name.toLowerCase()) return
+
+    try {
+      await api.wipeProfile(target.id)
+      setNote(`${target.name} is back to a fresh character.`)
+      setWiping(null)
+      setTyped('')
+
+      // Everything on screen came from the profile that was just emptied.
+      if (target.id === profiles?.current) window.location.reload()
+    } catch {
+      setNote('That did not work. Something else may have the files open.')
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 border border-need/40 bg-need/5 p-3">
+      <h3 className="font-mono text-[11px] uppercase tracking-wider text-need">Start a character over</h3>
+
+      <p className="text-xs text-muted">
+        Clears everything RatNav has recorded for one character — quests, hideout levels, trader
+        loyalty, level, collections, plans and marks. It does not touch the game, and it does not
+        touch your other characters.
+      </p>
+
+      <div className="flex flex-wrap gap-1">
+        {profiles.all.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => { setWiping(p.id); setTyped(''); setNote(null) }}
+            className="rounded-sm border border-line px-2 py-1 font-mono text-[11px] text-muted
+                       transition-colors hover:border-need hover:text-need
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Wipe {p.name}
+            {p.id === profiles.current && ' (current)'}
+          </button>
+        ))}
+      </div>
+
+      {target && (
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-xs">
+            Type <b className="font-mono text-need">{target.name}</b> to confirm
+            <input
+              autoFocus
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              className="w-32 border border-line bg-ground px-2 py-1 font-mono text-xs text-ink
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => void wipe()}
+            disabled={typed.trim().toLowerCase() !== target.name.toLowerCase()}
+            className="rounded-sm border border-need bg-need px-3 py-1 text-xs font-medium
+                       text-ground transition-opacity hover:opacity-90 disabled:opacity-30
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Wipe it
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setWiping(null); setTyped('') }}
+            className="font-mono text-[11px] uppercase tracking-wider text-muted hover:text-ink"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {note && <p className="font-mono text-xs text-have">{note}</p>}
+    </div>
   )
 }
 

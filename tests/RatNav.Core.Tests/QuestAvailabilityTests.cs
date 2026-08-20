@@ -3,6 +3,8 @@ using RatNav.Core.Progress;
 
 namespace RatNav.Core.Tests;
 
+using RatNav.Core;
+
 /// <summary>
 /// Which quests you could actually accept.
 ///
@@ -22,7 +24,7 @@ public class QuestAvailabilityTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private ProgressStore Progress() => new(_dir);
+    private ProgressStore Progress() => new(new RatNavProfile(_dir));
 
     private static TaskDef Task(string id, int? level = null, params string[] needs) => new()
     {
@@ -88,7 +90,7 @@ public class QuestAvailabilityTests : IDisposable
 
         // A fresh store is empty until it reads the file — that is deliberate, so a test or a
         // tool can work in memory without touching disk.
-        var reopened = new ProgressStore(_dir);
+        var reopened = new ProgressStore(new RatNavProfile(_dir));
         reopened.Load();
 
         Assert.Equal(3, reopened.TraderLevelOf("Prapor"));

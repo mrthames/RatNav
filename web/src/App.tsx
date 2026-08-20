@@ -3,6 +3,7 @@ import { ago, api, type DataStatus, type MapSummary, type RaidView } from './api
 import { HeldBack } from './HeldBack'
 import { HotkeyBar } from './HotkeyBar'
 import { MapPicker } from './MapPicker'
+import { ProfilePicker } from './ProfilePicker'
 import { MapView } from './MapView'
 import { HideoutView } from './HideoutView'
 import { ItemsView } from './ItemsView'
@@ -137,6 +138,12 @@ export default function App() {
             changes constantly, and it was three clicks deep in Setup — which meant it went stale
             and quietly narrowed everything downstream of it.
           */}
+          {/*
+            Which character, next to their level. Switching one without the other in view is how
+            you end up reading PvE's quests against PvP's level.
+          */}
+          <ProfilePicker onSwitched={() => window.location.reload()} />
+
           <Level />
 
           <div className="text-right font-mono text-xs leading-relaxed text-muted">

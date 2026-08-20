@@ -1,5 +1,7 @@
 namespace RatNav.Core.Tests;
 
+using RatNav.Core;
+
 using RatNav.Core.Tracking;
 
 public class CustomWaypointStoreTests : IDisposable
@@ -9,7 +11,7 @@ public class CustomWaypointStoreTests : IDisposable
 
     private CustomWaypointStore New()
     {
-        var store = new CustomWaypointStore(_directory);
+        var store = new CustomWaypointStore(new RatNavProfile(_directory));
         store.Load();
 
         return store;

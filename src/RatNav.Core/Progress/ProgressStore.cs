@@ -29,7 +29,7 @@ public enum QuestState
 /// <para>Log watching is not wired in yet; this is the store it will write into. Everything here
 /// works standalone in the meantime, which is why the manual layer came first.</para>
 /// </summary>
-public sealed class ProgressStore(string dataDirectory) : IProgressView
+public sealed class ProgressStore(RatNavProfile profile) : IProgressView
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -40,13 +40,20 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
     private readonly object _gate = new();
     private ProgressState _state = new();
 
-    private string StatePath => Path.Combine(dataDirectory, "progress.json");
+    private string StatePath => Path.Combine(profile.Directory, "progress.json");
 
     public void Load()
     {
         try
         {
-            if (!File.Exists(StatePath)) return;
+            // An empty state rather than the one already in memory. Load runs again on every
+            // character switch, and a profile with no file yet has to read as a fresh character —
+            // keeping the last one's data would show it under the new name and then save it there.
+            if (!File.Exists(StatePath))
+            {
+                lock (_gate) _state = new ProgressState();
+                return;
+            }
 
             var loaded = JsonSerializer.Deserialize<ProgressState>(File.ReadAllText(StatePath), Json);
             if (loaded is not null)
@@ -290,6 +297,18 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
         lock (_gate) return _state.TraderLevels.GetValueOrDefault(traderId, 1);
     }
 
+    /// <summary>Character level, per profile.</summary>
+    public int? PlayerLevel
+    {
+        get { lock (_gate) return _state.PlayerLevel; }
+    }
+
+    public void SetPlayerLevel(int? level)
+    {
+        lock (_gate) _state.PlayerLevel = level is { } l ? Math.Clamp(l, 1, 79) : null;
+        Save();
+    }
+
     public void SetTraderLevel(string traderId, int level)
     {
         lock (_gate) _state.TraderLevels[traderId] = Math.Clamp(level, 1, 4);
@@ -305,7 +324,7 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
     {
         try
         {
-            Directory.CreateDirectory(dataDirectory);
+            Directory.CreateDirectory(profile.Directory);
 
             string json;
             lock (_gate) json = JsonSerializer.Serialize(_state, Json);
@@ -322,6 +341,16 @@ public sealed class ProgressStore(string dataDirectory) : IProgressView
 
     private sealed record ProgressState
     {
+        /// <summary>
+        /// Character level.
+        ///
+        /// <para>Here rather than in settings because it belongs to a character, not a machine.
+        /// Settings are shared across profiles — your game's install path and your hotkeys do not
+        /// change when you switch to PvE — and a level that did the same would gate the wrong
+        /// quests the moment you switched.</para>
+        /// </summary>
+        public int? PlayerLevel { get; set; }
+
         /// <summary>Corrections made by hand. Always wins.</summary>
         public Dictionary<string, QuestState> Manual { get; init; } = [];
 

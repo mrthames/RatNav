@@ -45,6 +45,14 @@ public static class ServiceHost
 
         var dataDirectory = RatNavPaths.EnsureDataDirectory();
 
+        // Which character is being tracked. Everything belonging to one lives in its own
+        // directory; the cached game data, the map images and the machine's own settings sit
+        // outside and are shared, because none of that changes when you switch character.
+        var profile = new RatNavProfile(dataDirectory);
+        profile.AdoptLooseFiles();
+
+        builder.Services.AddSingleton(profile);
+
         builder.Services.AddHttpClient<TarkovDevClient>(http =>
         {
             // Identifying ourselves is basic courtesy to a free community API, and it gives
@@ -67,7 +75,7 @@ public static class ServiceHost
 
         builder.Services.AddSingleton(_ =>
         {
-            var tracker = new ItemTracker(dataDirectory);
+            var tracker = new ItemTracker(profile);
             tracker.Load();
             return tracker;
         });
@@ -86,20 +94,20 @@ public static class ServiceHost
         // there are a few hundred of them on the first scan.
         builder.Services.AddSingleton(_ =>
         {
-            var marks = new CustomWaypointStore(dataDirectory);
+            var marks = new CustomWaypointStore(profile);
             marks.Load();
             return marks;
         });
 
         builder.Services.AddSingleton(_ =>
         {
-            var progress = new ProgressStore(dataDirectory);
+            var progress = new ProgressStore(profile);
             progress.Load();
             return progress;
         });
 
         builder.Services.AddSingleton<RatNavState>();
-        builder.Services.AddSingleton(_ => new PlanStore(dataDirectory));
+        builder.Services.AddSingleton(_ => new PlanStore(profile));
         builder.Services.AddSingleton(_ => RatNavSettings.Load(dataDirectory));
         builder.Services.AddSingleton<RaidHub>();
 
@@ -120,6 +128,16 @@ public static class ServiceHost
         builder.Services.AddHostedService(sp => sp.GetRequiredService<RaidHost>());
 
         var app = builder.Build();
+
+        // The stores are singletons that keep their state in memory, so switching character has
+        // to tell each one to look at the new directory. Wired here rather than inside the stores
+        // because this is where the instances exist.
+        profile.Changed += () =>
+        {
+            app.Services.GetRequiredService<ItemTracker>().Load();
+            app.Services.GetRequiredService<ProgressStore>().Load();
+            app.Services.GetRequiredService<CustomWaypointStore>().Load();
+        };
 
         app.UseWebSockets();
         app.UseDefaultFiles();

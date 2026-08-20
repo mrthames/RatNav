@@ -9,9 +9,9 @@ namespace RatNav.Core.Sharing;
 /// purpose is to be shared, and a file can be sent to someone. The saved form and the exported
 /// form are the same thing, so "export" is a copy rather than a conversion that could drift.</para>
 /// </summary>
-public sealed class PlanStore(string dataDirectory)
+public sealed class PlanStore(RatNavProfile profile)
 {
-    private string Directory => Path.Combine(dataDirectory, "plans");
+    private string Directory => Path.Combine(profile.Directory, "plans");
 
     /// <summary>Every saved plan, newest first.</summary>
     public IReadOnlyList<SavedPlan> All()

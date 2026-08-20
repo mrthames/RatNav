@@ -304,7 +304,7 @@ public static class ApiEndpoints
             var tasks = state.Cache.Current?.Tasks ?? [];
 
             var available = progress
-                .AvailableNow(tasks, settings.PlayerLevel)
+                .AvailableNow(tasks, progress.PlayerLevel)
                 .Select(t => t.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -331,7 +331,7 @@ public static class ApiEndpoints
                     {
                         level = l.Level,
                         requiredPlayerLevel = l.RequiredPlayerLevel,
-                        reachable = settings.PlayerLevel is null || l.RequiredPlayerLevel <= settings.PlayerLevel,
+                        reachable = progress.PlayerLevel is null || l.RequiredPlayerLevel <= progress.PlayerLevel,
                     }),
 
 
@@ -632,7 +632,7 @@ public static class ApiEndpoints
                 active = summary[QuestState.Active],
                 completed = summary[QuestState.Completed],
                 failed = summary[QuestState.Failed],
-                availableNow = progress.AvailableNow(tasks, settings.PlayerLevel).Count(),
+                availableNow = progress.AvailableNow(tasks, progress.PlayerLevel).Count(),
             });
         });
 
@@ -662,7 +662,7 @@ public static class ApiEndpoints
         {
             var tasks = state.Cache.Current?.Tasks ?? [];
 
-            var available = progress.AvailableNow(tasks, settings.PlayerLevel)
+            var available = progress.AvailableNow(tasks, progress.PlayerLevel)
                 .Select(t => t.Id)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -672,7 +672,7 @@ public static class ApiEndpoints
 
             var rows = tasks.Select(t => TaskSummary.From(
                 t, progress.StateOf(t.Id), available.Contains(t.Id),
-                settings.PlayerLevel, names, progress.StateOf, progress.TraderLevelOf));
+                progress.PlayerLevel, names, progress.StateOf, progress.TraderLevelOf));
 
             // Three groups, because those are the three that are true.
             //
@@ -765,7 +765,7 @@ public static class ApiEndpoints
         // What Setup edits. Everything here is either detected or chosen by a person — none of it
         // is baked in, because someone else's install is not going to look like the developer's.
         api.MapGet("/settings", (RatNavSettings settings, RatNavState state, ProgressStore progress) =>
-            Results.Ok(SettingsView.From(settings) with
+            Results.Ok(SettingsView.From(settings, progress) with
             {
                 SuggestedPlayerLevel = progress.LevelImpliedBy(state.Cache.Current?.Tasks ?? []),
             }));
@@ -805,7 +805,8 @@ public static class ApiEndpoints
                     current.ScreenshotDirectory = Blank(update.ScreenshotDirectory);
 
                 if (update.ScreenshotKey is { Length: > 0 } key) current.ScreenshotKey = key;
-                if (update.PlayerLevel is { } level) current.PlayerLevel = Math.Clamp(level, 1, 79);
+                // Character level lives with the character, not the machine.
+                if (update.PlayerLevel is { } level) progress.SetPlayerLevel(level);
                 if (update.GameEdition is { Length: > 0 } edition) current.GameEdition = edition;
                 if (update.Owner is not null) current.Owner = Blank(update.Owner);
 
@@ -838,7 +839,7 @@ public static class ApiEndpoints
             if (watchersAffected) host.Rewatch();
             if (update.Hotkeys is not null) HotkeysChanged?.Invoke(settings);
 
-            return Results.Ok(SettingsView.From(settings));
+            return Results.Ok(SettingsView.From(settings, progress));
         });
 
         // The key-bind reminder strip, shown along the bottom of the overlay and stuck to the
@@ -860,6 +861,41 @@ public static class ApiEndpoints
                 new { key = keys.IdentifyItem, does = "what is this" },
                 new { key = keys.ReadExtracts, does = "extracts" },
             }.Where(h => h.key is { Length: > 0 }));
+        });
+
+        // ---- which character
+
+        // The game gives you a PvE character, a PvP one, and a seasonal PvP one. They share
+        // nothing, so RatNav keeps a separate set of files for each.
+        api.MapGet("/profiles", (RatNavProfile profile) =>
+            Results.Ok(new
+            {
+                current = profile.Current,
+                all = RatNavProfile.All.Select(p => new { p.Id, p.Name }),
+            }));
+
+        api.MapPost("/profiles/{id}", (RatNavProfile profile, RatNavState state, string id) =>
+        {
+            if (!profile.Use(id)) return Results.NotFound(new { error = $"No profile '{id}'." });
+
+            // Everything downstream of progress changes at once, so say so rather than waiting
+            // for whatever happens to refresh next.
+            ItemsChanged?.Invoke();
+            return Results.Ok(new { current = profile.Current, name = profile.Name });
+        });
+
+        // Back to a fresh character. Genuinely destructive, so the caller has to name the profile
+        // it means rather than being handed "the current one" by default.
+        api.MapPost("/profiles/{id}/wipe", (RatNavProfile profile, string id) =>
+        {
+            if (!RatNavProfile.IsKnown(id))
+                return Results.NotFound(new { error = $"No profile '{id}'." });
+
+            if (!profile.Wipe(id))
+                return Results.Problem("Could not clear that profile. Something else may have its files open.");
+
+            ItemsChanged?.Invoke();
+            return Results.Ok(new { wiped = id, name = RatNavProfile.NameOf(id) });
         });
 
         // ---- setup
@@ -2084,7 +2120,7 @@ public sealed record SettingsView
     /// <summary>True when the folder in use was found rather than chosen.</summary>
     public bool GameDirectoryDetected { get; init; }
 
-    public static SettingsView From(RatNavSettings settings)
+    public static SettingsView From(RatNavSettings settings, ProgressStore progress)
     {
         var resolved = settings.GameDirectory ?? GameInstallFinder.Find()?.Directory;
 
@@ -2096,7 +2132,7 @@ public sealed record SettingsView
             ScreenshotDisposal = settings.ScreenshotDisposal.ToString(),
             Owner = settings.Owner,
             Hotkeys = settings.Hotkeys,
-            PlayerLevel = settings.PlayerLevel,
+            PlayerLevel = progress.PlayerLevel,
             GameEdition = settings.GameEdition,
             ResolvedGameDirectory = resolved,
             ResolvedScreenshotDirectory =
