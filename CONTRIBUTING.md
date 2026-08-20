@@ -37,6 +37,18 @@ Two documents will save you days:
 Both exist because the same mistake kept repeating: a rule fitted the evidence available, and the
 evidence was wrong.
 
+## The other documents
+
+- **`docs/GUIDE.md`** and **`docs/FAQ.md`** are what users read. If you change behaviour someone
+  would notice, change these in the same commit — a guide that describes an older product than the
+  one people download is worse than no guide.
+- **`docs/backlog.md`** is the running record of what was asked for, what was built, and what was
+  investigated and found impossible. The `[?]` entries are the interesting ones: they are questions
+  with recorded findings rather than open work.
+- **`brand/README.md`** covers the mark, and `brand/render.ps1` rebuilds the `.ico` and the PNGs
+  from it. The path coordinates are deliberately duplicated between the SVG and the renderer —
+  change one, change the other.
+
 ## House style
 
 **Tests describe behaviour, not methods.** `Replaying_the_logs_cannot_undo_a_correction` says what

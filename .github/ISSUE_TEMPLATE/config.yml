@@ -1,0 +1,14 @@
+# Most of what arrives as an issue is already answered. Pointing at the answer first is kinder
+# than letting someone wait a day for a link.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Read the FAQ first
+    url: https://github.com/mrthames/RatNav/blob/main/docs/FAQ.md
+    about: >-
+      Nothing over the game, no raid detected, a marker in the wrong place, a hotkey that does
+      nothing — the common ones are all here, with what to do about each.
+
+  - name: How to use it
+    url: https://github.com/mrthames/RatNav/blob/main/docs/GUIDE.md
+    about: Setup, planning, the overlay, items, barters, the hideout, and sharing plans.

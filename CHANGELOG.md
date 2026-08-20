@@ -4,6 +4,77 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
+### Barters and crafts
+
+- **Say which trades you are working towards**, and what they cost joins your list. Therapist's
+  Dorm 303 barter wants seven T-shaped plugs and three rolls of insulating tape; RatNav knew that
+  and had no way for you to act on it.
+- **Hideout crafts too**, which were never fetched at all — 214 recipes and the station level each
+  one needs.
+- **Counted apart** from quests and the hideout, in their own sections on the overlay and their own
+  line on a buddy-app row. An item wanted three times for a quest and seven for a barter is two
+  reasons, not a single ten, and one number would hide that finishing the quest leaves seven still
+  to find.
+- The picker offers only what your traders and hideout can actually do, with a checkbox for the
+  rest.
+
+### On the map
+
+- **Spawn areas**, toggleable — roughly where the other players in your raid started. Clustered
+  from the hundreds of individual points the data holds into a dozen regions, because a rash of
+  dots answers no question.
+- **Marks of your own.** Click a spot on the Maps page, name it, and it draws in raid — purple and
+  diamond-shaped, so it never reads as a quest objective. They are not part of a plan, so they
+  outlive every plan.
+- **Only the extracts you can use.** Double-tap `O` in game and press `F11`: RatNav reads the list
+  off the screen and draws only those.
+- **Hazard zones read as hazards.** The stylesheet reader took a map's colours and dropped their
+  opacity, so Streets' sniper zones drew as solid red blocks over the streets underneath.
+- **Hover labels are drawn into the map** rather than popped. A tooltip belonging to a window that
+  never takes focus opened and vanished in the same frame, which is exactly what hovering a
+  waypoint looked like.
+- The raster tile layer, added and then removed. It extended well past the playable area and read
+  as a photograph under a diagram, and what this map is for is structures, landmarks and roads.
+
+### Planning
+
+- **Stops run in the order you ticked them**, and drag to change it. They were held in a set, which
+  has no order — so what you got was whatever order the objectives happened to load in, presented
+  as a route.
+- **The keys are named**, red when you do not have one, with a tick to say you do. "Bring 3 keys"
+  was true and useless.
+- **Finish a quest from the plan**, without a trip to the Quests view. It asks first, because
+  completing a quest retires its item needs.
+- **Picks are kept per map**, so glancing at Woods halfway through building a Customs run does not
+  throw the Customs run away.
+- Ticked stops fall to the bottom, struck through, and numbering counts only what is left.
+
+### Quests and items
+
+- **Look-ahead follows the quest chain**, not just the hideout build order — and both surfaces now
+  say where the dial is set, because the same list means different things at depth 1 and depth 4.
+- **The wiki's screenshots for a quest**, from a `photos` button: the ones showing which building
+  and which door. Loaded from the wiki and credited to it.
+- **Filters on the items list** — found in raid, for quests, for the hideout, for a trade, keys —
+  each carrying its count.
+- **Failed quests are told apart from finished ones.** Both are finished states, but a failed quest
+  that reads as done is one you never go back and look at.
+- **The loot card answers instead of listing.** It used to recite every quest that had ever wanted
+  an item, every hideout level and every barter; it now leads with Keep, Keep — found in raid, Not
+  now or Leave it, and everything you are not working on gets one counted line.
+
+### Elsewhere
+
+- **RatNav has a mark**: a navigation arrow and a rat in one shape, on the executable, the
+  installer, the tray and the favicon. The tray used to show the generic Windows icon.
+- **A full guide and an FAQ** in `docs/`, for people who did not build this.
+- **A way back from a lost overlay** — a window dragged onto a monitor you no longer have cannot
+  be dragged back, and the only fix was editing settings.json by hand.
+- **The game data cache carries a schema number.** Adding a field used to mean every existing
+  install served a cache missing it until the six-hour age check happened to fire.
+- Place names draw on the buddy app's map, and a search takes you to one by name.
+
+
 ### The map
 
 - **Drag it.** Right-click and hold to move the map, so you can look at one corner while zoomed
