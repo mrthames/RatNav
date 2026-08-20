@@ -2,6 +2,64 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
+## Unreleased
+
+### Maps you can trust
+
+- **Only maps whose marker lands where you are.** Nine ship; the rest are held back rather than
+  shipped with a warning. A map that might be mirrored is a defect, not a caveat.
+- **Settle a held-back map yourself.** Take a screenshot somewhere you recognise, open **Maps →
+  Settle it**, click the spot. A wrong layout is a mirror image and misses by about half the map,
+  so the margin is enormous and a hurried click cannot pick wrong.
+- **The stated rotation is used** instead of being inferred from the image's proportions, which is
+  what Factory — nearly square — could never be settled by.
+- **Calibration is solved once per drawing**, so Night Factory and the Ground Zero variants inherit
+  the map they share rather than each getting their own answer, or none.
+- **`[WIP]` beside maps whose quest positions are still settling.**
+
+### Reading a quest
+
+- **Click a waypoint to open its quest** — on the overlay and on the Maps page. What it wants,
+  which step this pin serves, a link to the wiki, and the wiki's screenshots of the place.
+- **An info control on every item row**, saying which quests and which hideout levels want it.
+  Quest names open the quest.
+
+### Goals
+
+- **Name what you are collecting for**, and list what it takes. This replaces the searchable
+  catalogue of 789 barters and 214 crafts: finding the one you meant needed you to already know
+  which of Therapist's four Dorm 303 trades it was.
+
+### The overlay
+
+- **A Size control**, because the defaults are drawn for 1080p and a 4K screen lands them at a
+  quarter of the area.
+- **The gear stays put** when the control stack opens, and closes it again on a second click.
+- **Panel opacity stopped resizing the window.**
+- **Hover labels are drawn into the scene**, so they no longer flash and vanish.
+- **An open planner button** in the control drawer, and the buddy app opens with RatNav.
+- **Spawn locations removed.** Built twice, as regions and as points, and neither read well on a
+  map you are navigating.
+
+### The buddy app
+
+- **Character level in the top navigation**, where it can keep up with you.
+- **Traders as cards** with their portraits and one level control each.
+- **The hideout as a grid** with the game's own station icons, an **Upgrade** control, and **max**
+  where there is nothing left to do.
+- **The Maps page matches the overlay** — same four draw levels under the same names, same
+  waypoint, extract and mark symbols, same place labels.
+- **Your marks can join a plan**, and come in two kinds: a place, or something to pick up.
+
+### Setup, cut back
+
+- The banner that said RatNav could see the game while the game was closed.
+- The multiple-install section; one folder, detected, with a **Browse…** picker.
+- The second-screen instructions, which were useless read from inside the thing they describe.
+- The quest and item counts in the navigation.
+- **Hotkeys are set by pressing the key**, not by typing its name. Two are gone — opening the panel
+  and ticking an objective off — and what is left runs `F5` to `F9`.
+
 ## 0.2.0 — 2026-08-20
 
 ### Barters and crafts

@@ -8,9 +8,10 @@ Everything RatNav does, in the order you would meet it. If you have just install
 - [Planning a raid](#planning-a-raid)
 - [The overlay](#the-overlay)
 - [Reading the map](#reading-the-map)
+- [Reading a quest from its waypoint](#reading-a-quest-from-its-waypoint)
 - [Marking your own spots](#marking-your-own-spots)
 - [Items, and why they are needed](#items-and-why-they-are-needed)
-- [Barters and crafts](#barters-and-crafts)
+- [Goals](#goals)
 - [The hideout as a build order](#the-hideout-as-a-build-order)
 - [Quests and traders](#quests-and-traders)
 - [Identifying loot](#identifying-loot)
@@ -35,8 +36,8 @@ Five minutes, once.
    and set them **Active**. Nothing else in RatNav means much until it knows what you are working
    on — quest state is not written to disk in a form anything can read reliably, so you tell it
    once and it keeps up from the logs after that.
-6. **Set your trader levels** on the same page, and your **stash and station levels** on Hideout.
-   Both change what RatNav offers you.
+6. **Set your character level** in the top navigation, your **trader levels** on the Quests page,
+   and your **station levels** on Hideout. All three change what RatNav offers you.
 7. **Build a plan** on the Plan page and press **Plan this raid**.
 8. **Queue up.** When the raid loads, the overlay appears with your map. Press your screenshot key
    and your marker lands.
@@ -50,11 +51,10 @@ hardcoded, and RatNav says which is which.
 
 | Setting | What it is for |
 |---|---|
-| **Escape from Tarkov folder** | The folder holding `EscapeFromTarkov.exe`. RatNav looks for it and shows what it found. Override it if that is wrong — an old install on another drive looks identical to a live one, and picking the wrong one shows up as an overlay that never notices a raid. |
+| **Escape from Tarkov folder** | The folder holding `EscapeFromTarkov.exe`. RatNav looks for it and shows what it found; **Browse…** opens a folder picker when it looked in the wrong place. |
 | **Screenshot folder** | Where the game saves screenshots. Defaults to `Documents\Escape from Tarkov\Screenshots`. If OneDrive has moved your Documents folder, this is the usual reason RatNav sees nothing. |
 | **Your in-game screenshot key** | Whatever you bound in Tarkov. RatNav **never presses it**; this is so every prompt names the key *you* use. |
-| **Hotkeys** | Review and rebind. Defaults are `F5`–`F11`. Changes take effect at once, and RatNav says if another application already owns a combination. |
-| **Character level** | Filters quests to what you could actually accept. RatNav cannot read your level — nothing on disk reports it — so it suggests a floor from the quests you have marked complete. |
+| **Hotkeys** | Click a field and press the key you want. Defaults are `F5`–`F9`. Changes take effect at once, and RatNav says if another application already owns a combination. |
 | **Game edition** | Sets your starting stash level. It never lowers a stash you have already raised. |
 | **Your name on shared plans** | Only matters if you swap plans with someone. |
 
@@ -98,14 +98,12 @@ the first time you take a position fix. Ones you have ticked off stay put.
 | *your screenshot key* | Take a position fix |
 | `F5` | Show or hide the overlay |
 | `F6` | Let the mouse reach it — move, resize, and use the map controls |
-| `F7` | Open the full panel over the game |
-| `F8` | Tick the current objective off |
-| `F9` | Switch between the corner box and the centred map |
-| `F10` | Say what the item under your cursor is for |
-| `F11` | Read the game's extract list |
+| `F7` | Switch between the corner box and the centred map |
+| `F8` | Say what the item under your cursor is for |
+| `F9` | Read the game's extract list |
 
 **Two presentations, remembered separately.** `F5` is a small panel in a corner, out of the way.
-`F9` is the map itself, large and translucent over the centre. Position, size, zoom, pan and
+`F7` is the map itself, large and translucent over the centre. Position, size, zoom, pan and
 opacity are kept per presentation, so setting up one does not disturb the other.
 
 **Nothing animates.** The overlay is a still image between fixes. Your marker snaps when you take
@@ -145,7 +143,7 @@ frame.
 ### Only the extracts you can actually use
 
 A map has every extract it has ever had — seventeen on Streets — and a raid offers a handful.
-Double-tap `O` in game to bring up the list, then press `F11`. RatNav reads the names off the
+Double-tap `O` in game to bring up the list, then press `F9`. RatNav reads the names off the
 screen and draws only those. A `showing N · all` button puts everything back.
 
 It is a keypress rather than something detected, because knowing you pressed `O` would mean
@@ -153,15 +151,29 @@ watching your keyboard, which RatNav will not do.
 
 ---
 
+## Reading a quest from its waypoint
+
+Click any waypoint — on the overlay or on the Maps page — and the quest opens: what it wants, every
+step with the one this pin serves marked and the finished ones struck through, a link to the wiki,
+and the **wiki's screenshots of the place**.
+
+Those pictures are the point. A pin tells you where to walk; a picture of the door tells you which
+of six identical buildings you are looking for. They load from the wiki and are credited there.
+
 ## Marking your own spots
 
 Find something worth remembering — a spawn, a stash, a good angle — and put it on the map.
 
-On the **Maps** page: press **Mark a spot**, click the place, and name it. It appears on the
+On the **Maps** page: choose **A place** or **An item** under *Mark*, click the spot, and name it.
+A place draws as a diamond and an item as a box, both purple so neither reads as a quest. It appears on the
 overlay from then on, in purple and diamond-shaped so it never reads as a quest objective.
 
-Marks are **not** part of a plan. A plan is for one raid and gets cleared; "car batteries behind
-the garage" is true every raid, so they live per map and draw whenever that map is on screen.
+Marks live per map and draw whenever that map is on screen, whether or not a plan is loaded — "car
+batteries behind the garage" is true every raid.
+
+They can also **join a plan**. On the Plan page they sit above the quest objectives under *Your
+marks*, and tick, number and reorder in the same list, so a run can be "this quest step, then my
+stash, then that one".
 
 The Maps page also has **search** — type a place name and it takes you there — the same ink and
 floor controls the overlay has, and every quest objective and extract for the map.
@@ -178,8 +190,8 @@ floor controls the overlay has, and every quest objective and extract for the ma
   looking at.
 - **Watchlist** — anything else worth collecting, with **your own** target and count. Kept apart
   from your stash number on purpose: twenty bundles of wires with fifteen promised to the hideout
-  is not twenty available for a barter.
-- **Barters & crafts** — see below.
+  is not twenty available for a goal.
+- **Goals** — see below.
 - **Search** — every item in the game, with why it is wanted.
 
 The filter row shows only what is found-in-raid, or for quests, or for the hideout, or for a trade,
@@ -189,18 +201,18 @@ Have-counts are typed by hand. Your stash is not in any file on disk, and RatNav
 
 ---
 
-## Barters and crafts
+## Goals
 
 Therapist will trade a Dorm 303 key for seven T-shaped plugs and three rolls of insulating tape.
-Tell RatNav you are doing that trade and the plugs join your list.
+On **Items → Goals**, call it "Document case", list what it takes, and those plugs join your list.
 
-**Items → Barters & crafts** shows only what you can actually do — a barter needs the trader at
-that loyalty level, a craft needs the station built to that level — with a checkbox for the rest.
-Tick one and what it costs appears in its own section, on the overlay and in the buddy app.
+A goal is anything you are putting items aside for — a barter, a craft, a kit you build for
+yourself, a promise to a friend. Nothing checks it against the game's own trades, because RatNav
+has no business having an opinion about which.
 
 Those counts stay **apart** from quests and the hideout. An item wanted three times for a quest and
-seven for a barter is two reasons, not a single ten — and only the split tells you that finishing
-the quest leaves seven still to find.
+seven for a goal is two reasons, not a single ten — and only the split tells you that finishing the
+quest leaves seven still to find.
 
 ---
 
@@ -240,12 +252,12 @@ which building and which door. They are loaded from the wiki and credited to it.
 
 ## Identifying loot
 
-Hover an item in game so its tooltip is showing and press `F10`.
+Hover an item in game so its tooltip is showing and press `F8`.
 
 RatNav reads the tooltip **off the screen**, using the OCR built into Windows, and answers the
 question you are actually asking: **Keep**, **Keep — found in raid**, **Not now**, or **Leave it**,
 followed by the reasons that are things you are working on. Everything else — quests you have not
-started, barters you are not doing — gets one counted line rather than a recital.
+started, goals you have not made — gets one counted line rather than a recital.
 
 It is a key rather than shift-click because catching a mouse click over another application needs a
 system-wide mouse hook, which is the same machinery RatNav refuses to use for the keyboard.
@@ -279,7 +291,7 @@ Everything RatNav knows about you is in `%LOCALAPPDATA%\RatNav`:
 |---|---|
 | `settings.json` | Paths, hotkeys, and every overlay preference |
 | `progress.json` | Quest states, hideout levels, trader levels |
-| `tracking.json` | Have-counts, watchlist, the barters and crafts you picked |
+| `tracking.json` | Have-counts, watchlist, the goals you are collecting for |
 | `waypoints.json` | Spots you marked |
 | `plans/` | Saved plans |
 | `gamedata-*.json` | Cached quest and item data from tarkov.dev |

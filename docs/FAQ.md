@@ -9,12 +9,13 @@
 - [I press my screenshot key and nothing happens](#i-press-my-screenshot-key-and-nothing-happens)
 - [A map I play is not in the list](#a-map-i-play-is-not-in-the-list)
 - [My marker is in the wrong place](#my-marker-is-in-the-wrong-place)
+- [Everything is tiny on my 4K screen](#everything-is-tiny-on-my-4k-screen)
 - [A hotkey does nothing](#a-hotkey-does-nothing)
 - [The items list is enormous](#the-items-list-is-enormous)
 - [Why do I have to type my quests in?](#why-do-i-have-to-type-my-quests-in)
 - [Why can't it read my stash?](#why-cant-it-read-my-stash)
 - [Why can't it read my trader loyalty or my level?](#why-cant-it-read-my-trader-loyalty-or-my-level)
-- [`F10` says it cannot read the screen](#f10-says-it-cannot-read-the-screen)
+- [`F8` says it cannot read the screen](#f8-says-it-cannot-read-the-screen)
 - [The data looks out of date](#the-data-looks-out-of-date)
 - [Does it work on Steam? On Linux? On a second PC?](#does-it-work-on-steam-on-linux-on-a-second-pc)
 - [Can my friend and I see each other on the map?](#can-my-friend-and-i-see-each-other-on-the-map)
@@ -79,8 +80,8 @@ Almost always one of these:
    *Settings → Graphics*. Exclusive fullscreen draws above every overlay in Windows; no tool can
    work around it.
 2. **The overlay is hidden.** Press `F5`.
-3. **The overlay is off-screen**, usually after a monitor change. Open Setup and reset the overlay
-   position.
+3. **The overlay is off-screen**, usually after a monitor change. Open Setup and press **Put the
+   overlay back**.
 
 ## The overlay is there but never notices a raid
 
@@ -131,6 +132,15 @@ the coordinates are in the name and that is enough to reproduce it exactly.
 If you settled the map yourself from a position, **Maps → Settle it** can be redone: take a fresh
 screenshot somewhere nearer an edge of the map and click again.
 
+## Everything is tiny on my 4K screen
+
+Press `F6`, then turn **Size** up in the row along the top of the overlay. RatNav's defaults are
+drawn for 1080p; a 4K screen has four times the pixels in the same physical space, so everything
+lands at a quarter of the area until you say otherwise.
+
+The map's own markers and captions have their own dials — **Pins**, **Text** and **You** — in the
+control stack.
+
 ## A hotkey does nothing
 
 Another application already owns that combination. Windows gives a hotkey to whoever asks first,
@@ -164,9 +174,9 @@ at real risk. RatNav will not ask you for those and will not use it.
 
 So have-counts are typed, and the app is built around that being true — the watchlist keeps its own
 count separately, so what is promised to the hideout is not silently counted as available for a
-barter.
+goal.
 
-`F10` over an item is the fast way to check one thing without going near the number.
+`F8` over an item is the fast way to check one thing without going near the number.
 
 ## Why can't it read my trader loyalty or my level?
 
@@ -177,7 +187,7 @@ on loyalty, and ignoring that made "ready" a lie.
 For your level it does offer a suggestion: a quest that needs level 15 cannot have been finished
 below it, so the quests you have marked complete imply a floor.
 
-## `F10` says it cannot read the screen
+## `F8` says it cannot read the screen
 
 Windows has no OCR language pack installed. It ships with Windows 10 version 2004 and later; on
 older builds, or a stripped install, the component is missing. Everything else in RatNav works

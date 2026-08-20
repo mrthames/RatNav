@@ -36,7 +36,7 @@ wherever you actually are.
      Documents folder — a common cause of RatNav seeing nothing.
    - **Your in-game screenshot key** — whatever you bound in Tarkov. RatNav never presses it; this
      is so every prompt names the key *you* use. See [How position works](#how-position-works).
-   - **Hotkeys** — review them and change any that clash. Defaults are `F5`–`F10`. Changes take
+   - **Hotkeys** — click a field and press the key you want. Defaults are `F5`–`F9`. Changes take
      effect immediately, and RatNav tells you if another application already owns a combination.
    - **Your name on shared plans** — only matters if you swap plans with someone.
 
@@ -92,9 +92,12 @@ folder never fills up.
 anything else worth remembering — filtered to found-in-raid, or keys, or whatever a trade is
 waiting on.
 
-**Barters and crafts.** Say you are working towards Therapist's Dorm 303 trade and the seven plugs
-it costs join your list — counted *apart* from quests and the hideout, because an item wanted three
-times for a quest and seven for a barter is two reasons, not a single ten.
+**Goals you name.** "Document case", and the seven plugs it takes. They join your list in their
+own section, counted *apart* from quests and the hideout — an item wanted three times for a quest
+and seven for a goal is two reasons, not a single ten.
+
+**Click a waypoint to read the quest.** What it wants, which step this pin serves, and the wiki's
+screenshots of the place — which is what turns "walk to this pin" into "find this door".
 
 **Marks of your own.** Click a spot on the map, name it, and it draws in raid from then on. They
 are not part of a plan, so they outlive every plan.
@@ -148,18 +151,16 @@ ban-safe tool in this space works the same way.
 | *your in-game screenshot key* | take a position fix |
 | `F5` | show or hide the overlay |
 | `F6` | let the mouse reach the overlay — move, resize, zoom, and the map controls |
-| `F7` | open the full panel |
-| `F8` | tick the current objective off |
-| `F9` | switch between the corner box and the centred map |
-| `F10` | say what the item under your cursor is for |
-| `F11` | read the extract list the game is showing, and draw only those |
+| `F7` | switch between the corner box and the centred map |
+| `F8` | say what the item under your cursor is for |
+| `F9` | read the extract list the game is showing, and draw only those |
 
 All rebindable. RatNav registers each combination with Windows rather than watching the keyboard,
 and tells you if another application already owns one.
 
 ### Identifying an item
 
-Hover an item so its tooltip is showing and press `F10`. RatNav reads the tooltip **off the
+Hover an item so its tooltip is showing and press `F8`. RatNav reads the tooltip **off the
 screen** — the same pixels a screenshot tool sees, using the OCR built into Windows — and tells you
 which quests want it, which hideout station and level needs it, whether it opens a door, and which
 traders will take it in trade.
@@ -182,7 +183,8 @@ appears down the side:
 | **Fade / Line** | How strongly the overlay is drawn over the game, and how heavy the map's own strokes are. |
 | **Pins / Text / You** | Separate size dials for markers, captions, and your own marker — with **Shrink** deciding how much they ease off as you zoom out. |
 | **Map** | `still` holds the map and lets your marker travel across it; `follows you` keeps you centred. |
-| **Exits** | `pmc`, `scav`, `both`, or `off`. Shared extracts show under either. `F11` narrows it to the ones the game says are open this raid. |
+| **Exits** | `pmc`, `scav`, `both`, or `off`. Shared extracts show under either. `F9` narrows it to the ones the game says are open this raid. |
+| **Size** | How large RatNav draws its own controls. The defaults suit 1080p; turn it up on a bigger screen. |
 
 Two drawers open from the bottom-left: the **quest log** and the **items list**. Either can swap
 sides, collapse, or tear off into its own window for a second monitor.

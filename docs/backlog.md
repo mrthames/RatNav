@@ -210,7 +210,10 @@ Captured before execution.
 
 ### Last, after everything else
 
-- [ ] **Audit the whole repo against what the app actually does.** Walk the overlay and the buddy
+- [x] **Audit the whole repo against what the app actually does.** README, guide, FAQ and changelog
+  reconciled: hotkeys renumbered throughout, barters and crafts replaced by goals, spawns removed,
+  quest briefs and marks-in-plans documented, Setup's removed sections taken out, the map controls
+  table brought current, and a FAQ entry added for the 4K sizing question. Walk the overlay and the buddy
   app feature by feature, then walk the README, the guide, the FAQ and the changelog, and reconcile
   them. Several rounds of change have landed since those were written and they have drifted.
 
