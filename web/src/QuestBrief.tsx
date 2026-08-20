@@ -143,9 +143,9 @@ export function QuestBrief({
               </button>
 
               <img
-                src={image.url}
+                src={api.wikiPictureUrl(image.url)}
                 alt={image.title}
-                className="max-h-[55vh] min-h-0 w-full flex-1 object-contain"
+                className="max-h-[55vh] min-h-0 min-w-0 flex-1 self-center object-contain"
               />
 
               <button

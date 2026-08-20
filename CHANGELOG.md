@@ -66,10 +66,12 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Fixed
 
-- **Quest photos load.** The carousel showed the right titles over broken pictures: the wiki's CDN
-  answers a request carrying a foreign address with a placeholder rather than the screenshot, so
-  loading them straight from the page could never have worked. They come through RatNav now, which
-  also means each one is fetched once and kept instead of pulled again on every view.
+- **Quest photos load.** Both carousels showed the right titles over broken pictures: the wiki's
+  CDN answers a request carrying a foreign address with a placeholder rather than the screenshot,
+  so loading them straight from the page could never have worked. They come through RatNav now,
+  which also means each one is fetched once and kept instead of pulled again on every view.
+- **Quest photos fit their window.** They are 7000-pixel screenshots, and the picture was asking
+  for the whole width of the box *and* a share of what was left over, so it pushed past the edge.
 
 ### The buddy app
 
