@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { ago, api, type DataStatus, type MapSummary, type RaidView } from './api'
+import { HeldBack } from './HeldBack'
 import { MapView } from './MapView'
 import { HideoutView } from './HideoutView'
 import { ItemsView } from './ItemsView'
@@ -26,6 +27,15 @@ export default function App() {
       setMaps(all)
       setSelected((current) => current ?? all.find((m) => m.calibrated) ?? all[0] ?? null)
     }).catch(() => setMaps([]))
+  }, [])
+
+  /** After a map is settled it becomes one RatNav will offer, so the list has to hear about it. */
+  const reloadMaps = useCallback(async () => {
+    try {
+      setMaps(await api.maps())
+    } catch {
+      // Keeping the list we had beats emptying it.
+    }
   }, [])
 
   async function refresh() {
@@ -118,6 +128,8 @@ export default function App() {
       {view === 'maps' && (selected
         ? <MapView key={selected.id} map={selected} />
         : <p className="font-mono text-xs text-muted">no maps loaded</p>)}
+
+      {view === 'maps' && <HeldBack onSettled={reloadMaps} />}
     </div>
   )
 }

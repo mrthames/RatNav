@@ -67,7 +67,8 @@ public static class CalibrationSolver
         double[][] bounds,
         int imageWidth,
         int imageHeight,
-        IReadOnlyList<GamePosition> extracts)
+        IReadOnlyList<GamePosition> extracts,
+        int? statedRotation = null)
     {
         if (mapKey is not null && VerifiedMappings.TryGetValue(mapKey, out var verified))
         {
@@ -93,11 +94,23 @@ public static class CalibrationSolver
         var spanX = Math.Abs(x2 - x1);
         var spanZ = Math.Abs(y2 - y1);
 
-        // --- 1. orientation, from aspect ratio
+        // --- 1. orientation
         var swapped = false;
         var orientationClear = false;
 
-        if (imageWidth > 0 && imageHeight > 0 && spanX > 0 && spanZ > 0)
+        // The source states it, so there is nothing to infer. Every drawing carries a
+        // coordinateRotation: 180 for nine of the ten maps, and 90 for Factory — which is exactly
+        // the one the aspect-ratio guess could not call, because Factory is close enough to square
+        // that both arrangements fit. Deriving what you have been told is how you get a confident
+        // wrong answer.
+        if (statedRotation is { } rotation)
+        {
+            var quarter = ((rotation % 360) + 360) % 360;
+
+            swapped = quarter is 90 or 270;
+            orientationClear = true;
+        }
+        else if (imageWidth > 0 && imageHeight > 0 && spanX > 0 && spanZ > 0)
         {
             var directError = Math.Abs((spanX / imageWidth) / (spanZ / imageHeight) - 1);
             var swappedError = Math.Abs((spanX / imageHeight) / (spanZ / imageWidth) - 1);

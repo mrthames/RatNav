@@ -33,32 +33,44 @@ Captured before execution.
 
 ### Voice, and what ships
 
-- [ ] **Cut the hedging from the README and the docs.** It reads as a product apologising for
+- [x] **Cut the hedging from the README and the docs.** It reads as a product apologising for
   itself. It should read as a tool that works, written for someone deciding whether to use it.
   - Specifically: no discussion of maps possibly being inaccurate. That is not a caveat to
     document, it is a defect to fix.
-- [ ] **Calibrate every map that ships.** Any map whose position cannot be trusted is a bug with an
+- [x] **Calibrate every map that ships.** Two fixes and a tool:
+  1. **Use the stated rotation.** Every drawing carries a `coordinateRotation` — 180 for nine maps
+     and 90 for Factory — and the solver was inferring orientation from aspect ratio instead. That
+     is exactly the signal it could not get for Factory, which is nearly square.
+  2. **Solve once per drawing.** Night Factory is Factory at night and the Ground Zero tutorial is
+     Ground Zero with fewer people in it. They arrive with their own extract lists — the tutorial's
+     is empty — so solving each separately gave the same ground two answers and one of them none.
+  3. **Settle the rest by clicking.** Take a screenshot somewhere recognisable, open Maps → Settle
+     it, click the spot. A wrong layout is a mirror image and misses by about half the map, so the
+     margin is enormous and a hurried click cannot pick wrong; a position near the centre is
+     refused rather than guessed at. Any map whose position cannot be trusted is a bug with an
   owner, not a disclaimer.
-- [ ] **Omit maps we cannot calibrate from the first version** — The Lab, and anything else gated
+- [x] **Omit maps we cannot calibrate from the first version.** 9 of 17 ship. Held back: Factory,
+  Night Factory, Reserve and Terminal, each one screenshot away; The Lab, The Lab (Dark), The
+  Labyrinth and Icebreaker, which have no community drawing at all. — The Lab, and anything else gated
   behind access we do not have. Left as an open task rather than shipped uncertain.
 
 ### Spawns
 
-- [ ] **Pinpoint spawn marks, not areas.** The clustered regions are not what was wanted. Other
+- [x] **Pinpoint spawn marks, not areas.** The clustered regions are not what was wanted. Other
   maps show individual spawn points and that is the expectation.
   - The data does carry exact points — 327 on Woods, 420 on Streets — so this is a drawing
     decision, not a data limitation.
-  - **If pinpoints cannot be made to work, remove the feature entirely** rather than shipping the
-    areas.
+  - Done: every player spawn draws as its own small dot. The clustering is gone.
 
 ### Overlay
 
-- [ ] **The gear vanishes when the control drawer opens**, and the quests and items buttons shift
+- [x] **The gear vanishes when the control drawer opens**, and the quests and items buttons shift
   across to fill the gap. The gear should stay put, and clicking it again should close the drawer —
   the collapse arrow stays as a second way to do it.
-- [ ] **Panel opacity resizes the window.** Using the quick opacity control while `F6` is open
+- [x] **Panel opacity resizes the window.** It went through `ApplyBounds`, which re-applies the
+  stored position and size. Using the quick opacity control while `F6` is open
   changes the window size. Adjusting opacity or zoom must never resize anything.
-- [ ] **A scale control for the whole application.** Defaults should target **1080p**, with scaling
+- [x] **A scale control for the whole application.** `SIZE` in the quick bar, 1× to 3×. Defaults should target **1080p**, with scaling
   up for anyone on a larger display — 4K native has real estate the defaults do not use.
   - Lives in the **quick menu alongside zoom**.
 

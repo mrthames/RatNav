@@ -208,6 +208,18 @@ public sealed class RaidSession
     /// stops you have not reached from where you now are — which is what makes the first fix after
     /// spawn rebuild the plan around where you actually spawned.
     /// </summary>
+    /// <summary>
+    /// The last position read from a screenshot, in world coordinates.
+    ///
+    /// <para>The raid view reports position already placed on the map, which is exactly the step
+    /// that is in question when a map's layout is being settled. This is the reading before that
+    /// happens.</para>
+    /// </summary>
+    public PositionFix? LastFix
+    {
+        get { lock (_gate) return _fix; }
+    }
+
     public void OnPositionFixed(PositionFix fix)
     {
         lock (_gate)

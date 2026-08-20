@@ -31,6 +31,32 @@ public readonly record struct AxisMapping(bool Swapped, int SignU, int SignV)
         Swapped
             ? $"({(SignU < 0 ? "-" : "")}z, {(SignV < 0 ? "-" : "")}x)"
             : $"({(SignU < 0 ? "-" : "")}x, {(SignV < 0 ? "-" : "")}z)";
+
+    /// <summary>
+    /// Reads back what <see cref="ToString"/> wrote, so a mapping somebody confirmed can be
+    /// written to a settings file and still mean the same thing next time.
+    /// </summary>
+    public static bool TryParse(string? text, out AxisMapping mapping)
+    {
+        mapping = Direct;
+
+        if (text is not { Length: > 0 }) return false;
+
+        var parts = text.Trim('(', ')', ' ').Split(',', StringSplitOptions.TrimEntries);
+        if (parts.Length != 2) return false;
+
+        var swapped = parts[0].EndsWith('z');
+
+        // Both halves have to name different axes, or it is not a mapping of anything.
+        if (swapped != parts[1].EndsWith('x')) return false;
+
+        mapping = new AxisMapping(
+            swapped,
+            parts[0].StartsWith('-') ? -1 : 1,
+            parts[1].StartsWith('-') ? -1 : 1);
+
+        return true;
+    }
 }
 
 /// <summary>How much a map's calibration can be trusted.</summary>

@@ -129,19 +129,15 @@ Position updates when you tap, and only when you tap. There is no continuous tra
 position continuously would require reading game memory — which is what anti-cheat exists to catch. Every
 ban-safe tool in this space works the same way.
 
-## What it will not pretend to know
+## Built to be right
 
-Being useful mid-raid means being trustworthy, so RatNav says when it is unsure rather than
-guessing:
-
-- A map whose calibration could not be established from the data **says so**, instead of showing
-  a pin that might be 75 metres out.
-- Quest progress read from the game's logs sits *under* anything you correct by hand. A later
-  replay can never undo your correction.
-- Your stash is not in any file on disk, so have-counts are entered by hand. RatNav will not
-  guess at them.
-- When tarkov.dev is down — it was, for a full day during development — the last good data keeps
-  being served and the app tells you it is stale.
+- **Every map RatNav offers is calibrated.** Your marker lands where you are. Maps whose layout
+  cannot yet be established are held back rather than shipped with a warning — and Setup shows
+  which they are, along with the one screenshot that settles each.
+- **Your corrections stick.** Quest progress read from the game's logs sits *under* anything you
+  set by hand, so a later log replay can never undo it.
+- **Offline keeps working.** When tarkov.dev is unreachable the last good data keeps being served
+  and the app says how old it is.
 
 ![RatNav's overlay over a raid on Streets of Tarkov: the quest log numbered to match the pins on the map, the items to look for, and the map itself with extracts and place names](docs/screenshot-overlay.png)
 

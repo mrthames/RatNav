@@ -300,11 +300,7 @@ export function MapView({ map }: { map: MapSummary }) {
           Show on overlay
         </button>
 
-        {!map.calibrationVerified && (
-          <span className="rounded-sm border border-warn/40 px-2 py-1 font-mono text-[11px] tracking-wide text-warn">
-            calibration unverified · {map.coordinateRotation}°
-          </span>
-        )}
+
       </div>
 
       <div

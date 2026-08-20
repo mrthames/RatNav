@@ -7,6 +7,7 @@
 - [Nothing appears over the game](#nothing-appears-over-the-game)
 - [The overlay is there but never notices a raid](#the-overlay-is-there-but-never-notices-a-raid)
 - [I press my screenshot key and nothing happens](#i-press-my-screenshot-key-and-nothing-happens)
+- [A map I play is not in the list](#a-map-i-play-is-not-in-the-list)
 - [My marker is in the wrong place](#my-marker-is-in-the-wrong-place)
 - [A hotkey does nothing](#a-hotkey-does-nothing)
 - [The items list is enormous](#the-items-list-is-enormous)
@@ -105,15 +106,30 @@ so there may genuinely be nothing to read until your next raid.
   press the key, the game is doing its part and the problem is on RatNav's side — please open an
   issue with the filename.
 
+## A map I play is not in the list
+
+RatNav offers the maps it can put a marker on and be right about. Two things keep one off the list,
+and the **Maps** page shows which applies:
+
+- **Its layout is not settled.** The drawing exists, but which way round it goes cannot be worked
+  out from published data — on some maps every extract sits inside the border, so a mirrored layout
+  looks exactly as valid as the real one. **You can settle this in thirty seconds:** take a
+  screenshot in game somewhere you can recognise, open **Maps → Settle it**, and click that spot.
+  The map joins the list immediately, and stays settled.
+- **No drawing exists.** The Lab, The Labyrinth and Icebreaker have no community map yet. Nothing
+  in RatNav can fix that.
+
+If you settle one, please open an issue with the map and the position you used — it ships for
+everyone in the next release.
+
 ## My marker is in the wrong place
 
-Check the top of the Maps page for that map. A map whose calibration could not be established from
-the data says **calibration unverified**, and it means the pin may be tens of metres out. That is
-deliberate: an overlay that hides its uncertainty is worse than one that admits it.
+That should not happen on a map RatNav offers; every one of them is calibrated. Please open an
+issue with the map name and, if you can, the screenshot filename that produced the wrong marker —
+the coordinates are in the name and that is enough to reproduce it exactly.
 
-Factory, Reserve and Terminal are the weakest today. If you can take an in-game screenshot while
-standing somewhere unmistakable on one of those maps, that single file is enough to fix it — please
-open an issue with it.
+If you settled the map yourself from a position, **Maps → Settle it** can be redone: take a fresh
+screenshot somewhere nearer an edge of the map and click again.
 
 ## A hotkey does nothing
 

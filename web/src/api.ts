@@ -223,6 +223,17 @@ export interface WikiImage {
   height: number
 }
 
+export interface HeldBackMap {
+  id: string
+  name: string
+  normalizedName: string | null
+  /** False when no community drawing exists at all, which no screenshot can fix. */
+  hasDrawing: boolean
+  confidence: string
+  reason: string
+  canBeSettled: boolean
+}
+
 export interface PlaceLabel {
   text: string
   x: number
@@ -488,6 +499,22 @@ export const api = {
   item: (id: string) =>
     get<{ item: { id: string; name: string; shortName: string | null }; have: number }>(
       `/api/items/${encodeURIComponent(id)}`),
+
+  /** Maps RatNav will not offer yet, and why — with whether one screenshot would settle it. */
+  heldBackMaps: () => get<HeldBackMap[]>('/api/maps/held-back'),
+
+  /** The last position read from a screenshot, before it is placed on any map. */
+  latestPosition: () =>
+    get<{ x: number; y: number; z: number; takenAt: string; mapId: string | null } | null>(
+      '/api/position/latest'),
+
+  /** Settles a map's layout from where you were and where that is on the drawing. */
+  calibrate: (mapId: string, world: { x: number; y: number; z: number }, imageX: number, imageY: number) =>
+    post<{ settled: boolean; mapping: string; miss: number; runnerUpMiss: number; reason: string }>(
+      `/api/maps/${encodeURIComponent(mapId)}/calibrate`, { ...world, imageX, imageY }),
+
+  forgetCalibration: (mapId: string) =>
+    del<unknown>(`/api/maps/${encodeURIComponent(mapId)}/calibrate`),
 
   /** The names players use for places — "Old Gas", "Dorms" — with where each one is. */
   places: (mapId: string) =>

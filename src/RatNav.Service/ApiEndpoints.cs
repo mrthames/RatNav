@@ -1073,8 +1073,24 @@ public static class ApiEndpoints
 
         // ---- maps
 
-        api.MapGet("/maps", (RatNavState state) =>
-            Results.Ok((state.Cache.Current?.Maps ?? []).Select(MapSummary.From)));
+        // Maps RatNav can put a marker on and be right.
+        //
+        // Two things get a map excluded. Some of the game's locations have no community drawing at
+        // all — The Lab, The Labyrinth, Icebreaker — and listing those gets you a picker with
+        // entries that open onto nothing. And some have a drawing whose orientation cannot be
+        // settled from the data, which is worse: a map that looks right and puts you on the wrong
+        // side of it.
+        //
+        // Neither is a caveat to display. A marker you cannot trust is not a feature with an
+        // asterisk, it is a defect, and shipping it with a warning attached just moves the
+        // consequence onto the player.
+        //
+        // `?all=true` returns everything with its reason, which is how the Setup view can say what
+        // is missing and what would settle it.
+        api.MapGet("/maps", (RatNavState state, bool? all) =>
+            Results.Ok((state.Cache.Current?.Maps ?? [])
+                .Where(m => all == true || Trustworthy(m))
+                .Select(MapSummary.From)));
 
         // The map image, restyled for wherever it is about to be drawn.
         //
@@ -1259,6 +1275,114 @@ public static class ApiEndpoints
             return Results.Ok(settings.Overlay);
         });
 
+        // ---- settling a map that the data cannot
+
+        // The last position read from a screenshot, before it is placed on any map.
+        //
+        // Placing it is precisely the step in question while a map's layout is being settled, so
+        // this is the reading on its own.
+        api.MapGet("/position/latest", (RaidSession session) =>
+        {
+            if (session.LastFix is not { } fix) return Results.NoContent();
+
+            return Results.Ok(new
+            {
+                x = fix.Position.X,
+                y = fix.Position.Y,
+                z = fix.Position.Z,
+                takenAt = fix.TakenAt,
+                mapId = session.View().MapId,
+            });
+        });
+
+        // The maps RatNav will not offer yet, and why.
+        api.MapGet("/maps/held-back", (RatNavState state) =>
+            Results.Ok(
+                from map in state.Cache.Current?.Maps ?? []
+                where !Trustworthy(map)
+                orderby map.Name
+                select new
+                {
+                    map.Id,
+                    map.Name,
+                    map.NormalizedName,
+
+                    // The two reasons are not the same problem. One needs a drawing that does not
+                    // exist; the other needs thirty seconds from somebody who plays the map.
+                    hasDrawing = map.Image is not null,
+                    confidence = map.Image?.Confidence.ToString() ?? "Unknown",
+                    reason = map.Image?.CalibrationReason
+                        ?? "No community drawing exists for this map yet.",
+                    canBeSettled = map.Image is not null,
+                }));
+
+        // Settle one, from a position and the spot on the map where that position actually is.
+        //
+        // The margin here is enormous, which is what makes clicking a safe way to do it: a wrong
+        // layout is a mirror image and misses by something like half the map, while a hurried
+        // click misses by a few percent. Where the answers do come out close — a position near the
+        // centre, where mirroring barely moves anything — it says so rather than choosing.
+        api.MapPost("/maps/{id}/calibrate", (
+            RatNavState state, RatNavSettings settings, string id, CalibrateRequest request) =>
+        {
+            var map = FindMap(state, id);
+
+            if (map?.Image is not { } image)
+                return Results.BadRequest(new { error = "There is no drawing for that map." });
+
+            if (map.NormalizedName is not { Length: > 0 } key)
+                return Results.BadRequest(new { error = "That map has no name to record against." });
+
+            var solved = CalibrationFromPoint.Solve(
+                image,
+                new GamePosition(request.X, request.Y, request.Z),
+                new MapPoint(request.ImageX, request.ImageY));
+
+            if (!solved.Decisive)
+            {
+                return Results.Ok(new
+                {
+                    settled = false,
+                    mapping = solved.Mapping.ToString(),
+                    miss = solved.Miss,
+                    runnerUpMiss = solved.RunnerUpMiss,
+                    reason = solved.Miss > 0.12
+                        ? "That spot is not where any layout puts you. Check the position, or click again."
+                        : "Too near the middle of the map to tell the layouts apart. "
+                            + "Take a position somewhere nearer an edge.",
+                });
+            }
+
+            settings.Remember(s => s.ConfirmedMaps[key] = solved.Mapping.ToString());
+
+            // Re-solved rather than patched in memory: the confirmed mapping is read at the same
+            // point every other one is, so there is one path and not a special case.
+            state.Cache.Reapply(settings.ConfirmedMaps);
+
+            return Results.Ok(new
+            {
+                settled = true,
+                mapping = solved.Mapping.ToString(),
+                miss = solved.Miss,
+                runnerUpMiss = solved.RunnerUpMiss,
+                reason = $"Settled as {solved.Mapping}. The next-best layout missed by "
+                    + $"{solved.RunnerUpMiss * 100:F0}% of the map.",
+            });
+        });
+
+        // Forget one, for when it was settled from a position that turned out to be wrong.
+        api.MapDelete("/maps/{id}/calibrate", (
+            RatNavState state, RatNavSettings settings, string id) =>
+        {
+            var map = FindMap(state, id);
+            if (map?.NormalizedName is not { Length: > 0 } key) return Results.NotFound();
+
+            settings.Remember(s => s.ConfirmedMaps.Remove(key));
+            state.Cache.Reapply(settings.ConfirmedMaps);
+
+            return Results.Ok(new { settled = false });
+        });
+
         // ---- marks of your own
 
         // Spots someone marked by hand, with a short name for each.
@@ -1360,6 +1484,14 @@ public static class ApiEndpoints
             });
         });
     }
+
+    /// <summary>
+    /// Whether a map can be drawn and trusted: it has a drawing, and the drawing's orientation was
+    /// either checked in game or established from the data rather than guessed at.
+    /// </summary>
+    private static bool Trustworthy(MapDef map) =>
+        map.Image is { } image
+        && image.Confidence is CalibrationConfidence.Verified or CalibrationConfidence.Derived;
 
     /// <summary>
     /// Looks a map up by tarkov.dev id or by its normalized name. Both work, because when
@@ -1958,6 +2090,10 @@ public sealed record TradeCost
 public sealed record TradeRequest(bool Tracked, string? Kind, int? Times);
 
 public sealed record WaypointRequest(string? Label, double X, double Y, string? Floor);
+
+/// <summary>Where you were, and where that is on the map image.</summary>
+public sealed record CalibrateRequest(
+    double X, double Y, double Z, double ImageX, double ImageY);
 
 /// <summary>One spawn, placed on the map image.</summary>
 public sealed record SpawnPin

@@ -169,7 +169,7 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         var fromTarkovDev = fetchedMaps ?? [];
 
         var maps = fromTarkovDev
-            .Select(m => m.NormalizedName is { Length: > 0 } key && byKey.TryGetValue(key, out var c)
+            .Select(m => Drawing(m.NormalizedName, byKey) is { } c
                 ? m with { Image = c.Image, Labels = c.Labels }
                 : m)
             .ToList();
@@ -194,20 +194,34 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         }
 
         // Calibration is solved here because it needs both halves: the image's proportions and the
-        // extract positions. In practice every map now resolves to a plain (x, z) mapping — the
-        // earlier rotation rules were compensating for a different source's bad bounds.
+        // extract positions.
+        //
+        // Solved once per *drawing*, not once per map. Night Factory is Factory at night and the
+        // Ground Zero tutorial is Ground Zero with fewer people in it — the same buildings in the
+        // same places — but the game data gives them their own extract lists, and the tutorial's
+        // is empty. Solving each separately gave the same ground two different answers and one of
+        // them no answer at all.
+        var solvedByDrawing = new Dictionary<string, SolvedCalibration>(StringComparer.OrdinalIgnoreCase);
+
         for (var i = 0; i < maps.Count; i++)
         {
             if (maps[i].Image is not { } image) continue;
 
             var size = await mapAssets.GetImageSizeAsync(image, ct);
+            var drawing = image.SourceUrl;
 
-            var solved = CalibrationSolver.Solve(
-                maps[i].NormalizedName,
-                image.Bounds,
-                size?.Width ?? 0,
-                size?.Height ?? 0,
-                [.. maps[i].Extracts.Where(e => e.Position is not null).Select(e => e.Position!.Value)]);
+            if (!solvedByDrawing.TryGetValue(drawing, out var solved))
+            {
+                solved = CalibrationSolver.Solve(
+                    maps[i].NormalizedName,
+                    image.Bounds,
+                    size?.Width ?? 0,
+                    size?.Height ?? 0,
+                    [.. maps[i].Extracts.Where(e => e.Position is not null).Select(e => e.Position!.Value)],
+                    image.CoordinateRotation);
+
+                solvedByDrawing[drawing] = solved;
+            }
 
             maps[i] = maps[i] with
             {
@@ -264,6 +278,41 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
     /// Reads the newest cache file, preferring one matching the running game version.
     /// Returns null when there is nothing cached or the file is unreadable.
     /// </summary>
+    /// <summary>
+    /// Re-applies the map layouts a player has confirmed, without going back to the network.
+    ///
+    /// <para>Settling a map has to take effect at once — somebody who has just marked where they
+    /// stood should see the pins move, not be told to restart. The confirmed answers are held in
+    /// settings rather than in the cache, so this is how the two meet.</para>
+    /// </summary>
+    public void Reapply(IReadOnlyDictionary<string, string> confirmed)
+    {
+        lock (_gate)
+        {
+            if (_current is not { } data) return;
+
+            _current = data with { Maps = [.. data.Maps.Select(m => Confirmed(m, confirmed))] };
+        }
+    }
+
+    private static MapDef Confirmed(MapDef map, IReadOnlyDictionary<string, string> confirmed)
+    {
+        if (map.Image is not { } image) return map;
+        if (map.NormalizedName is not { Length: > 0 } key) return map;
+        if (!confirmed.TryGetValue(key, out var text)) return map;
+        if (!AxisMapping.TryParse(text, out var mapping)) return map;
+
+        return map with
+        {
+            Image = image with
+            {
+                Mapping = mapping,
+                Confidence = CalibrationConfidence.Verified,
+                CalibrationReason = "Checked against a position you marked in game.",
+            },
+        };
+    }
+
     public GameData? LoadFromDisk(string? gameVersion = null)
     {
         if (!Directory.Exists(cacheDirectory)) return null;
@@ -304,6 +353,36 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         var temp = path + ".tmp";
         File.WriteAllText(temp, JsonSerializer.Serialize(data, Json));
         File.Move(temp, path, overwrite: true);
+    }
+
+    /// <summary>
+    /// The drawing for a map, including for the variants that are the same ground.
+    ///
+    /// <para>Ground Zero 21+, the Ground Zero tutorial and Night Factory are the same buildings and
+    /// streets as the maps they are named after — the game changes who spawns and when, not where
+    /// anything is. They arrive from the game data under their own names, which no drawing exists
+    /// for, and were being left uncalibrated: three maps you could load into and get no map.</para>
+    ///
+    /// <para>Only these three. Guessing by prefix in general would eventually hand one map's
+    /// drawing to somewhere that merely sounds similar, which is worse than no drawing at all.</para>
+    /// </summary>
+    private static MapCalibration? Drawing(
+        string? normalizedName, IReadOnlyDictionary<string, MapCalibration> byKey)
+    {
+        if (normalizedName is not { Length: > 0 } name) return null;
+        if (byKey.TryGetValue(name, out var exact)) return exact;
+
+        var sharesGroundWith = name switch
+        {
+            "ground-zero-21" => "ground-zero",
+            "ground-zero-tutorial" => "ground-zero",
+            "night-factory" => "factory",
+            _ => null,
+        };
+
+        return sharesGroundWith is not null && byKey.TryGetValue(sharesGroundWith, out var shared)
+            ? shared
+            : null;
     }
 
     private string PathFor(string? gameVersion) =>

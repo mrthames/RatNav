@@ -74,6 +74,12 @@ public sealed class RaidHost(
     public async Task<RefreshResult> RefreshAsync(CancellationToken ct = default)
     {
         var result = await cache.EnsureFreshAsync(_logs?.GameVersion, ct);
+
+        // A map somebody settled by marking where they stood stays settled across a refresh. The
+        // answer lives in settings rather than in the cache, so re-fetching the data would
+        // otherwise quietly un-settle it.
+        cache.Reapply(settings.ConfirmedMaps);
+
         LastRefresh = result;
         return result;
     }
@@ -210,6 +216,19 @@ public sealed record RatNavSettings
     public HotKeySettings Hotkeys { get; set; } = new();
 
     /// <summary>Where the overlay sits and how big it is. Remembered so it is arranged once.</summary>
+    /// <summary>
+    /// Map layouts confirmed by standing somewhere and marking it, keyed by normalized map name.
+    ///
+    /// <para>Four maps cannot be settled from published data alone — their extracts all sit inside
+    /// the border, so mirroring the layout moves nothing off the edge and nothing distinguishes it
+    /// from the truth. One marked position settles any of them outright, and this is where that
+    /// answer lives so it is never asked for twice.</para>
+    ///
+    /// <para>Values are the mapping's own short form: <c>(x, z)</c>, <c>(-x, z)</c>, <c>(z, -x)</c>
+    /// and so on.</para>
+    /// </summary>
+    public Dictionary<string, string> ConfirmedMaps { get; set; } = [];
+
     public OverlayBounds Overlay { get; set; } = new();
 
     /// <summary>Bindable hotkeys. Anything <see cref="string"/> here is parsed at startup.</summary>
