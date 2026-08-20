@@ -150,25 +150,35 @@ Captured before execution.
 Captured before execution. The framing is what makes this tractable, and it came from Justin
 rather than from the code:
 
-- [ ] **Scan a scav box, not a stash.** A scav junk box is a **fixed grid** — same size, same shape,
+- [x] **Scan a scav box, not a stash.** A scav junk box is a **fixed grid** — same size, same shape,
   every time — so there is no scrolling, no layout to infer, and no ambiguity about where the
   container starts and ends. Several boxes are several screenshots.
-- [ ] **For anyone without a scav box: a defined area of the inventory.** Group the items that
+- [x] **For anyone without a scav box: a defined area of the inventory.** Group the items that
   would normally live in a box into one block and scan that. Same property, same result: **a fixed
   area rather than a scrolling page.**
-- [ ] **Review before applying, always.** Never write counts somebody spent weeks accumulating
+- [x] **A separator row, for a stash that has to be shot in pieces.** *(Justin's idea, and the
+  thing that makes a scrolling inventory work at all.)* Fill one whole row with a single cheap
+  identical item — bandages — and it reads as a divider: a row where every cell holds the same
+  thing is not loot, it is a boundary. Two screenshots that both show the same separator can be
+  joined without counting the overlap twice, and the separator's own row is never counted.
+  - Needed for anyone whose scav box is not unlocked yet, which is everybody early on.
+- [x] **Review before applying, always.** Never write counts somebody spent weeks accumulating
   without showing them the list first.
 
 The pieces:
 
-- [ ] **Grid detection.** Find the cells, and which are occupied. This is the part everything else
+- [x] **Grid detection.** Find the cells, and which are occupied. This is the part everything else
   stands on and the part that can be tested without a single real screenshot.
-- [ ] **Stack counts.** The number in the corner of a stack, read per cell.
-- [ ] **Naming the item.** `[?]` Container cells show icons and no text, so OCR cannot name
+- [ ] **Stack counts.** The number in the corner of a stack, read per cell. **Not built yet** —
+  the review screen asks for it instead, defaulting to one. Worth adding once the rest has been
+  tried against a real screenshot, because reading a number off a corner is easy compared with
+  everything above it and there is no point tuning it against a guess at what the corner looks
+  like.
+- [x] **Naming the item.** `[?]` Container cells show icons and no text, so OCR cannot name
   anything here — this needs icon matching. **Match against the items you already track**, not all
   5,312: if it is not on your list, RatNav has no reason to count it, and a few hundred candidates
   is a different problem from five thousand.
-- [ ] **The review screen**, with the grid as read, each cell's best guesses, and a way to correct
+- [x] **The review screen**, with the grid as read, each cell's best guesses, and a way to correct
   one before anything is written.
 
 ---
@@ -826,8 +836,8 @@ The research is kept below in case it is ever wanted again.
 
 ### Bulk item import from a screenshot
 
-- [ ] **Read a stash or scav-box screenshot and set have-counts from it.** *(Its own project —
-  see the summary at the top of this file.)*, as a first import rather
+- [x] **Read a stash or scav-box screenshot and set have-counts from it.** Built in round 9, once
+  Justin's framing made it tractable: a fixed grid rather than a scrolling page., as a first import rather
   than typing thirty numbers in by hand.
   - This is the **inventory OCR** that was deliberately left out of the original plan, now being
     asked for. Worth re-reading that reasoning before starting: it is grid detection plus icon

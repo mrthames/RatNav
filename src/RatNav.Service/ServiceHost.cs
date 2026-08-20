@@ -82,6 +82,11 @@ public static class ServiceHost
         })
         .AddTypedClient((http, _) => new WikiImages(http, dataDirectory));
 
+        // Its own client, because item icons come from a different host from the game data and
+        // there are a few hundred of them on the first scan.
+        builder.Services.AddHttpClient<StashScanner>(http => http.Timeout = TimeSpan.FromSeconds(20))
+            .AddTypedClient((http, _) => new StashScanner(http, dataDirectory));
+
         builder.Services.AddSingleton(_ =>
         {
             var marks = new CustomWaypointStore(dataDirectory);

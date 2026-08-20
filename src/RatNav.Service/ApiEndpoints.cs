@@ -185,6 +185,74 @@ public static class ApiEndpoints
             return Results.Ok(Track(state, tracker, progress, settings, id));
         });
 
+        // ---- reading a container out of a screenshot
+
+        // Takes a screenshot of a scav box, or of one block of a stash, and says what is in it.
+        //
+        // Nothing here writes a count. It produces a list to be looked at, because accuracy is
+        // never perfect and silently overwriting numbers somebody spent weeks accumulating is far
+        // worse than making them confirm a list.
+        api.MapPost("/stash/scan", async (
+            RatNavState state, ItemTracker tracker, ProgressStore progress, RatNavSettings settings,
+            StashScanner scanner, HttpRequest request, CancellationToken ct) =>
+        {
+            if (!request.HasFormContentType) return Results.BadRequest(new { error = "Send an image." });
+
+            var form = await request.ReadFormAsync(ct);
+            var file = form.Files.FirstOrDefault();
+
+            if (file is null || file.Length == 0)
+                return Results.BadRequest(new { error = "Send an image." });
+
+            if (state.Index is not { } index) return Results.BadRequest(new { error = "No item data yet." });
+
+            // Only items something actually wants. If nothing on your list needs it, RatNav has no
+            // reason to count it — and a few hundred candidates is a different problem from five
+            // thousand, in accuracy as much as in how many icons have to be fetched.
+            var hideout = HideoutPlanner.Demand(state.Upcoming(progress, settings.HideoutLookAhead));
+            var goals = state.GoalDemand(tracker);
+
+            var wanted = index.AllNeeded()
+                .Select(needs => tracker.Track(needs, progress, hideout, goals))
+                .Where(t => t.Needed > 0 || t.Watched)
+                .Select(t => t.Item)
+                .DistinctBy(i => i.Id)
+                .ToList();
+
+            if (wanted.Count == 0)
+            {
+                return Results.Ok(new StashScan
+                {
+                    Found = false,
+                    Problem = "Nothing is on your list yet, so there is nothing to recognise. "
+                        + "Mark some quests active, or add a goal, and try again.",
+                });
+            }
+
+            using var stream = file.OpenReadStream();
+
+            return Results.Ok(await scanner.ScanAsync(stream, wanted, ct));
+        }).DisableAntiforgery();
+
+        // Applies what was confirmed on the review screen, and only that.
+        api.MapPost("/stash/apply", (ItemTracker tracker, StashApplyRequest request) =>
+        {
+            var applied = 0;
+
+            foreach (var count in request.Counts ?? [])
+            {
+                if (count.ItemId is not { Length: > 0 }) continue;
+
+                // Set, not add. A scan is a reading of what is there, and adding would double
+                // everything the second time somebody scanned the same box.
+                tracker.SetHave(count.ItemId, Math.Max(0, count.Count));
+                applied++;
+            }
+
+            ItemsChanged?.Invoke();
+            return Results.Ok(new { applied });
+        });
+
         // ---- goals you are collecting for
 
         // Named by you, with what they take.
@@ -2088,6 +2156,11 @@ public sealed record WaypointRequest(string? Label, double X, double Y, string? 
 
 /// <summary>Where you were, and where that is on the map image.</summary>
 public sealed record BrowseRequest(string? Start);
+
+/// <summary>What somebody confirmed on the review screen, and nothing else.</summary>
+public sealed record StashApplyRequest(IReadOnlyList<StashCount>? Counts);
+
+public sealed record StashCount(string ItemId, int Count);
 
 public sealed record CalibrateRequest(
     double X, double Y, double Z, double ImageX, double ImageY);

@@ -4,6 +4,15 @@
     <ProjectReference Include="..\RatNav.Core\RatNav.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      Reading a container out of a screenshot needs to open the picture. System.Drawing is Windows
+      only, which RatNav already is — it reads Escape from Tarkov's own files and draws a WPF
+      overlay — so this costs nothing that was not already true.
+    -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
