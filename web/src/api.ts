@@ -214,6 +214,26 @@ export interface PlannableObjective {
   itemIds: string[]
 }
 
+export interface QuestBriefing {
+  id: string
+  name: string
+  traderName: string | null
+  minPlayerLevel: number | null
+  wikiUrl: string | null
+  state: string
+  objectives: {
+    id: string
+    description: string
+    optional: boolean
+    /** Whether this step has a position on a map RatNav can draw. */
+    onThisMap: boolean
+    /** True for the step the waypoint you clicked serves. */
+    current: boolean
+    done: boolean
+  }[]
+  images: WikiImage[]
+}
+
 export interface WikiImage {
   title: string
   url: string
@@ -500,6 +520,15 @@ export const api = {
   taskImages: (taskId: string) =>
     get<{ taskName: string; wikiUrl: string | null; images: WikiImage[] }>(
       `/api/tasks/${encodeURIComponent(taskId)}/images`),
+
+  /**
+   * A quest, as you would read it standing at one of its waypoints: what it wants, which step this
+   * pin serves, and the wiki's pictures of the place.
+   */
+  questBrief: (taskId: string, objectiveId?: string | null) =>
+    get<QuestBriefing>(
+      `/api/tasks/${encodeURIComponent(taskId)}/brief`
+      + (objectiveId ? `?objectiveId=${encodeURIComponent(objectiveId)}` : '')),
 
   /** One item, with everything anyone asks about it: why it is needed, and how many you have. */
   item: (id: string) =>

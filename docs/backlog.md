@@ -125,8 +125,8 @@ Captured before execution.
 
 ### The quest log
 
-- [ ] **Open the wiki from the overlay**, not only from the buddy app.
-- [ ] **Click a quest to get its brief.** The instructions that matter for finishing it, and — most
+- [x] **Open the wiki from the overlay**, not only from the buddy app.
+- [x] **Click a quest to get its brief.** The instructions that matter for finishing it, and — most
   importantly — **the carousel of the wiki's images**, so the landmarks around the waypoint are
   recognisable before you are standing in them.
   - Wanted on the overlay as well as the buddy app. The buddy app half already exists as `photos`
@@ -163,15 +163,15 @@ Captured before execution.
 
 ### Quest detail from a waypoint
 
-- [ ] **Click a waypoint on the overlay to open the quest.** What it is, what part of it you are on,
+- [x] **Click a waypoint on the overlay to open the quest.** What it is, what part of it you are on,
   and the wiki's image carousel. Never seen working — it does not exist yet.
-- [ ] **The same on the buddy app's map.** Clicking a marker there should open the same thing.
+- [x] **The same on the buddy app's map.** Same endpoint, same content, same carousel.
 
 ### The Maps page
 
 - [ ] **Match the overlay.** Art style, zoom, click-and-drag, layering, extracts, place labels and
   quest markers — all of it.
-- [ ] **Same iconography.** The buddy app draws circles where the overlay draws waypoint symbols.
+- [x] **Same iconography.** The buddy app draws circles where the overlay draws waypoint symbols.
 - [ ] **Mark newer maps `[WIP]`** beside the name. Quest positions and details on them will need
   adjusting over time and it is honest to say which are settled.
 

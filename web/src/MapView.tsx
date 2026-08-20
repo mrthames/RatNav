@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { QuestBrief } from './QuestBrief'
 import {
   api,
   type CustomWaypoint,
@@ -71,6 +72,9 @@ export function MapView({ map }: { map: MapSummary }) {
 
   /** Names drawn on the map, the way the overlay draws them. */
   const [names, setNames] = useState(true)
+
+  /** The waypoint whose quest is open, if any. */
+  const [reading, setReading] = useState<ObjectivePin | null>(null)
 
   useEffect(() => {
     setSearch('')
@@ -419,10 +423,13 @@ export function MapView({ map }: { map: MapSummary }) {
         })}
 
         {positioned.map((pin) => (
-          <div
+          <button
+            type="button"
             key={pin.objectiveId}
             title={`${pin.taskName} — ${pin.description}`}
-            className="pointer-events-none absolute -translate-x-1/2"
+            onClick={(e) => { e.stopPropagation(); setReading(pin) }}
+            className="absolute -translate-x-1/2 cursor-pointer
+                       focus-visible:outline-2 focus-visible:outline-accent"
             style={{
               left: `${pin.x * 100}%`,
               top: `${pin.y * 100}%`,
@@ -442,7 +449,7 @@ export function MapView({ map }: { map: MapSummary }) {
                 strokeWidth="1.5"
               />
             </svg>
-          </div>
+          </button>
         ))}
 
         {/*
@@ -485,6 +492,14 @@ export function MapView({ map }: { map: MapSummary }) {
         ))}
         </div>
       </div>
+
+      {reading && (
+        <QuestBrief
+          taskId={reading.taskId}
+          objectiveId={reading.objectiveId}
+          onClose={() => setReading(null)}
+        />
+      )}
 
       {marks.length > 0 && (
         <ul className="flex flex-wrap gap-2">

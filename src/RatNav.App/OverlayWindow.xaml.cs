@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -8,7 +9,11 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+
+// System.IO is here for one exception filter; Path must keep meaning the WPF shape.
+using IOException = System.IO.IOException;
 using RatNav.Core;
+using RatNav.Core.Data;
 using RatNav.Core.Model;
 using RatNav.Core.Tracking;
 using RatNav.App.Interop;
@@ -133,7 +138,7 @@ public partial class OverlayWindow : Window
     ///
     /// <para>Drawn last is on top, so this is searched from the end.</para>
     /// </summary>
-    private readonly List<(Rect Bounds, string Text)> _hoverTargets = [];
+    private readonly List<(Rect Bounds, string Text, RaidStop? Stop)> _hoverTargets = [];
 
     /// <summary>Named places on the current map, fetched once per map.</summary>
     private IReadOnlyList<PlaceLabel> _places = [];
@@ -173,6 +178,12 @@ public partial class OverlayWindow : Window
         MouseRightButtonUp += OnPanEnd;
         MouseMove += OnPanMove;
         MapCanvas.MouseMove += OnHoverMove;
+        MapCanvas.MouseLeftButtonUp += OnMapClick;
+
+        QuestBriefClose.Click += (_, _) => QuestBrief.Visibility = Visibility.Collapsed;
+        QuestBriefBack.Click += (_, _) => StepQuestImage(-1);
+        QuestBriefNext.Click += (_, _) => StepQuestImage(+1);
+        QuestBriefWiki.Click += (_, _) => OpenWiki();
 
         // Leaving the map takes the label with it. Without this it stays showing whatever was last
         // under the cursor, which reads as the map claiming something about wherever you moved to.
@@ -717,6 +728,141 @@ public partial class OverlayWindow : Window
         ApplyControlStack();
         Draw();
     }
+
+    // ---- the quest behind a waypoint
+
+    /// <summary>The pictures for the quest currently open, and which one is showing.</summary>
+    private IReadOnlyList<WikiImage> _briefImages = [];
+    private int _briefImageAt;
+    private string? _briefWikiUrl;
+
+    /// <summary>One line of a quest's steps, coloured by where you are in it.</summary>
+    private sealed record BriefStep(string Text, Brush Colour);
+
+    private void ShowQuestBrief(RaidStop stop)
+    {
+        QuestBriefName.Text = stop.TaskName;
+        QuestBriefSteps.ItemsSource = new[] { new BriefStep("Reading…", (Brush)FindResource("Muted")) };
+        QuestBriefImage.Source = null;
+        QuestBriefCaption.Text = "";
+        QuestBrief.Visibility = Visibility.Visible;
+
+        _briefImages = [];
+        _briefImageAt = 0;
+        _briefWikiUrl = null;
+
+        _ = Dispatcher.InvokeAsync(async () =>
+        {
+            try
+            {
+                var url = $"http://localhost:{ServiceHost.DefaultPort}/api/tasks/"
+                    + $"{Uri.EscapeDataString(stop.TaskId)}/brief"
+                    + $"?objectiveId={Uri.EscapeDataString(stop.ObjectiveId)}";
+
+                if (await _http.GetFromJsonAsync<QuestBriefing>(url) is not { } brief) return;
+
+                QuestBriefName.Text = brief.TraderName is { Length: > 0 } trader
+                    ? $"{brief.Name} · {trader}"
+                    : brief.Name;
+
+                QuestBriefSteps.ItemsSource = brief.Objectives?.Select(o => new BriefStep(
+                    (o.Done ? "✓ " : o.Current ? "→ " : "· ") + o.Description,
+                    (Brush)FindResource(o.Done ? "Muted" : o.Current ? "Accent" : "Ink"))).ToList()
+                    ?? [];
+
+                _briefWikiUrl = brief.WikiUrl;
+                _briefImages = brief.Images ?? [];
+
+                ShowQuestImage();
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            {
+                QuestBriefSteps.ItemsSource = new[]
+                {
+                    new BriefStep("Could not load this quest.", (Brush)FindResource("Muted")),
+                };
+            }
+        });
+    }
+
+    private void StepQuestImage(int by)
+    {
+        if (_briefImages.Count == 0) return;
+
+        _briefImageAt = ((_briefImageAt + by) % _briefImages.Count + _briefImages.Count) % _briefImages.Count;
+        ShowQuestImage();
+    }
+
+    /// <summary>
+    /// Puts the current picture on screen.
+    ///
+    /// <para>Loaded straight from the wiki rather than cached to disk: they are other people's work
+    /// under CC BY-SA, and a release that shipped them would be both a licensing question and a
+    /// hundred megabytes.</para>
+    /// </summary>
+    private void ShowQuestImage()
+    {
+        var showing = _briefImages.Count > 0;
+
+        QuestBriefBack.Visibility = _briefImages.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        QuestBriefNext.Visibility = QuestBriefBack.Visibility;
+
+        if (!showing)
+        {
+            QuestBriefImage.Source = null;
+            QuestBriefCaption.Text = "no pictures on the wiki for this one";
+            return;
+        }
+
+        var image = _briefImages[_briefImageAt];
+
+        try
+        {
+            var bitmap = new BitmapImage();
+
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(image.Url);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+
+            // Decoded down rather than at source size: these are 1920-wide screenshots and the
+            // panel is a few hundred pixels across.
+            bitmap.DecodePixelWidth = 900;
+            bitmap.EndInit();
+
+            QuestBriefImage.Source = bitmap;
+        }
+        catch (Exception ex) when (ex is UriFormatException or NotSupportedException or IOException)
+        {
+            QuestBriefImage.Source = null;
+        }
+
+        QuestBriefCaption.Text =
+            $"{_briefImageAt + 1} of {_briefImages.Count} · Escape from Tarkov Wiki, CC BY-SA";
+    }
+
+    private void OpenWiki()
+    {
+        if (_briefWikiUrl is not { Length: > 0 } url) return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException)
+        {
+            // No browser, or none that will take it. Not worth interrupting a raid over.
+        }
+    }
+
+    /// <summary>What the quest brief endpoint returns.</summary>
+    private sealed record QuestBriefing(
+        string? Name,
+        string? TraderName,
+        string? WikiUrl,
+        List<BriefObjective>? Objectives,
+        List<WikiImage>? Images);
+
+    private sealed record BriefObjective(string? Description, bool Current, bool Done);
 
     /// <summary>What the extract-reading endpoint returns.</summary>
     private sealed record OfferedExtractsResponse(List<string>? Offered, int Of);
@@ -1804,14 +1950,41 @@ public partial class OverlayWindow : Window
         return element;
     }
 
-    /// <summary>Records that something at a point can be hovered, and what it would say.</summary>
-    private void Hoverable(Point at, double radius, string text)
+    /// <summary>
+    /// Records that something at a point can be hovered, what it would say, and — for a quest
+    /// waypoint — which stop it is, so a click has something to open.
+    /// </summary>
+    private void Hoverable(Point at, double radius, string text, RaidStop? stop = null)
     {
         // A floor under the size, because a marker drawn small is still something you are trying
         // to point at — and a target smaller than the cursor is one nobody can hit.
         var reach = Math.Max(8, radius);
 
-        _hoverTargets.Add((new Rect(at.X - reach, at.Y - reach, reach * 2, reach * 2), text));
+        _hoverTargets.Add((new Rect(at.X - reach, at.Y - reach, reach * 2, reach * 2), text, stop));
+    }
+
+    /// <summary>
+    /// Opens the quest behind whatever was clicked.
+    ///
+    /// <para>A pin says where to walk and nothing else — not which of six identical buildings, not
+    /// which door inside it, not which step of the quest this even is. Those answers are a click
+    /// away now rather than in a browser tab.</para>
+    /// </summary>
+    private void OnMapClick(object sender, MouseButtonEventArgs e)
+    {
+        var at = e.GetPosition(MapCanvas);
+
+        // Newest first, which is drawing order: a stop drawn over an extract is what you clicked.
+        for (var i = _hoverTargets.Count - 1; i >= 0; i--)
+        {
+            if (!_hoverTargets[i].Bounds.Contains(at)) continue;
+            if (_hoverTargets[i].Stop is not { } stop) continue;
+            if (stop.TaskId is not { Length: > 0 }) continue;
+
+            ShowQuestBrief(stop);
+            e.Handled = true;
+            return;
+        }
     }
 
     /// <summary>
@@ -2246,8 +2419,9 @@ public partial class OverlayWindow : Window
             Canvas.SetTop(pin, at.Y);
             MapCanvas.Children.Add(pin);
 
-            // The pin hangs above its point, so the reach does too.
-            Hoverable(new Point(at.X, at.Y - 8 * scale), 9 * scale, Describe(stop));
+            // The pin hangs above its point, so the reach does too. The stop travels with it, so
+            // a click can open the quest rather than only naming it.
+            Hoverable(new Point(at.X, at.Y - 8 * scale), 9 * scale, Describe(stop), stop);
 
             if (stop.Done) continue;
 

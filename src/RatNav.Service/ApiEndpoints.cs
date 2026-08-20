@@ -1225,6 +1225,44 @@ public static class ApiEndpoints
                 });
         });
 
+        // Everything worth knowing about a quest while you are standing at one of its waypoints:
+        // what it wants, which part of it you are on, and the wiki's pictures of the place.
+        api.MapGet("/tasks/{id}/brief", async (
+            RatNavState state, ProgressStore progress, RaidSession session, WikiImages wiki,
+            string id, string? objectiveId, CancellationToken ct) =>
+        {
+            var task = state.Cache.Current?.Tasks.FirstOrDefault(t => t.Id == id);
+            if (task is null) return Results.NotFound();
+
+            var done = session.View().CompletedObjectiveIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            return Results.Ok(new
+            {
+                task.Id,
+                task.Name,
+                task.TraderName,
+                task.MinPlayerLevel,
+                task.WikiUrl,
+                state = progress.StateOf(task.Id).ToString(),
+
+                // Every objective, so the panel can show where this waypoint sits in the whole
+                // quest rather than only naming the step you are at.
+                objectives =
+                    from objective in task.Objectives
+                    select new
+                    {
+                        objective.Id,
+                        objective.Description,
+                        objective.Optional,
+                        onThisMap = objective.Position is not null,
+                        current = objective.Id == objectiveId,
+                        done = done.Contains(objective.Id),
+                    },
+
+                images = await wiki.ForAsync(id, task.WikiUrl, ct),
+            });
+        });
+
         // The pictures on a quest's wiki article — which building, which door.
         //
         // Fetched rather than shipped: they are other people's work under CC BY-SA, so RatNav

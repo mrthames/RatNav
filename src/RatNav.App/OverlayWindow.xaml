@@ -207,6 +207,72 @@
                                 with it, and hit-test invisible so it cannot get between the cursor
                                 and the thing being hovered.
                             -->
+                            <!--
+                                A quest, opened by clicking its waypoint: what it wants, which
+                                step this pin serves, and the wiki's pictures of the place.
+
+                                Over the map rather than beside it. This is read while standing
+                                still, and it is worth the whole overlay for the moment it is up.
+                            -->
+                            <Border x:Name="QuestBrief"
+                                    Visibility="Collapsed"
+                                    Background="#f50b0f13"
+                                    BorderBrush="{StaticResource Line}"
+                                    BorderThickness="1"
+                                    CornerRadius="2"
+                                    Padding="10,8">
+                                <DockPanel>
+                                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Button x:Name="QuestBriefClose" DockPanel.Dock="Right"
+                                                Style="{StaticResource Chip}" Content="✕"
+                                                ToolTip="Close" />
+
+                                        <Button x:Name="QuestBriefWiki" DockPanel.Dock="Right"
+                                                Style="{StaticResource Chip}" Content="wiki ↗"
+                                                Margin="0,0,4,0"
+                                                ToolTip="Open the wiki article in your browser" />
+
+                                        <TextBlock x:Name="QuestBriefName"
+                                                   FontFamily="Segoe UI" FontSize="14" FontWeight="Bold"
+                                                   Foreground="{StaticResource Ink}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center" />
+                                    </DockPanel>
+
+                                    <!-- The pictures take the space: they are the half that turns
+                                         "walk to this pin" into "find this door". -->
+                                    <Grid DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                                        <Image x:Name="QuestBriefImage" Stretch="Uniform" MinHeight="120" />
+
+                                        <Button x:Name="QuestBriefBack" Style="{StaticResource Chip}"
+                                                Content="‹" HorizontalAlignment="Left"
+                                                VerticalAlignment="Center" Opacity="0.85" />
+
+                                        <Button x:Name="QuestBriefNext" Style="{StaticResource Chip}"
+                                                Content="›" HorizontalAlignment="Right"
+                                                VerticalAlignment="Center" Opacity="0.85" />
+
+                                        <TextBlock x:Name="QuestBriefCaption" Style="{StaticResource Label}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                                    </Grid>
+
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                        <ItemsControl x:Name="QuestBriefSteps">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock FontFamily="Segoe UI" FontSize="11"
+                                                               Margin="0,1"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="{Binding Colour}"
+                                                               Text="{Binding Text}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </DockPanel>
+                            </Border>
+
                             <Border x:Name="HoverCard"
                                     Visibility="Collapsed"
                                     IsHitTestVisible="False"
