@@ -124,11 +124,37 @@ public partial class OverlayWindow : Window
         new Dictionary<string, MapStyle>(StringComparer.OrdinalIgnoreCase);
     private static readonly string[] ExtractModes = ["pmc", "scav", "both", "off"];
 
+    /// <summary>Named to match the app's Maps page, so one control set reads two places.</summary>
+    private static readonly string[] QuestModes = ["active", "all", "off"];
+
+    /// <summary>
+    /// A setting value as the app writes it — "PMC", "Graphical", "Active".
+    ///
+    /// <para>The values are stored lowercase and were shown that way, next to an app that titles
+    /// them. Two spellings of the same four choices reads as two different sets of choices.</para>
+    /// </summary>
+    private static string Titled(string value) => value switch
+    {
+        "pmc" => "PMC",
+        "scav" => "Scav",
+        { Length: > 0 } => char.ToUpperInvariant(value[0]) + value[1..],
+        _ => value,
+    };
+
     /// <summary>Extracts for the current map, fetched once per map alongside its floors.</summary>
     private IReadOnlyList<ExtractPin> _extracts = [];
 
     /// <summary>Spots marked by hand. Not part of any plan, so they outlive every plan.</summary>
     private IReadOnlyList<CustomWaypoint> _marks = [];
+
+    /// <summary>
+    /// Every started quest's objectives on this map, for the "all" setting.
+    ///
+    /// <para>Fetched with the rest of a map's furniture rather than when the setting is switched
+    /// on, because the switch is flicked mid-raid and a map that fills in a second later reads as
+    /// the control not working.</para>
+    /// </summary>
+    private IReadOnlyList<ObjectivePin> _objectives = [];
 
     /// <summary>
     /// What each thing on the map is, and where it is, so hovering can say so.
@@ -216,6 +242,7 @@ public partial class OverlayWindow : Window
         FollowButton.Click += (_, _) => ToggleFollowing();
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
+        QuestVisibility.Click += (_, _) => CycleQuests();
         OfferedButton.Click += (_, _) => ForgetOfferedExtracts();
 
         // Both directions, on the quick bar. Turning the filter off does not throw the reading
@@ -800,6 +827,10 @@ public partial class OverlayWindow : Window
             _marks = await _http.GetFromJsonAsync<List<CustomWaypoint>>(
                 $"{root}/maps/{Uri.EscapeDataString(mapId)}/waypoints") ?? [];
 
+            // Started quests only. Every quest in the game on one map is not a map.
+            _objectives = await _http.GetFromJsonAsync<List<ObjectivePin>>(
+                $"{root}/maps/{Uri.EscapeDataString(mapId)}/objectives?active=true") ?? [];
+
             _floorsFor = mapId;
 
             // A different map has different levels, and a floor chosen on the last one means
@@ -813,6 +844,7 @@ public partial class OverlayWindow : Window
             _extracts = [];
             _places = [];
             _marks = [];
+            _objectives = [];
         }
     }
 
@@ -2073,6 +2105,13 @@ public partial class OverlayWindow : Window
         Draw();
     }
 
+    private void CycleQuests()
+    {
+        var at = Array.IndexOf(QuestModes, _settings.Overlay.Quests);
+        Remember(_settings.Overlay with { Quests = QuestModes[(at + 1 + QuestModes.Length) % QuestModes.Length] });
+        Draw();
+    }
+
     private void SetZoom(double zoom)
     {
         Place(p => p with { Zoom = Math.Clamp(zoom, 1, 8) });
@@ -2170,7 +2209,7 @@ public partial class OverlayWindow : Window
             _fillingFloors = false;
         }
 
-        InkButton.Text = Placement.Ink;
+        InkButton.Text = Titled(Placement.Ink);
         FadeText.Text = $"{_settings.Overlay.MapOpacity * 100:F0}%";
         ZoomReset.Content = $"{Placement.Zoom:0.0}×";
         FollowButton.Content = Following ? "follows you" : "still";
@@ -2191,7 +2230,9 @@ public partial class OverlayWindow : Window
         // Only worth offering when it would do something. A crosshair that is always lit teaches
         // people to ignore it.
         RecentreButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
-        ExtractButton.Content = _settings.Overlay.Extracts;
+        // Title case, matching the app's Maps page rather than the raw setting value.
+        ExtractButton.Content = Titled(_settings.Overlay.Extracts);
+        QuestVisibility.Content = Titled(_settings.Overlay.Quests);
 
         // Only worth a button once there is something to undo. Until the list has been read this
         // does nothing, and a control that does nothing is one more thing to wonder about.
@@ -2880,11 +2921,49 @@ public partial class OverlayWindow : Window
                     : $"{mark.Label} · your mark");
         }
 
+        var quests = _settings.Overlay.Quests;
+
+        // Every other started quest's objective, drawn under the plan's own stops.
+        //
+        // Hollow and unnumbered, because they are context rather than a route: things you could
+        // pick up while you are here, not stops you set out to make. The plan's stops are filled
+        // and numbered, and the difference has to be visible at a glance or the plan stops being
+        // a plan.
+        if (quests == "all")
+        {
+            var planned = view.Stops
+                .Select(s => s.ObjectiveId)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var objective in _objectives)
+            {
+                if (planned.Contains(objective.ObjectiveId)) continue;
+
+                var at = Place(objective.X, objective.Y);
+                if (OffView(at, width, height, out _, out _)) continue;
+
+                MapCanvas.Children.Add(Positioned(
+                    new Path
+                    {
+                        Data = Geometry.Parse("M 0,-6 A 6,6 0 1 1 0,6 A 6,6 0 1 1 0,-6 Z"),
+                        Stroke = (Brush)FindResource("Muted"),
+                        StrokeThickness = 1.5,
+                        Fill = (Brush)FindResource("Ground"),
+                        Opacity = 0.8,
+                        RenderTransform = new ScaleTransform(scale * 0.8, scale * 0.8),
+                    },
+                    at.X,
+                    at.Y));
+
+                Hoverable(at, 7 * scale, $"{objective.TaskName} · {objective.Description}");
+            }
+        }
+
         // No line between stops. A dashed path across a map implies a route through walls and
         // buildings that does not exist, and the order is already carried by the numbers.
         var order = 0;
 
-        foreach (var stop in view.Stops)
+        foreach (var stop in quests == "off" ? [] : view.Stops)
         {
             if (!stop.Done) order++;
 

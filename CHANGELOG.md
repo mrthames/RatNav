@@ -23,6 +23,12 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **The overlay's map controls read like the app's Maps page.** A **Quests** control — *Active*,
+  *All*, *Off* — under the same name as the app's: active is the plan's stops, all adds every other
+  started quest's objective on this map drawn hollow and unnumbered, off leaves the map clean. Draw
+  levels, exits and quests are all written the way the app writes them — *Graphical*, *PMC*,
+  *Active* — rather than as the raw lowercase setting, because two spellings of the same four
+  choices read as two different sets of choices.
 - **The map controls are reachable in the centred view.** The gear that unfolds them lived in the
   footer, which the centred view deliberately does not draw — so folding the controls away there
   left nothing on screen to bring them back. The centred view has its own gear now, floating over

@@ -489,6 +489,17 @@ public sealed record RatNavSettings
         /// <summary>Which extracts to draw: "pmc", "scav", or "off".</summary>
         public string Extracts { get; init; } = "pmc";
 
+        /// <summary>
+        /// Which quest waypoints to draw — "active", "all" or "off".
+        ///
+        /// <para>Named to match the app's Maps page, because what you can turn on and off should
+        /// read the same in both places. What the three mean is the overlay's own, since the
+        /// overlay has a plan and the Maps page does not: <b>active</b> is the plan's stops,
+        /// <b>all</b> adds every other started quest's objectives on this map, and <b>off</b>
+        /// leaves the map clean.</para>
+        /// </summary>
+        public string Quests { get; init; } = "active";
+
 
         /// <summary>
         /// How large the overlay's own furniture is drawn — buttons, labels, lists, headings.

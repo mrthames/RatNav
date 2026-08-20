@@ -913,7 +913,18 @@
 
                             <TextBlock Style="{StaticResource Label}" Text="EXITS" Margin="0,0,0,2" />
                             <Button x:Name="ExtractButton" Style="{StaticResource Chip}"
-                                    Content="pmc" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
+                                    Content="PMC" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
+
+                            <!--
+                                Named to match the app's Maps page, because what you can turn on
+                                and off should read the same in both places. What the three mean is
+                                the overlay's own: the overlay has a plan and the Maps page does
+                                not.
+                            -->
+                            <TextBlock Style="{StaticResource Label}" Text="QUESTS" Margin="0,0,0,2" />
+                            <Button x:Name="QuestVisibility" Style="{StaticResource Chip}"
+                                    Content="Active" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                    ToolTip="Active: the plan's stops · All: every started quest on this map · Off: none" />
 
                             <Button x:Name="OpenAppButton" Style="{StaticResource Chip}"
                                     Content="open planner" HorizontalAlignment="Stretch" Margin="0,0,0,6"
