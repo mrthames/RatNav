@@ -94,6 +94,47 @@ public class CustomWaypointStoreTests : IDisposable
         Assert.Empty(New().For("woods"));
     }
 
+    /// <summary>
+    /// The note is the half of a mark worth having — "third shelf, behind the crates" is the thing
+    /// nobody remembers at the time — so it has to survive a restart like the rest of it.
+    /// </summary>
+    [Fact]
+    public void A_note_is_kept_with_the_mark()
+    {
+        var store = New();
+        var mark = store.Add("customs", "car batteries", 0.5, 0.5);
+
+        Assert.True(store.SetNote(mark.Id, "  third shelf, behind the crates  "));
+
+        // Trimmed, because a note typed into a box collects whitespace and none of it is meant.
+        Assert.Equal("third shelf, behind the crates", New().Get(mark.Id)?.Note);
+    }
+
+    /// <summary>
+    /// Blank clears it rather than storing an empty string, so "has a note" is one question with
+    /// one answer everywhere downstream — and clearing the box is the only way to take one off.
+    /// </summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void A_blank_note_clears_it(string? blank)
+    {
+        var store = New();
+        var mark = store.Add("customs", "car batteries", 0.5, 0.5);
+
+        store.SetNote(mark.Id, "behind the crates");
+        Assert.True(store.SetNote(mark.Id, blank));
+
+        Assert.Null(New().Get(mark.Id)?.Note);
+    }
+
+    [Fact]
+    public void A_note_on_a_mark_that_is_gone_reports_so()
+    {
+        Assert.False(New().SetNote("never-existed", "anything"));
+    }
+
     [Fact]
     public void A_corrupt_file_costs_the_marks_rather_than_the_app()
     {

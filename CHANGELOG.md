@@ -16,6 +16,11 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### App
 
+- **A mark can carry a note.** The label is drawn on a map over a game and has to be short — "car
+  batteries". The note is read standing still and can be a sentence — "third shelf, behind the
+  crates" — which is the part nobody remembers at the time. Add one from the mark's chip under the
+  map; it shows on the pin, and against the stop in the overlay's quest log once the mark joins a
+  plan.
 - **Mark a spot from the Plan page.** The *Mark* control was on the Maps page only, so noting "I
   want to go here as well" while building a raid meant going to Maps to place it and back to Plan
   to add it — two navigations for one thought. It is on both maps now.

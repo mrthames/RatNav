@@ -43,6 +43,16 @@ public sealed record CustomWaypoint
     /// </summary>
     public MarkKind Kind { get; init; } = MarkKind.Place;
 
+    /// <summary>
+    /// What you could not otherwise remember about the place.
+    ///
+    /// <para>Separate from the label because they are different lengths of thing. A label is drawn
+    /// on a map over a game and has to be short — "car batteries". A note is read while standing
+    /// still and can be a sentence: "third shelf, behind the crates". That sentence is the part
+    /// nobody remembers at the time, which is the whole reason for having one.</para>
+    /// </summary>
+    public string? Note { get; init; }
+
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 }
 
@@ -131,6 +141,29 @@ public sealed class CustomWaypointStore(RatNavProfile profile)
             if (at < 0) return false;
 
             _marks[at] = _marks[at] with { Label = Trim(label) };
+        }
+        Save();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Sets or clears the note on a mark. Returns false when there is no such mark.
+    ///
+    /// <para>Blank clears it rather than storing an empty string, so "has a note" is one question
+    /// with one answer everywhere downstream.</para>
+    /// </summary>
+    public bool SetNote(string id, string? note)
+    {
+        lock (_gate)
+        {
+            var at = _marks.FindIndex(m => m.Id == id);
+            if (at < 0) return false;
+
+            _marks[at] = _marks[at] with
+            {
+                Note = note is { Length: > 0 } && note.Trim().Length > 0 ? note.Trim() : null,
+            };
         }
         Save();
 

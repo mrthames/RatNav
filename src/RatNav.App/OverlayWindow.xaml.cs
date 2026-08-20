@@ -3332,11 +3332,15 @@ public partial class OverlayWindow : Window
                 at.Y));
 
             Label(mark.Label, at.X, at.Y + 9 * scale, colour, 9 * textScale);
+            // The note is the half worth having: the label says where, the note says the thing
+            // you cannot remember at the time.
             Hoverable(
                 at, 8 * scale,
-                mark.Kind == MarkKind.Item
-                    ? $"{mark.Label} · pick up"
-                    : $"{mark.Label} · your mark");
+                mark.Note is { Length: > 0 } note
+                    ? $"{mark.Label} — {note}"
+                    : mark.Kind == MarkKind.Item
+                        ? $"{mark.Label} · pick up"
+                        : $"{mark.Label} · your mark");
         }
 
         var quests = _settings.Overlay.Quests;

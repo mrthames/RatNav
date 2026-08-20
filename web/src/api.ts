@@ -325,6 +325,14 @@ export interface CustomWaypoint {
   floor: string | null
   /** "Place" for somewhere worth remembering, "Item" for something to pick up. */
   kind: 'Place' | 'Item'
+
+  /**
+   * What you could not otherwise remember about the place.
+   *
+   * <p>Separate from the label because they are different lengths of thing. A label is drawn on a
+   * map over a game and has to be short; a note is read standing still and can be a sentence.</p>
+   */
+  note: string | null
   createdAt: string
 }
 
@@ -685,6 +693,10 @@ export const api = {
       socket?.close()
     }
   },
+
+  /** Sets or clears a mark's note. Blank clears it. */
+  setWaypointNote: (markId: string, note: string) =>
+    post<{ id: string; note: string }>(`/api/waypoints/${encodeURIComponent(markId)}/note`, { note }),
 
   /** Whether RatNav answers on the network, and what stands between you and it. */
   lan: () => get<LanInfo>('/api/lan'),

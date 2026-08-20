@@ -170,6 +170,17 @@ export function MapView({
     await loadMarks()
   }
 
+  async function annotate(mark: CustomWaypoint) {
+    // Seeded with whatever is there, so editing is editing rather than retyping. Cancel leaves it
+    // alone; clearing the box and accepting removes the note, which is the only way to take one
+    // off and has to be reachable.
+    const note = window.prompt(`Note for "${mark.label}"`, mark.note ?? '')
+    if (note === null) return
+
+    await api.setWaypointNote(mark.id, note)
+    await loadMarks()
+  }
+
   // Zoom and pan, to match the overlay. A map you can only see whole is not much use on Streets.
   //
   // One piece of state rather than two, because zooming about the pointer moves both at once and
@@ -584,7 +595,10 @@ export function MapView({
         {marks.map((mark) => (
           <div
             key={mark.id}
-            title={mark.kind === 'Item' ? `${mark.label} · pick up` : `${mark.label} · your mark`}
+            title={[
+              mark.kind === 'Item' ? `${mark.label} · pick up` : `${mark.label} · your mark`,
+              mark.note,
+            ].filter(Boolean).join(' — ')}
             className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
             style={{ left: `${mark.x * 100}%`, top: `${mark.y * 100}%` }}
           >
@@ -626,6 +640,13 @@ export function MapView({
         />
       )}
 
+      {/*
+        Every mark on this map, and the place they are managed from.
+
+        A list rather than a menu on each pin: the map answers "not this one", but "what have I
+        accumulated" is a question about all of them at once, and a pin you have to find first is a
+        bad place to ask it.
+      */}
       {marks.length > 0 && (
         <ul className="flex flex-wrap gap-2">
           {marks.map((mark) => (
@@ -634,6 +655,27 @@ export function MapView({
               className="flex items-center gap-2 rounded-sm border border-mark/40 bg-mark/5 px-2 py-1"
             >
               <span className="text-xs">{mark.label}</span>
+
+              {mark.note && (
+                <span className="max-w-[16rem] truncate text-[11px] text-muted" title={mark.note}>
+                  {mark.note}
+                </span>
+              )}
+
+              {/*
+                The sentence you cannot remember at the time — "third shelf, behind the crates".
+                It shows against the stop in the overlay's quest log once the mark joins a plan,
+                which is the moment it is worth having.
+              */}
+              <button
+                type="button"
+                onClick={() => void annotate(mark)}
+                aria-label={mark.note ? `Edit the note on ${mark.label}` : `Add a note to ${mark.label}`}
+                className="font-mono text-[11px] text-muted hover:text-ink
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {mark.note ? 'note ✎' : '+ note'}
+              </button>
 
               <button
                 type="button"

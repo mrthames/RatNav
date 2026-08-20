@@ -215,6 +215,12 @@ reads as a quest objective, and its own shape, because colour alone fails for an
 separate the hues and a navigation overlay is a bad place to learn that. It appears on the overlay
 from then on.
 
+**Give one a note.** The chips under the map list every mark on it — that is where you rename,
+annotate and delete them. A label has to be short because it is drawn over a game; a note is read
+standing still and can be a sentence. "Car batteries" says where; "third shelf, behind the crates"
+says the thing you cannot remember at the time, and it shows on the pin and against the stop in the
+overlay's quest log once the mark joins a plan.
+
 Marks live per map and draw whenever that map is on screen, whether or not a plan is loaded — "car
 batteries behind the garage" is true every raid.
 

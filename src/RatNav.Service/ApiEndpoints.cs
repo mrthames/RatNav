@@ -1147,9 +1147,16 @@ public static class ApiEndpoints
                         // mark cannot be turned in, and a turn-in prompt for one would be a lie.
                         TaskId = "",
                         TaskName = mark.Label,
-                        Description = mark.Kind == MarkKind.Item
-                            ? $"Pick up: {mark.Label}"
-                            : $"Your mark: {mark.Label}",
+
+                        // The note travels with it. This is what the overlay's quest log shows
+                        // against the stop in raid, and it is the half of the feature worth
+                        // having: "car batteries" says where, "third shelf behind the crates"
+                        // says the thing you cannot remember at the time.
+                        Description = mark.Note is { Length: > 0 } note
+                            ? note
+                            : mark.Kind == MarkKind.Item
+                                ? $"Pick up: {mark.Label}"
+                                : $"Your mark: {mark.Label}",
                         Position = transform.ToGamePosition(
                             new MapPoint(mark.X * image.PixelWidth, mark.Y * image.PixelHeight)),
                     });
@@ -1719,6 +1726,16 @@ public static class ApiEndpoints
             return Results.Ok(new { id = markId, label = request.Label });
         });
 
+        // The sentence you cannot otherwise remember: "third shelf, behind the crates".
+        api.MapPost("/waypoints/{markId}/note", (
+            CustomWaypointStore marks, string markId, WaypointNoteRequest request) =>
+        {
+            if (!marks.SetNote(markId, request.Note)) return Results.NotFound();
+
+            WaypointsChanged?.Invoke();
+            return Results.Ok(new { id = markId, note = request.Note });
+        });
+
         api.MapDelete("/waypoints/{markId}", (CustomWaypointStore marks, string markId) =>
         {
             if (!marks.Remove(markId)) return Results.NotFound();
@@ -2071,6 +2088,9 @@ public sealed record TaskStateRequest(string State);
 
 /// <summary>Both optional, so Setup can change one without restating the other.</summary>
 public sealed record LanRequest(bool? Enabled, int? Port);
+
+/// <summary>Null or blank clears the note rather than storing an empty one.</summary>
+public sealed record WaypointNoteRequest(string? Note);
 public sealed record HideoutLevelRequest(int Level);
 
 /// <summary>An item row with progress folded in — what the Items view renders.</summary>
