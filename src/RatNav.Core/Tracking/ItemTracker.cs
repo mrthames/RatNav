@@ -121,33 +121,49 @@ public sealed class ItemTracker(string dataDirectory)
         Save();
     }
 
-    /// <summary>The barters and crafts being worked towards.</summary>
-    public IReadOnlyList<TrackedTrade> Trades
+    /// <summary>The goals you are collecting for.</summary>
+    public IReadOnlyList<Goal> Goals
     {
-        get { lock (_gate) return [.. _state.Trades]; }
+        get { lock (_gate) return [.. _state.Goals]; }
     }
 
     /// <summary>
-    /// Start working towards a trade, or change how many times over. Re-adding edits rather than
-    /// duplicating, the same way the watchlist does.
+    /// Adds a goal, or replaces one by id. Returns what was stored, id and all.
     /// </summary>
-    public void TrackTrade(string id, TradeKind kind, int times = 1)
+    public Goal SaveGoal(string? id, string name, IReadOnlyList<GoalItem> items, int times = 1)
     {
+        var goal = new Goal
+        {
+            Id = id is { Length: > 0 } ? id : Guid.NewGuid().ToString("n"),
+
+            // An unnamed goal is a list of items with no reason attached, which is the one thing
+            // this exists to avoid. Trimmed before the check, or a name of three spaces passes it
+            // and lands as an empty string.
+            Name = name?.Trim() is { Length: > 0 } trimmed ? trimmed : "unnamed",
+            Items = [.. items.Where(i => i.ItemId is { Length: > 0 } && i.Count > 0)],
+            Times = Math.Max(1, times),
+        };
+
         lock (_gate)
         {
-            var at = _state.Trades.FindIndex(t => t.Id == id);
-            var entry = new TrackedTrade { Id = id, Kind = kind, Times = Math.Max(1, times) };
+            var at = _state.Goals.FindIndex(g => g.Id == goal.Id);
 
-            if (at >= 0) _state.Trades[at] = entry;
-            else _state.Trades.Add(entry);
+            if (at >= 0) _state.Goals[at] = goal with { CreatedAt = _state.Goals[at].CreatedAt };
+            else _state.Goals.Add(goal);
         }
         Save();
+
+        return goal;
     }
 
-    public void UntrackTrade(string id)
+    public bool RemoveGoal(string id)
     {
-        lock (_gate) _state.Trades.RemoveAll(t => t.Id == id);
-        Save();
+        bool removed;
+        lock (_gate) removed = _state.Goals.RemoveAll(g => g.Id == id) > 0;
+
+        if (removed) Save();
+
+        return removed;
     }
 
     /// <summary>
@@ -162,7 +178,7 @@ public sealed class ItemTracker(string dataDirectory)
         ItemNeeds needs,
         IProgressView progress,
         IReadOnlyDictionary<string, HideoutDemand>? hideout = null,
-        IReadOnlyDictionary<string, TradeNeed>? trades = null)
+        IReadOnlyDictionary<string, GoalNeed>? goals = null)
     {
         var questNeeded = needs.Quests
             .Where(q => progress.IsActive(q.TaskId))
@@ -176,15 +192,15 @@ public sealed class ItemTracker(string dataDirectory)
         var demand = hideout is null ? null : hideout.GetValueOrDefault(needs.Item.Id);
         var hideoutNeeded = demand?.Count ?? 0;
 
-        // Barters and crafts you chose to work towards. Counted apart from the two above, because
-        // an item wanted three times for a quest and seven for a barter is two reasons rather than
-        // one ten — and only the split says that finishing the quest leaves seven still to find.
-        var trade = trades?.GetValueOrDefault(needs.Item.Id);
-        var tradeNeeded = trade?.Count ?? 0;
+        // Goals you named and are collecting for. Counted apart from the two above, because an
+        // item wanted three times for a quest and seven for a goal is two reasons rather than one
+        // ten — and only the split says that finishing the quest leaves seven still to find.
+        var goal = goals?.GetValueOrDefault(needs.Item.Id);
+        var goalNeeded = goal?.Count ?? 0;
 
         var watch = Watchlist.FirstOrDefault(w => w.ItemId == needs.Item.Id);
         var have = GetHave(needs.Item.Id);
-        var total = questNeeded + hideoutNeeded + tradeNeeded + (watch?.Target ?? 0);
+        var total = questNeeded + hideoutNeeded + goalNeeded + (watch?.Target ?? 0);
 
         return new TrackedItem
         {
@@ -193,9 +209,8 @@ public sealed class ItemTracker(string dataDirectory)
             HideoutNeeded = hideoutNeeded,
             HideoutUpgrade = demand?.UpgradeName,
             HideoutWave = demand?.Wave,
-            TradeNeeded = tradeNeeded,
-            TradeFor = trade?.For ?? [],
-            TradeIsCraftOnly = trade?.CraftOnly ?? false,
+            GoalNeeded = goalNeeded,
+            GoalFor = goal?.For ?? [],
             WatchTarget = watch?.Target,
             WatchNote = watch?.Note,
             Watched = watch is not null,
@@ -236,7 +251,7 @@ public sealed class ItemTracker(string dataDirectory)
     {
         public Dictionary<string, int> Have { get; init; } = [];
         public List<WatchlistEntry> Watchlist { get; init; } = [];
-        public List<TrackedTrade> Trades { get; init; } = [];
+        public List<Goal> Goals { get; init; } = [];
     }
 }
 
@@ -282,14 +297,11 @@ public sealed record TrackedItem
 
     /// <summary>How far out that upgrade is. 1 means you could build it today.</summary>
     public int? HideoutWave { get; init; }
-    /// <summary>How many are wanted by the barters and crafts being worked towards.</summary>
-    public int TradeNeeded { get; init; }
+    /// <summary>How many are wanted by the goals you are collecting for.</summary>
+    public int GoalNeeded { get; init; }
 
-    /// <summary>Which trades want it, named the way a player would say them.</summary>
-    public IReadOnlyList<string> TradeFor { get; init; } = [];
-
-    /// <summary>True when only crafts want it — which decides which subsection it sits in.</summary>
-    public bool TradeIsCraftOnly { get; init; }
+    /// <summary>Which goals want it, by the names you gave them.</summary>
+    public IReadOnlyList<string> GoalFor { get; init; } = [];
 
     public int? WatchTarget { get; init; }
     public string? WatchNote { get; init; }
@@ -302,6 +314,6 @@ public sealed record TrackedItem
 
     public bool IsKey { get; init; }
 
-    public int Needed => QuestNeeded + HideoutNeeded + TradeNeeded + (WatchTarget ?? 0);
+    public int Needed => QuestNeeded + HideoutNeeded + GoalNeeded + (WatchTarget ?? 0);
     public bool Done => Needed > 0 && Remaining == 0;
 }

@@ -59,20 +59,13 @@ public sealed class RatNavState(GameDataCache cache)
             progress.HideoutTargets);
 
     /// <summary>
-    /// What the barters and crafts being worked towards want, keyed by item.
+    /// What the goals you are collecting for want, keyed by item.
     ///
     /// <para>Single source for the same reason <see cref="Upcoming"/> is: the items list, the
     /// overlay panel and a search result all have to agree about why an item is wanted.</para>
     /// </summary>
-    public IReadOnlyDictionary<string, TradeNeed> TradeDemand(ItemTracker tracker)
-    {
-        var data = cache.Current;
-
-        if (data is null) return new Dictionary<string, TradeNeed>();
-
-        return TradeDemands.From(
-            tracker.Trades, data.Barters, data.Crafts, id => Index?.GetItem(id)?.Name);
-    }
+    public IReadOnlyDictionary<string, GoalNeed> GoalDemand(ItemTracker tracker) =>
+        GoalDemands.From(tracker.Goals);
 
     public DataStatus Status(RefreshResult? lastRefresh = null)
     {

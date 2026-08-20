@@ -110,7 +110,7 @@ Captured before execution.
 
 ### Barters and crafts, rethought
 
-- [ ] **Replace the searchable trade picker with custom entries.** *(Supersedes the picker built in
+- [x] **Replace the searchable trade picker with custom entries.** *(Supersedes the picker built in
   round 6.)*
   - Name it yourself — "Document case" — and enter the items it needs and how many. No searching a
     catalogue of 789 barters for the one you meant.
@@ -857,7 +857,8 @@ The research is kept below in case it is ever wanted again.
 
 ### Barter tracking
 
-- [x] **Barters you are working towards, tracked separately from quests and the hideout.**
+- [~] **Barters you are working towards, tracked separately from quests and the hideout.** Built as
+  a trade picker, then **replaced in round 7** by goals you name yourself — see there.
   - Example: Therapist's Dorm 303 key barter wants 7 plugs and 3 blue tapes. Picking that barter
     should put those on your list.
   - **Counted apart.** Those finds must not be folded into quest or hideout totals — an item wanted
@@ -870,7 +871,7 @@ The research is kept below in case it is ever wanted again.
 
 ### Crafts, and the shape of the items list
 
-- [x] **Hideout crafts, tracked the same way as barters.** Pick a craft — a Toolset on the
+- [~] **Hideout crafts, tracked the same way as barters.** Same story: replaced by goals. Pick a craft — a Toolset on the
   Workbench — and the items needed to start it appear on the list.
   - Gated by station level, so only crafts your hideout can actually run should be offerable.
   - tarkov.dev has a `crafts` document alongside `barters`; it is not fetched yet.

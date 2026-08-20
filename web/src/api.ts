@@ -66,11 +66,10 @@ export interface TrackedItem {
   remaining: number
   foundInRaid: boolean
   isKey: boolean
-  /** How many the barters and crafts you are working towards want. */
-  tradeNeeded: number
-  /** Which trades want it — "Therapist LL2 · Dorm room 303 key". */
-  tradeFor: string[]
-  tradeIsCraftOnly: boolean
+  /** How many the goals you are collecting for want. */
+  goalNeeded: number
+  /** Which goals want it, by the names you gave them. */
+  goalFor: string[]
   watched: boolean
   watchNote: string | null
   watchTarget: number | null
@@ -274,28 +273,12 @@ export interface CustomWaypoint {
   createdAt: string
 }
 
-export interface Trade {
+export interface GoalView {
   id: string
-  /** "barter" or "craft". */
-  kind: 'barter' | 'craft'
-  /** The trader or station offering it. */
-  source: string
-  /** Loyalty level for a barter, station level for a craft. */
-  level: number
-  makes: string
-  makesItemId: string | null
-  costs: TradeCost[]
-  /** Whether you can actually do it today. */
-  available: boolean
-  tracked: boolean
-  times: number
-}
-
-export interface TradeCost {
-  itemId: string
   name: string
-  count: number
-  have: number
+  /** How many times over. Two of a goal wants twice its items. */
+  times: number
+  items: { itemId: string; name: string; count: number; have: number }[]
 }
 
 export interface RaidStop {
@@ -487,22 +470,21 @@ export const api = {
       `/api/hideout/${encodeURIComponent(stationId)}/levels/${level}/target`, { targeted }),
 
   /**
-   * Barters and crafts on offer, and which you are working towards.
+   * The goals you are collecting for, named by you.
    *
-   * Gated by default to what you can actually do today — 789 barters and 214 crafts, and an
-   * ungated list is mostly things you cannot do, which is the same as no list.
+   * This replaced a searchable catalogue of every barter and craft in the game: picking one out of
+   * 789 needed you to already know which of Therapist's four Dorm 303 trades you meant.
    */
-  trades: (options?: { q?: string; all?: boolean }) => {
-    const params = new URLSearchParams()
-    if (options?.q) params.set('q', options.q)
-    if (options?.all) params.set('all', 'true')
+  goals: () => get<GoalView[]>('/api/goals'),
 
-    return get<Trade[]>(`/api/trades${params.size ? `?${params}` : ''}`)
-  },
+  saveGoal: (goal: {
+    id?: string
+    name: string
+    times?: number
+    items: { itemId: string; count: number }[]
+  }) => post<unknown>('/api/goals', goal),
 
-  trackTrade: (id: string, kind: 'barter' | 'craft', tracked: boolean, times = 1) =>
-    post<{ id: string; tracked: boolean }>(
-      `/api/trades/${encodeURIComponent(id)}`, { tracked, kind, times }),
+  removeGoal: (id: string) => del<unknown>(`/api/goals/${encodeURIComponent(id)}`),
 
   /** Quests whose every planned objective is done, waiting on a trader. */
   turnIns: () => get<TurnIn[]>('/api/raid/turn-ins'),

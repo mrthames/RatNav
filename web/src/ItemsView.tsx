@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, type TrackedItem, type Trade } from './api'
+import { api, type TrackedItem, type GoalView } from './api'
 
-type Tab = 'needed' | 'watchlist' | 'trades' | 'search'
+type Tab = 'needed' | 'watchlist' | 'goals' | 'search'
 
 /**
  * What to show of the list.
@@ -39,7 +39,7 @@ export function ItemsView() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      if (tab === 'trades') {
+      if (tab === 'goals') {
         // Its own component, with its own data. Nothing to load here.
         setRows([])
       } else if (tab === 'search') {
@@ -89,7 +89,7 @@ export function ItemsView() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-px">
-          {(['needed', 'watchlist', 'trades', 'search'] as Tab[]).map((id) => (
+          {(['needed', 'watchlist', 'goals', 'search'] as Tab[]).map((id) => (
             <button
               key={id}
               type="button"
@@ -99,7 +99,7 @@ export function ItemsView() {
                          hover:text-ink aria-pressed:bg-accent aria-pressed:text-ground
                          focus-visible:outline-2 focus-visible:outline-accent"
             >
-              {id === 'trades' ? 'barters & crafts' : id}
+              {id}
             </button>
           ))}
         </div>
@@ -163,7 +163,7 @@ export function ItemsView() {
           />
         )}
 
-        {tab !== 'trades' && (
+        {tab !== 'goals' && (
           <p className="ml-auto font-mono text-xs text-muted tabular-nums">
             {totals.items} items · {totals.remaining} still needed · {totals.fir} found-in-raid
           </p>
@@ -219,15 +219,15 @@ export function ItemsView() {
         </p>
       )}
 
-      {tab === 'trades' && <Trades />}
+      {tab === 'goals' && <Goals />}
 
-      {tab !== 'trades' && loading && <Empty>loading…</Empty>}
+      {tab !== 'goals' && loading && <Empty>loading…</Empty>}
 
-      {tab !== 'trades' && !loading && shown.length === 0 && rows.length > 0 && (
+      {tab !== 'goals' && !loading && shown.length === 0 && rows.length > 0 && (
         <Empty>Nothing here matches that filter.</Empty>
       )}
 
-      {tab !== 'trades' && !loading && rows.length === 0 && (
+      {tab !== 'goals' && !loading && rows.length === 0 && (
         <Empty>
           {tab === 'needed'
             ? 'Nothing needed. Mark some quests active on the Quests view and they will appear here.'
@@ -237,7 +237,7 @@ export function ItemsView() {
         </Empty>
       )}
 
-      {tab !== 'trades' && !loading && shown.length > 0 && (
+      {tab !== 'goals' && !loading && shown.length > 0 && (
         <div className="overflow-x-auto border border-line">
           <table className="w-full border-collapse text-sm">
             <thead>
@@ -262,128 +262,297 @@ export function ItemsView() {
 }
 
 /**
- * The barters and crafts on offer, and the ones you have decided to work towards.
+ * The things you are collecting for, named by you.
  *
- * <p>Picking one puts its inputs on your list, counted apart from what quests and the hideout
- * want. That separation is the point: an item wanted three times for a quest and seven for a
- * barter is two reasons, and a single "10" hides that finishing the quest leaves seven to
- * find.</p>
+ * <p>This replaced a searchable catalogue of all 789 barters and 214 crafts. Finding the one you
+ * meant needed you to already know which of Therapist's four Dorm 303 trades it was, and what you
+ * actually think is "the document case".</p>
+ *
+ * <p>Nothing checks a goal against the game's own trades, on purpose. It can be a barter, a craft,
+ * a kit you build for yourself, or a promise to a friend — RatNav has no business having an
+ * opinion about which.</p>
  */
-function Trades() {
-  const [rows, setRows] = useState<Trade[]>([])
-  const [query, setQuery] = useState('')
-
-  /** Trades you cannot do yet — the trader is not high enough, or the station is not built. */
-  const [all, setAll] = useState(false)
+function Goals() {
+  const [goals, setGoals] = useState<GoalView[]>([])
+  const [editing, setEditing] = useState<GoalView | 'new' | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setRows(await api.trades({ q: query.trim() || undefined, all }))
+      setGoals(await api.goals())
     } catch {
-      setRows([])
+      setGoals([])
     } finally {
       setLoading(false)
     }
-  }, [query, all])
+  }, [])
 
-  useEffect(() => {
-    const timer = setTimeout(load, query ? 200 : 0)
-    return () => clearTimeout(timer)
-  }, [load, query])
-
-  async function pick(trade: Trade, tracked: boolean) {
-    await api.trackTrade(trade.id, trade.kind, tracked, trade.times)
-    setRows((current) => current.map((r) => (r.id === trade.id ? { ...r, tracked } : r)))
-  }
-
-  const picked = rows.filter((r) => r.tracked).length
+  useEffect(() => { void load() }, [load])
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="What it makes, who offers it, or what it costs…"
-          className="min-w-56 flex-1 rounded-sm border border-line bg-panel px-3 py-1.5 text-sm
-                     text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
-        />
+        <button
+          type="button"
+          onClick={() => setEditing('new')}
+          className="rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider
+                     text-ground focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          New goal
+        </button>
 
-        <label className="flex items-center gap-2 text-xs text-muted">
-          <input
-            type="checkbox"
-            checked={all}
-            onChange={(e) => setAll(e.target.checked)}
-            className="accent-accent"
-          />
-          Include ones I cannot do yet
-        </label>
-
-        <p className="ml-auto font-mono text-xs text-muted tabular-nums">
-          {picked} being worked towards
+        <p className="text-xs text-muted">
+          Name what you are collecting for and list what it takes. It joins your list in its own
+          section, <b>counted apart</b> from quests and the hideout — so finishing a quest does not
+          make a goal look done.
         </p>
       </div>
 
-      <p className="text-xs text-muted">
-        Only what your traders and hideout can actually offer, unless you ask for the rest. Pick one
-        and what it costs joins your list — <b>counted apart</b> from quests and the hideout, so
-        finishing a quest does not make a barter look done.
-      </p>
-
       {loading && <Empty>loading…</Empty>}
 
-      {!loading && rows.length === 0 && (
+      {!loading && goals.length === 0 && (
         <Empty>
-          {query.trim()
-            ? 'Nothing on offer matches that.'
-            : 'No barters or crafts available. Set your trader levels on the Quests view and your '
-              + 'station levels on the Hideout view, and what you can do will appear here.'}
+          Nothing yet. A goal is a barter, a craft, a kit, or anything else you are putting items
+          aside for.
         </Empty>
       )}
 
-      {!loading && rows.length > 0 && (
-        <ul className="flex flex-col gap-px border border-line">
-          {rows.map((trade) => (
-            <li
-              key={trade.id}
-              className={`flex flex-wrap items-start gap-x-4 gap-y-1 px-3 py-2
-                          ${trade.tracked ? 'bg-accent/5' : ''}`}
-            >
-              <label className="flex cursor-pointer items-center gap-2.5">
-                <input
-                  type="checkbox"
-                  checked={trade.tracked}
-                  onChange={(e) => void pick(trade, e.target.checked)}
-                  className="accent-accent"
-                />
-                <span className="text-sm">{trade.makes}</span>
-              </label>
+      {goals.map((goal) => {
+        const short = goal.items.filter((i) => i.have < i.count * goal.times).length
 
-              <span className="font-mono text-[11px] text-muted">
-                {trade.kind === 'barter'
-                  ? `${trade.source} LL${trade.level}`
-                  : `${trade.source} ${trade.level}`}
-                {!trade.available && ' · not yet'}
+        return (
+          <div key={goal.id} className="flex flex-col gap-2 border border-line bg-panel px-3 py-2">
+            <div className="flex flex-wrap items-baseline gap-x-3">
+              <span className="text-sm">{goal.name}</span>
+
+              {goal.times > 1 && (
+                <span className="font-mono text-[11px] text-muted">×{goal.times}</span>
+              )}
+
+              <span className={`font-mono text-[11px] ${short === 0 ? 'text-have' : 'text-muted'}`}>
+                {short === 0 ? 'everything found' : `${short} still short`}
               </span>
 
-              {/* What it costs, and how much of that you already have. */}
-              <span className="ml-auto flex flex-wrap justify-end gap-x-3 font-mono text-[11px]">
-                {trade.costs.map((cost) => (
+              <span className="ml-auto flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditing(goal)}
+                  className="font-mono text-[11px] uppercase tracking-wider text-muted
+                             hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => { await api.removeGoal(goal.id); void load() }}
+                  aria-label={`Forget ${goal.name}`}
+                  className="font-mono text-[11px] text-muted hover:text-need
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px]">
+              {goal.items.map((item) => {
+                const wanted = item.count * goal.times
+
+                return (
                   <span
-                    key={cost.itemId}
-                    className={cost.have >= cost.count ? 'text-have' : 'text-muted'}
+                    key={item.itemId}
+                    className={item.have >= wanted ? 'text-have' : 'text-muted'}
                   >
-                    {cost.count}× {cost.name}
-                    {cost.have > 0 && ` (${Math.min(cost.have, cost.count)})`}
+                    {wanted}× {item.name}
+                    {item.have > 0 && ` (${Math.min(item.have, wanted)})`}
                   </span>
-                ))}
-              </span>
-            </li>
-          ))}
-        </ul>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+
+      {editing && (
+        <GoalForm
+          goal={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); void load() }}
+        />
       )}
+    </div>
+  )
+}
+
+/** Naming a goal and listing what it takes. */
+function GoalForm({
+  goal, onClose, onSaved,
+}: {
+  goal: GoalView | null
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [name, setName] = useState(goal?.name ?? '')
+  const [times, setTimes] = useState(goal?.times ?? 1)
+  const [items, setItems] = useState<{ itemId: string; name: string; count: number }[]>(
+    goal?.items.map((i) => ({ itemId: i.itemId, name: i.name, count: i.count })) ?? [])
+
+  const [query, setQuery] = useState('')
+  const [found, setFound] = useState<TrackedItem[]>([])
+
+  // Searching the item list is still how you name an item — RatNav needs its id to count what you
+  // have. What is gone is having to search a catalogue of trades to find the one you meant.
+  useEffect(() => {
+    if (query.trim().length < 2) { setFound([]); return }
+
+    const timer = setTimeout(
+      () => { api.searchItems(query).then((r) => setFound(r.slice(0, 6))).catch(() => setFound([])) },
+      200)
+
+    return () => clearTimeout(timer)
+  }, [query])
+
+  async function save() {
+    await api.saveGoal({
+      id: goal?.id,
+      name,
+      times,
+      items: items.map((i) => ({ itemId: i.itemId, count: i.count })),
+    })
+
+    onSaved()
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={goal ? `Edit ${goal.name}` : 'New goal'}
+      onClick={onClose}
+      className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex w-full max-w-lg flex-col gap-3 border border-line bg-panel p-4"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">
+            {goal ? 'Edit goal' : 'New goal'}
+          </h2>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="font-mono text-sm text-muted hover:text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            ✕
+          </button>
+        </div>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm">What are you collecting for?</span>
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Document case"
+            className="border border-line bg-ground px-2 py-1.5 text-sm text-ink
+                       placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
+          />
+        </label>
+
+        <label className="flex items-center gap-2">
+          <span className="text-sm">How many</span>
+          <input
+            type="number"
+            min={1}
+            value={times}
+            onChange={(e) => setTimes(Math.max(1, Number(e.target.value) || 1))}
+            className="w-20 border border-line bg-ground px-2 py-1 font-mono text-xs text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          />
+        </label>
+
+        {items.length > 0 && (
+          <ul className="flex flex-col gap-px border border-line">
+            {items.map((item, index) => (
+              <li key={item.itemId} className="flex items-center gap-2 bg-ground px-2 py-1.5">
+                <input
+                  type="number"
+                  min={1}
+                  value={item.count}
+                  onChange={(e) => setItems(items.map((it, i) =>
+                    i === index ? { ...it, count: Math.max(1, Number(e.target.value) || 1) } : it))}
+                  className="w-16 border border-line bg-panel px-1.5 py-0.5 font-mono text-xs text-ink
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                />
+
+                <span className="min-w-0 flex-1 truncate text-xs">{item.name}</span>
+
+                <button
+                  type="button"
+                  onClick={() => setItems(items.filter((_, i) => i !== index))}
+                  aria-label={`Remove ${item.name}`}
+                  className="font-mono text-[11px] text-muted hover:text-need
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm">What does it take?</span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search for an item…"
+            className="border border-line bg-ground px-2 py-1.5 text-sm text-ink
+                       placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
+          />
+        </label>
+
+        {found.length > 0 && (
+          <ul className="flex flex-col gap-px border border-line">
+            {found.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!items.some((i) => i.itemId === item.id)) {
+                      setItems([...items, { itemId: item.id, name: item.name, count: 1 }])
+                    }
+
+                    setQuery('')
+                  }}
+                  className="w-full bg-ground px-2 py-1.5 text-left text-xs text-muted
+                             transition-colors hover:bg-panel-hi hover:text-ink
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  {item.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <button
+          type="button"
+          disabled={name.trim() === '' || items.length === 0}
+          onClick={() => void save()}
+          className="self-start rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase
+                     tracking-wider text-ground disabled:opacity-40
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          {goal ? 'Save' : 'Add goal'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -485,10 +654,10 @@ function Row({
                   ? `${row.hideoutNeeded} for ${row.hideoutUpgrade}`
                   : `${row.hideoutNeeded} for hideout`),
 
-                // Named the same way, and separately — the whole reason trades are counted apart
+                // Named the same way, and separately — the whole reason goals are counted apart
                 // is so this line can say which of the two the number is for.
-                row.tradeNeeded > 0
-                  && `${row.tradeNeeded} for ${row.tradeFor.join(', ') || 'a trade'}`,
+                row.goalNeeded > 0
+                  && `${row.goalNeeded} for ${row.goalFor.join(', ') || 'a goal'}`,
                 row.watchNote,
               ].filter(Boolean).join(' · ') || row.shortName}
             </div>
@@ -501,7 +670,7 @@ function Row({
           Quest and hideout needs are worked out; a watchlist target is not, so it is editable.
           Showing a derived number in a box you can type in would be a lie about what it is.
         */}
-        {!watchlist && (row.questNeeded > 0 || row.hideoutNeeded > 0 || row.tradeNeeded > 0) ? (
+        {!watchlist && (row.questNeeded > 0 || row.hideoutNeeded > 0 || row.goalNeeded > 0) ? (
           <span className="font-mono text-xs tabular-nums">{row.needed}</span>
         ) : (
           <input
