@@ -4,5 +4,5 @@ using RatNav.Service;
 // In normal use the WPF app hosts this same service in-process.
 var app = ServiceHost.Build(args);
 
-Console.WriteLine($"RatNav service listening on http://localhost:{ServiceHost.DefaultPort}");
+Console.WriteLine($"RatNav service listening on {ServiceHost.Root}");
 app.Run();

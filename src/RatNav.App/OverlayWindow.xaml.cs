@@ -753,7 +753,7 @@ public partial class OverlayWindow : Window
             // returned RatNav's wireframe colours, so the graphical level — whose whole job is to
             // use the map's own fifteen colours — drew the skeleton instead. Graphical is the one
             // level the service leaves untouched, which makes it the right thing to fetch.
-            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/maps/{Uri.EscapeDataString(mapId)}/image?ink=graphical";
+            var url = $"{ServiceHost.Root}/api/maps/{Uri.EscapeDataString(mapId)}/image?ink=graphical";
 
             var svg = await _http.GetStringAsync(url);
 
@@ -813,7 +813,7 @@ public partial class OverlayWindow : Window
 
         try
         {
-            var root = $"http://localhost:{ServiceHost.DefaultPort}/api";
+            var root = $"{ServiceHost.Root}/api";
 
             var maps = await _http.GetFromJsonAsync<List<MapSummary>>($"{root}/maps");
             _floors = maps?.FirstOrDefault(m => m.Id == mapId)?.Floors ?? [];
@@ -904,7 +904,7 @@ public partial class OverlayWindow : Window
 
             try
             {
-                var url = $"http://localhost:{ServiceHost.DefaultPort}/api/raid/extracts/read";
+                var url = $"{ServiceHost.Root}/api/raid/extracts/read";
                 var response = await _http.PostAsJsonAsync(url, new { lines });
 
                 if (!response.IsSuccessStatusCode)
@@ -947,7 +947,7 @@ public partial class OverlayWindow : Window
             try
             {
                 await _http.DeleteAsync(
-                    $"http://localhost:{ServiceHost.DefaultPort}/api/raid/extracts/read");
+                    $"{ServiceHost.Root}/api/raid/extracts/read");
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
             {
@@ -986,7 +986,7 @@ public partial class OverlayWindow : Window
         {
             try
             {
-                var url = $"http://localhost:{ServiceHost.DefaultPort}/api/tasks/"
+                var url = $"{ServiceHost.Root}/api/tasks/"
                     + $"{Uri.EscapeDataString(stop.TaskId)}/brief"
                     + $"?objectiveId={Uri.EscapeDataString(stop.ObjectiveId)}";
 
@@ -1058,7 +1058,7 @@ public partial class OverlayWindow : Window
             // app means one fetch is shared by both rather than each pulling several megabytes of
             // its own.
             bitmap.UriSource = new Uri(
-                $"http://127.0.0.1:{ServiceHost.DefaultPort}/api/wiki/picture"
+                $"{ServiceHost.Root}/api/wiki/picture"
                 + $"?url={Uri.EscapeDataString(image.Url)}");
 
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
@@ -1465,7 +1465,7 @@ public partial class OverlayWindow : Window
     {
         try
         {
-            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/items/panel";
+            var url = $"{ServiceHost.Root}/api/items/panel";
             var panel = await _http.GetFromJsonAsync<ItemPanel>(url) ?? new ItemPanel();
 
             // The heading carries what is being counted. "Quests & hideout" alone does not say
@@ -1879,7 +1879,7 @@ public partial class OverlayWindow : Window
     {
         try
         {
-            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/items/identify";
+            var url = $"{ServiceHost.Root}/api/items/identify";
             var response = await _http.PostAsJsonAsync(url, new { lines });
 
             if (!response.IsSuccessStatusCode) return null;
@@ -1987,7 +1987,7 @@ public partial class OverlayWindow : Window
         try
         {
             var hints = await _http.GetFromJsonAsync<List<HotkeyHint>>(
-                $"http://127.0.0.1:{ServiceHost.DefaultPort}/api/hotkeys/hints");
+                $"{ServiceHost.Root}/api/hotkeys/hints");
 
             if (hints is { Count: > 0 }) HotkeyHints.ItemsSource = hints;
         }

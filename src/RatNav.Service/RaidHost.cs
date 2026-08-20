@@ -678,6 +678,29 @@ public sealed record RatNavSettings
             Mode == OverlayMode.Wireframe ? this with { Wireframe = placement } : this with { Box = placement };
     }
 
+    /// <summary>Reaching RatNav from another device on the same network.</summary>
+    public LanSettings Lan { get; set; } = new();
+
+    public sealed record LanSettings
+    {
+        /// <summary>
+        /// Whether the service answers on the machine's network address as well as loopback.
+        ///
+        /// <para><b>Off by default and it stays that way.</b> Binding to the network is a
+        /// deliberate act, not something a tool should do because it can — and the person turning
+        /// it on is the one who knows what network they are on.</para>
+        /// </summary>
+        public bool Enabled { get; init; }
+
+        /// <summary>
+        /// The port to listen on. Zero means the built-in one.
+        ///
+        /// <para>Configurable because 8722 can already be taken, and a tool that cannot start
+        /// because something else got there first with no way to move is a tool you uninstall.</para>
+        /// </summary>
+        public int Port { get; init; }
+    }
+
     /// <summary>
     /// Which round of settings migrations this file has already been through.
     ///

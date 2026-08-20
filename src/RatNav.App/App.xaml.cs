@@ -178,7 +178,7 @@ public partial class App : Application
             return;
         }
 
-        _expanded = new ExpandedWindow($"http://localhost:{ServiceHost.DefaultPort}/");
+        _expanded = new ExpandedWindow($"{ServiceHost.Root}/");
         _expanded.Closed += (_, _) => _expanded = null;
         _expanded.Show();
     }
@@ -190,7 +190,7 @@ public partial class App : Application
     }
 
     private static void OpenInBrowser() =>
-        Process.Start(new ProcessStartInfo($"http://localhost:{ServiceHost.DefaultPort}/")
+        Process.Start(new ProcessStartInfo($"{ServiceHost.Root}/")
         {
             UseShellExecute = true,
         });

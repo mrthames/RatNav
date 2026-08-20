@@ -1,5 +1,20 @@
 /** Types and calls for the local RatNav service. */
 
+/** Whether RatNav answers on the network, and what stands between a phone and it. */
+export interface LanInfo {
+  enabled: boolean
+  port: number
+
+  /** What the running service is actually doing, which can differ from what is saved. */
+  running: boolean
+
+  /** This machine's addresses on the local network — what you type on the phone. */
+  addresses: string[]
+
+  firewallAllowed: boolean
+  firewallCommand: string
+}
+
 export interface DataStatus {
   loaded: boolean
   fetchedAt: string | null
@@ -673,6 +688,16 @@ export const api = {
       socket?.close()
     }
   },
+
+  /** Whether RatNav answers on the network, and what stands between you and it. */
+  lan: () => get<LanInfo>('/api/lan'),
+
+  saveLan: (change: { enabled?: boolean; port?: number }) =>
+    post<{ needsRestart: boolean }>('/api/lan', change),
+
+  /** Raises a UAC prompt on the machine RatNav runs on. Refused from anywhere else. */
+  allowThroughFirewall: () =>
+    post<{ added: boolean; problem: string | null }>('/api/lan/firewall', {}),
 
   setTaskState: (taskId: string, state: string) =>
     post<{ id: string; state: string }>(`/api/progress/tasks/${encodeURIComponent(taskId)}`, { state }),

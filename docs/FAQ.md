@@ -64,7 +64,9 @@ links from the Escape from Tarkov Wiki.
 ## Does it cost anything? Is there an account?
 
 No, and no. There is no telemetry, no account, no server of ours, and nothing phones home. The
-service it runs binds to `127.0.0.1` — your own machine — and nothing else can reach it.
+service it runs binds to `127.0.0.1` — your own machine — and nothing else can reach it unless you
+turn on [network access](#can-i-see-it-on-my-phone-or-tablet), which is off until you do and reaches
+your local network only.
 
 ## Why do I have to press a key to see where I am?
 
@@ -239,11 +241,28 @@ only one of you needs to carry.
 
 ## Can I see it on my phone or tablet?
 
-By default the service listens on `127.0.0.1` only, so nothing outside the machine can reach it.
-Opening it to your network is a deliberate change, not the default.
+Yes. **Setup → Reach RatNav from a phone or tablet**, then type the address it shows into a browser
+on the other device.
 
-For a second monitor on the same machine, `http://localhost:8722/` in any browser is the whole
-answer — the panel is built for a tall narrow window.
+Nothing is installed on the phone — it is a browser pointed at your PC. A plan you build there
+reaches the overlay in game immediately, because both are looking at the same RatNav.
+
+Three things worth knowing:
+
+- **It is off until you turn it on.** RatNav listens on `127.0.0.1` — your own machine — by
+  default, and opening it to the network is a deliberate change.
+- **Nothing outside your network can reach it.** Port forwarding is a router-to-internet thing and
+  is not part of this. Without it, your router is still the wall, whatever RatNav is doing.
+- **There is no password.** Anyone already on your wifi can open RatNav and change its settings.
+  On a home network that is you and your own devices; on a shared or building-wide network, think
+  about whether that is what you want.
+
+Windows Firewall will usually block the port until you allow it. Setup notices, offers to add the
+rule — which needs a permission prompt, because opening a port always does — and prints the command
+if you would rather run it yourself.
+
+For a second monitor on the same machine none of this is needed: `http://localhost:8722/` in any
+browser is the whole answer.
 
 ## I switched character and everything is empty
 

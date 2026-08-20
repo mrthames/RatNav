@@ -902,6 +902,61 @@ public static class ApiEndpoints
             }.Where(h => h.key is { Length: > 0 }));
         });
 
+        // ---- reaching RatNav from another device
+
+        // What Setup needs to say something true: the addresses to type, whether the port is
+        // already allowed through the firewall, and the command for anyone who would rather run
+        // it themselves.
+        api.MapGet("/lan", (RatNavSettings settings) =>
+        {
+            var port = ServiceHost.Port;
+
+            return Results.Ok(new
+            {
+                enabled = settings.Lan.Enabled,
+                port,
+
+                // What is on disk, which is what the *next* start will do. It can differ from what
+                // is running, and Setup says so rather than pretending the switch took effect.
+                running = settings.Lan.Enabled,
+                addresses = LanAccess.Addresses(),
+                firewallAllowed = LanAccess.RuleExists(port),
+                firewallCommand = LanAccess.RuleCommand(port),
+            });
+        });
+
+        api.MapPost("/lan", (RatNavSettings settings, LanRequest request) =>
+        {
+            if (request.Port is { } port && port != 0 && (port < 1024 || port > 65535))
+                return Results.BadRequest(new { error = "Pick a port between 1024 and 65535." });
+
+            settings.Remember(s => s.Lan = s.Lan with
+            {
+                Enabled = request.Enabled ?? s.Lan.Enabled,
+                Port = request.Port ?? s.Lan.Port,
+            });
+
+            // Kestrel binds once, at start-up, and does not move. Saying so is better than a
+            // switch that appears to work and then does not.
+            return Results.Ok(new { needsRestart = true });
+        });
+
+        // Adding a firewall rule needs administrator rights, so this raises a prompt on the
+        // machine RatNav is running on.
+        //
+        // Loopback only, deliberately. Everything else here is reachable from the network once the
+        // switch is on, which is the bargain — but making a UAC prompt appear on somebody's screen
+        // from another device is a different kind of thing, and there is no reason to allow it.
+        api.MapPost("/lan/firewall", (HttpContext http) =>
+        {
+            if (http.Connection.RemoteIpAddress is not { } from || !System.Net.IPAddress.IsLoopback(from))
+                return Results.StatusCode(403);
+
+            var added = LanAccess.AddRule(ServiceHost.Port, out var problem);
+
+            return Results.Ok(new { added, problem });
+        });
+
         // ---- which character
 
         // The game gives you a PvE character, a PvP one, and a seasonal PvP one. They share
@@ -940,7 +995,7 @@ public static class ApiEndpoints
         // ---- setup
 
         api.MapGet("/diagnostics", (RatNavSettings settings, RatNavState state, RaidHost host) =>
-            Results.Ok(Diagnostics.Build(settings, ServiceHost.DefaultPort, state.Status(host.LastRefresh))));
+            Results.Ok(Diagnostics.Build(settings, ServiceHost.Port, state.Status(host.LastRefresh))));
 
         // ---- the live raid
 
@@ -2013,6 +2068,9 @@ public sealed record WatchRequest(bool Watch, string? Note, int? Target, int? Ha
 /// <summary>A plan someone pasted in, as a share code.</summary>
 public sealed record ImportCodeRequest(string? Code);
 public sealed record TaskStateRequest(string State);
+
+/// <summary>Both optional, so Setup can change one without restating the other.</summary>
+public sealed record LanRequest(bool? Enabled, int? Port);
 public sealed record HideoutLevelRequest(int Level);
 
 /// <summary>An item row with progress folded in — what the Items view renders.</summary>

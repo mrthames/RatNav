@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, type Diagnostics, type HotKeys, type Profiles, type Settings } from './api'
+import { api, type Diagnostics, type HotKeys, type LanInfo, type Profiles, type Settings } from './api'
 
 /**
  * Everything RatNav needs to know about your machine, and whether it has it.
@@ -230,6 +230,8 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
         </div>
       </div>
 
+      <LanPanel />
+
       {/*
         Recovery, not a preference. A window dragged onto a monitor that is no longer attached
         cannot be dragged back — there is nothing on screen to grab — and without this the only
@@ -377,6 +379,147 @@ function WipeProfile() {
           >
             Cancel
           </button>
+        </div>
+      )}
+
+      {note && <p className="font-mono text-xs text-have">{note}</p>}
+    </div>
+  )
+}
+
+/**
+ * Reaching RatNav from a phone or an iPad on the same wifi.
+ *
+ * <p>There is no login and no token, deliberately: the network is the boundary. What that buys is
+ * a flow with nothing in it — type the address, and you are in. What it costs is that anyone
+ * already on the wifi can do the same, which is why this says so out loud rather than leaving it
+ * to be discovered.</p>
+ *
+ * <p>The rest of this panel exists because "turn it on and hope" is a bad experience. A firewall
+ * that silently eats the connection looks exactly like a feature that does not work, so RatNav
+ * checks, and only says something when there is something to say.</p>
+ */
+function LanPanel() {
+  const [info, setInfo] = useState<LanInfo | null>(null)
+  const [note, setNote] = useState<string | null>(null)
+  const [working, setWorking] = useState(false)
+
+  const load = () => void api.lan().then(setInfo).catch(() => setInfo(null))
+
+  useEffect(load, [])
+
+  if (!info) return null
+
+  async function toggle(enabled: boolean) {
+    setWorking(true)
+    try {
+      await api.saveLan({ enabled })
+      setNote('Saved. Restart RatNav for it to take effect — the port is claimed at start-up.')
+      load()
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  async function allow() {
+    setWorking(true)
+    try {
+      const result = await api.allowThroughFirewall()
+
+      setNote(result.added
+        ? 'Allowed. The port is open to your local network.'
+        : `Not allowed${result.problem ? ` — ${result.problem}` : ''}. `
+          + 'You can run the command below yourself instead.')
+
+      load()
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-line pt-3">
+      <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
+        Reach RatNav from a phone or tablet
+      </p>
+
+      <label className="flex cursor-pointer items-start gap-2.5">
+        <input
+          type="checkbox"
+          checked={info.enabled}
+          disabled={working}
+          onChange={(e) => void toggle(e.target.checked)}
+          className="mt-1 accent-accent"
+        />
+        <span className="text-sm">
+          Answer on my local network
+          <span className="block text-xs text-muted">
+            RatNav normally answers only to this machine. Turning this on lets another device on
+            the same wifi open it in a browser — nothing is installed on that device, and nothing
+            is exposed to the internet.
+          </span>
+        </span>
+      </label>
+
+      {info.enabled && (
+        <div className="flex flex-col gap-2 border-l-2 border-accent/30 pl-3">
+          {/*
+            The addresses rather than one address. A machine with wifi and ethernet both up has
+            two, and which one the iPad is on is not knowable from here.
+          */}
+          {info.addresses.length > 0 ? (
+            <div>
+              <p className="text-xs text-muted">Open this on the other device:</p>
+              {info.addresses.map((address) => (
+                <p key={address} className="font-mono text-sm text-ink">
+                  http://{address}:{info.port}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="font-mono text-xs text-warn">
+              This machine has no network address right now — check it is on the wifi.
+            </p>
+          )}
+
+          {/*
+            Only when there is something to fix. Offering to repair what is not broken teaches
+            people to ignore the panel.
+          */}
+          {!info.firewallAllowed && (
+            <div className="flex flex-col gap-2">
+              <p className="font-mono text-xs text-warn">
+                Windows Firewall has no rule for port {info.port}, so the connection will most
+                likely be refused.
+              </p>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => void allow()}
+                  disabled={working}
+                  className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-ink transition-colors
+                             hover:bg-panel disabled:opacity-50
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  Allow it
+                </button>
+                <span className="ml-2 text-xs text-muted">Windows will ask for permission.</span>
+              </div>
+
+              {/* Never the only way through. */}
+              <p className="text-xs text-muted">Or run this yourself, in an admin prompt:</p>
+              <code className="block overflow-x-auto whitespace-pre bg-panel-hi px-2 py-1.5
+                               font-mono text-[11px] text-ink">
+                {info.firewallCommand}
+              </code>
+            </div>
+          )}
+
+          <p className="text-xs text-muted">
+            Anyone already on your wifi can open RatNav and change its settings. There is no
+            password. Nothing outside your network can reach it.
+          </p>
         </div>
       )}
 

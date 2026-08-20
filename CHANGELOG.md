@@ -16,6 +16,21 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### App
 
+- **Reach RatNav from a phone or tablet.** **Setup → Reach RatNav from a phone or tablet** makes
+  the service answer on your machine's network address as well as its own, so an iPad on the same
+  wifi can open it in a browser. Nothing is installed on the other device, and a plan built there
+  reaches the overlay in game immediately — both are looking at the same RatNav.
+
+  Off until you turn it on, and **nothing outside your network can reach it**: port forwarding is a
+  router-to-internet thing and is not part of this. There is no password either, which Setup says
+  out loud — anyone already on your wifi can open it.
+
+  Windows Firewall usually blocks the port. Setup checks, stays quiet when there is nothing to fix,
+  and otherwise offers to add the rule — with a permission prompt, because opening a port always
+  needs one — and prints the command for anyone who would rather run it themselves.
+- **The port is configurable**, since 8722 can already be taken. Everything that talks to the
+  service reads the port in use rather than the built-in constant, which eleven call sites were
+  previously ignoring.
 - **The header stops wrapping when the clock ticks.** Pressing refresh turned "updated never" into
   "updated just now" and pushed the character level, the timestamp, the refresh button and the
   profile menu onto a line of their own below the navigation. The timestamp now has a width that

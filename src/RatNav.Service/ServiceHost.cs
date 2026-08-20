@@ -19,10 +19,24 @@ namespace RatNav.Service;
 public static class ServiceHost
 {
     /// <summary>
-    /// Default port. Bound to loopback only — RatNav has no accounts and no auth, so it must
-    /// not be reachable from the network. Sharing to a phone is an explicit opt-in, later.
+    /// Default port. Loopback only unless the LAN setting says otherwise — RatNav has no accounts
+    /// and no auth, so reaching it from the network is an explicit opt-in.
     /// </summary>
     public const int DefaultPort = 8722;
+
+    /// <summary>
+    /// The port actually in use this run, once <see cref="Build"/> has settled it.
+    ///
+    /// <para>Everything in the app that talks to the service reads this rather than the constant.
+    /// A configurable port that eleven call sites ignore is not configurable.</para>
+    /// </summary>
+    public static int Port { get; private set; } = DefaultPort;
+
+    /// <summary>
+    /// Where the service is, from this machine. Always loopback: the app talks to its own service
+    /// over 127.0.0.1 whether or not the network can reach it too.
+    /// </summary>
+    public static string Root => $"http://127.0.0.1:{Port}";
 
     public static WebApplication Build(string[]? args = null, int port = DefaultPort)
     {
@@ -41,9 +55,26 @@ public static class ServiceHost
             WebRootPath = FindWebRoot(),
         });
 
-        builder.WebHost.ConfigureKestrel(options => options.ListenLocalhost(port));
-
         var dataDirectory = RatNavPaths.EnsureDataDirectory();
+
+        // Loaded here rather than only in the container, because where to listen is the one
+        // decision that cannot be taken later: Kestrel binds at start-up and does not move.
+        var settings = RatNavSettings.Load(dataDirectory);
+        var lan = settings.Lan;
+
+        Port = lan.Port > 0 ? lan.Port : port;
+
+        builder.WebHost.ConfigureKestrel(options =>
+        {
+            // One or the other on the same port, never both: every address includes loopback, so
+            // asking for loopback as well is asking for the same socket twice.
+            //
+            // Every address is what a phone or an iPad on the same wifi types in. No port
+            // forwarding is involved and none should be — that is a router-to-internet thing, and
+            // without it the router is still the wall.
+            if (lan.Enabled) options.ListenAnyIP(Port);
+            else options.ListenLocalhost(Port);
+        });
 
         // Which character is being tracked. Everything belonging to one lives in its own
         // directory; the cached game data, the map images and the machine's own settings sit
@@ -100,7 +131,10 @@ public static class ServiceHost
             return marks;
         });
 
-        builder.Services.AddSingleton(_ => RatNavSettings.Load(dataDirectory));
+        // The same instance the port was read from. Loading twice would work — migrations are
+        // gated on a revision and would not run again — but two objects for one settings file is
+        // two things that can disagree.
+        builder.Services.AddSingleton(settings);
 
         builder.Services.AddSingleton(sp =>
         {
