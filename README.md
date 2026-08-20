@@ -137,6 +137,38 @@ upgrades you actually want and the list narrows to those.
 survives carrying its owner — and it flags what actually changes the raid: objectives to do
 together, items you are both hunting, and keys only one of you needs to carry.
 
+## The buddy app
+
+Everything above, on a second screen or in the expanded overlay — the same app either way, so there
+is one place to learn rather than two.
+
+**Maps.** Every objective of every active quest, on the map, with extracts, place names and four
+levels of detail. **Coming soon** lists maps that have a drawing and are one position away from
+being finished; a map with no drawing anywhere is not listed and not promised.
+
+![The Maps page: Customs drawn with its objectives, extracts and place names, the draw and floor controls above it, and a Coming soon list beneath](docs/buddy/maps.png)
+
+**Items.** What every active quest and reachable hideout upgrade wants, minus what you have, with
+what each one is *for* on the line beneath it. Filter to found-in-raid, or keys, or the hideout.
+
+![The Items page: a table of needed items with their icons, found-in-raid flags, what each is for, and need, have and left counts](docs/buddy/items.png)
+
+**Quests.** Every trader with their portrait and loyalty level, and each quest's state as four
+buttons — with a link to the wiki and the wiki's own screenshots of the place.
+
+![The Quests page: trader portraits with loyalty controls above a list of active quests, each with not-started, active, complete and failed controls](docs/buddy/quests.png)
+
+**Hideout.** What you could build now, then what one more upgrade unlocks, each module listing what
+it still takes. Found-in-raid marked in red, because those are the ones you cannot buy your way out
+of later.
+
+![The Hideout page: modules buildable now, each listing the items and roubles it still needs, with found-in-raid requirements marked](docs/buddy/hideout.png)
+
+**Plan.** Tick the objectives you are pushing; they become the numbered stops the overlay shows in
+raid, and the keys and shopping list assemble themselves.
+
+![The Plan page: Customs objectives grouped by place, two ticked, and a This raid panel listing them as ordered stops](docs/buddy/plan.png)
+
 ## How position works
 
 Escape from Tarkov writes your coordinates into the filename of every screenshot you take. So your

@@ -233,6 +233,15 @@ It rests on one thing, and it is something you do rather than something the soft
   the same thing as a **divider**: it is never counted, and two screenshots that both show it are
   known to overlap exactly there.
 
+A block fenced off this way, with a row of bandages at each end and everything to be counted
+between them:
+
+![A stash with a full row of bandages across the top, a block of loose items below it, and a second full row of bandages closing it off](stash-dividers.jpg)
+
+Everything between the two rows is counted. The bandages themselves never are — putting twenty of
+them on a shopping list would be its own small betrayal — and nothing above the top row or below
+the bottom one is looked at, so the rest of your stash can be anything at all.
+
 Items are named by matching each cell against the icons of the items **you already track**. If
 nothing on your list wants it, RatNav says so and leaves the cell alone rather than guessing.
 
