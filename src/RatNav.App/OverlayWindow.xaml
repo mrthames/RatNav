@@ -165,6 +165,97 @@
         </Style>
 
         <!--
+            A dropdown that looks like the rest of the overlay.
+
+            Templated rather than styled, because WPF's own ComboBox brings a light chrome with it
+            that cannot be talked out of the popup — and a white list dropping out of a dark
+            translucent overlay over a game reads as another application's window opening.
+        -->
+        <Style x:Key="DarkComboItem" TargetType="ComboBoxItem">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Padding" Value="7,3" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Row" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Row" Property="Background" Value="#668ec8ff" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Row" Property="Background" Value="#3324313b" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DarkCombo" TargetType="ComboBox">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboItem}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="Face"
+                                          Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Chrome"
+                                                Background="#33ffffff"
+                                                BorderBrush="{StaticResource Line}"
+                                                BorderThickness="1"
+                                                CornerRadius="2"
+                                                Padding="7,2">
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text=" ▾"
+                                                           Foreground="{StaticResource Muted}"
+                                                           VerticalAlignment="Center" />
+                                                <ContentPresenter x:Name="Face"
+                                                                  Content="{Binding SelectionBoxItem,
+                                                                            RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  VerticalAlignment="Center" />
+                                            </DockPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Chrome" Property="Background" Value="#668ec8ff" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <Popup IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   Placement="Bottom" AllowsTransparency="True"
+                                   PopupAnimation="None" StaysOpen="False">
+                                <Border Background="#f50b0f13"
+                                        BorderBrush="{StaticResource Line}"
+                                        BorderThickness="1"
+                                        CornerRadius="2"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel IsItemsHost="True" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
             The dividers.
 
             One style each way rather than a template repeated at four call sites: there is a
@@ -834,6 +925,22 @@
                                Foreground="{StaticResource Ink}" VerticalAlignment="Center"
                                MinWidth="38" TextAlignment="Center" Text="1.0×" />
                     <Button x:Name="QuickZoomUp" Style="{StaticResource Chip}" Content="+" />
+
+                    <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
+
+                    <!--
+                        Which floor, with "Stacked" first and default.
+
+                        Every floor is drawn on top of the other by default, because choosing one
+                        for you off your height was solving a problem the map does not have and
+                        getting it wrong emptied the drawing. Isolating one is still a reasonable
+                        thing to *want*, so it is here — one click away rather than in the drawer,
+                        and never changed underneath you by a position fix.
+                    -->
+                    <TextBlock Style="{StaticResource Label}" Text="FLOOR" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <ComboBox x:Name="QuickFloor" Style="{StaticResource DarkCombo}"
+                              MinWidth="86" VerticalAlignment="Center"
+                              ToolTip="Draw every floor stacked, or isolate one" />
 
                     <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
 

@@ -16,6 +16,10 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **A floor dropdown on the quick panel**, per map, with **Stacked** first and default. Every floor
+  is drawn over the other unless you say otherwise; isolating one is now one click away instead of
+  buried in the controls drawer, and a position fix never changes it underneath you. The drawer's
+  floor stepper can reach Stacked too — it could get into a single floor and not back out.
 - **Fold the map away and keep the lists.** A **map** handle next to **quests** and **items**, in
   the panel view. Folding it leaves a narrow strip of exactly the two lists — for the part of a
   raid spent standing still reading what you still need, where the map is the biggest thing on

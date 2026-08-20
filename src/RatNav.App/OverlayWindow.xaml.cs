@@ -207,6 +207,7 @@ public partial class OverlayWindow : Window
 
         FloorUp.Click += (_, _) => StepFloor(+1);
         FloorDown.Click += (_, _) => StepFloor(-1);
+        QuickFloor.SelectionChanged += (_, _) => OnFloorPicked();
         InkBack.Click += (_, _) => CycleInk(-1);
         InkNext.Click += (_, _) => CycleInk(+1);
         FadeUp.Click += (_, _) => StepFade(+0.1);
@@ -794,6 +795,11 @@ public partial class OverlayWindow : Window
                 $"{root}/maps/{Uri.EscapeDataString(mapId)}/waypoints") ?? [];
 
             _floorsFor = mapId;
+
+            // A different map has different levels, and a floor chosen on the last one means
+            // nothing here. Back to stacked, which is the answer that is never wrong.
+            _floorOverride = null;
+            FillFloorList();
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
@@ -1084,17 +1090,62 @@ public partial class OverlayWindow : Window
     /// </summary>
     private string? FloorFor(RaidView view) => _floorOverride;
 
+    /// <summary>
+    /// Fills the floor dropdown for the map on screen.
+    ///
+    /// <para>Only when the map's levels have actually changed. Rebuilt on every redraw it would
+    /// close itself under the pointer mid-choice, which reads as the control refusing to open.</para>
+    ///
+    /// <para><b>Stacked is first and is the default.</b> Every floor drawn over the other is what
+    /// the map does unless told otherwise — choosing one for you off your height was solving a
+    /// problem the map does not have, and getting it wrong emptied the drawing entirely.</para>
+    /// </summary>
+    private void FillFloorList()
+    {
+        _fillingFloors = true;
+
+        QuickFloor.Items.Clear();
+        QuickFloor.Items.Add(StackedFloor);
+
+        foreach (var floor in _floors) QuickFloor.Items.Add(floor.Name);
+
+        QuickFloor.SelectedIndex = 0;
+        QuickFloor.IsEnabled = _floors.Count > 1;
+
+        _fillingFloors = false;
+    }
+
+    /// <summary>The first entry, and what the map does when nothing is chosen.</summary>
+    private const string StackedFloor = "Stacked";
+
+    /// <summary>True while the list is being rebuilt, so its own churn does not read as a choice.</summary>
+    private bool _fillingFloors;
+
+    private void OnFloorPicked()
+    {
+        if (_fillingFloors) return;
+
+        var at = QuickFloor.SelectedIndex;
+
+        _floorOverride = at <= 0 || at - 1 >= _floors.Count ? null : _floors[at - 1].Layer;
+        _overrodeAt = DateTimeOffset.Now;
+
+        Redraw();
+    }
+
     private void StepFloor(int direction)
     {
         if (_floors.Count == 0 || _view is null) return;
 
         var current = FloorFor(_view);
-        var at = _floors.ToList().FindIndex(f => f.Layer == current);
 
-        // An unknown current level starts from the bottom rather than doing nothing.
-        var next = Math.Clamp(at < 0 ? 0 : at + direction, 0, _floors.Count - 1);
+        // Stacked sits below the bottom floor rather than outside the range, so stepping down off
+        // the lowest level lands back on it. The stepper could not reach stacked at all before,
+        // which left the drawer offering a way in with no way out.
+        var at = current is null ? -1 : _floors.ToList().FindIndex(f => f.Layer == current);
+        var next = Math.Clamp(at + direction, -1, _floors.Count - 1);
 
-        _floorOverride = _floors[next].Layer;
+        _floorOverride = next < 0 ? null : _floors[next].Layer;
         _overrodeAt = DateTimeOffset.Now;
 
         Redraw();
@@ -2058,7 +2109,7 @@ public partial class OverlayWindow : Window
         var floor = view is null ? null : FloorFor(view);
         var named = _floors.FirstOrDefault(f => f.Layer == floor);
 
-        FloorText.Text = named?.Name ?? floor ?? "—";
+        FloorText.Text = named?.Name ?? floor ?? StackedFloor;
 
         // Say when you are looking somewhere other than where you stand, because forgetting that
         // is how you plan a route across a floor you are not on.
@@ -2066,7 +2117,18 @@ public partial class OverlayWindow : Window
 
         var at = _floors.ToList().FindIndex(f => f.Layer == floor);
         FloorUp.IsEnabled = _floors.Count > 0 && at < _floors.Count - 1;
-        FloorDown.IsEnabled = _floors.Count > 0 && at > 0;
+        FloorDown.IsEnabled = _floors.Count > 0 && _floorOverride is not null;
+
+        // Two controls onto one value, so the drawer's stepper and the quick panel's dropdown
+        // cannot disagree about which floor is being looked at.
+        var wanted = _floorOverride is null ? 0 : at + 1;
+
+        if (QuickFloor.SelectedIndex != wanted && wanted < QuickFloor.Items.Count)
+        {
+            _fillingFloors = true;
+            QuickFloor.SelectedIndex = wanted;
+            _fillingFloors = false;
+        }
 
         InkButton.Text = Placement.Ink;
         FadeText.Text = $"{_settings.Overlay.MapOpacity * 100:F0}%";
