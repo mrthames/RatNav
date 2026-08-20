@@ -139,4 +139,41 @@ public class SearchTextTests
     {
         Assert.False(SearchText.Contains("What\u2019s on the Flash Drive?", "shoreline"));
     }
+
+    /// <summary>
+    /// The reported case, verbatim: a compass in a backpack read as a golden neck chain.
+    ///
+    /// <para>Six cells beside it were labelled "GoldChain" and its own cell was truncated to
+    /// "Compa". The one thing in the picture naming what the cursor was on was the game's
+    /// tooltip.</para>
+    /// </summary>
+    [Fact]
+    public void A_neighbouring_cells_abbreviation_does_not_beat_the_tooltip()
+    {
+        ItemDef[] items =
+        [
+            new() { Id = "compass", Name = "EYE MK.2 professional hand-held compass", ShortName = "Compass" },
+            new() { Id = "chain", Name = "Golden neck chain", ShortName = "GoldChain" },
+        ];
+
+        var read = new[]
+        {
+            "GoldChain", "GoldChain", "GoldChain", "GoldChain", "GoldChain", "GoldChain",
+            "Compa",
+            "EYE MK.2 professional hand-held compass",
+        };
+
+        Assert.Equal("compass", ItemMatcher.Identify(read, items)[0].Item.Id);
+    }
+
+    /// <summary>An abbreviation on its own names nothing — it is what the cell says, and the cells
+    /// around it say the same sort of thing.</summary>
+    [Fact]
+    public void An_abbreviation_alone_is_not_enough_to_identify_an_item()
+    {
+        ItemDef[] items =
+            [new() { Id = "chain", Name = "Golden neck chain", ShortName = "GoldChain" }];
+
+        Assert.Empty(ItemMatcher.Identify(["GoldChain"], items));
+    }
 }

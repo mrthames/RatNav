@@ -8,6 +8,8 @@ import {
   type TurnIn,
   type CustomWaypoint,
 } from './api'
+import { MapPicker } from './MapPicker'
+import { MapView } from './MapView'
 
 /**
  * The pre-raid ritual, in the order it is actually done: pick a map, tick the objectives you are
@@ -15,6 +17,9 @@ import {
  */
 export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | null }) {
   const [mapId, setMapId] = useState<string | null>(null)
+
+  /** Whether the plan menu — sharing and importing — is open. */
+  const [planMenu, setPlanMenu] = useState(false)
   const [objectives, setObjectives] = useState<PlannableObjective[]>([])
 
   /**
@@ -39,6 +44,35 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const [picks, setPicks] = useState<Record<string, string[]>>({})
 
   const chosen = useMemo(() => (mapId ? picks[mapId] ?? [] : []), [picks, mapId])
+
+  const chosenMap = useMemo(
+    () => maps.find((m) => m.id === mapId) ?? null, [maps, mapId])
+
+  /**
+   * The stops you have ticked, as pins for the map above the list.
+   *
+   * <p>Numbered in the order you picked them, so a pin and its row say the same thing — and only
+   * what is ticked, which is the difference between this map and the one on the Maps page.</p>
+   */
+  const chosenPins = useMemo(
+    () => chosen
+      .map((id) => objectives.find((o) => o.objectiveId === id))
+      .filter((o): o is PlannableObjective => o !== undefined)
+      .map((o) => ({
+        taskId: o.taskId,
+        taskName: o.taskName,
+        traderName: o.traderName,
+        objectiveId: o.objectiveId,
+        description: o.description,
+        type: null,
+        optional: o.optional,
+        x: o.x,
+        y: o.y,
+        elevation: 0,
+        neededKeyItemIds: o.neededKeyItemIds,
+      })),
+    [chosen, objectives],
+  )
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
@@ -177,24 +211,6 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        {calibrated.map((map) => (
-          <button
-            key={map.id}
-            type="button"
-            aria-pressed={mapId === map.id}
-            onClick={() => setMapId(map.id)}
-            className="rounded-sm bg-panel px-3 py-1.5 text-sm text-muted transition-colors
-                       hover:text-ink aria-pressed:bg-accent aria-pressed:text-ground
-                       focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            {map.name}
-            {map.workInProgress && (
-              <span className="ml-1.5 font-mono text-[10px] text-warn">[WIP]</span>
-            )}
-          </button>
-        ))}
-      </div>
 
       {/*
         Shown whether or not you are in a raid. A plan outlives the raid it was built for, and the
@@ -203,16 +219,100 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       */}
       {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
       <TurnIns />
-      {mapId && (
-        <Sharing
-          mapId={mapId}
-          mapName={maps.find((m) => m.id === mapId)?.name ?? ''}
-          planned={planned}
-        />
-      )}
+      {/*
+        Which map, and what you can do with the plan as a whole.
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
-        <div className="flex flex-col gap-3">
+        The maps stay on show — that is the choice you make first and change often enough to want
+        one click. Sharing and importing go behind the menu on the right: both are occasional, and
+        two buttons for them sat next to the maps looking equally important.
+      */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <MapPicker
+          maps={calibrated}
+          selected={calibrated.find((m) => m.id === mapId) ?? null}
+          onSelect={(map) => setMapId(map.id)}
+        />
+
+        {mapId && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setPlanMenu((open) => !open)}
+              aria-expanded={planMenu}
+              aria-label="Plan actions"
+              className="rounded-sm bg-panel px-3 py-2 font-mono text-sm text-muted
+                         transition-colors hover:text-ink
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              ☰
+            </button>
+
+            {planMenu && (
+              <div className="absolute right-0 top-full z-20 mt-1 w-max border border-line
+                              bg-panel p-3 shadow-xl">
+                <Sharing
+                  mapId={mapId}
+                  mapName={maps.find((m) => m.id === mapId)?.name ?? ''}
+                  planned={planned}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/*
+        The map beside the raid panel, and the list of stops beneath both.
+
+        Two thirds and one third rather than the map across the whole page: you can zoom, so the
+        map does not need the width, and taking the full column pushed the list so far down that
+        ticking a quest scrolled the map out of view — which is the one thing this arrangement
+        exists to prevent.
+      */}
+      <div className="grid items-start gap-4 lg:grid-cols-[2fr_1fr]">
+        {mapId && chosenMap ? (
+          <div className="min-w-0 border border-line bg-ground p-2">
+            <MapView
+              key={`plan-${chosenMap.id}`}
+              map={chosenMap}
+              objectives={chosenPins}
+              minimal
+            />
+          </div>
+        ) : <div />}
+        <aside className="flex h-fit flex-col gap-3 border border-line bg-panel p-3">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-muted">This raid</p>
+
+          <p className="font-mono text-sm tabular-nums">
+            {chosen.length} objective{chosen.length === 1 ? '' : 's'}
+          </p>
+
+          {route.length > 0 && <Route stops={route} onMove={move} onRemove={toggle} />}
+
+          {keys.length > 0 && <Keys itemIds={keys} />}
+
+          <button
+            type="button"
+            onClick={build}
+            disabled={busy || chosen.length === 0}
+            className="rounded-sm border border-accent bg-accent px-3 py-2 text-sm font-medium
+                       text-ground transition-opacity hover:opacity-90 disabled:opacity-30
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            {busy ? 'Planning…' : 'Plan this raid'}
+          </button>
+
+          {note && <p className="font-mono text-xs text-have">{note}</p>}
+
+          <p className="text-xs leading-relaxed text-muted">
+            Stops run in the order you ticked them. Drag a row, or use the arrows, to change it.
+            Once you are in raid the stops you have not reached re-order around wherever you
+            actually are, the first time you take a position fix.
+          </p>
+        </aside>
+      </div>
+
+      <div className="flex flex-col gap-3">
           {/*
             Your own marks, offered the same way the quest objectives are. Above them, because a
             short list you wrote yourself should not be below forty derived rows.
@@ -322,38 +422,6 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
               </div>
             ))
           )}
-        </div>
-
-        <aside className="flex h-fit flex-col gap-3 border border-line bg-panel p-3">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-muted">This raid</p>
-
-          <p className="font-mono text-sm tabular-nums">
-            {chosen.length} objective{chosen.length === 1 ? '' : 's'}
-          </p>
-
-          {route.length > 0 && <Route stops={route} onMove={move} onRemove={toggle} />}
-
-          {keys.length > 0 && <Keys itemIds={keys} />}
-
-          <button
-            type="button"
-            onClick={build}
-            disabled={busy || chosen.length === 0}
-            className="rounded-sm border border-accent bg-accent px-3 py-2 text-sm font-medium
-                       text-ground transition-opacity hover:opacity-90 disabled:opacity-30
-                       focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            {busy ? 'Planning…' : 'Plan this raid'}
-          </button>
-
-          {note && <p className="font-mono text-xs text-have">{note}</p>}
-
-          <p className="text-xs leading-relaxed text-muted">
-            Stops run in the order you ticked them. Drag a row, or use the arrows, to change it.
-            Once you are in raid the stops you have not reached re-order around wherever you
-            actually are, the first time you take a position fix.
-          </p>
-        </aside>
       </div>
     </div>
   )

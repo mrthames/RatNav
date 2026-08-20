@@ -35,14 +35,8 @@ export function HideoutView() {
     await load()
   }
 
-  async function toggleTarget(upgrade: HideoutUpgrade) {
-    await api.targetUpgrade(upgrade.stationId, upgrade.level, !upgrade.targeted)
-    await load()
-  }
-
   if (!state) return <p className="font-mono text-xs text-muted">loading hideout…</p>
 
-  const targeted = state.upcoming.filter((u) => u.targeted)
   const waves = [...new Set(state.upcoming.map((u) => u.wave))].sort((a, b) => a - b)
 
   return (
@@ -82,7 +76,6 @@ export function HideoutView() {
         <p className="font-mono text-xs text-muted">
           {state.upcoming.length} upgrade{state.upcoming.length === 1 ? '' : 's'} ·{' '}
           {new Set(state.upcoming.flatMap((u) => u.items.map((i) => i.itemId))).size} items
-          {targeted.length > 0 && ` · ${targeted.length} targeted, and only those count`}
         </p>
       </section>
 
@@ -103,7 +96,6 @@ export function HideoutView() {
               <UpgradeRow
                 key={`${upgrade.stationId}-${upgrade.level}`}
                 upgrade={upgrade}
-                onToggle={() => void toggleTarget(upgrade)}
                 onBuilt={() => void setLevel(upgrade.stationId, upgrade.level)}
               />
             ))}
@@ -192,10 +184,9 @@ export function HideoutView() {
 }
 
 function UpgradeRow({
-  upgrade, onToggle, onBuilt,
+  upgrade, onBuilt,
 }: {
   upgrade: HideoutUpgrade
-  onToggle: () => void
   onBuilt: () => void
 }) {
   const short = upgrade.items.filter((i) => i.have < i.count)
@@ -203,17 +194,6 @@ function UpgradeRow({
   return (
     <div className="bg-panel px-3 py-2">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-pressed={upgrade.targeted}
-          className="font-mono text-[11px] uppercase tracking-wider text-muted
-                     hover:text-ink aria-pressed:text-accent
-                     focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          {upgrade.targeted ? '★ targeted' : '☆ target'}
-        </button>
-
         <span className="text-sm text-ink">
           {upgrade.stationName} <span className="tabular-nums">{upgrade.level}</span>
         </span>
@@ -237,7 +217,7 @@ function UpgradeRow({
       </div>
 
       {short.length > 0 && (
-        <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+        <ul className="mt-1 flex max-w-[70%] flex-wrap gap-x-4 gap-y-1">
           {short.map((item) => (
             <li key={item.itemId} className="font-mono text-xs tabular-nums text-muted">
               <span className={item.foundInRaid ? 'text-need' : 'text-route'}>

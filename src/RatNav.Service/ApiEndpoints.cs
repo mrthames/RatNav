@@ -1121,7 +1121,12 @@ public static class ApiEndpoints
         // Every objective that can be pinned on this map, already converted to image
         // coordinates. Doing the transform server-side is what keeps the WPF overlay and the
         // web app from drifting apart: there is one implementation, and both surfaces call it.
-        api.MapGet("/maps/{id}/objectives", (RatNavState state, string id) =>
+        // Every quest's objectives on a map, or only the ones you are actually doing.
+        //
+        // Streets with every quest in the game pinned on it is a map you cannot read, so which of
+        // the two you get is a control on the page rather than a decision made here.
+        api.MapGet("/maps/{id}/objectives", (
+            RatNavState state, ProgressStore progress, string id, bool? active) =>
         {
             var data = state.Cache.Current;
             if (data is null) return Results.NotFound();
@@ -1134,6 +1139,7 @@ public static class ApiEndpoints
 
             var pins =
                 from task in data.Tasks
+                where active != true || progress.StateOf(task.Id) == QuestState.Active
                 from objective in task.Objectives
                 // Match on the resolved map's own id, not the URL segment — the route accepts a
                 // normalized name too, and comparing that against tarkov.dev ids silently
@@ -2214,6 +2220,9 @@ public sealed record TaskSummary
         {
             foreach (var requirement in task.TraderRequirements)
             {
+                // Loyalty starts at 1; a requirement of 0 means there is no trader gate.
+                if (requirement.Level < 1) continue;
+
                 var trader = requirement.TraderName ?? requirement.TraderId;
                 if (traderLevelOf(trader) >= requirement.Level) continue;
 

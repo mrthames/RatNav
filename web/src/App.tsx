@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ago, api, type DataStatus, type MapSummary, type RaidView } from './api'
 import { HeldBack } from './HeldBack'
+import { MapPicker } from './MapPicker'
 import { MapView } from './MapView'
 import { HideoutView } from './HideoutView'
 import { ItemsView } from './ItemsView'
@@ -168,24 +169,9 @@ export default function App() {
       {view === 'quests' && <QuestsView />}
       {view === 'setup' && <SetupView />}
 
-      {view === 'maps' && <div className="flex flex-wrap gap-px">
-        {maps.map((map) => (
-          <button
-            key={map.id}
-            type="button"
-            aria-pressed={selected?.id === map.id}
-            onClick={() => setSelected(map)}
-            className="rounded-sm bg-panel px-3 py-2 text-sm text-muted transition-colors
-                       hover:text-ink aria-pressed:bg-accent aria-pressed:text-ground
-                       focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            {map.name}
-            {map.workInProgress && (
-              <span className="ml-1.5 font-mono text-[10px] text-warn">[WIP]</span>
-            )}
-          </button>
-        ))}
-      </div>}
+      {view === 'maps' && (
+        <MapPicker maps={maps} selected={selected} onSelect={setSelected} />
+      )}
 
       {view === 'maps' && (selected
         ? <MapView key={selected.id} map={selected} />

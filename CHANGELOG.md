@@ -64,7 +64,20 @@ The first public release. Alpha: it works and is used daily, but it is early.
   have-counts are not the point of the list — what is still *needed* is. A feature kept because it
   works, rather than because it earns its place, is one more thing to explain and maintain.
 
+### Plan
+
+- **The map is on the Plan page**, beside the raid panel with the quest list beneath both. Tick a
+  quest and its waypoint appears without the map moving. Zoom and right-drag to pan; click a
+  waypoint to read the quest.
+- **Sharing and importing moved into a menu**, so the maps stay one click away and two occasional
+  controls stop looking as important as the choice you make first.
+
 ### Quests and maps
+
+- **Maps can show active quests, all quests, or none.** Streets with every quest in the game pinned
+  on it is a map you cannot read.
+- **The hideout page drops the watchlist star.** Watchlisting belongs on Items; this page is for
+  what to build.
 
 - **What to bring, named.** The quest modal lists what a quest needs carried in, keys first — and
   the Plan page says it on the row you tick, before you queue rather than after. It used to read
@@ -82,6 +95,13 @@ The first public release. Alpha: it works and is used daily, but it is early.
   arrive finished.
 
 ### Fixed
+
+- **F8 reads the tooltip, not the cell.** Hovering a compass in a backpack reported a golden neck
+  chain: six cells beside it were labelled "GoldChain" and its own cell was truncated to "Compa".
+  Only the game's tooltip names what the cursor is on, so that is the only thing matched now.
+- **"needs Ragman LL0" is gone.** Loyalty starts at 1, so a requirement of 0 is the source saying
+  "no trader gate" in a field that has to hold a number. It read as a gate you could not be below.
+- **The hideout's required items no longer slide under the Built it control.**
 
 - **Zoom follows the pointer on the Maps page.** Scrolling zoomed about the top-left corner, so
   whatever you were pointing at slid away from under the cursor.

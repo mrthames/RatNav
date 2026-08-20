@@ -42,7 +42,30 @@ const FLOOR_ORDER = [
   'Third_Floor', 'Fourth_Floor', 'Fifth_Floor',
 ]
 
-export function MapView({ map }: { map: MapSummary }) {
+export function MapView({
+  map,
+  objectives,
+  minimal = false,
+}: {
+  map: MapSummary
+
+  /**
+   * The waypoints to draw, when the caller has its own set.
+   *
+   * <p>The Plan page passes the stops you have ticked, so the route appears as you build it.
+   * Left out, the map fetches every active quest's objectives, which is what the Maps page
+   * wants.</p>
+   */
+  objectives?: ObjectivePin[]
+
+  /**
+   * Drops everything except the map, the pins and the ability to move around them.
+   *
+   * <p>For the Plan page, where the map is there to watch a plan take shape rather than to be
+   * studied. Draw levels, floors, exits, marks and place search all belong to the Maps page.</p>
+   */
+  minimal?: boolean
+}) {
   const [markup, setMarkup] = useState<string | null>(null)
   const [pins, setPins] = useState<ObjectivePin[]>([])
   const [ink, setInk] = useState<InkLevel>('graphical')
@@ -73,13 +96,25 @@ export function MapView({ map }: { map: MapSummary }) {
   /** Names drawn on the map, the way the overlay draws them. */
   const [names, setNames] = useState(true)
 
+  /**
+   * How many quests to pin.
+   *
+   * <p>Streets with every quest on it is a map you cannot read. "Active" is the useful default —
+   * what you are actually doing — with "all" there for planning what to pick up next and "off" for
+   * when you want to look at the map itself.</p>
+   */
+  const [showing, setShowing] = useState<'active' | 'all' | 'off'>('active')
+  const [allPins, setAllPins] = useState<ObjectivePin[] | null>(null)
+
   /** The waypoint whose quest is open, if any. */
   const [reading, setReading] = useState<ObjectivePin | null>(null)
 
   useEffect(() => {
     setSearch('')
-    api.places(map.id).then(setPlaces).catch(() => setPlaces([]))
-  }, [map.id])
+
+    // Place search is a Maps-page control; the Plan map has no box to type into.
+    if (!minimal) api.places(map.id).then(setPlaces).catch(() => setPlaces([]))
+  }, [map.id, minimal])
 
   const found = useMemo(() => {
     const needle = search.trim().toLowerCase()
@@ -172,9 +207,24 @@ export function MapView({ map }: { map: MapSummary }) {
   }, [map.id, ink])
 
   useEffect(() => {
-    api.objectives(map.id).then(setPins).catch(() => setPins([]))
-    api.extracts(map.id).then(setExtracts).catch(() => setExtracts([]))
-  }, [map.id])
+    // Only fetched when the caller has not supplied a set of its own.
+    if (objectives === undefined) {
+      api.objectives(map.id).then(setPins).catch(() => setPins([]))
+    }
+
+    // Extracts belong to the Maps page's controls, so a minimal map does not ask for them.
+    if (!minimal) api.extracts(map.id).then(setExtracts).catch(() => setExtracts([]))
+  }, [map.id, objectives === undefined, minimal])
+
+  useEffect(() => { setAllPins(null) }, [map.id])
+
+  useEffect(() => {
+    // Every quest rather than the active ones, fetched the first time it is asked for. It is the
+    // bigger answer and most people never want it.
+    if (showing !== 'all' || allPins !== null) return
+
+    api.allObjectives(map.id).then(setAllPins).catch(() => setAllPins([]))
+  }, [map.id, showing, allPins])
 
   // Applying the active floor by class rather than re-rendering the SVG: these files run to
   // 300 KB and re-parsing one on every floor click would be visible.
@@ -188,7 +238,10 @@ export function MapView({ map }: { map: MapSummary }) {
     }
   }, [markup, floor, ghost])
 
-  const positioned = useMemo(() => pins.filter((p) => p.x >= 0 && p.x <= 1), [pins])
+  const shown = objectives
+    ?? (showing === 'off' ? [] : showing === 'all' ? (allPins ?? pins) : pins)
+
+  const positioned = useMemo(() => shown.filter((p) => p.x >= 0 && p.x <= 1), [shown])
 
   const exits = useMemo(
     () =>
@@ -201,6 +254,8 @@ export function MapView({ map }: { map: MapSummary }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        {/* Maps-page furniture. The Plan page wants the map, the pins, and nothing else. */}
+        {!minimal && (<>
         <Segment
           label="Draw"
           options={[
@@ -233,6 +288,17 @@ export function MapView({ map }: { map: MapSummary }) {
           </>
         )}
 
+        </>)}
+
+        {!minimal && (
+          <Segment
+            label="Quests"
+            options={[['active', 'Active'], ['all', 'All'], ['off', 'Off']]}
+            value={showing}
+            onChange={(v) => setShowing(v as 'active' | 'all' | 'off')}
+          />
+        )}
+
         {(zoom !== 1 || pan.x !== 0 || pan.y !== 0) && (
           <button
             type="button"
@@ -244,6 +310,7 @@ export function MapView({ map }: { map: MapSummary }) {
           </button>
         )}
 
+        {!minimal && (<>
         {extracts.length > 0 && (
           <Segment
             label="Exits"
@@ -316,6 +383,7 @@ export function MapView({ map }: { map: MapSummary }) {
         </button>
 
 
+        </>)}
       </div>
 
       <div

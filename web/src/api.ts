@@ -649,7 +649,13 @@ export const api = {
 
   setTaskState: (taskId: string, state: string) =>
     post<{ id: string; state: string }>(`/api/progress/tasks/${encodeURIComponent(taskId)}`, { state }),
-  objectives: (mapId: string) => get<ObjectivePin[]>(`/api/maps/${encodeURIComponent(mapId)}/objectives`),
+  /** The objectives of your active quests on a map. */
+  objectives: (mapId: string) =>
+    get<ObjectivePin[]>(`/api/maps/${encodeURIComponent(mapId)}/objectives?active=true`),
+
+  /** Every quest's objectives on a map, including ones you have not accepted. */
+  allObjectives: (mapId: string) =>
+    get<ObjectivePin[]>(`/api/maps/${encodeURIComponent(mapId)}/objectives`),
 
   /** The map image, restyled server-side so the overlay and this app cannot disagree. */
   imageUrl: (mapId: string, ink: InkLevel, opacity = 1) =>

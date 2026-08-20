@@ -36,6 +36,13 @@ public static class ItemMatcher
 
     /// <summary>
     /// The most likely items for some text read off the screen, best first.
+    ///
+    /// <para><b>Full names only.</b> The game prints an abbreviation on each inventory cell and the
+    /// real name in the tooltip under your cursor, and the capture contains both — along with the
+    /// abbreviations of every neighbouring cell. Matching abbreviations too meant a compass in a
+    /// backpack read as a golden neck chain, because six cells beside it said "GoldChain" and one
+    /// truncated cell said "Compa". The tooltip said "EYE MK.2 professional hand-held compass", and
+    /// that is the only thing in the picture that names the item you are pointing at.</para>
     /// </summary>
     /// <param name="lines">Text lines from the capture, in any order.</param>
     /// <param name="items">Everything it could be.</param>
@@ -63,16 +70,10 @@ public static class ItemMatcher
         foreach (var item in items)
         {
             var name = Normalize(item.Name);
-            var shortName = item.ShortName is { Length: > 0 } ? Normalize(item.ShortName) : null;
 
             foreach (var line in candidates)
             {
                 var score = Similarity(line, name);
-
-                // A short name is a strong signal when it matches, but two or three characters
-                // match too much by accident to be trusted on their own.
-                if (shortName is { Length: >= 4 })
-                    score = Math.Max(score, Similarity(line, shortName) * 0.95);
 
                 if (score < Floor) continue;
 

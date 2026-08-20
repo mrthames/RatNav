@@ -243,6 +243,11 @@ public static class HideoutPlanner
 
         foreach (var requirement in level.TraderRequirements)
         {
+            // Loyalty starts at 1, so a requirement of 0 is not a requirement — it is the source
+            // saying "no trader gate" in a field that has to hold a number. Printing it gave
+            // "needs Ragman LL0", which reads as a gate you cannot be below.
+            if (requirement.Level < 1) continue;
+
             blockers.Add(new HideoutBlocker
             {
                 Kind = "trader",
