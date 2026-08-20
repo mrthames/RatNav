@@ -152,7 +152,7 @@ being finished; a map with no drawing anywhere is not listed and not promised.
 **Items.** What every active quest and reachable hideout upgrade wants, minus what you have, with
 what each one is *for* on the line beneath it. Filter to found-in-raid, or keys, or the hideout.
 
-![The Items page: a table of needed items with their icons, found-in-raid flags, what each is for, and need, have and left counts](docs/app/items.png)
+![The Items page: needed items with their icons, found-in-raid flags, and what each one is for](docs/app/items.png)
 
 **Quests.** Every trader with their portrait and loyalty level, and each quest's state as four
 buttons — with a link to the wiki and the wiki's own screenshots of the place.
@@ -165,10 +165,11 @@ of later.
 
 ![The Hideout page: modules buildable now, each listing the items and roubles it still needs, with found-in-raid requirements marked](docs/app/hideout.png)
 
-**Plan.** Tick the objectives you are pushing; they become the numbered stops the overlay shows in
-raid, and the keys and shopping list assemble themselves.
+**Plan.** Tick the objectives you are pushing. One strip that does not move says how many you have
+picked and what they need you to bring — keys in red — with the map folded below it and the
+checklist under that.
 
-![The Plan page: Customs objectives grouped by place, two ticked, and a This raid panel listing them as ordered stops](docs/app/plan.png)
+![The Plan page: a strip showing two objectives picked and what they need you to bring, a folded map, and the Customs checklist grouped by place beneath it](docs/app/plan.png)
 
 ## How position works
 
