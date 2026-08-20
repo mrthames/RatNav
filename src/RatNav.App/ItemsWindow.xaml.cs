@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using RatNav.App.Interop;
 
 namespace RatNav.App;
 
@@ -26,6 +27,19 @@ public partial class ItemsWindow : Window
         };
 
         DockBack.Click += (_, _) => Close();
+    }
+
+    /// <summary>
+    /// Hands the window its resize edges.
+    ///
+    /// <para>Borderless and transparent, so <c>ResizeMode="CanResize"</c> on its own does nothing:
+    /// there is no frame for Windows to size it by. <see cref="ResizeBorder"/> answers for the
+    /// outer few pixels instead, which is enough to get the real resize back.</para>
+    /// </summary>
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        ResizeBorder.Attach(this);
     }
 
     public void Show(IReadOnlyList<ItemSection> sections)

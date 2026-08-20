@@ -4,6 +4,15 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
+### Overlay
+
+- **Popped-out panels resize.** The quest log and the items list, torn off into windows of their
+  own, can be pulled by any edge or corner. They are borderless so that they look like part of the
+  overlay rather than like a dialog, and a borderless window has no frame for Windows to size it
+  by — so the outer few pixels now answer as an edge, and the ordinary resize takes over from
+  there. All four sides, because these sit down the side of a screen and the edge you want to pull
+  is as often the left as the right.
+
 ### Hotkeys
 
 - **`F6` and `F7` swapped.** `F6` now switches between the corner panel and the centred map, and
