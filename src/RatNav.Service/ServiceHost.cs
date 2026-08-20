@@ -50,6 +50,7 @@ public static class ServiceHost
         // outside and are shared, because none of that changes when you switch character.
         var profile = new RatNavProfile(dataDirectory);
         profile.AdoptLooseFiles();
+        profile.Restore();
 
         builder.Services.AddSingleton(profile);
 
@@ -99,16 +100,28 @@ public static class ServiceHost
             return marks;
         });
 
-        builder.Services.AddSingleton(_ =>
+        builder.Services.AddSingleton(_ => RatNavSettings.Load(dataDirectory));
+
+        builder.Services.AddSingleton(sp =>
         {
             var progress = new ProgressStore(profile);
             progress.Load();
+
+            // Character level used to live in settings, which are shared across characters. On
+            // the first launch after it moved, carry the old value into whichever profile is
+            // open — otherwise upgrading silently drops the level and quietly narrows every
+            // list that depends on it, with nothing on screen saying why.
+            if (progress.PlayerLevel is null
+                && sp.GetRequiredService<RatNavSettings>().PlayerLevel is { } inherited)
+            {
+                progress.SetPlayerLevel(inherited);
+            }
+
             return progress;
         });
 
         builder.Services.AddSingleton<RatNavState>();
         builder.Services.AddSingleton(_ => new PlanStore(profile));
-        builder.Services.AddSingleton(_ => RatNavSettings.Load(dataDirectory));
         builder.Services.AddSingleton<RaidHub>();
 
         builder.Services.AddSingleton(sp =>

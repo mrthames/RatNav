@@ -26,6 +26,15 @@ public sealed class RatNavProfile(string dataDirectory)
     private readonly object _gate = new();
     private string _current = "pvp";
 
+    /// <summary>
+    /// Which character was last chosen.
+    ///
+    /// <para>Its own tiny file rather than a field in settings: settings are loaded once at
+    /// start-up and written back wholesale, and this has to be read before anything else exists.
+    /// It is also the one piece of state that decides which files everything else opens.</para>
+    /// </summary>
+    private string ChoicePath => Path.Combine(dataDirectory, "profile.txt");
+
     /// <summary>Raised after a switch, so each store can reload from the new directory.</summary>
     public event Action? Changed;
 
@@ -51,6 +60,40 @@ public sealed class RatNavProfile(string dataDirectory)
         return path;
     }
 
+    /// <summary>
+    /// Reads back whichever character was last chosen, defaulting to PvP.
+    ///
+    /// <para>Without this the app opened on PvP every time, which for anyone whose character is
+    /// PvE means being shown an empty one and having to say so again on every launch.</para>
+    /// </summary>
+    public void Restore()
+    {
+        try
+        {
+            if (!File.Exists(ChoicePath)) return;
+
+            var saved = File.ReadAllText(ChoicePath).Trim();
+            if (IsKnown(saved)) lock (_gate) _current = saved;
+        }
+        catch (IOException)
+        {
+            // Opening on PvP is a poor outcome, not a fatal one.
+        }
+    }
+
+    private void Remember()
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(dataDirectory);
+            File.WriteAllText(ChoicePath, Current);
+        }
+        catch (IOException)
+        {
+            // Costs the choice on the next launch, nothing more.
+        }
+    }
+
     /// <summary>Switches character. Returns false for a profile that does not exist.</summary>
     public bool Use(string id)
     {
@@ -62,6 +105,7 @@ public sealed class RatNavProfile(string dataDirectory)
             _current = id;
         }
 
+        Remember();
         Changed?.Invoke();
         return true;
     }

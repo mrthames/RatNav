@@ -3,7 +3,7 @@ import { ago, api, type DataStatus, type MapSummary, type RaidView } from './api
 import { HeldBack } from './HeldBack'
 import { HotkeyBar } from './HotkeyBar'
 import { MapPicker } from './MapPicker'
-import { ProfilePicker } from './ProfilePicker'
+import { ProfileMenu } from './ProfilePicker'
 import { MapView } from './MapView'
 import { HideoutView } from './HideoutView'
 import { ItemsView } from './ItemsView'
@@ -138,12 +138,6 @@ export default function App() {
             changes constantly, and it was three clicks deep in Setup — which meant it went stale
             and quietly narrowed everything downstream of it.
           */}
-          {/*
-            Which character, next to their level. Switching one without the other in view is how
-            you end up reading PvE's quests against PvP's level.
-          */}
-          <ProfilePicker onSwitched={() => window.location.reload()} />
-
           <Level />
 
           <div className="text-right font-mono text-xs leading-relaxed text-muted">
@@ -152,16 +146,26 @@ export default function App() {
               {status?.servingStale && ' · serving cached data'}
             </div>
           </div>
+
+          {/* An icon rather than the word. It is the same control either way and costs less room. */}
           <button
             type="button"
             onClick={refresh}
             disabled={refreshing}
-            className="rounded-sm border border-line bg-panel-hi px-3 py-2 text-xs text-muted
-                       transition-colors hover:border-muted hover:text-ink disabled:opacity-50
-                       focus-visible:outline-2 focus-visible:outline-accent"
+            aria-label={refreshing ? 'Refreshing' : 'Refresh game data'}
+            title="Refresh game data"
+            className="grid size-8 place-items-center rounded-sm border border-line bg-panel-hi
+                       text-sm text-muted transition-colors hover:border-muted hover:text-ink
+                       disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent"
           >
-            {refreshing ? 'Refreshing…' : 'Refresh'}
+            <span aria-hidden className={refreshing ? 'animate-spin' : ''}>↻</span>
           </button>
+
+          {/*
+            Which character, behind a menu. It is switched occasionally — a row of three buttons
+            for it sat at the top of every page looking as important as the navigation itself.
+          */}
+          <ProfileMenu onSwitched={() => window.location.reload()} />
         </div>
       </header>
 

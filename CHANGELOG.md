@@ -75,7 +75,8 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **PvE, PvP and PvP Seasonal, tracked separately.** The game gives you three characters that share
   nothing — different quests accepted, different hideout, different loyalty — and RatNav was
   tracking them against one set of files, so quests finished on one read as done on the others.
-  Switch between them in the top navigation, beside character level.
+  Switch between them from the menu at the right of the navigation, and RatNav opens on whichever
+  you chose last.
 - **Character level moved with them.** It belongs to a character, not to a machine. Your game's
   install path, your hotkeys and the cached copy of tarkov.dev stay shared, because none of that
   changes when you switch.
