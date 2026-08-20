@@ -64,6 +64,13 @@ The first public release. Alpha: it works and is used daily, but it is early.
   lifted into their own block — the colour says which they are wherever they sit, and two alphabets
   meant looking twice.
 
+### Fixed
+
+- **Quest photos load.** The carousel showed the right titles over broken pictures: the wiki's CDN
+  answers a request carrying a foreign address with a placeholder rather than the screenshot, so
+  loading them straight from the page could never have worked. They come through RatNav now, which
+  also means each one is fetched once and kept instead of pulled again on every view.
+
 ### The buddy app
 
 - **Character level in the top navigation**, where it can keep up with you.

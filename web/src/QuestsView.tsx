@@ -382,7 +382,7 @@ function Photos({ task, onClose }: { task: TaskSummary; onClose: () => void }) {
             </button>
 
             <img
-              src={image.url}
+              src={api.wikiPictureUrl(image.url)}
               alt={image.title}
               className="max-h-[65vh] min-h-0 w-full flex-1 object-contain"
             />

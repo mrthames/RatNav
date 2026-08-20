@@ -679,6 +679,15 @@ export const api = {
   /** The map image, restyled server-side so the overlay and this app cannot disagree. */
   imageUrl: (mapId: string, ink: InkLevel, opacity = 1) =>
     `/api/maps/${encodeURIComponent(mapId)}/image?ink=${ink}&opacity=${opacity}`,
+
+  /**
+   * A wiki picture, through RatNav rather than straight from the wiki's CDN.
+   *
+   * Loading them from here does not work: the CDN answers a request carrying a foreign Referer
+   * with a 404 and a placeholder, which is what the carousel was drawing under its correct
+   * titles. Going through the service also means each picture is fetched once and kept.
+   */
+  wikiPictureUrl: (url: string) => `/api/wiki/picture?url=${encodeURIComponent(url)}`,
 }
 
 /** "3 minutes ago" — the app should always be able to say how old its data is. */

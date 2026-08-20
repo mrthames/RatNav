@@ -821,7 +821,15 @@ public partial class OverlayWindow : Window
             var bitmap = new BitmapImage();
 
             bitmap.BeginInit();
-            bitmap.UriSource = new Uri(image.Url);
+
+            // Through the service, which keeps a copy. WPF happens not to send a Referer and so
+            // could fetch these directly where a browser cannot, but going the same way as the web
+            // app means one fetch is shared by both rather than each pulling several megabytes of
+            // its own.
+            bitmap.UriSource = new Uri(
+                $"http://127.0.0.1:{ServiceHost.DefaultPort}/api/wiki/picture"
+                + $"?url={Uri.EscapeDataString(image.Url)}");
+
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
 
             // Decoded down rather than at source size: these are 1920-wide screenshots and the

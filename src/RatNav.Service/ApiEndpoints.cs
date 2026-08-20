@@ -1331,6 +1331,16 @@ public static class ApiEndpoints
             });
         });
 
+        // One wiki picture, through RatNav rather than straight from the wiki's CDN.
+        //
+        // Loading them from the page does not work: the CDN answers a request carrying a foreign
+        // Referer with a 404 and a placeholder, so the carousel drew the right titles over broken
+        // pictures. Fetching here also means each one is pulled once instead of on every view.
+        api.MapGet("/wiki/picture", async (WikiImages wiki, string url, CancellationToken ct) =>
+            await wiki.PictureAsync(url, ct) is { } picture
+                ? Results.File(picture.Bytes, picture.ContentType)
+                : Results.NotFound());
+
         // Which extracts the game is currently offering, from what was read off the screen.
         //
         // The text is supplied by the caller for the same reason item identification's is: every

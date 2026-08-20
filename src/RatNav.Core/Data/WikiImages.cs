@@ -141,6 +141,103 @@ public sealed class WikiImages(HttpClient http, string cacheDirectory)
         return [.. found.OrderBy(image => order.GetValueOrDefault(image.Title, int.MaxValue))];
     }
 
+    /// <summary>
+    /// The bytes of one wiki picture, fetched once and then served from disk.
+    ///
+    /// <para>These cannot be loaded straight from the page. The wiki's CDN answers a request
+    /// carrying a foreign <c>Referer</c> with a 404 and a 300x171 "no image" placeholder, which is
+    /// exactly what the carousel was drawing: the right titles, and a broken picture under each
+    /// one. A browser cannot be told to send somebody else's referer, and telling it to send none
+    /// at all would be working around the wiki's wishes rather than with them.</para>
+    ///
+    /// <para>So RatNav asks for the picture itself, from a plain HTTP client that says who it is,
+    /// and keeps what comes back. Each picture is fetched once and never again — several megabytes
+    /// each, and the alternative was the page re-pulling every one of them from the wiki's CDN
+    /// every time somebody paged through.</para>
+    ///
+    /// <para>Returns null when the picture cannot be had, which the caller turns into a 404 rather
+    /// than an error: a missing screenshot is a disappointment, not a failure.</para>
+    /// </summary>
+    public async Task<(byte[] Bytes, string ContentType)?> PictureAsync(
+        string url, CancellationToken ct = default)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return null;
+
+        // Only the wiki's own image host. Without this the endpoint is an open proxy that will
+        // fetch anything anyone puts in the query string.
+        if (!uri.Host.EndsWith("wikia.nocookie.net", StringComparison.OrdinalIgnoreCase)
+            && !uri.Host.EndsWith("fandom.com", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var path = PicturePathFor(url);
+
+        if (File.Exists(path))
+        {
+            try
+            {
+                return (await File.ReadAllBytesAsync(path, ct), ContentTypeOf(path));
+            }
+            catch (IOException)
+            {
+                // Fall through and fetch it again.
+            }
+        }
+
+        try
+        {
+            using var response = await http.GetAsync(uri, ct);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+            var type = response.Content.Headers.ContentType?.MediaType ?? "image/png";
+
+            // The placeholder the CDN serves in place of a blocked picture. Caching it would make
+            // the broken image permanent.
+            if (bytes.Length < 4096) return null;
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                await File.WriteAllBytesAsync(path, bytes, ct);
+            }
+            catch (IOException)
+            {
+                // Serving it without keeping it is still serving it.
+            }
+
+            return (bytes, type);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
+    private static string ContentTypeOf(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".gif" => "image/gif",
+        ".webp" => "image/webp",
+        _ => "image/png",
+    };
+
+    /// <summary>
+    /// Where one picture is kept. Named by a hash of its URL, because the URL carries a revision
+    /// query and a wiki title that make a poor file name.
+    /// </summary>
+    private string PicturePathFor(string url)
+    {
+        var hash = Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(url)))[..24];
+
+        // The extension is taken from the URL's path so the cached file keeps a sensible type,
+        // ignoring the query string that follows it.
+        var name = Path.GetExtension(new Uri(url).AbsolutePath);
+        if (name is not (".png" or ".jpg" or ".jpeg" or ".gif" or ".webp")) name = ".png";
+
+        return Path.Combine(cacheDirectory, "wiki", "pictures", hash + name);
+    }
+
     private string PathFor(string taskId) =>
         Path.Combine(cacheDirectory, "wiki", $"{Sanitize(taskId)}.json");
 
