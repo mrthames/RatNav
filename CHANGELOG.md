@@ -2,7 +2,7 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
-## Unreleased
+## 0.2.0 — 2026-08-20
 
 ### Barters and crafts
 
