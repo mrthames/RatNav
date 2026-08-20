@@ -546,9 +546,15 @@ public partial class OverlayWindow : Window
 
         try
         {
-            // Always the unabridged map. The ink level is applied when drawing, so changing it is
-            // instant rather than a round trip — and the shapes are only parsed once either way.
-            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/maps/{Uri.EscapeDataString(mapId)}/image?ink=full";
+            // The map exactly as its author drew it, because everything here is styled on this
+            // side and the one thing that cannot be recovered is the original palette.
+            //
+            // This asked for ink=full, which is a *restyled* map: the service replaces the
+            // author's stylesheet with RatNav's own flat one. Reading a palette back out of that
+            // returned RatNav's wireframe colours, so the graphical level — whose whole job is to
+            // use the map's own fifteen colours — drew the skeleton instead. Graphical is the one
+            // level the service leaves untouched, which makes it the right thing to fetch.
+            var url = $"http://localhost:{ServiceHost.DefaultPort}/api/maps/{Uri.EscapeDataString(mapId)}/image?ink=graphical";
 
             var svg = await _http.GetStringAsync(url);
 

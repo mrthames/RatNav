@@ -136,6 +136,14 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Fixed
 
+- **The overlay draws Customs in its own colours again.** The **Graphical** level is meant to use
+  the map's own palette, and it was drawing the flat wireframe one instead — the overlay was
+  fetching a map the service had already restyled, so the palette it read back was RatNav's, not
+  the map author's.
+- **Money reads as money.** 400,000 roubles rather than 400000, anywhere an amount appears.
+- **No "Built it" on an upgrade you cannot have built.** It appeared under *After one more upgrade*
+  too, where taking it would record a level you do not have.
+
 - **F8 reads the tooltip, not the cell.** Hovering a compass in a backpack reported a golden neck
   chain: six cells beside it were labelled "GoldChain" and its own cell was truncated to "Compa".
   Only the game's tooltip names what the cursor is on, so that is the only thing matched now.

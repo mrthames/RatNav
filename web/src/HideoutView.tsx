@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, type HideoutState, type HideoutUpgrade } from './api'
+import { amount, api, type HideoutState, type HideoutUpgrade } from './api'
 
 /**
  * The hideout as a build order rather than a wish list.
@@ -204,7 +204,12 @@ function UpgradeRow({
           </span>
         ))}
 
-        {/* The moment you would want to record it is the moment you are looking at it. */}
+        {/*
+          Only on what you could actually build. You cannot have built Gear Rack 2 without Gear
+          Rack 1, so offering it on a gated row offers an action that cannot be true — and taking
+          it would record a level you do not have.
+        */}
+        {upgrade.wave === 0 && (
         <button
           type="button"
           onClick={onBuilt}
@@ -214,6 +219,7 @@ function UpgradeRow({
         >
           Built it
         </button>
+        )}
       </div>
 
       {short.length > 0 && (
@@ -221,7 +227,7 @@ function UpgradeRow({
           {short.map((item) => (
             <li key={item.itemId} className="font-mono text-xs tabular-nums text-muted">
               <span className={item.foundInRaid ? 'text-need' : 'text-route'}>
-                {item.count - item.have}
+                {amount(item.count - item.have)}
               </span>{' '}
               {item.name}
               {item.foundInRaid && <span className="text-need"> FIR</span>}

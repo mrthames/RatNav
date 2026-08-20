@@ -721,3 +721,14 @@ export function ago(iso: string | null): string {
   if (hours < 36) return `${Math.round(hours)} h ago`
   return `${Math.round(hours / 24)} d ago`
 }
+
+/**
+ * A quantity, grouped.
+ *
+ * <p>Hideout upgrades and quests ask for roubles alongside bolts, and "400000" beside "12" is
+ * two numbers written in different languages. Small counts are unchanged — grouping starts where
+ * it starts helping.</p>
+ */
+export function amount(value: number): string {
+  return value.toLocaleString('en-US')
+}

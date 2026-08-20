@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { QuestBrief } from './QuestBrief'
 import {
+  amount,
   api,
   type TrackedItem,
   type GoalView,
@@ -738,7 +739,7 @@ function Why({ itemId, onReadQuest }: { itemId: string; onReadQuest: (taskId: st
                      focus-visible:outline-2 focus-visible:outline-accent"
         >
           <span className="text-route">QUEST</span>
-          <span className="text-ink">{quest.count}×</span>
+          <span className="text-ink">{amount(quest.count)}×</span>
           <span>{quest.taskName}</span>
           {quest.traderName && <span>· {quest.traderName}</span>}
           {quest.foundInRaid && <span className="text-need">· found in raid</span>}
@@ -751,7 +752,7 @@ function Why({ itemId, onReadQuest }: { itemId: string; onReadQuest: (taskId: st
           className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] text-muted"
         >
           <span className="text-route">HIDEOUT</span>
-          <span className="text-ink">{station.count}×</span>
+          <span className="text-ink">{amount(station.count)}×</span>
           <span>{station.stationName} level {station.level}</span>
         </p>
       ))}
