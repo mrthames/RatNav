@@ -35,6 +35,10 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### The overlay
 
+- **The strip above the map is half as tall.** The name and the bearing were stacked on two lines
+  for two short pieces of text, costing the top of the overlay twice what the strip at the bottom
+  costs. They share a line now, and every pixel saved is one the map gets.
+
 - **A Size control**, because the defaults are drawn for 1080p and a 4K screen lands them at a
   quarter of the area.
 - **The gear stays put** when the control stack opens, and closes it again on a second click.

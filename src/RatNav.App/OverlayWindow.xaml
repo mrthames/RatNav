@@ -156,24 +156,26 @@
                     implied. The quest log says all of them; this says whose overlay it is and
                     leaves room for the handles that open them.
                 -->
-                <StackPanel x:Name="Readout" Grid.Row="0">
-                    <DockPanel>
-                        <!--
-                            The name on the left and always there. Anyone glancing at a stranger's
-                            screen should be able to tell what this is, and a label that appears
-                            only in interact mode cannot do that.
-                        -->
-                        <TextBlock Text="RATNAV" DockPanel.Dock="Left" VerticalAlignment="Center"
-                                   FontFamily="Consolas" FontSize="13" FontWeight="Bold"
-                                   Foreground="{StaticResource Muted}" />
+                <!--
+                    One line, not two. The name and the bearing sat stacked, which cost the top of
+                    the overlay twice the height of the strip at the bottom for two short pieces of
+                    text — and every pixel here is one the map does not get.
+                -->
+                <DockPanel x:Name="Readout" Grid.Row="0">
+                    <!--
+                        The name on the left and always there. Anyone glancing at a stranger's
+                        screen should be able to tell what this is, and a label that appears
+                        only in interact mode cannot do that.
+                    -->
+                    <TextBlock Text="RATNAV" DockPanel.Dock="Left" VerticalAlignment="Center"
+                               FontFamily="Consolas" FontSize="13" FontWeight="Bold"
+                               Foreground="{StaticResource Muted}" />
 
-                        <TextBlock />
-                    </DockPanel>
-
-                    <TextBlock x:Name="BearingText" Margin="0,4,0,0"
+                    <TextBlock x:Name="BearingText" Margin="10,0,0,0" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
                                FontFamily="Consolas" FontSize="14"
                                Foreground="{StaticResource Accent}" Text="" />
-                </StackPanel>
+                </DockPanel>
 
                 <!--
                     Map and items side by side. The list is a narrow strip rather than a block
@@ -181,7 +183,7 @@
                     which side it sits on is the player's call, since the overlay could be against
                     either edge of the screen.
                 -->
-                <Grid Grid.Row="1" Margin="0,8">
+                <Grid Grid.Row="1" Margin="0,4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition x:Name="LeftSlot" Width="0" />
                         <ColumnDefinition Width="*" MinWidth="80" />
