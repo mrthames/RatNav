@@ -205,8 +205,59 @@ Captured before execution. Builds directly on the stash scan.
     screenshot: **carried containers are grids of uniform cells and worn equipment is not** — a
     weapon slot is one wide box, armour is one box. If that holds, the existing grid detection
     already draws the line and the rule is a consequence rather than a special case.
-- [ ] **Several grids, not one.** A backpack, a rig, pockets and a secure container are four
-  containers on one screen. The scan finds the largest grid today; it needs all of them.
+- [x] **Several grids, not one.** A backpack, a rig, pockets and a secure container are four
+  containers on one screen. `DetectAll` finds them all, largest first, by painting each one out
+  once it has been read.
+  - Two bugs fell out of building it, both invisible from the outside. Lines were found by
+    averaging a whole column, which works only when the grid spans the picture — four small
+    containers scattered across a screen each dilute to nothing. And the slack allowed when
+    chaining evenly spaced lines was a share of the spacing, which at a spacing of eighty is twenty
+    pixels: wide enough to step from one container to the next and call the pair one grid. That
+    made a four-container screen read as **no containers at all**.
+
+### Named containers
+
+*(Justin's, after tagging two junk boxes "junk one" and "junk two".)*
+
+- [ ] **A scan targets a named container**, not the stash in general. Rescanning *junk one* replaces
+  what junk one holds; it does not touch junk two.
+  - This is what makes several boxes work at all. Without it, two scans of two boxes either
+    overwrite each other or double-count, and there is no third option.
+  - Applies to a backpack kept as storage too — anything used as a container gets a name.
+- [ ] **What you have is the sum of the containers**, plus anything entered by hand.
+- [ ] **New since last time**, per container: what is in *junk one* now that was not in it before.
+  The same comparison the raid haul makes, against a container rather than against a raid.
+
+---
+
+## Round 11 — 2026-08-20
+
+### Being an application, not a background process
+
+Captured before execution. **How it works today**, which is most of the answer:
+
+- **`RatNav.exe` is one process.** The overlay, the local service and the tray icon are all in it.
+  The buddy app is not a second program — it is a web page that process serves at
+  `localhost:8722`, opened in whatever browser you have. Closing the browser tab stops nothing,
+  because there is nothing there to stop.
+- **It does not appear in the taskbar today.** The overlay window is created with
+  `ShowInTaskbar="False"`, which is right for a thing drawn over a game and wrong for the only
+  window the application has. It shows in the **system tray** instead, which is where Quit lives.
+- **Starting it** is the Start Menu entry or the desktop shortcut the installer creates.
+
+What to change:
+
+- [ ] **Show in the taskbar.** It should be visibly running and closable like any other program.
+  `[?]` The overlay window itself must stay out of the taskbar — a click-through window over a game
+  has no business there — so this probably wants a small **main window** that owns the taskbar
+  entry, with the overlay as a separate always-on-top window it manages.
+- [ ] **Quit from the buddy app.** A control that actually stops the process, not just the page.
+- [ ] **Say when the other half is not there.** If the service is gone the buddy app cannot load at
+  all, which is clear enough; the reverse — the overlay running with nobody looking at the planner
+  — is fine and needs nothing. Worth stating either way so it is a decision rather than an
+  accident.
+- [ ] **Do not run when nothing is being played.** Starting with Windows is already off by default
+  in the installer; make sure nothing else makes it a permanent resident.
 
 ---
 

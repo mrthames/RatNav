@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- So a detection that finds nothing can be diagnosed from a test rather than by guesswork. -->
+    <InternalsVisibleTo Include="RatNav.Core.Tests" />
+  </ItemGroup>
+
 </Project>

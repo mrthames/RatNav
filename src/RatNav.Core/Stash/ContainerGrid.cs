@@ -73,12 +73,68 @@ public static class ContainerGrid
     /// <param name="brightness">
     /// The image as brightness from 0 to 1, row-major: <c>brightness[y * width + x]</c>.
     /// </param>
-    public static DetectedGrid? Detect(IReadOnlyList<double> brightness, int width, int height)
+    /// <summary>
+    /// Every container on the screen, largest first.
+    ///
+    /// <para>An inventory screen is four containers at once — a backpack, a rig, pockets and a
+    /// secure container — and reading only the biggest would miss three of them.</para>
+    ///
+    /// <para>Worn equipment is not among them, and that falls out rather than being ruled out: a
+    /// weapon slot is one wide box and armour is one box, and neither is a run of evenly spaced
+    /// cells. What this finds is what you are carrying, which is exactly what should be counted.</para>
+    /// </summary>
+    public static IReadOnlyList<DetectedGrid> DetectAll(
+        IReadOnlyList<double> brightness, int width, int height, int most = 6)
+    {
+        if (width <= 0 || height <= 0 || brightness.Count < width * height) return [];
+
+        var found = new List<DetectedGrid>();
+
+        // A working copy, because each container is painted out once it has been read.
+        //
+        // Painting it out rather than filtering the line positions: two containers side by side
+        // cover the same rows as each other, so throwing away rows inside the first one's bounds
+        // would take the second one's rows with them.
+        var working = brightness.ToArray();
+
+        for (var attempt = 0; attempt < most; attempt++)
+        {
+            var grid = Detect(working, width, height, []);
+            if (grid is null) break;
+
+            found.Add(grid);
+
+            var right = grid.Left + (int)Math.Round(grid.Columns * grid.CellSize);
+            var bottom = grid.Top + (int)Math.Round(grid.Rows * grid.CellSize);
+
+            var panel = Background(working, width, height, grid.Left, grid.Top);
+
+            for (var y = Math.Max(0, grid.Top - 1); y <= Math.Min(height - 1, bottom + 1); y++)
+                for (var x = Math.Max(0, grid.Left - 1); x <= Math.Min(width - 1, right + 1); x++)
+                    working[y * width + x] = panel;
+        }
+
+        return found;
+    }
+
+    public static DetectedGrid? Detect(IReadOnlyList<double> brightness, int width, int height) =>
+        Detect(brightness, width, height, []);
+
+    private static DetectedGrid? Detect(
+        IReadOnlyList<double> brightness,
+        int width,
+        int height,
+        IReadOnlyList<(int Left, int Top, int Right, int Bottom)> claimed)
     {
         if (width <= 0 || height <= 0 || brightness.Count < width * height) return null;
 
         var columns = LinesAlong(brightness, width, height, vertical: true);
         var rows = LinesAlong(brightness, width, height, vertical: false);
+
+        // Lines belonging to a container already found are taken out of the running, so the next
+        // pass finds the next container rather than the same one again.
+        columns = [.. columns.Where(x => !claimed.Any(c => x >= c.Left - 2 && x <= c.Right + 2))];
+        rows = [.. rows.Where(y => !claimed.Any(c => y >= c.Top - 2 && y <= c.Bottom + 2))];
 
         if (LargestEvenRun(columns) is not { } columnRun) return null;
         if (LargestEvenRun(rows) is not { } rowRun) return null;
@@ -124,37 +180,74 @@ public static class ContainerGrid
     /// <summary>
     /// The x positions of vertical lines, or the y positions of horizontal ones.
     ///
-    /// <para>A grid line is a column of pixels darker than the columns on either side of it. That
-    /// is a low bar on its own, so evenness does the real work afterwards.</para>
+    /// <para>Counted, not averaged. Averaging a whole column works only when the grid spans the
+    /// whole picture — and an inventory screen holds four small containers scattered across it, so
+    /// a line running a fifth of the height is diluted into nothing by the panel above and below
+    /// it. Counting how many pixels in that column are darker than their neighbours does not care
+    /// how much of the height the line covers.</para>
     /// </summary>
+    /// <summary>
+    /// The two steps, exposed so a detection that finds nothing can be diagnosed from a test.
+    ///
+    /// <para>These earned their place: a four-container screen was reading as no containers at
+    /// all, and the difference between "no lines were found" and "the lines were found and then
+    /// chained into one impossible grid" is invisible from the outside. It was the second.</para>
+    /// </summary>
+    internal static List<int> LinesForDiagnosis(
+        IReadOnlyList<double> brightness, int width, int height, bool vertical) =>
+        LinesAlong(brightness, width, height, vertical);
+
+    /// <inheritdoc cref="LinesForDiagnosis"/>
+    internal static (int Start, int Count, double Spacing)? RunForDiagnosis(List<int> lines) =>
+        LargestEvenRun(lines);
+
     private static List<int> LinesAlong(
         IReadOnlyList<double> brightness, int width, int height, bool vertical)
     {
         var across = vertical ? width : height;
         var along = vertical ? height : width;
 
-        var means = new double[across];
+        var counts = new int[across];
 
-        for (var i = 0; i < across; i++)
+        for (var i = 1; i < across - 1; i++)
         {
-            var total = 0.0;
+            var count = 0;
 
             for (var j = 0; j < along; j++)
-                total += brightness[vertical ? j * width + i : i * width + j];
+            {
+                var here = brightness[vertical ? j * width + i : i * width + j];
+                var before = brightness[vertical ? j * width + i - 1 : (i - 1) * width + j];
+                var after = brightness[vertical ? j * width + i + 1 : (i + 1) * width + j];
 
-            means[i] = total / along;
+                if (here < before - LineContrast && here < after - LineContrast) count++;
+            }
+
+            counts[i] = count;
         }
+
+        // A line has to be a line rather than a smudge: a decent share of the longest run on the
+        // picture. Proportional rather than absolute, because a container can be forty pixels tall
+        // or four hundred.
+        var longest = counts.Max();
+        if (longest < 8) return [];
+
+        var enough = Math.Max(6, longest / 5);
 
         var lines = new List<int>();
 
         for (var i = 1; i < across - 1; i++)
         {
-            var darkerThanBoth = means[i] < means[i - 1] - LineContrast
-                && means[i] < means[i + 1] - LineContrast;
+            if (counts[i] < enough) continue;
 
             // A line two pixels wide would otherwise be two lines, and the spacing check below
-            // would then reject a perfectly good grid.
-            if (darkerThanBoth && (lines.Count == 0 || i - lines[^1] > 2)) lines.Add(i);
+            // would then reject a perfectly good grid. The darker of the pair wins.
+            if (lines.Count > 0 && i - lines[^1] <= 2)
+            {
+                if (counts[i] > counts[lines[^1]]) lines[^1] = i;
+                continue;
+            }
+
+            lines.Add(i);
         }
 
         return lines;
@@ -182,9 +275,17 @@ public static class ContainerGrid
                 var run = 2;
                 var expected = lines[second] + spacing;
 
-                // A quarter of a cell of slack. Grid lines land on whole pixels and the spacing
-                // rarely divides evenly, so a strict match would reject most real screenshots.
-                var slack = spacing * 0.25;
+                // Slack, but capped in pixels rather than as a share of the spacing.
+                //
+                // A quarter of a cell sounds reasonable and is not: at a spacing of eighty it is
+                // twenty pixels, which is wide enough to step from one container to the next one
+                // along and call the pair a single grid. On an inventory screen holding four
+                // containers that is exactly what happened — the run chained across all of them
+                // and the cells-are-square check then threw the whole detection away.
+                //
+                // Lines land on whole pixels and drift by rounding, not by much, so a few pixels
+                // is all the room a genuine grid ever needs.
+                var slack = Math.Min(spacing * 0.12, 4);
 
                 while (lines.Any(l => Math.Abs(l - expected) <= slack))
                 {
