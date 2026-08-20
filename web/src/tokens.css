@@ -36,6 +36,11 @@
      have to be told apart by reading the label. Mirrored in the overlay's ResourceDictionary. */
   --color-mark: #c98ef5;
 
+  /* Extracts. The colour carries the faction; the shape is the same for both. Mirrored in the
+     overlay's ResourceDictionary, so an exit looks like an exit on either screen. */
+  --color-pmc: #5ee07a;
+  --color-scav: #f5cf4a;
+
   --font-display: Archivo, system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;

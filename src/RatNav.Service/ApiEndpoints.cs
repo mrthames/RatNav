@@ -1665,7 +1665,8 @@ public static class ApiEndpoints
     {
         "outline" => MapInkLevel.Outline,
         "structure" => MapInkLevel.Structure,
-        _ => MapInkLevel.Full,
+        "full" => MapInkLevel.Full,
+        _ => MapInkLevel.Graphical,
     };
 }
 

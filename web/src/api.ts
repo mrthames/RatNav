@@ -316,7 +316,7 @@ export interface Diagnostics {
   installs: { directory: string; version: string | null; lastPlayed: string | null; chosen: boolean }[]
 }
 
-export type InkLevel = 'full' | 'structure' | 'outline'
+export type InkLevel = 'graphical' | 'full' | 'structure' | 'outline'
 
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(path)

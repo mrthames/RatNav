@@ -44,7 +44,7 @@ const FLOOR_ORDER = [
 export function MapView({ map }: { map: MapSummary }) {
   const [markup, setMarkup] = useState<string | null>(null)
   const [pins, setPins] = useState<ObjectivePin[]>([])
-  const [ink, setInk] = useState<InkLevel>('full')
+  const [ink, setInk] = useState<InkLevel>('graphical')
   const [floors, setFloors] = useState<string[]>([])
   const [floor, setFloor] = useState<string | null>(null)
   const [ghost, setGhost] = useState(true)
@@ -192,7 +192,12 @@ export function MapView({ map }: { map: MapSummary }) {
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <Segment
           label="Ink"
-          options={[['full', 'Full'], ['structure', 'Structure'], ['outline', 'Outline']]}
+          options={[
+            ['graphical', 'Graphical'],
+            ['full', 'Full'],
+            ['structure', 'Structure'],
+            ['outline', 'Outline'],
+          ]}
           value={ink}
           onChange={(v) => setInk(v as InkLevel)}
         />
@@ -373,25 +378,70 @@ export function MapView({ map }: { map: MapSummary }) {
           Extracts are diamonds and objectives are circles. The shapes carry the difference on
           their own, so the two are still tellable apart without relying on colour.
         */}
-        {exits.map((exit) => (
-          <div
-            key={`${exit.name}-${exit.x}-${exit.y}`}
-            title={`${exit.name} · ${exit.faction} extract`}
-            className={`absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border
-                        bg-ground shadow-[0_0_0_1px_var(--color-ground)]
-                        ${exit.faction === 'scav' ? 'border-route' : 'border-accent'}`}
-            style={{ left: `${exit.x * 100}%`, top: `${exit.y * 100}%` }}
-          />
-        ))}
+        {exits.map((exit) => {
+          const colour = exit.faction === 'scav' ? 'var(--color-scav)' : 'var(--color-pmc)'
+
+          return (
+            <div
+              key={`${exit.name}-${exit.x}-${exit.y}`}
+              title={`${exit.name} · ${exit.faction} extract`}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${exit.x * 100}%`, top: `${exit.y * 100}%` }}
+            >
+              {/* The same door-with-an-arrow the overlay draws, so an exit looks like an exit
+                  on whichever screen you are reading. */}
+              <svg
+                viewBox="-9 -10 18 20"
+                style={{ width: `${16 / zoom}px`, height: `${18 / zoom}px`, display: 'block' }}
+              >
+                <path
+                  d="M -6,-7 L -6,7 L 6,7 L 6,-7 Z M -2,0 L 4,0 M 1,-3 L 4,0 L 1,3"
+                  fill="var(--color-ground)"
+                  stroke={colour}
+                  strokeWidth="1.8"
+                />
+              </svg>
+
+              <span
+                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono"
+                style={{
+                  color: colour,
+                  fontSize: `${10 / zoom}px`,
+                  top: `${11 / zoom}px`,
+                  textShadow: '0 0 3px #0b0f13, 0 0 3px #0b0f13',
+                }}
+              >
+                {exit.name}
+              </span>
+            </div>
+          )
+        })}
 
         {positioned.map((pin) => (
           <div
             key={pin.objectiveId}
             title={`${pin.taskName} — ${pin.description}`}
-            className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-need
-                       shadow-[0_0_0_2px_var(--color-ground)]"
-            style={{ left: `${pin.x * 100}%`, top: `${pin.y * 100}%` }}
-          />
+            className="pointer-events-none absolute -translate-x-1/2"
+            style={{
+              left: `${pin.x * 100}%`,
+              top: `${pin.y * 100}%`,
+              transform: `translate(-50%, -100%)`,
+            }}
+          >
+            {/* The overlay's pin, pointing at the objective rather than sitting on top of it —
+                which is what lets a bigger marker stay precise. */}
+            <svg
+              viewBox="-9 -22 18 24"
+              style={{ width: `${18 / zoom}px`, height: `${24 / zoom}px`, display: 'block' }}
+            >
+              <path
+                d="M 0,0 C -3,-5 -7,-8 -7,-12 A 7,7 0 1 1 7,-12 C 7,-8 3,-5 0,0 Z"
+                fill="var(--color-need)"
+                stroke="var(--color-ground)"
+                strokeWidth="1.5"
+              />
+            </svg>
+          </div>
         ))}
 
         {/*
@@ -402,11 +452,31 @@ export function MapView({ map }: { map: MapSummary }) {
           <div
             key={mark.id}
             title={`${mark.label} · your mark`}
-            className="absolute -translate-x-1/2 -translate-y-1/2"
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
             style={{ left: `${mark.x * 100}%`, top: `${mark.y * 100}%` }}
           >
-            <div className="size-2.5 rotate-45 border border-mark bg-ground
-                            shadow-[0_0_0_1px_var(--color-ground)]" />
+            <svg
+              viewBox="-9 -9 18 18"
+              style={{ width: `${16 / zoom}px`, height: `${16 / zoom}px`, display: 'block' }}
+            >
+              <path
+                d="M 0,-7 L 7,0 L 0,7 L -7,0 Z"
+                fill="var(--color-ground)"
+                stroke="var(--color-mark)"
+                strokeWidth="1.8"
+              />
+            </svg>
+
+            <span
+              className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-mark"
+              style={{
+                fontSize: `${10 / zoom}px`,
+                top: `${10 / zoom}px`,
+                textShadow: '0 0 3px #0b0f13, 0 0 3px #0b0f13',
+              }}
+            >
+              {mark.label}
+            </span>
           </div>
         ))}
         </div>

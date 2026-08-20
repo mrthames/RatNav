@@ -22,14 +22,32 @@ public class MapInkTests
         """;
 
     [Fact]
-    public void Full_ink_keeps_the_map_as_drawn_and_only_dims_it()
+    public void Graphical_ink_keeps_the_map_as_drawn_and_only_dims_it()
     {
-        var result = MapInk.Apply(SampleMap, new MapInkOptions { Level = MapInkLevel.Full, Opacity = 0.5 });
+        var result = MapInk.Apply(
+            SampleMap, new MapInkOptions { Level = MapInkLevel.Graphical, Opacity = 0.5 });
 
         Assert.Contains("style_common", result);
         Assert.Contains("#144043", result);
         Assert.DoesNotContain("ratnav_ink", result);
         Assert.Contains("opacity=\"0.5\"", result);
+    }
+
+    /// <summary>
+    /// Full and Structure are the same recolouring with the ground turned up or down. Both put the
+    /// map into one palette; only Full leaves it standing on something.
+    /// </summary>
+    [Fact]
+    public void Full_ink_recolours_by_role_but_keeps_the_ground_visible()
+    {
+        var full = MapInk.Apply(SampleMap, new MapInkOptions { Level = MapInkLevel.Full });
+        var structure = MapInk.Apply(SampleMap, new MapInkOptions { Level = MapInkLevel.Structure });
+
+        Assert.Contains("ratnav_ink", full);
+        Assert.DoesNotContain("#144043", full);
+
+        Assert.Contains("fill-opacity: 0.45", full);
+        Assert.DoesNotContain("fill-opacity: 0.45", structure);
     }
 
     [Fact]

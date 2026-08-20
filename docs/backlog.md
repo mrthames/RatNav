@@ -75,8 +75,17 @@ Captured before execution.
 
 ### Maps tab
 
-- [ ] **Match the overlay exactly**, visually and functionally. Same drawing, same controls, same
-  behaviour — choosing a map on the Maps page should look like what the overlay puts on screen.
+- [x] **Match the overlay exactly**, visually and functionally.
+  - **The same four ink levels**, with the same names and the same default. They had diverged into
+    two vocabularies for one thing: the service's `full` was the author's palette, which the
+    overlay calls `graphical`, and the overlay's own `full` had no service equivalent at all. Now
+    both offer graphical / full / structure / outline and mean the same by each.
+  - **The same furniture.** Extracts draw as the overlay's door-with-an-arrow, named, green for
+    PMC and yellow for Scav — the web was using small unnamed diamonds in the wrong colours.
+    Objectives draw as the overlay's teardrop pin, pointing at the objective rather than sitting on
+    it. Marks draw as the purple diamond with its label.
+  - Held at a constant screen size against the zoom, the way the overlay's shrink dial does, so
+    furniture stays readable at 6× rather than growing into billboards.
 
 ### Quests tab
 

@@ -6,7 +6,17 @@ namespace RatNav.Core.Maps;
 /// <summary>How much of the map to draw when it is sitting on top of the game.</summary>
 public enum MapInkLevel
 {
-    /// <summary>The map as its author drew it. Best on a second monitor, too loud over gameplay.</summary>
+    /// <summary>
+    /// The map in its author's own colours, untouched. What a map looks like when you are reading
+    /// it rather than glancing at it.
+    /// </summary>
+    Graphical,
+
+    /// <summary>
+    /// Recoloured by what each shape is — structure, boundary, route, hazard — with terrain still
+    /// solid underneath. One palette instead of the map's dozen, which is what survives being
+    /// drawn over an unpredictable game scene.
+    /// </summary>
     Full,
 
     /// <summary>Terrain drops back to a whisper; buildings, roads and fences carry the map.</summary>
@@ -87,7 +97,8 @@ public static partial class MapInk
 
         var markup = svgMarkup;
 
-        if (options.Level != MapInkLevel.Full)
+        // Graphical is the author's own stylesheet, so there is nothing to replace.
+        if (options.Level != MapInkLevel.Graphical)
             markup = ReplaceStylesheet(markup, BuildStylesheet(options));
 
         return ApplyRootOpacity(markup, options.Opacity);
@@ -110,11 +121,15 @@ public static partial class MapInk
 
         switch (o.Level)
         {
+            // Full and Structure differ in one thing: whether the ground is still ground. Full
+            // keeps it, which reads better on a screen of its own; Structure drops it to a
+            // whisper, which is what stops a map burying the game underneath it.
+            case MapInkLevel.Full:
             case MapInkLevel.Structure:
                 css.AppendLine($$"""
                     {{TerrainSelectors}} {
                       fill: {{o.TerrainColor}} !important;
-                      fill-opacity: {{F(o.TerrainOpacity)}} !important;
+                      fill-opacity: {{F(o.Level == MapInkLevel.Full ? 0.45 : o.TerrainOpacity)}} !important;
                       stroke: none !important;
                     }
                     {{StructureSelectors}} {
