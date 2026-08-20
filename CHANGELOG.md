@@ -16,6 +16,15 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **A divider wherever a panel meets the map — both sides.** There was one handle and it followed
+  the items list, so with the list on the left and the quest log on the right only the left edge
+  could be grabbed. Each side now has its own, and its own remembered width: pulling one edge in no
+  longer pushes the other out.
+- **A divider between the quest log and the items list** when they share a side. Drag it and both
+  resize; whichever ends up too short to fit its contents scrolls. The quest log stays on top — it
+  is the shorter of the two and the one you read rather than scan, so a long list above it buries
+  it. The boundary is kept as a fraction, so resizing the overlay does not push one panel off the
+  bottom.
 - **Popped-out panels resize.** The quest log and the items list, torn off into windows of their
   own, can be pulled by any edge or corner. They are borderless so that they look like part of the
   overlay rather than like a dialog, and a borderless window has no frame for Windows to size it

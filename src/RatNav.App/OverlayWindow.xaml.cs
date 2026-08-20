@@ -244,7 +244,11 @@ public partial class OverlayWindow : Window
         WeightDown.Click += (_, _) => StepWeight(-0.25);
         DetachItems.Click += (_, _) => DetachItemsPanel();
         SwapSide.Click += (_, _) => SwapItemsSide();
-        ItemsSplitter.DragDelta += OnItemsResize;
+        LeftSplitter.DragDelta += (_, e) => OnSideResize(left: true, e);
+        RightSplitter.DragDelta += (_, e) => OnSideResize(left: false, e);
+
+        LeftStack.DragDelta += (_, e) => OnStackResize(LeftDrawers, e);
+        RightStack.DragDelta += (_, e) => OnStackResize(RightDrawers, e);
 
         QuickFadeDown.Click += (_, _) => StepWindowOpacity(-0.1);
         QuickFadeUp.Click += (_, _) => StepWindowOpacity(+0.1);
@@ -1169,21 +1173,20 @@ public partial class OverlayWindow : Window
         ItemsPanel.Visibility = inline ? Visibility.Visible : Visibility.Collapsed;
         QuestPanel.Visibility = showQuests ? Visibility.Visible : Visibility.Collapsed;
 
-        // Each drawer picks its own side, and two on the same side stack rather than fight for it.
+        // Each drawer picks its own side, and two on the same side share it top and bottom.
         PlaceDrawer(ItemsPanel, _settings.Overlay.ItemsSide);
         PlaceDrawer(QuestPanel, _settings.Overlay.QuestsSide);
 
-        var onLeft = _settings.Overlay.ItemsSide == "left";
-
-        Grid.SetColumn(ItemsSplitter, onLeft ? 0 : 2);
-        ItemsSplitter.HorizontalAlignment = onLeft
-            ? System.Windows.HorizontalAlignment.Right
-            : System.Windows.HorizontalAlignment.Left;
+        ArrangeSide(LeftDrawers, LeftTopRow, LeftBottomRow, LeftStack);
+        ArrangeSide(RightDrawers, RightTopRow, RightBottomRow, RightStack);
 
         // A column earns its width when a drawer is actually in it.
         ApplyItemsWidth();
 
-        ItemsSplitter.Visibility = inline || showQuests ? Visibility.Visible : Visibility.Collapsed;
+        // A divider wherever a panel meets the map, which is both sides at once when they face
+        // each other. One handle that followed the items list left the other panel with no edge.
+        LeftSplitter.Visibility = Occupied(LeftDrawers) ? Visibility.Visible : Visibility.Collapsed;
+        RightSplitter.Visibility = Occupied(RightDrawers) ? Visibility.Visible : Visibility.Collapsed;
 
         // Moving and tearing off are deliberate acts, offered only while the overlay takes the mouse.
         var editing = inline && !_clickThrough;
@@ -1343,23 +1346,55 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
-    /// Widens or narrows the items list.
+    /// Widens or narrows one side of the map.
     ///
-    /// <para>Which way a drag grows the list depends on which side it is on: dragging left widens
-    /// a list on the right, and narrows one on the left.</para>
+    /// <para>Which way a drag grows a side depends on which side it is: dragging left widens a
+    /// panel on the right, and narrows one on the left. Both edges move independently, so pulling
+    /// one in does not push the other out.</para>
     /// </summary>
-    private void OnItemsResize(object sender, DragDeltaEventArgs e)
+    private void OnSideResize(bool left, DragDeltaEventArgs e)
     {
-        var onLeft = _settings.Overlay.ItemsSide == "left";
-        var delta = onLeft ? e.HorizontalChange : -e.HorizontalChange;
+        var delta = left ? e.HorizontalChange : -e.HorizontalChange;
+        var current = SideWidth(left);
 
-        var width = Math.Clamp(_settings.Overlay.ItemsWidth + delta, 90, Math.Max(120, ActualWidth - 140));
+        // Both sides plus something for the map. Without the second term, dragging one edge past
+        // the middle of a narrow overlay leaves the other side no room and the map none at all.
+        var ceiling = Math.Max(120, ActualWidth - SideWidth(!left) - 140);
+        var width = Math.Clamp(current + delta, 90, ceiling);
 
         // Saved as it moves rather than at the end. A drag that is only committed on release loses
         // everything if the mouse leaves the window, which over a game it frequently does.
-        Remember(_settings.Overlay with { ItemsWidth = width });
+        Remember(left
+            ? _settings.Overlay with { LeftWidth = width }
+            : _settings.Overlay with { RightWidth = width });
+
         ApplyItemsWidth();
     }
+
+    /// <summary>
+    /// Moves the boundary between two panels sharing a side.
+    ///
+    /// <para>Kept as a fraction rather than as two heights: the overlay is resized often, and a
+    /// pair of pixel heights would either overflow it or leave a gap the moment it was. The
+    /// clamp is what stops a drag past the end from collapsing one of them to nothing, which
+    /// would leave a panel that is on screen, is not foldable, and cannot be got back.</para>
+    /// </summary>
+    private void OnStackResize(FrameworkElement side, DragDeltaEventArgs e)
+    {
+        var height = side.ActualHeight;
+        if (height <= 0) return;
+
+        var share = Math.Clamp(_settings.Overlay.QuestShare + e.VerticalChange / height, 0.15, 0.85);
+
+        Remember(_settings.Overlay with { QuestShare = share });
+
+        ArrangeSide(LeftDrawers, LeftTopRow, LeftBottomRow, LeftStack);
+        ArrangeSide(RightDrawers, RightTopRow, RightBottomRow, RightStack);
+    }
+
+    /// <summary>What a side is currently set to, falling back to the width both sides start at.</summary>
+    private double SideWidth(bool left) =>
+        (left ? _settings.Overlay.LeftWidth : _settings.Overlay.RightWidth) ?? _settings.Overlay.ItemsWidth;
 
     /// <summary>
     /// Gives the items column its width, or takes it away.
@@ -1372,14 +1407,65 @@ public partial class OverlayWindow : Window
     {
         // A column earns its width when a drawer is actually in it and showing. Reserved
         // regardless, it left a stripe of nothing down one side with the map pushed off-centre.
-        var width = new GridLength(_settings.Overlay.ItemsWidth);
         var none = new GridLength(0);
 
-        LeftSlot.Width = Occupied(LeftDrawers) ? width : none;
-        RightSlot.Width = Occupied(RightDrawers) ? width : none;
+        LeftSlot.Width = Occupied(LeftDrawers) ? new GridLength(SideWidth(left: true)) : none;
+        RightSlot.Width = Occupied(RightDrawers) ? new GridLength(SideWidth(left: false)) : none;
+    }
 
-        static bool Occupied(Panel side) =>
-            side.Children.OfType<UIElement>().Any(c => c.Visibility == Visibility.Visible);
+    /// <summary>
+    /// Whether a side has a panel on it.
+    ///
+    /// <para>The two panels rather than any visible child, because the side also holds the
+    /// divider that sits between them — and a divider counting as occupancy would keep a column
+    /// open with nothing in it.</para>
+    /// </summary>
+    private static bool Occupied(Panel side) =>
+        side.Children.OfType<Border>().Any(c => c.Visibility == Visibility.Visible);
+
+    /// <summary>
+    /// Lays out one side: one panel takes the whole height, two share it, and the divider between
+    /// them only exists in the second case.
+    ///
+    /// <para>The quest log goes on top wherever the two meet. It is the shorter of the two and the
+    /// one you read rather than scan, so a long list above it buries it — and that has to hold
+    /// however the two were swapped around to end up together.</para>
+    /// </summary>
+    private void ArrangeSide(Grid side, RowDefinition top, RowDefinition bottom, UIElement divider)
+    {
+        var panels = side.Children.OfType<Border>()
+            .Where(c => c.Visibility == Visibility.Visible)
+            .ToList();
+
+        divider.Visibility = panels.Count == 2 ? Visibility.Visible : Visibility.Collapsed;
+
+        if (panels.Count < 2)
+        {
+            // One panel, or none. Spanning all three rows means it does not have to care that the
+            // rows exist, and leaves nothing behind when the other one folds away.
+            foreach (var panel in side.Children.OfType<Border>())
+            {
+                Grid.SetRow(panel, 0);
+                Grid.SetRowSpan(panel, 3);
+            }
+
+            top.Height = new GridLength(1, GridUnitType.Star);
+            bottom.Height = new GridLength(0);
+            return;
+        }
+
+        foreach (var panel in panels)
+        {
+            var quests = ReferenceEquals(panel, QuestPanel);
+
+            Grid.SetRowSpan(panel, 1);
+            Grid.SetRow(panel, quests ? 0 : 2);
+        }
+
+        var share = _settings.Overlay.QuestShare;
+
+        top.Height = new GridLength(share, GridUnitType.Star);
+        bottom.Height = new GridLength(1 - share, GridUnitType.Star);
     }
 
     /// <summary>
@@ -1396,24 +1482,14 @@ public partial class OverlayWindow : Window
             ? new Thickness(0, 0, 6, 6)
             : new Thickness(6, 0, 0, 6);
 
-        // Grid is a Panel, so one case covers both the starting grid and the other side's stack.
-        if (!ReferenceEquals(panel.Parent, target))
-        {
-            if (panel.Parent is Panel current) current.Children.Remove(panel);
-            target.Children.Add(panel);
-        }
+        // Grid is a Panel, so one case covers both the starting grid and the other side.
+        if (ReferenceEquals(panel.Parent, target)) return;
 
-        // Sharing a side, the quest log goes on top. It is the shorter of the two and the one you
-        // read rather than scan, so a long list above it buries it — and that has to hold however
-        // the two were swapped around to end up together.
-        foreach (var stack in new[] { LeftDrawers, RightDrawers })
-        {
-            if (!stack.Children.Contains(QuestPanel)) continue;
-            if (stack.Children.IndexOf(QuestPanel) == 0) continue;
+        if (panel.Parent is Panel current) current.Children.Remove(panel);
+        target.Children.Add(panel);
 
-            stack.Children.Remove(QuestPanel);
-            stack.Children.Insert(0, QuestPanel);
-        }
+        // Which of the two goes on top is not decided here any more — it is a row, and
+        // ArrangeSide sets it once both sides are known.
     }
 
     /// <summary>Opens or folds the quest log.</summary>

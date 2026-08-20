@@ -539,12 +539,36 @@ public sealed record RatNavSettings
         public string QuestsSide { get; init; } = "left";
 
         /// <summary>
-        /// How wide the items list is, in pixels. Dragged by the divider between it and the map,
-        /// and remembered — item names vary enough in length that one fixed width suits nobody.
-        /// </summary>
+        /// How wide a side panel starts out, in pixels, before either side has been dragged.
+        ///
         /// <para>Wide enough for a name like "Chekannaya 15 apartment key" without trimming it,
         /// because a list of truncated names is a list you have to hover to read.</para>
+        /// </summary>
         public double ItemsWidth { get; init; } = 223;
+
+        /// <summary>
+        /// How wide each side of the map is, once its divider has been dragged. Null means that
+        /// side has not been touched and follows <see cref="ItemsWidth"/>.
+        ///
+        /// <para>Per side rather than per panel, because a column is the thing being sized: two
+        /// panels can share a side, and they cannot have two widths between them. Independent,
+        /// because dragging one edge of the map and watching the opposite edge move is not a
+        /// thing anybody wants.</para>
+        /// </summary>
+        public double? LeftWidth { get; init; }
+
+        /// <inheritdoc cref="LeftWidth"/>
+        public double? RightWidth { get; init; }
+
+        /// <summary>
+        /// When the quest log and the items list share a side, how much of the height the quest
+        /// log takes — as a fraction, so it survives the overlay being resized.
+        ///
+        /// <para>Under half by default. The quest log is the shorter of the two and the one you
+        /// read rather than scan, so it needs less room than the list of everything you still
+        /// need.</para>
+        /// </summary>
+        public double QuestShare { get; init; } = 0.42;
 
         /// <summary>
         /// Sections of the items list that are folded away, by title. Remembered, because the

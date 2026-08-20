@@ -163,6 +163,57 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!--
+            The dividers.
+
+            One style each way rather than a template repeated at four call sites: there is a
+            divider wherever a panel meets the map, which is both sides, and another between the
+            two panels when they share a side.
+
+            Seven pixels of grab for a one-pixel line. The line says where the edge is; the seven
+            are what a moving hand can actually hit. They brighten under the pointer because an
+            invisible-until-you-find-it handle is the thing being fixed here.
+        -->
+        <Style x:Key="VSplit" TargetType="Thumb">
+            <Setter Property="Width" Value="7" />
+            <Setter Property="Cursor" Value="SizeWE" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="Grab" Background="#3324313b">
+                            <Rectangle Width="1" Fill="{StaticResource Line}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Grab" Property="Background" Value="#668ec8ff" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="HSplit" TargetType="Thumb">
+            <Setter Property="Height" Value="7" />
+            <Setter Property="Cursor" Value="SizeNS" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="Grab" Background="#3324313b">
+                            <Rectangle Height="1" Fill="{StaticResource Line}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Grab" Property="Background" Value="#668ec8ff" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -333,21 +384,55 @@
                         </Grid>
                     </Border>
 
-                    <!-- Grab the edge to give the list more room, or take it back. -->
-                    <Thumb x:Name="ItemsSplitter" Grid.Column="2" Visibility="Collapsed"
-                           Width="7" HorizontalAlignment="Left" Cursor="SizeWE">
-                        <Thumb.Template>
-                            <ControlTemplate TargetType="Thumb">
-                                <Border Background="#3324313b">
-                                    <Rectangle Width="1" Fill="{StaticResource Line}" />
-                                </Border>
-                            </ControlTemplate>
-                        </Thumb.Template>
-                    </Thumb>
+                    <!--
+                        Grab the edge to give a panel more room, or take it back. One per side,
+                        because a panel can sit on either and there is an edge to grab wherever
+                        one meets the map. There used to be a single handle that moved to
+                        whichever side the items list was on, which left the other side's panel
+                        with no edge at all.
+                    -->
+                    <Thumb x:Name="LeftSplitter" Grid.Column="0" Style="{StaticResource VSplit}"
+                           HorizontalAlignment="Right" />
 
-                    <!-- Whichever drawers are set to this side, stacked. -->
-                    <StackPanel x:Name="LeftDrawers" Grid.Column="0" />
-                    <StackPanel x:Name="RightDrawers" Grid.Column="2" />
+                    <Thumb x:Name="RightSplitter" Grid.Column="2" Style="{StaticResource VSplit}"
+                           HorizontalAlignment="Left" />
+
+                    <!--
+                        Whichever drawers are set to this side, one above the other with a divider
+                        between them.
+
+                        A Grid rather than a StackPanel, and that is the whole fix for two separate
+                        faults. A StackPanel gives each child the height it asks for, so the lists
+                        sized themselves to their contents, never overflowed, and their
+                        ScrollViewers had nothing to scroll — which is what "scrolling is dead"
+                        was. And there is no way to drag a boundary that is only wherever the
+                        first child happened to stop.
+
+                        Star heights mean the two share the space in a ratio, the drag changes the
+                        ratio, and both are bounded — so whichever is too short to fit its contents
+                        scrolls, which is what was wanted.
+                    -->
+                    <Grid x:Name="LeftDrawers" Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition x:Name="LeftTopRow" Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition x:Name="LeftBottomRow" Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Thumb x:Name="LeftStack" Grid.Row="1" Style="{StaticResource HSplit}"
+                               Margin="0,0,6,0" />
+                    </Grid>
+
+                    <Grid x:Name="RightDrawers" Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition x:Name="RightTopRow" Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition x:Name="RightBottomRow" Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Thumb x:Name="RightStack" Grid.Row="1" Style="{StaticResource HSplit}"
+                               Margin="6,0,0,0" />
+                    </Grid>
 
                     <!--
                         The plan's quests, numbered as they are on the map. Deliberately the same
