@@ -270,6 +270,7 @@ public partial class OverlayWindow : Window
         DetachQuests.Click += (_, _) => DetachQuestPanel();
         CollapseControls.Click += (_, _) => ShowControls(false);
         ExpandControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
+        CentredControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
     }
 
     public event EventHandler? ExpandRequested;
@@ -440,9 +441,11 @@ public partial class OverlayWindow : Window
             ? "Bring the map back, the size it was"
             : "Fold the map away, leaving the lists";
 
-        Width = folded
-            ? _settings.Overlay.FoldedWidth ?? StripWidth()
-            : Placement.Width;
+        // An unplaced presentation has no width yet — ApplyBounds has just worked one out from
+        // the screen, and reading the stored zero back over it would collapse the window on a
+        // fresh install.
+        if (folded) Width = _settings.Overlay.FoldedWidth ?? StripWidth();
+        else if (!Placement.Unplaced) Width = Placement.Width;
 
         ApplyControlStack();
     }
@@ -475,6 +478,7 @@ public partial class OverlayWindow : Window
         ApplyBounds();
         ApplyMapDrawer();
         ApplyItemsPanel();
+        ApplyControlStack();
         Draw();
     }
 
@@ -1980,8 +1984,32 @@ public partial class OverlayWindow : Window
         // The gear stays wherever interact mode is on, open or closed. Hiding it when the stack
         // opened made the row reflow and the quests and items buttons slide across underneath the
         // cursor — and left no way back except the collapse arrow, which is somewhere else.
-        ExpandControls.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
-        ExpandControls.ToolTip = open ? "Hide the map controls" : "Show the map controls";
+        var centred = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe;
+
+        // One gear each, because they live in different places for good reasons. The corner view's
+        // is in the footer with the drawer handles; the centred view has no footer, so its own
+        // floats over the map.
+        ExpandControls.Visibility = editing && !centred ? Visibility.Visible : Visibility.Collapsed;
+        CentredControls.Visibility = editing && centred ? Visibility.Visible : Visibility.Collapsed;
+
+        var says = open ? "Hide the map controls" : "Show the map controls";
+        ExpandControls.ToolTip = says;
+        CentredControls.ToolTip = says;
+
+        // A panel over the map rather than a column down the side of it. Stretched, it runs the
+        // whole height of a screen-filling view, which is most of the game covered by controls
+        // nobody is reading. Placed clear of the gear so the two do not sit on top of each other.
+        ControlStack.VerticalAlignment = centred
+            ? System.Windows.VerticalAlignment.Top
+            : System.Windows.VerticalAlignment.Stretch;
+
+        ControlStack.Margin = centred
+            ? new Thickness(6, 34, 0, 0)
+            : new Thickness(6, 6, 0, 26);
+
+        ControlStack.MaxHeight = centred
+            ? Math.Max(200, ActualHeight * 0.75)
+            : double.PositiveInfinity;
 
         // The grab bar runs the width of the window across the row the drawer handles live in.
         // Interact mode pushes the content clear by a full button height rather than a hair — a

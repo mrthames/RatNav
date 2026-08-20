@@ -37,34 +37,42 @@ function Level() {
   }
 
   return (
-    <div className="flex items-center gap-1">
+    /*
+      The label above the controls rather than beside them, which makes the block about the width
+      of its own caption instead of the caption plus three controls. The header runs out of room
+      before anything else on the page does, and this is the piece of it that was spending the
+      most width to say the least.
+    */
+    <div className="flex flex-col items-center gap-0.5">
       <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
         Character level
       </span>
 
-      <button
-        type="button"
-        onClick={() => void step(-1)}
-        aria-label="One level lower"
-        className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
-                   hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-      >
-        −
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => void step(-1)}
+          aria-label="One level lower"
+          className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          −
+        </button>
 
-      <span className="w-7 text-center font-mono text-sm tabular-nums text-ink">
-        {level ?? '—'}
-      </span>
+        <span className="w-7 text-center font-mono text-sm tabular-nums text-ink">
+          {level ?? '—'}
+        </span>
 
-      <button
-        type="button"
-        onClick={() => void step(1)}
-        aria-label="One level higher"
-        className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
-                   hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-      >
-        +
-      </button>
+        <button
+          type="button"
+          onClick={() => void step(1)}
+          aria-label="One level higher"
+          className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          +
+        </button>
+      </div>
     </div>
   )
 }
@@ -140,7 +148,16 @@ export default function App() {
           */}
           <Level />
 
-          <div className="text-right font-mono text-xs leading-relaxed text-muted">
+          {/*
+            Wide enough for the longest thing it can say, so it cannot move anything.
+
+            This line is live — it counts up on its own, and every boundary it crosses changes its
+            length. Left to size itself, pressing Refresh turned "updated never" into "updated just
+            now" and the extra characters pushed this whole group onto a line of its own below the
+            navigation. Text that changes on a timer has no business resizing the furniture around
+            it.
+          */}
+          <div className="w-[8.5rem] text-right font-mono text-xs leading-relaxed text-muted">
             <div className={status?.servingStale ? 'text-warn' : ''}>
               updated {ago(status?.fetchedAt ?? null)}
               {status?.servingStale && ' · serving cached data'}

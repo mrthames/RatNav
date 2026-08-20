@@ -14,8 +14,20 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
   the row to the overlay and to the map. Checkboxes remain where choosing happens: the list you
   pick a plan's stops from.
 
+### App
+
+- **The header stops wrapping when the clock ticks.** Pressing refresh turned "updated never" into
+  "updated just now" and pushed the character level, the timestamp, the refresh button and the
+  profile menu onto a line of their own below the navigation. The timestamp now has a width that
+  fits its longest form, and **Character level** sits above its controls rather than beside them.
+
 ### Overlay
 
+- **The map controls are reachable in the centred view.** The gear that unfolds them lived in the
+  footer, which the centred view deliberately does not draw — so folding the controls away there
+  left nothing on screen to bring them back. The centred view has its own gear now, floating over
+  the map, and the controls open as a panel at the top rather than a column down the full height
+  of the screen.
 - **Edge arrows are drawn at full size.** The arrows that point at waypoints off the edge of the
   view were drawn at 0.7 with their text smaller again, on the theory that a direction should not
   be mistaken for a position. In practice it made the one marker whose position you cannot see the

@@ -755,6 +755,22 @@
             </Border>
 
             <!--
+                The centred view's own gear.
+
+                The corner view's lives in the footer, next to the drawer handles — and the footer
+                is one of the things the centred view deliberately does not draw, which left the
+                controls foldable with nothing on screen to unfold them. A second button rather
+                than moving the first: in the corner view the footer is exactly where it belongs.
+
+                Floating over the map, because the centred view fills the screen and has no margin
+                to give up.
+            -->
+            <Button x:Name="CentredControls" Grid.Row="1" Style="{StaticResource Chip}"
+                    Content="⚙" Visibility="Collapsed"
+                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6,6,0,0"
+                    ToolTip="Show the map controls" />
+
+            <!--
                 The map controls, stacked down the side.
 
                 They were a single row, which meant reaching fade or zoom required widening the map
