@@ -82,8 +82,24 @@ public sealed class ProgressStore(RatNavProfile profile) : IProgressView
     /// <summary>Records a correction made by hand. Beats anything the logs say, now or later.</summary>
     public void SetManual(string taskId, QuestState state)
     {
-        lock (_gate) _state.Manual[taskId] = state;
+        lock (_gate)
+        {
+            _state.Manual[taskId] = state;
+
+            // When it was finished, so the Complete list can lead with the most recent one.
+            // That is where a quest marked off by mistake will be, and putting it right means
+            // finding it first among the seventy-odd you did on purpose.
+            if (state == QuestState.Completed) _state.CompletedAt[taskId] = DateTimeOffset.UtcNow;
+            else _state.CompletedAt.Remove(taskId);
+        }
+
         Save();
+    }
+
+    /// <summary>When a quest was marked complete, if RatNav saw it happen.</summary>
+    public DateTimeOffset? CompletedAt(string taskId)
+    {
+        lock (_gate) return _state.CompletedAt.TryGetValue(taskId, out var at) ? at : null;
     }
 
     /// <summary>Drops a correction, handing the quest back to whatever the logs report.</summary>
@@ -353,6 +369,15 @@ public sealed class ProgressStore(RatNavProfile profile) : IProgressView
 
         /// <summary>Corrections made by hand. Always wins.</summary>
         public Dictionary<string, QuestState> Manual { get; init; } = [];
+
+        /// <summary>
+        /// When each quest was marked complete.
+        ///
+        /// <para>Only for the ones RatNav saw finished — a quest already complete when it first
+        /// read your logs has no honest time to give, and guessing one would sort the list by a
+        /// number nobody chose.</para>
+        /// </summary>
+        public Dictionary<string, DateTimeOffset> CompletedAt { get; init; } = [];
 
         /// <summary>What the game's logs reported.</summary>
         public Dictionary<string, QuestState> FromLogs { get; init; } = [];

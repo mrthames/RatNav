@@ -351,6 +351,10 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         {/* Quest items too — forgetting one costs a trip back rather than the raid. */}
         {carry.items.length > 0 && (
           <span className="flex flex-wrap items-center gap-1.5">
+            {carry.keys.length === 0 && (
+              <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Bring</span>
+            )}
+
             {carry.items.map((need) => (
               <span
                 key={need.itemId}
@@ -516,7 +520,16 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                             already have it, which is the question you are actually asking.
                           */}
                           {o.required.length > 0 && (
-                            <span className="mt-1 flex flex-wrap gap-1">
+                            <span className="mt-1 flex flex-wrap items-center gap-1">
+                              {/*
+                                Said, not implied. A bare row of item names beside a quest reads as
+                                loot you are going after; these are the opposite — things you have
+                                to have on you before you queue.
+                              */}
+                              <span className="font-mono text-[10px] uppercase tracking-wider text-muted">
+                                bring
+                              </span>
+
                               {o.required.map((need) => (
                                 <span
                                   key={need.itemId}

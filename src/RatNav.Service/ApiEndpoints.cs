@@ -677,7 +677,8 @@ public static class ApiEndpoints
 
             var rows = tasks.Select(t => TaskSummary.From(
                 t, progress.StateOf(t.Id), available.Contains(t.Id),
-                progress.PlayerLevel, names, progress.StateOf, progress.TraderLevelOf));
+                progress.PlayerLevel, names, progress.StateOf, progress.TraderLevelOf)
+                with { CompletedAt = progress.CompletedAt(t.Id) });
 
             // Three groups, because those are the three that are true.
             //
@@ -710,8 +711,21 @@ public static class ApiEndpoints
                     SearchText.Contains(t.Name, q) || SearchText.Contains(t.TraderName, q));
             }
 
-            // Active first — those are the ones with items worth picking up tonight — then what
-            // is unlocked, then the rest, each alphabetical inside its group.
+            // Complete is ordered by when, newest first. The reason to open that list is almost
+            // always a quest just finished — or one marked off by mistake, which is the same
+            // moment seen from the other side — and either way it is the last one, not the one
+            // whose name happens to start with A. Quests already complete when RatNav first read
+            // your logs have no recorded time and sort under the ones that do.
+            if (filter?.ToLowerInvariant() == "complete")
+            {
+                return Results.Ok(rows
+                    .OrderByDescending(t => t.CompletedAt.HasValue)
+                    .ThenByDescending(t => t.CompletedAt)
+                    .ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase));
+            }
+
+            // Otherwise active first — those are the ones with items worth picking up tonight —
+            // then what is unlocked, then the rest, each alphabetical inside its group.
             return Results.Ok(rows
                 .OrderByDescending(t => t.State == nameof(QuestState.Active))
                 .ThenByDescending(t => t.Available)
@@ -2416,6 +2430,14 @@ public sealed record TaskSummary
 
     /// <summary>Objectives that can be pinned, which is what makes a quest worth planning around.</summary>
     public int PositionedObjectiveCount { get; init; }
+
+    /// <summary>
+    /// When it was marked complete, when RatNav saw it happen.
+    ///
+    /// <para>Null for anything already finished the first time it read your logs — there is no
+    /// honest time for those, and inventing one would sort the list by a number nobody chose.</para>
+    /// </summary>
+    public DateTimeOffset? CompletedAt { get; init; }
 
     public static TaskSummary From(
         TaskDef task,

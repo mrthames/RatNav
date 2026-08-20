@@ -308,4 +308,69 @@ public class ProgressStoreTests : IDisposable
         Assert.Equal(1, summary[QuestState.NotStarted]);
         Assert.Equal(tasks.Length, summary.Values.Sum());
     }
+
+    // ---- when a quest was finished
+
+    /// <summary>
+    /// Recorded only so the Complete list can lead with the most recent one. That is where a quest
+    /// marked off by mistake will be, and finding it among the seventy you finished on purpose is
+    /// not something alphabetical order helps with.
+    /// </summary>
+    [Fact]
+    public void Marking_a_quest_complete_records_when()
+    {
+        var progress = new ProgressStore(new RatNavProfile(_dir));
+
+        Assert.Null(progress.CompletedAt("quest"));
+
+        progress.SetManual("quest", QuestState.Completed);
+
+        Assert.NotNull(progress.CompletedAt("quest"));
+    }
+
+    /// <summary>Putting a mistake right takes the time with it, or the quest goes on sorting as
+    /// though it were still the last thing you finished.</summary>
+    [Fact]
+    public void Taking_a_completion_back_forgets_when()
+    {
+        var progress = new ProgressStore(new RatNavProfile(_dir));
+
+        progress.SetManual("quest", QuestState.Completed);
+        progress.SetManual("quest", QuestState.Active);
+
+        Assert.Null(progress.CompletedAt("quest"));
+    }
+
+    [Fact]
+    public void A_quest_never_marked_complete_has_no_time()
+    {
+        var progress = new ProgressStore(new RatNavProfile(_dir));
+
+        progress.SetManual("quest", QuestState.Active);
+
+        Assert.Null(progress.CompletedAt("quest"));
+    }
+
+    [Fact]
+    public void The_completion_time_survives_a_reload()
+    {
+        new ProgressStore(new RatNavProfile(_dir)).SetManual("quest", QuestState.Completed);
+
+        var reopened = new ProgressStore(new RatNavProfile(_dir));
+        reopened.Load();
+
+        Assert.NotNull(reopened.CompletedAt("quest"));
+    }
+
+    [Fact]
+    public void The_later_of_two_completions_is_the_later_one()
+    {
+        var progress = new ProgressStore(new RatNavProfile(_dir));
+
+        progress.SetManual("first", QuestState.Completed);
+        Thread.Sleep(5);
+        progress.SetManual("second", QuestState.Completed);
+
+        Assert.True(progress.CompletedAt("second") >= progress.CompletedAt("first"));
+    }
 }
