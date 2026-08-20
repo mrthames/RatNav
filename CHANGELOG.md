@@ -73,9 +73,12 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Plan
 
-- **The map is on the Plan page**, beside the raid panel with the quest list beneath both. Tick a
-  quest and its waypoint appears without the map moving. Zoom and right-drag to pan; click a
-  waypoint to read the quest.
+- **One strip that does not move.** How many objectives are picked, what they need you to bring —
+  keys in red — an explanation of the ordering, and **Plan this raid**, all in a row that stays
+  exactly where it is as you tick things. The three panels used to resize as you worked, so
+  whatever you were about to click had gone somewhere else.
+- **The map is on the Plan page**, folded away by default and showing the waypoints of the quests
+  you have ticked. Zoom and right-drag to pan; click a waypoint to read the quest.
 - **Sharing and importing moved into a menu**, so the maps stay one click away and two occasional
   controls stop looking as important as the choice you make first.
 

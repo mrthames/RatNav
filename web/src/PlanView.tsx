@@ -20,6 +20,9 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
   /** Whether the plan menu — sharing and importing — is open. */
   const [planMenu, setPlanMenu] = useState(false)
+
+  /** Whether the map is unfolded. Closed to start with: it is worth seeing, not worth the height. */
+  const [mapOpen, setMapOpen] = useState(false)
   const [objectives, setObjectives] = useState<PlannableObjective[]>([])
 
   /**
@@ -133,12 +136,28 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
   // Keys are the thing you cannot fix once the raid starts, so they are gathered from the
   // objectives you picked and shown before you queue rather than after.
-  const keys = useMemo(() => {
-    const ids = new Set<string>()
+  /**
+   * What the ticked objectives need carried in, named and split.
+   *
+   * <p>Keys apart from items on purpose: forgetting a key wastes the raid, forgetting a quest item
+   * costs a trip back to the stash. The strip colours them differently for that reason.</p>
+   */
+  const carry = useMemo(() => {
+    const keys = new Map<string, string>()
+    const items = new Map<string, string>()
+
     for (const o of objectives) {
-      if (chosen.includes(o.objectiveId)) o.neededKeyItemIds.forEach((k) => ids.add(k))
+      if (!chosen.includes(o.objectiveId)) continue
+
+      for (const need of o.required) {
+        (need.isKey ? keys : items).set(need.itemId, need.name)
+      }
     }
-    return [...ids]
+
+    const listed = (m: Map<string, string>) =>
+      [...m].map(([itemId, name]) => ({ itemId, name }))
+
+    return { keys: listed(keys), items: listed(items) }
   }, [objectives, chosen])
 
   /**
@@ -262,55 +281,115 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       </div>
 
       {/*
-        The map beside the raid panel, and the list of stops beneath both.
+        One strip that never changes height, then the map, then the list.
 
-        Two thirds and one third rather than the map across the whole page: you can zoom, so the
-        map does not need the width, and taking the full column pushed the list so far down that
-        ticking a quest scrolled the map out of view — which is the one thing this arrangement
-        exists to prevent.
+        The three panels used to resize as you ticked things — the checklist grew, the stops list
+        grew, the map moved — so everything you were about to click had gone somewhere else. This
+        is the fix: the counts and the warnings live in a row that stays exactly where it is, and
+        the only thing below it that changes size is the checklist itself.
       */}
-      <div className="grid items-start gap-4 lg:grid-cols-[2fr_1fr]">
-        {mapId && chosenMap ? (
-          <div className="min-w-0 border border-line bg-ground p-2">
-            <MapView
-              key={`plan-${chosenMap.id}`}
-              map={chosenMap}
-              objectives={chosenPins}
-              minimal
-            />
-          </div>
-        ) : <div />}
-        <aside className="flex h-fit flex-col gap-3 border border-line bg-panel p-3">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-muted">This raid</p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border border-line bg-panel px-3 py-2">
+        <span className="font-mono text-sm tabular-nums">
+          {chosen.length} objective{chosen.length === 1 ? '' : 's'}
+        </span>
 
-          <p className="font-mono text-sm tabular-nums">
-            {chosen.length} objective{chosen.length === 1 ? '' : 's'}
-          </p>
+        {/*
+          Keys in red, loudly. Turning up at the right door without one wastes the raid, and it is
+          the single thing on this page you cannot fix once you have queued.
+        */}
+        {carry.keys.length > 0 && (
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-need">Bring</span>
+            {carry.keys.map((need) => (
+              <span
+                key={need.itemId}
+                className="border border-need bg-need/15 px-1.5 py-0.5 font-mono text-[11px] text-need"
+              >
+                {need.name}
+              </span>
+            ))}
+          </span>
+        )}
 
-          {route.length > 0 && <Route stops={route} onMove={move} onRemove={toggle} />}
+        {/* Quest items too — forgetting one costs a trip back rather than the raid. */}
+        {carry.items.length > 0 && (
+          <span className="flex flex-wrap items-center gap-1.5">
+            {carry.items.map((need) => (
+              <span
+                key={need.itemId}
+                className="border border-line px-1.5 py-0.5 font-mono text-[11px] text-muted"
+              >
+                {need.name}
+              </span>
+            ))}
+          </span>
+        )}
 
-          {keys.length > 0 && <Keys itemIds={keys} />}
+        <span
+          title={'Stops run in the order you ticked them. Drag a row, or use the arrows, to change '
+            + 'it. Once you are in raid the stops you have not reached re-order around wherever '
+            + 'you actually are, the first time you take a position fix.'}
+          className="grid size-4 cursor-help place-items-center rounded-full border border-line
+                     font-mono text-[10px] text-muted"
+        >
+          i
+        </span>
 
+        {note && <span className="font-mono text-xs text-have">{note}</span>}
+
+        <button
+          type="button"
+          onClick={build}
+          disabled={busy || chosen.length === 0}
+          className="ml-auto rounded-sm border border-accent bg-accent px-3 py-1.5 text-sm
+                     font-medium text-ground transition-opacity hover:opacity-90
+                     disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          {busy ? 'Planning…' : 'Plan this raid'}
+        </button>
+      </div>
+
+      {/*
+        Collapsed to start with. It is worth seeing while you build a plan and it is not worth the
+        height every time you open the page.
+      */}
+      {mapId && chosenMap && (
+        <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={build}
-            disabled={busy || chosen.length === 0}
-            className="rounded-sm border border-accent bg-accent px-3 py-2 text-sm font-medium
-                       text-ground transition-opacity hover:opacity-90 disabled:opacity-30
-                       focus-visible:outline-2 focus-visible:outline-accent"
+            onClick={() => setMapOpen((open) => !open)}
+            aria-expanded={mapOpen}
+            className="self-start font-mono text-[11px] uppercase tracking-wider text-muted
+                       hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
           >
-            {busy ? 'Planning…' : 'Plan this raid'}
+            {mapOpen ? '▾' : '▸'} Map
+            {chosenPins.length > 0 && ` · ${chosenPins.length} on it`}
           </button>
 
-          {note && <p className="font-mono text-xs text-have">{note}</p>}
+          {mapOpen && (
+            <div className="border border-line bg-ground p-2">
+              <MapView
+                key={`plan-${chosenMap.id}`}
+                map={chosenMap}
+                objectives={chosenPins}
+                minimal
+              />
+            </div>
+          )}
+        </div>
+      )}
 
-          <p className="text-xs leading-relaxed text-muted">
-            Stops run in the order you ticked them. Drag a row, or use the arrows, to change it.
-            Once you are in raid the stops you have not reached re-order around wherever you
-            actually are, the first time you take a position fix.
-          </p>
-        </aside>
-      </div>
+      {route.length > 0 && (
+        <details className="border border-line bg-panel">
+          <summary className="cursor-pointer px-3 py-2 font-mono text-[11px] uppercase
+                              tracking-wider text-muted hover:text-ink">
+            Order · {route.length} stop{route.length === 1 ? '' : 's'}
+          </summary>
+          <div className="px-3 pb-3">
+            <Route stops={route} onMove={move} onRemove={toggle} />
+          </div>
+        </details>
+      )}
 
       <div className="flex flex-col gap-3">
           {/*
@@ -427,67 +506,6 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   )
 }
 
-/**
- * The keys this plan needs, named, and whether you have each one.
- *
- * <p>"Bring 3 keys" was true and useless — the whole difficulty of keys is that you find out you
- * are missing one from the wrong side of a locked door. Named and marked, it is a check you can
- * actually run before you queue.</p>
- *
- * <p>Held means a have-count of at least one, the same count the Items view keeps. One number for
- * "do I own this", not a second one that could disagree with it.</p>
- */
-function Keys({ itemIds }: { itemIds: string[] }) {
-  const [keys, setKeys] = useState<{ id: string; name: string; have: number }[]>([])
-
-  const load = useCallback(async () => {
-    const found = await Promise.all(itemIds.map(async (id) => {
-      try {
-        const detail = await api.item(id)
-        return { id, name: detail.item.name, have: detail.have }
-      } catch {
-        // An id the item index does not know — a patch dropped it, or the cache is behind.
-        // Better a row saying so than a key silently missing from the list.
-        return { id, name: 'unknown key', have: 0 }
-      }
-    }))
-
-    setKeys(found)
-  }, [itemIds])
-
-  useEffect(() => { void load() }, [load])
-
-  async function hold(id: string, held: boolean) {
-    await api.setHave(id, { count: held ? 1 : 0 })
-    setKeys((current) => current.map((k) => (k.id === id ? { ...k, have: held ? 1 : 0 } : k)))
-  }
-
-  const missing = keys.filter((k) => k.have === 0).length
-
-  return (
-    <div className="flex flex-col gap-1 border-t border-line pt-2">
-      <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
-        Keys
-        {missing > 0 && <span className="text-need"> · {missing} you do not have</span>}
-      </p>
-
-      {keys.map((key) => (
-        <label
-          key={key.id}
-          className="flex cursor-pointer items-center gap-2 text-xs hover:text-ink"
-        >
-          <input
-            type="checkbox"
-            checked={key.have > 0}
-            onChange={(e) => void hold(key.id, e.target.checked)}
-            className="accent-accent"
-          />
-          <span className={key.have > 0 ? 'text-muted' : 'text-need'}>{key.name}</span>
-        </label>
-      ))}
-    </div>
-  )
-}
 
 /**
  * The stops in the order they will be run, and the place to change that order.
