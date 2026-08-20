@@ -947,7 +947,13 @@ function RaidPanel({ raid }: { raid: RaidView }) {
       )}
 
       <span className="font-mono text-xs text-muted tabular-nums">
-        {raid.completedObjectiveIds.length}/{raid.stops.length} done
+        {/*
+          Counted against this plan's own stops. Completed objectives outlive the plan they were
+          finished under, so the raw count could exceed the plan — "1/0 done", which reads as
+          nonsense because it is.
+        */}
+        {raid.stops.filter((s) => raid.completedObjectiveIds.includes(s.objectiveId)).length}
+        /{raid.stops.length} done
         {raid.fixedAt && ` · position ${age(raid.fixedAt)}`}
       </span>
 

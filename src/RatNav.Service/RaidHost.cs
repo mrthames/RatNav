@@ -437,15 +437,25 @@ public sealed record RatNavSettings
         /// <summary>
         /// The small corner panel. Follows you by default: it is too small to hold a whole map
         /// usefully, so its job is to show where you are and what is around you.
+        ///
+        /// <para>Zero means "not placed yet", and the app works the real numbers out from the
+        /// screen on first run — see <see cref="OverlayPlacement.Unplaced"/>. A fixed pixel
+        /// rectangle is a guess about somebody else's monitor: 25,494 sits under the game's health
+        /// tracker and above the toolbars on a 4K screen and lands somewhere else entirely on
+        /// 1080p, so the position is kept as a share of the screen and turned into pixels once
+        /// there is a screen to measure.</para>
         /// </summary>
-        public OverlayPlacement Box { get; init; } = new()
-        {
-            Left = 40,
-            Top = 40,
-            Width = 360,
-            Height = 240,
-            Follow = true,
-        };
+        public OverlayPlacement Box { get; init; } = new() { Follow = true, Zoom = 3.46 };
+
+        /// <summary>
+        /// Where the corner panel starts, as a share of the screen.
+        ///
+        /// <para>Measured from a real arrangement rather than chosen: low on the left, clear of
+        /// the health tracker above it and the toolbars below, which is where it stays out of the
+        /// way while you are playing.</para>
+        /// </summary>
+        public static (double Left, double Top, double Width, double Height) BoxShare =>
+            (0.0065, 0.229, 0.216, 0.279);
 
         /// <summary>
         /// The large centred map. Holds still by default: it is big enough to read as a map, and
@@ -517,7 +527,7 @@ public sealed record RatNavSettings
         public bool ShowControls { get; init; } = true;
 
         /// <summary>Which side of the map the items list sits on — "left" or "right".</summary>
-        public string ItemsSide { get; init; } = "right";
+        public string ItemsSide { get; init; } = "left";
 
         /// <summary>
         /// Whether the quest log is open: the started stops in the plan, numbered as they are on
@@ -534,7 +544,7 @@ public sealed record RatNavSettings
         /// </summary>
         /// <para>Wide enough for a name like "Chekannaya 15 apartment key" without trimming it,
         /// because a list of truncated names is a list you have to hover to read.</para>
-        public double ItemsWidth { get; init; } = 235;
+        public double ItemsWidth { get; init; } = 223;
 
         /// <summary>
         /// Sections of the items list that are folded away, by title. Remembered, because the
@@ -573,7 +583,7 @@ public sealed record RatNavSettings
         /// At 0 they stay one fixed size however far out you go; at 1 they scale with the map and
         /// vanish. In between they ease off, which is what keeps both views readable.</para>
         /// </summary>
-        public double ScaleWithZoom { get; init; } = 0.55;
+        public double ScaleWithZoom { get; init; } = 0.6;
 
         /// <summary>
         /// Size of your own marker and the cone showing which way you are facing.

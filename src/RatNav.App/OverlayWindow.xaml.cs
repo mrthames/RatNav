@@ -408,10 +408,17 @@ public partial class OverlayWindow : Window
             }
             else
             {
-                Left = screen.Left + 40;
-                Top = screen.Top + 40;
-                Width = 360;
-                Height = 240;
+                // Kept as a share of the screen rather than a pixel rectangle. These numbers come
+                // from a real arrangement — low on the left, clear of the game's health tracker
+                // above and its toolbars below, which is where it stays out of the way while you
+                // are playing — and that position only survives a change of monitor if it is
+                // expressed relative to one.
+                var (left, top, width, height) = RatNavSettings.OverlayBounds.BoxShare;
+
+                Width = screen.Width * width;
+                Height = screen.Height * height;
+                Left = screen.Left + (screen.Width * left);
+                Top = screen.Top + (screen.Height * top);
             }
         }
         else
@@ -562,13 +569,19 @@ public partial class OverlayWindow : Window
             _palette = MapPalette.Read(svg, mapId);
             _mapShapes = MapGeometry.Parse(svg, floor, key);
 
-            // The floors below, kept for drawing faintly underneath. A single floor in isolation
-            // is hard to place: walk off a street into a building and the room means nothing
-            // without the street it came off, or the corridor on the level below it.
-            var below = _floors
-                .TakeWhile(f => f.Layer != floor)
-                .Select(f => MapGeometry.Parse(svg, f.Layer, $"{mapId}|{f.Layer}"))
-                .ToList();
+            // Nothing is ghosted when everything is drawn. Parse with no floor named and the
+            // whole map comes back in document order, which is lowest level first — so upper
+            // floors land on top without anything having to sort them.
+            //
+            // Ghosting still earns its place when a floor has been picked by hand: a single level
+            // in isolation is hard to place, because the room means nothing without the street it
+            // came off.
+            var below = floor is { Length: > 0 }
+                ? _floors
+                    .TakeWhile(f => f.Layer != floor)
+                    .Select(f => MapGeometry.Parse(svg, f.Layer, $"{mapId}|{f.Layer}"))
+                    .ToList()
+                : [];
 
             _ghostShapes = [.. below.SelectMany(shapes => shapes)];
 
@@ -584,7 +597,9 @@ public partial class OverlayWindow : Window
             // strength it reads as your floor, so a stairwell one storey up looks like a room
             // beside you — and it ignored the ghost toggle, which is not something a toggle
             // labelled "ghost" should be able to do.
-            _aboveShapes = _settings.Overlay.MergeGroundFloor && Merged(floor) is { } partner
+            // Only meaningful when one floor is showing. Stacked, the floor above is already there.
+            _aboveShapes = floor is { Length: > 0 }
+                && _settings.Overlay.MergeGroundFloor && Merged(floor) is { } partner
                 ? MapGeometry.Parse(svg, partner, $"{mapId}|{partner}")
                 : [];
             _mapShapesFor = key;
@@ -893,15 +908,23 @@ public partial class OverlayWindow : Window
     /// Which level to draw. A hand-picked floor wins, but a fix taken since you picked it wins
     /// back — the map following where you actually are is the whole point of taking a fix.
     /// </summary>
-    private string? FloorFor(RaidView view)
-    {
-        if (_floorOverride is not null && (view.FixedAt is null || _overrodeAt is null || view.FixedAt <= _overrodeAt))
-            return _floorOverride;
-
-        _floorOverride = null;
-        _overrodeAt = null;
-        return view.Floor;
-    }
+    /// <summary>
+    /// Which floor to draw: whichever you picked, or all of them stacked.
+    ///
+    /// <para>This used to follow your elevation, and it was solving a problem the map does not
+    /// have. The map is for orienting against major structures — which warehouse, which building,
+    /// which side of the road — and the room you are in comes from the quest's wiki pictures,
+    /// which is the thing that actually answers "which door".</para>
+    ///
+    /// <para>It also could not be relied on. Customs declares Underground as −1000 to 0.5 and
+    /// Ground as −1000 to 1000, so a fix at −3.9 satisfies both and the answer came down to which
+    /// was listed last. When it chose a layer with no geometry the drawing emptied — leaving the
+    /// labels and extract markers, which come from elsewhere, over a blank map.</para>
+    ///
+    /// <para>So: stacked by default, and a position fix never changes it underneath you. Picking a
+    /// floor by hand still works and now stays picked.</para>
+    /// </summary>
+    private string? FloorFor(RaidView view) => _floorOverride;
 
     private void StepFloor(int direction)
     {
@@ -1742,9 +1765,12 @@ public partial class OverlayWindow : Window
             ? $"{metres:F0} m · {Math.Abs(bearing):F0}° {(bearing > 0 ? "right" : "left")}"
             : "";
 
-        ProgressText.Text = view.Stops.Count > 0
-            ? $"{view.CompletedObjectiveIds.Count}/{view.Stops.Count} done"
-            : "";
+        // Only stops in *this* plan count. Completed objectives outlive the plan they were
+        // finished under, so counting all of them against the current plan's stops produced
+        // "1/0 done" — a figure that cannot be read whichever way round you take it.
+        var done = view.Stops.Count(s => view.CompletedObjectiveIds.Contains(s.ObjectiveId));
+
+        ProgressText.Text = view.Stops.Count > 0 ? $"{done}/{view.Stops.Count} done" : "";
 
         // How old the marker is, in words rather than jargon. It used to read "FIX 58S AGO" — a
         // fix is what RatNav calls a position reading internally and not something anyone else
