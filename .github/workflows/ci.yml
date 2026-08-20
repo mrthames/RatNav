@@ -35,3 +35,19 @@ jobs:
 
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal
+
+      # The installer script is only compiled by the release workflow, which runs on a tag — so a
+      # broken one is found by cutting a release and watching it fail. It has happened. Compiling
+      # it here costs a couple of minutes and moves that discovery to the commit that caused it.
+      #
+      # Only on main: it needs a full self-contained publish, which is too slow to ask of every
+      # pull request.
+      - name: Check the installer script still compiles
+        if: github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          dotnet publish src/RatNav.App --configuration Release --runtime win-x64 `
+            --self-contained true --output publish
+
+          choco install innosetup --no-progress -y
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer/RatNav.iss /DAppVersion=0.0.0
