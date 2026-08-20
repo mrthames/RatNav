@@ -40,6 +40,12 @@ gamedata-*.json
 /screenshots/
 *.local.json
 
+# Working notes. What was asked for, when, and by whom is how this got built — it is not what
+# somebody downloading it needs, and a public repository should be the product rather than the
+# record of one person's requests. Kept alongside the repo, not in it.
+/docs/backlog.md
+/notes/
+
 # OS
 Thumbs.db
 .DS_Store

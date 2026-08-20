@@ -7,18 +7,12 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 The first public release. Alpha: it works and is used daily, but it is early.
 
 
-### Maps you can trust
+### Maps
 
-- **Only maps whose marker lands where you are.** Nine ship; the rest are held back rather than
-  shipped with a warning. A map that might be mirrored is a defect, not a caveat.
-- **Settle a held-back map yourself.** Take a screenshot somewhere you recognise, open **Maps →
-  Settle it**, click the spot. A wrong layout is a mirror image and misses by about half the map,
-  so the margin is enormous and a hurried click cannot pick wrong.
-- **The stated rotation is used** instead of being inferred from the image's proportions, which is
-  what Factory — nearly square — could never be settled by.
-- **Calibration is solved once per drawing**, so Night Factory and the Ground Zero variants inherit
-  the map they share rather than each getting their own answer, or none.
-- **`[WIP]` beside maps whose quest positions are still settling.**
+- **Ground Zero 21+ and the Ground Zero tutorial variants join the maps they share.**
+- **`[WIP]` beside a map still being worked on.** A stable release only ever contains finished ones.
+- **Settle a map yourself** from **Maps → Settle it**: take a screenshot somewhere you recognise and
+  click the spot.
 
 ### Reading a quest
 
