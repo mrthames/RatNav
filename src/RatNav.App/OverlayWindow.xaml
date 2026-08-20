@@ -193,7 +193,7 @@
                     the overlay twice the height of the strip at the bottom for two short pieces of
                     text — and every pixel here is one the map does not get.
                 -->
-                <DockPanel x:Name="Readout" Grid.Row="0">
+                <DockPanel x:Name="Readout" Grid.Row="0" LastChildFill="True">
                     <!--
                         The name on the left and always there. Anyone glancing at a stranger's
                         screen should be able to tell what this is, and a label that appears
@@ -375,7 +375,8 @@
                                        TextWrapping="Wrap" Visibility="Collapsed"
                                        Text="No plan yet. Build one on the Plan tab and its stops appear here, numbered as on the map." />
 
-                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                            <ScrollViewer x:Name="QuestScroll"
+                                          VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <ItemsControl x:Name="QuestList"
                                               ItemTemplate="{StaticResource ItemSectionTemplate}" />
@@ -409,7 +410,8 @@
                                 <Run Foreground="#ff5a3c">■</Run><Run Text=" must be found in raid" />
                             </TextBlock>
 
-                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                            <ScrollViewer x:Name="ItemsScroll"
+                                          VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <ItemsControl x:Name="ItemsList"
                                               ItemTemplate="{StaticResource ItemSectionTemplate}" />
@@ -418,8 +420,27 @@
                     </Border>
                 </Grid>
 
+                <!--
+                    Two rows rather than three things sharing one cell.
+
+                    They were laid on top of each other in a single-cell Grid, which is fine at the
+                    size it was drawn at and overlaps the moment the UI is scaled up. The chips and
+                    the raid status get a row and cannot reach each other; the key-bind strip gets
+                    the row beneath, which is where it belongs anyway.
+                -->
                 <Grid x:Name="StatusRow" Grid.Row="3">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Row="0" Grid.Column="0"
+                                Orientation="Horizontal" HorizontalAlignment="Left">
                         <!--
                             Down here rather than in the header. Up there it sat on top of the
                             drawer handles, and it is the control you reach for least of the three.
@@ -453,8 +474,8 @@
                         moment you are looking at the plain overlay, not the moment you have
                         already found the controls.
                     -->
-                    <ItemsControl x:Name="HotkeyHints" HorizontalAlignment="Center"
-                                  VerticalAlignment="Center">
+                    <ItemsControl x:Name="HotkeyHints" Grid.Row="1" Grid.ColumnSpan="2"
+                                  Margin="0,3,0,0" HorizontalAlignment="Center">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel Orientation="Horizontal" />
@@ -474,7 +495,9 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock x:Name="FixAgeText" Style="{StaticResource Label}" HorizontalAlignment="Right" />
+                    <TextBlock x:Name="FixAgeText" Grid.Row="0" Grid.Column="1"
+                               Style="{StaticResource Label}" HorizontalAlignment="Right"
+                               VerticalAlignment="Center" Margin="8,0,0,0" />
                 </Grid>
             </Grid>
         </Border>
@@ -730,6 +753,19 @@
                                Foreground="{StaticResource Ink}" VerticalAlignment="Center"
                                MinWidth="38" TextAlignment="Center" Text="1.0×" />
                     <Button x:Name="QuickScaleUp" Style="{StaticResource Chip}" Content="+" />
+
+                    <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
+
+                    <!--
+                        Which extracts the map shows, both ways round.
+
+                        Reading the game's list used to be a one-way trip: the control that turned
+                        it on lived in the drawer and there was nothing to turn it off, so the only
+                        way back to every extract was to take the reading again.
+                    -->
+                    <Button x:Name="QuickOffered" Style="{StaticResource Chip}"
+                            MinWidth="82" Content="all exits"
+                            ToolTip="Show every extract, or only the ones the game offered you" />
 
                     <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
 

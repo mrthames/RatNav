@@ -105,7 +105,7 @@
             BorderBrush="{StaticResource Line}"
             BorderThickness="1"
             CornerRadius="2">
-        <DockPanel Margin="8,6">
+        <DockPanel x:Name="Root" Margin="8,6">
             <Grid x:Name="TitleStrip" DockPanel.Dock="Top" Margin="0,0,0,5"
                   Background="#1a8ec8ff" Cursor="SizeAll">
                 <TextBlock Text=" ITEMS · drag to move"

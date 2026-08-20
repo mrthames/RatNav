@@ -170,6 +170,16 @@ public partial class OverlayWindow : Window
         // to read.
         MapFrame.MouseWheel += OnWheel;
 
+        // The lists scroll on their own wheel handler rather than relying on the one WPF gives a
+        // ScrollViewer for free.
+        //
+        // Both sit inside a window that is click-through most of the time and never takes focus,
+        // and the free behaviour was not surviving that — a wheel over a full items list did
+        // nothing at all. Handling it here works regardless, and marking it handled stops it
+        // bubbling on to anything that would rather zoom the map with it.
+        ScrollOnWheel(QuestScroll);
+        ScrollOnWheel(ItemsScroll);
+
         _identifyCardTimer.Tick += (_, _) => HideIdentifyCard();
 
         _ = LoadHotkeyHintsAsync();
@@ -205,6 +215,19 @@ public partial class OverlayWindow : Window
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
         OfferedButton.Click += (_, _) => ForgetOfferedExtracts();
+
+        // Both directions, on the quick bar. Turning the filter off does not throw the reading
+        // away — you can put it back without going into a raid to take another one.
+        QuickOffered.Click += (_, _) =>
+        {
+            Remember(_settings.Overlay with
+            {
+                OnlyOfferedExtracts = !_settings.Overlay.OnlyOfferedExtracts,
+            });
+
+            Redraw();
+            UpdateControls(_view);
+        };
         OpenAppButton.Click += (_, _) => OpenAppRequested?.Invoke(this, EventArgs.Empty);
         HaloButton.Click += (_, _) => ToggleHalo();
         GhostButton.Click += (_, _) => ToggleGhost();
@@ -512,6 +535,34 @@ public partial class OverlayWindow : Window
         Cursor = Cursors.Arrow;
         ReleaseMouseCapture();
         e.Handled = true;
+    }
+
+    /// <summary>Makes one list scroll under the wheel, and keeps the event to itself.</summary>
+    /// <summary>
+    /// Keeps the popped-out lists looking like part of the overlay.
+    ///
+    /// <para>Opacity and size are the overlay's, not each window's own: a list parked in its own
+    /// window is the same list, and a solid full-size panel beside a faded scaled one reads as two
+    /// different tools. The controls stay on the overlay rather than being grown a second time on
+    /// every pop-out.</para>
+    /// </summary>
+    private void MatchPopOuts()
+    {
+        var opacity = Placement.WindowOpacity;
+        var scale = Math.Clamp(EffectiveUiScale, 0.7, 3.0);
+
+        _itemsWindow?.MatchOverlay(opacity, scale);
+        _questWindow?.MatchOverlay(opacity, scale);
+    }
+
+    private static void ScrollOnWheel(ScrollViewer view)
+    {
+        view.PreviewMouseWheel += (_, e) =>
+        {
+            // Three lines a notch, which is what the rest of Windows does.
+            view.ScrollToVerticalOffset(view.VerticalOffset - (e.Delta / 120.0 * 3 * 16));
+            e.Handled = true;
+        };
     }
 
     private void OnWheel(object sender, MouseWheelEventArgs e)
@@ -1188,6 +1239,7 @@ public partial class OverlayWindow : Window
 
             ItemsList.ItemsSource = sections;
             _itemsWindow?.Show(sections);
+            MatchPopOuts();
 
             var quests = QuestSections();
 
@@ -1195,6 +1247,7 @@ public partial class OverlayWindow : Window
             QuestEmpty.Visibility = quests.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
             _questWindow?.Show(quests);
+            MatchPopOuts();
         });
     }
 
@@ -1821,6 +1874,13 @@ public partial class OverlayWindow : Window
         QuickFadeText.Text = $"{Placement.WindowOpacity * 100:F0}%";
         QuickZoomText.Text = $"{Placement.Zoom:0.0}×";
         QuickFollow.Content = Following ? "follows" : "still";
+
+        // Says which way it will go, not which way it is: a control labelled with the state you
+        // are already in leaves you guessing what pressing it does.
+        QuickOffered.Content = _settings.Overlay.OnlyOfferedExtracts ? "all exits" : "my exits";
+        QuickOffered.Visibility = _settings.Overlay.OfferedExtracts.Count > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
         // Only worth offering when it would do something. A crosshair that is always lit teaches
         // people to ignore it.

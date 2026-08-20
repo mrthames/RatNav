@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace RatNav.App;
 
@@ -31,6 +32,23 @@ public partial class ItemsWindow : Window
     {
         Sections.ItemsSource = sections;
         FitToContent(sections);
+    }
+
+    /// <summary>
+    /// Matches the overlay's own opacity and size.
+    ///
+    /// <para>A popped-out list is the same list parked somewhere else, so it has no business
+    /// looking like a different tool — and it had none of these, which showed as a solid,
+    /// differently-sized panel beside a translucent one. The controls stay on the overlay: there
+    /// is no reason to grow a second set of them on every pop-out.</para>
+    /// </summary>
+    public void MatchOverlay(double opacity, double scale)
+    {
+        Opacity = Math.Clamp(opacity, 0.2, 1.0);
+
+        Root.LayoutTransform = Math.Abs(scale - 1) < 0.001
+            ? Transform.Identity
+            : new ScaleTransform(scale, scale);
     }
 
     /// <summary>
