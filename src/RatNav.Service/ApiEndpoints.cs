@@ -418,6 +418,7 @@ public static class ApiEndpoints
                 {
                     id = st.Id,
                     name = st.Name,
+                    imageUrl = st.ImageUrl,
                     builtLevel = progress.HideoutLevelOf(st.Id),
                     maxLevel = st.Levels.Count == 0 ? 0 : st.Levels.Max(l => l.Level),
                 });

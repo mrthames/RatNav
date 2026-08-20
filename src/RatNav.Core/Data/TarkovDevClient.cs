@@ -93,6 +93,7 @@ public sealed class TarkovDevClient(HttpClient http)
                     Id = pair.Key,
                     Name = text.Of(pair.Value!.Name) ?? "(unnamed station)",
                     NormalizedName = pair.Value.NormalizedName,
+                    ImageUrl = pair.Value.ImageLink,
                     Levels =
                     [
                         .. (pair.Value.Levels ?? [])
@@ -476,7 +477,8 @@ public sealed class TarkovDevClient(HttpClient http)
         string? Name, string? ShortName, string? NormalizedName,
         int? BasePrice, int? Avg24hPrice, int? Width, int? Height, string? IconLink, string? WikiLink);
 
-    private sealed record StationDto(string? Name, string? NormalizedName, List<StationLevelDto>? Levels);
+    private sealed record StationDto(
+        string? Name, string? NormalizedName, string? ImageLink, List<StationLevelDto>? Levels);
 
     private sealed record StationLevelDto(
         string? Id,

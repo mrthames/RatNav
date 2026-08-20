@@ -115,46 +115,75 @@ export function HideoutView() {
         <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Where you are</h2>
         <p className="text-xs text-muted">
           Set each station to the level it is built to. Everything above works out from these, so
-          an upgrade marked by mistake is worth putting back — use the arrows.
+          an upgrade marked by mistake is worth putting back.
         </p>
 
-        <div className="grid gap-px sm:grid-cols-2">
-          {state.stations.map((station) => (
-            <div key={station.id} className="flex items-center justify-between gap-3 bg-panel px-3 py-2">
-              <span className="truncate text-sm">{station.name}</span>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(124px,1fr))] gap-2">
+          {state.stations.map((station) => {
+            const built = station.builtLevel
+            const maxed = built >= station.maxLevel && station.maxLevel > 0
 
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  disabled={station.builtLevel <= 0}
-                  onClick={() => void setLevel(station.id, station.builtLevel - 1)}
-                  aria-label={`Lower ${station.name}`}
-                  className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
-                             hover:text-ink disabled:opacity-30
-                             focus-visible:outline-2 focus-visible:outline-accent"
-                >
-                  −
-                </button>
+            return (
+              <div
+                key={station.id}
+                className={`flex flex-col items-center gap-1 border bg-panel p-2 text-center
+                            ${built > 0 ? 'border-line' : 'border-line-soft opacity-60'}`}
+              >
+                {/* The game's own icon for the station. Bold initials when there is none — the
+                    point is recognising it at a glance rather than reading a list. */}
+                {station.imageUrl ? (
+                  <img src={station.imageUrl} alt="" className="size-12 object-contain" />
+                ) : (
+                  <span className="grid size-12 place-items-center font-display text-lg font-bold text-muted">
+                    {station.name.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
 
-                <span className="w-10 text-center font-mono text-xs tabular-nums text-ink">
-                  {station.builtLevel}
+                <span className="w-full truncate text-xs" title={station.name}>{station.name}</span>
+
+                <span className="font-mono text-sm tabular-nums">
+                  {built > 0
+                    ? <span className="text-accent">{built}</span>
+                    : <span className="text-muted">—</span>}
                   <span className="text-muted">/{station.maxLevel}</span>
                 </span>
 
-                <button
-                  type="button"
-                  disabled={station.builtLevel >= station.maxLevel}
-                  onClick={() => void setLevel(station.id, station.builtLevel + 1)}
-                  aria-label={`Raise ${station.name}`}
-                  className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
-                             hover:text-ink disabled:opacity-30
-                             focus-visible:outline-2 focus-visible:outline-accent"
-                >
-                  +
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={built <= 0}
+                    onClick={() => void setLevel(station.id, built - 1)}
+                    aria-label={`Lower ${station.name}`}
+                    className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted
+                               transition-colors hover:text-ink disabled:opacity-25
+                               focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    −
+                  </button>
+
+                  {/*
+                    Nothing at all when there is nothing left to do. A disabled Upgrade button on a
+                    finished station is a control that exists only to say no.
+                  */}
+                  {maxed ? (
+                    <span className="px-2 font-mono text-[10px] uppercase tracking-wider text-have">
+                      max
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void setLevel(station.id, built + 1)}
+                      className="rounded-sm bg-panel-hi px-2 py-1 font-mono text-[10px] uppercase
+                                 tracking-wider text-muted transition-colors hover:bg-accent
+                                 hover:text-ground focus-visible:outline-2 focus-visible:outline-accent"
+                    >
+                      Upgrade
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 

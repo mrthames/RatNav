@@ -79,6 +79,8 @@ export interface TrackedItem {
 export interface HideoutStationSummary {
   id: string
   name: string
+  /** The station's own icon, so the hideout reads like the hideout screen. */
+  imageUrl: string | null
   builtLevel: number
   maxLevel: number
 }

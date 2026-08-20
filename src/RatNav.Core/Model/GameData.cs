@@ -15,7 +15,7 @@ public sealed record GameData
     /// until the six-hour age check happens to fire — so a new layer looks broken rather than
     /// absent, and the person who has it worst is whoever just updated.</para>
     /// </summary>
-    public const int CurrentSchema = 8;
+    public const int CurrentSchema = 9;
 
     /// <summary>The schema this copy was written with. Zero on anything written before schemas.</summary>
     public int Schema { get; init; }
@@ -178,6 +178,9 @@ public sealed record ItemDef
 
 public sealed record HideoutStation
 {
+    /// <summary>The station's own icon, so the hideout reads like the hideout screen.</summary>
+    public string? ImageUrl { get; init; }
+
     public required string Id { get; init; }
     public required string Name { get; init; }
     public string? NormalizedName { get; init; }

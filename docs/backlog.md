@@ -100,12 +100,12 @@ Captured before execution.
 
 ### Hideout
 
-- [ ] **A grid, not a list, for what you have now.** With **the game's own iconography** for each
+- [x] **A grid, not a list, for what you have now.** With **the game's own iconography** for each
   station where that is possible; bold text where it is not.
   - **Future upgrades stay a list.** That is a list of work to do, and a list is the right shape
     for it.
-- [ ] **"Build it" should say "Upgrade"**, and raise the level.
-- [ ] **A station at max level says so** and drops the upgrade control entirely. As minimal as
+- [x] **"Build it" should say "Upgrade"**, and raise the level.
+- [x] **A station at max level says so** and drops the upgrade control entirely. As minimal as
   possible — no button, just a mark that there is nothing left to do.
 
 ### Barters and crafts, rethought
