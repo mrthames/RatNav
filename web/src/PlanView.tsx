@@ -356,7 +356,7 @@ function Keys({ itemIds }: { itemIds: string[] }) {
     const found = await Promise.all(itemIds.map(async (id) => {
       try {
         const detail = await api.item(id)
-        return { id, name: detail.item.shortName || detail.item.name, have: detail.have }
+        return { id, name: detail.item.name, have: detail.have }
       } catch {
         // An id the item index does not know — a patch dropped it, or the cache is behind.
         // Better a row saying so than a key silently missing from the list.

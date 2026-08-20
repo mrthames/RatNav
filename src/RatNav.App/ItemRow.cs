@@ -11,12 +11,12 @@ namespace RatNav.App;
 /// One line of the overlay's items list: how many more, what it is, and why.
 ///
 /// <para>Deliberately thin. This is read at a glance while something is shooting at you, so it
-/// carries a count, a short name, and a colour — the reason lives in the tooltip, where it costs
+/// carries a count, a name, and a colour — the reason lives in the tooltip, where it costs
 /// nothing until asked for.</para>
 /// </summary>
 public sealed record ItemRow
 {
-    /// <summary>The short name players actually use, which is also what fits a narrow column.</summary>
+    /// <summary>The item's full name, ellipsised by the column and whole again in the tooltip.</summary>
     public required string Name { get; init; }
 
     /// <summary>How many more to find.</summary>

@@ -243,7 +243,7 @@ function UpgradeRow({
               <span className={item.foundInRaid ? 'text-need' : 'text-route'}>
                 {item.count - item.have}
               </span>{' '}
-              {item.shortName ?? item.name}
+              {item.name}
               {item.foundInRaid && <span className="text-need"> FIR</span>}
             </li>
           ))}

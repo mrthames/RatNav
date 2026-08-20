@@ -632,13 +632,13 @@ public static class ApiEndpoints
             foreach (var (itemId, need) in goals)
             {
                 var item = index.GetItem(itemId) ?? Unknown(itemId);
-                var short_ = Readable(item);
+                var name = Readable(item);
                 var left = Math.Max(0, need.Count - tracker.GetHave(itemId));
 
                 var row = new PanelRow
                 {
                     Id = itemId,
-                    Name = short_,
+                    Name = name,
                     FullName = item.Name,
                     Count = left,
                     Tracked = true,
@@ -649,10 +649,9 @@ public static class ApiEndpoints
                 panel.Goals.Add(row);
             }
 
-            // Found-in-raid first: it is the one thing you cannot buy your way out of later.
-            panel.Now.Sort(ByUrgency);
-            panel.Goals.Sort(ByUrgency);
-            panel.Later.Sort(ByUrgency);
+            panel.Now.Sort(ByName);
+            panel.Goals.Sort(ByName);
+            panel.Later.Sort(ByName);
 
             // A glanceable panel has a length past which it stops being glanceable. Cut, and said
             // so — a list that silently stops reads as "that is everything".
@@ -1701,44 +1700,33 @@ public static class ApiEndpoints
         return needs.AsKey.Count > 0 ? "key" : "";
     }
 
-    /// <summary>
-    /// The name to show.
-    ///
-    /// <para>The short name only when it is one people actually say — "LEDX", "GPU", "Bolts". It
-    /// is tarkov.dev's abbreviation, and for keys it produces things like "Chek. 15", which nobody
-    /// recognises as <i>Chekannaya 15 apartment key</i>. So it is used when it reads as a word and
-    /// the full name is used when it does not.</para>
-    /// </summary>
     private static string Short(ItemDef item) => Readable(item);
 
-    internal static string Readable(ItemDef item)
-    {
-        var shortName = item.ShortName;
+    /// <summary>
+    /// The name to show, which is the item's full name.
+    ///
+    /// <para><c>ShortName</c> is what the game prints on a stash cell, and it is the right thing
+    /// to read <i>off</i> a screenshot — see <c>LabelReader</c>. It is the wrong thing to print in
+    /// a list somebody is scanning for a name they have in mind. It gives "Elite" for elite
+    /// cutters, "Access" for a TerraGroup Labs access keycard, "Chek. 15" for the Chekannaya 15
+    /// apartment key. A rule that keeps the good abbreviations and drops the bad ones is a rule
+    /// that has to be right about every item in the game, and it was not.</para>
+    ///
+    /// <para>So: the full name everywhere, and the column ellipsises what will not fit with the
+    /// whole of it on hover. Longer, and never ambiguous.</para>
+    /// </summary>
+    internal static string Readable(ItemDef item) =>
+        item.Name is { Length: > 0 } name ? name : item.ShortName ?? item.Id;
 
-        if (shortName is not { Length: > 0 } || shortName == "?") return item.Name;
-
-        // A dot anywhere is an abbreviation announcing itself — "Chek. 15", "M.parts".
-        if (shortName.Contains('.', StringComparison.Ordinal)) return item.Name;
-
-        // A single word lifted out of the middle of a longer name loses what the thing is:
-        // "Access" for a TerraGroup Labs access keycard could be anything. Acronyms are fine —
-        // "GPU", "LEDX" — because they are what players say, and they are all upper case.
-        var words = item.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
-        var acronym = shortName.All(c => !char.IsLetter(c) || char.IsUpper(c));
-
-        if (!acronym && words >= 3 && !item.Name.StartsWith(shortName, StringComparison.OrdinalIgnoreCase))
-            return item.Name;
-
-        // Short enough to fit and long enough to mean something.
-        return shortName.Length is >= 2 and <= 18 && shortName.Count(char.IsLetter) >= 2
-            ? shortName
-            : item.Name;
-    }
-
-    private static int ByUrgency(PanelRow a, PanelRow b) =>
-        a.FoundInRaid != b.FoundInRaid
-            ? b.FoundInRaid.CompareTo(a.FoundInRaid)
-            : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Alphabetical, and only that.
+    ///
+    /// <para>This used to lift found-in-raid items to the top, which sorted the list into two
+    /// alphabets and meant finding a name you already had in mind took two passes. The colour
+    /// already says which are found-in-raid, and it says so wherever the item happens to sit.</para>
+    /// </summary>
+    private static int ByName(PanelRow a, PanelRow b) =>
+        string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Sets the stash to whatever the chosen edition ships with, if it is not already higher.

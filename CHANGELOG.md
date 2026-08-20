@@ -46,6 +46,16 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **Spawn locations removed.** Built twice, as regions and as points, and neither read well on a
   map you are navigating.
 
+### The items list
+
+- **Items are named in full.** "Elite" is elite cutters, "Access" is a TerraGroup Labs access
+  keycard, "Chek. 15" is the Chekannaya 15 apartment key. The game prints those short names on a
+  stash cell, where they are exactly right and where RatNav still reads them; in a list you are
+  scanning for a name you have in mind, they are not.
+- **One alphabetical list**, on the overlay and in the buddy app. Found-in-raid items are no longer
+  lifted into their own block — the colour says which they are wherever they sit, and two alphabets
+  meant looking twice.
+
 ### The buddy app
 
 - **Character level in the top navigation**, where it can keep up with you.

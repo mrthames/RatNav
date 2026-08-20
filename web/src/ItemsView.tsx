@@ -791,7 +791,7 @@ function Row({
                 row.goalNeeded > 0
                   && `${row.goalNeeded} for ${row.goalFor.join(', ') || 'a goal'}`,
                 row.watchNote,
-              ].filter(Boolean).join(' · ') || row.shortName}
+              ].filter(Boolean).join(' · ')}
             </div>
           </div>
         </div>
