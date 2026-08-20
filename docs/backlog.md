@@ -27,6 +27,55 @@ Everything else in this file is done. What is left:
 
 ---
 
+## Round 7 — 2026-08-20
+
+Captured before execution.
+
+### Voice, and what ships
+
+- [ ] **Cut the hedging from the README and the docs.** It reads as a product apologising for
+  itself. It should read as a tool that works, written for someone deciding whether to use it.
+  - Specifically: no discussion of maps possibly being inaccurate. That is not a caveat to
+    document, it is a defect to fix.
+- [ ] **Calibrate every map that ships.** Any map whose position cannot be trusted is a bug with an
+  owner, not a disclaimer.
+- [ ] **Omit maps we cannot calibrate from the first version** — The Lab, and anything else gated
+  behind access we do not have. Left as an open task rather than shipped uncertain.
+
+### Spawns
+
+- [ ] **Pinpoint spawn marks, not areas.** The clustered regions are not what was wanted. Other
+  maps show individual spawn points and that is the expectation.
+  - The data does carry exact points — 327 on Woods, 420 on Streets — so this is a drawing
+    decision, not a data limitation.
+  - **If pinpoints cannot be made to work, remove the feature entirely** rather than shipping the
+    areas.
+
+### Overlay
+
+- [ ] **The gear vanishes when the control drawer opens**, and the quests and items buttons shift
+  across to fill the gap. The gear should stay put, and clicking it again should close the drawer —
+  the collapse arrow stays as a second way to do it.
+- [ ] **Panel opacity resizes the window.** Using the quick opacity control while `F6` is open
+  changes the window size. Adjusting opacity or zoom must never resize anything.
+- [ ] **A scale control for the whole application.** Defaults should target **1080p**, with scaling
+  up for anyone on a larger display — 4K native has real estate the defaults do not use.
+  - Lives in the **quick menu alongside zoom**.
+
+### Maps tab
+
+- [ ] **Match the overlay exactly**, visually and functionally. Same drawing, same controls, same
+  behaviour — choosing a map on the Maps page should look like what the overlay puts on screen.
+
+### Custom waypoints, second pass
+
+- [ ] **Choose custom waypoints as part of a plan**, from the Plan page, alongside quest
+  objectives. Creating them on the Maps tab already works; putting them in a plan does not.
+- [ ] **Distinguish kinds of mark.** A mark may be an item or a location of interest, and those
+  want telling apart — as they already are from quest waypoints.
+
+---
+
 ## Round 6 — 2026-08-19
 
 **Decisions taken before execution:**
