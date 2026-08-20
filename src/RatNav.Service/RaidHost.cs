@@ -273,6 +273,15 @@ public sealed record RatNavSettings
         /// the ordinary way and touches nothing.</para>
         /// </summary>
         public string IdentifyItem { get; set; } = "F10";
+
+        /// <summary>
+        /// Read the extract list the game is showing, and keep only those on the map.
+        ///
+        /// <para>Pressed while the game's own list is up — the one double-tapping <c>O</c> opens.
+        /// RatNav cannot know you pressed <c>O</c> without watching the keyboard, which it will
+        /// not do, so it asks you to tell it.</para>
+        /// </summary>
+        public string ReadExtracts { get; set; } = "F11";
     }
 
     /// <summary>How the overlay presents itself.</summary>
@@ -399,6 +408,17 @@ public sealed record RatNavSettings
         /// are trying to navigate.</para>
         /// </summary>
         public string Spawns { get; init; } = "off";
+
+        /// <summary>
+        /// Extract names read off the game's own list, when you have asked RatNav to read it.
+        ///
+        /// <para>Empty means "not read this raid", which is a different thing from "none are
+        /// open" — so an unread map keeps showing every extract rather than going blank.</para>
+        /// </summary>
+        public IReadOnlyList<string> OfferedExtracts { get; init; } = [];
+
+        /// <summary>Whether to draw only what was read off the screen, once something has been.</summary>
+        public bool OnlyOfferedExtracts { get; init; } = true;
 
         /// <summary>Whether the items panel is open. Collapsed by default — the map comes first.</summary>
         public bool ShowItems { get; init; }

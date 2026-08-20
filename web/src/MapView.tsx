@@ -69,6 +69,9 @@ export function MapView({ map }: { map: MapSummary }) {
   const [places, setPlaces] = useState<PlaceLabel[]>([])
   const [search, setSearch] = useState('')
 
+  /** Names drawn on the map, the way the overlay draws them. */
+  const [names, setNames] = useState(true)
+
   useEffect(() => {
     setSearch('')
     api.places(map.id).then(setPlaces).catch(() => setPlaces([]))
@@ -235,6 +238,18 @@ export function MapView({ map }: { map: MapSummary }) {
         )}
 
         {places.length > 0 && (
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-muted hover:text-ink">
+            <input
+              type="checkbox"
+              checked={names}
+              onChange={(e) => setNames(e.target.checked)}
+              className="accent-accent"
+            />
+            Place names
+          </label>
+        )}
+
+        {places.length > 0 && (
           <div className="relative">
             <input
               value={search}
@@ -334,6 +349,29 @@ export function MapView({ map }: { map: MapSummary }) {
             dangerouslySetInnerHTML={{ __html: markup }}
           />
         )}
+
+        {/*
+          The names players use for places, drawn where they are. Under the pins, because a pin is
+          something to go to and a name is the ground it stands on.
+
+          Held at a constant screen size against the zoom, so a name stays readable at 6× rather
+          than growing into a banner across the map.
+        */}
+        {names && places.map((place) => (
+          <span
+            key={`${place.text}-${place.x}`}
+            className="pointer-events-none absolute font-mono whitespace-nowrap text-white/85"
+            style={{
+              left: `${place.x * 100}%`,
+              top: `${place.y * 100}%`,
+              fontSize: `${11 / zoom}px`,
+              transform: 'translate(-50%, -50%)',
+              textShadow: '0 0 3px #0b0f13, 0 0 3px #0b0f13',
+            }}
+          >
+            {place.text}
+          </span>
+        ))}
 
         {/*
           Extracts are diamonds and objectives are circles. The shapes carry the difference on

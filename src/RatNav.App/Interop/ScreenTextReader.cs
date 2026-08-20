@@ -72,6 +72,41 @@ public static class ScreenTextReader
         }
     }
 
+    /// <summary>
+    /// Every line of text on one screen, best-effort.
+    ///
+    /// <para>Whole-screen rather than a region, because the list this exists to read is drawn in a
+    /// different place on different maps and resolutions, and guessing wrong means reading
+    /// nothing. It costs a fraction of a second on a keypress, which is the right trade for a
+    /// thing pressed once a raid.</para>
+    /// </summary>
+    public static async Task<IReadOnlyList<string>> ReadScreenAsync(int screenX, int screenY)
+    {
+        if (Engine is null) return [];
+
+        try
+        {
+            var bounds = System.Windows.Forms.Screen
+                .FromPoint(new Point(screenX, screenY)).Bounds;
+
+            using var bitmap = Capture(bounds);
+            using var software = await ToSoftwareBitmapAsync(bitmap);
+
+            var result = await Engine.RecognizeAsync(software);
+
+            return
+            [
+                .. result.Lines
+                    .Select(line => line.Text.Trim())
+                    .Where(text => text.Length > 0)
+            ];
+        }
+        catch (Exception ex) when (ex is COMException or InvalidOperationException or ExternalException or IOException)
+        {
+            return [];
+        }
+    }
+
     /// <summary>Where the pointer is, in screen pixels.</summary>
     public static (int X, int Y) CursorPosition()
     {

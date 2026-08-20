@@ -1183,6 +1183,39 @@ public static class ApiEndpoints
             });
         });
 
+        // Which extracts the game is currently offering, from what was read off the screen.
+        //
+        // The text is supplied by the caller for the same reason item identification's is: every
+        // pixel that touches the screen stays in the desktop app, and this side stays testable
+        // with strings.
+        api.MapPost("/raid/extracts/read", (
+            RatNavState state, RaidSession session, RatNavSettings settings, IdentifyRequest request) =>
+        {
+            var map = session.View().MapId is { Length: > 0 } id ? FindMap(state, id) : null;
+
+            if (map is null) return Results.BadRequest(new { error = "No map is loaded." });
+
+            var lines = request.Lines is { Count: > 0 }
+                ? request.Lines
+                : (request.Text ?? "").Split(
+                    ['\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var offered = ExtractMatcher.Match(lines, map.Extracts);
+
+            settings.Remember(s => s.Overlay = s.Overlay with { OfferedExtracts = offered });
+
+            return Results.Ok(new { offered, readText = lines, of = map.Extracts.Count });
+        });
+
+        // Back to showing every extract the map has. What the game offered is forgotten with it —
+        // last raid's answer is worse than no answer.
+        api.MapDelete("/raid/extracts/read", (RatNavSettings settings) =>
+        {
+            settings.Remember(s => s.Overlay = s.Overlay with { OfferedExtracts = [] });
+
+            return Results.Ok(new { offered = Array.Empty<string>() });
+        });
+
         // ---- marks of your own
 
         // Spots someone marked by hand, with a short name for each.

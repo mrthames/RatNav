@@ -534,6 +534,10 @@
                             <Button x:Name="ExtractButton" Style="{StaticResource Chip}"
                                     Content="pmc" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
 
+                            <Button x:Name="OfferedButton" Style="{StaticResource Chip}"
+                                    Content="all extracts" HorizontalAlignment="Stretch" Margin="0,2,0,6"
+                                    ToolTip="Show every extract again, forgetting what the game listed" />
+
                             <TextBlock Style="{StaticResource Label}" Text="SPAWNS" Margin="0,0,0,2"
                                        ToolTip="Roughly where the other players in your raid started" />
                             <Button x:Name="SpawnButton" Style="{StaticResource Chip}"

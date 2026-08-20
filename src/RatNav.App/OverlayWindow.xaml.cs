@@ -194,6 +194,7 @@ public partial class OverlayWindow : Window
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
         SpawnButton.Click += (_, _) => CycleSpawns();
+        OfferedButton.Click += (_, _) => ForgetOfferedExtracts();
         HaloButton.Click += (_, _) => ToggleHalo();
         GhostButton.Click += (_, _) => ToggleGhost();
         PlacesButton.Click += (_, _) => TogglePlaces();
@@ -247,6 +248,7 @@ public partial class OverlayWindow : Window
         Bind(keys.CompleteObjective, "Tick objective off", () => CompleteRequested?.Invoke(this, EventArgs.Empty));
         Bind(keys.ToggleMode, "Switch overlay style", ToggleMode);
         Bind(keys.IdentifyItem, "Identify item under cursor", IdentifyUnderCursor);
+        Bind(keys.ReadExtracts, "Read the game's extract list", ReadOfferedExtracts);
 
         void Bind(string text, string what, Action action)
         {
@@ -596,18 +598,118 @@ public partial class OverlayWindow : Window
 
     /// <summary>
     /// Whether an extract is worth drawing. Shared ones always are — they work for either faction
-    /// — so the choice only ever hides the ones the other side uses.
+    /// — so the faction choice only ever hides the ones the other side uses.
+    ///
+    /// <para>On top of that, once the game's own list has been read this raid, only what it named
+    /// is drawn. Nothing read means nothing is hidden: "not asked yet" and "none are open" are
+    /// different answers, and a map that goes blank because you have not pressed a key is worse
+    /// than one showing an extract you cannot use.</para>
     /// </summary>
     private bool ShowsExtract(ExtractPin extract)
     {
         var mode = _settings.Overlay.Extracts;
 
         if (mode == "off") return false;
+
+        var offered = _settings.Overlay.OfferedExtracts;
+
+        if (_settings.Overlay.OnlyOfferedExtracts && offered.Count > 0
+            && !offered.Contains(extract.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
         if (mode == "both") return true;
 
         return extract.Faction.Equals("shared", StringComparison.OrdinalIgnoreCase)
             || extract.Faction.Equals(mode, StringComparison.OrdinalIgnoreCase);
     }
+
+    /// <summary>
+    /// Reads the extract list the game is showing and keeps only those on the map.
+    ///
+    /// <para>Pressed while the game's own list is up. RatNav cannot know you opened it without
+    /// watching the keyboard, which it will not do — so it asks you to say when.</para>
+    /// </summary>
+    private void ReadOfferedExtracts()
+    {
+        if (!ScreenTextReader.Available)
+        {
+            ShowIdentifyCard(
+                "Cannot read the screen",
+                "Windows has no OCR language pack installed.",
+                []);
+            return;
+        }
+
+        var (x, y) = ScreenTextReader.CursorPosition();
+
+        ShowIdentifyCard("Reading the extract list…", "", []);
+
+        _ = Dispatcher.InvokeAsync(async () =>
+        {
+            var lines = await ScreenTextReader.ReadScreenAsync(x, y);
+
+            try
+            {
+                var url = $"http://localhost:{ServiceHost.DefaultPort}/api/raid/extracts/read";
+                var response = await _http.PostAsJsonAsync(url, new { lines });
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    ShowIdentifyCard("No map loaded", "Start a raid, or show a map first.", []);
+                    return;
+                }
+
+                var read = await response.Content.ReadFromJsonAsync<OfferedExtractsResponse>();
+                var offered = read?.Offered ?? [];
+
+                _settings.Overlay = _settings.Overlay with { OfferedExtracts = offered };
+
+                ShowIdentifyCard(
+                    offered.Count > 0
+                        ? $"{offered.Count} of {read?.Of ?? 0} extracts open to you"
+                        : "No extract names found on screen",
+
+                    offered.Count > 0
+                        ? string.Join(" · ", offered)
+                        : "Press it again with the game's extract list showing.",
+                    []);
+
+                Draw();
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            {
+                ShowIdentifyCard("Could not reach RatNav's own service", "", []);
+            }
+        });
+    }
+
+    /// <summary>Back to every extract the map has, forgetting what the game listed.</summary>
+    private void ForgetOfferedExtracts()
+    {
+        _settings.Overlay = _settings.Overlay with { OfferedExtracts = [] };
+
+        _ = Dispatcher.InvokeAsync(async () =>
+        {
+            try
+            {
+                await _http.DeleteAsync(
+                    $"http://localhost:{ServiceHost.DefaultPort}/api/raid/extracts/read");
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                // The overlay already forgot; the service catching up matters less than the map
+                // redrawing now.
+            }
+        });
+
+        ApplyControlStack();
+        Draw();
+    }
+
+    /// <summary>What the extract-reading endpoint returns.</summary>
+    private sealed record OfferedExtractsResponse(List<string>? Offered, int Of);
 
     /// <summary>
     /// Which level to draw. A hand-picked floor wins, but a fix taken since you picked it wins
@@ -1393,6 +1495,13 @@ public partial class OverlayWindow : Window
         RecentreButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
         ExtractButton.Content = _settings.Overlay.Extracts;
         SpawnButton.Content = $"spawns {_settings.Overlay.Spawns}";
+
+        // Only worth a button once there is something to undo. Until the list has been read this
+        // does nothing, and a control that does nothing is one more thing to wonder about.
+        var offered = _settings.Overlay.OfferedExtracts.Count;
+
+        OfferedButton.Visibility = offered > 0 ? Visibility.Visible : Visibility.Collapsed;
+        OfferedButton.Content = $"showing {offered} · all";
         MarkerText.Text = $"{_settings.Overlay.MarkerScale:0.0}×";
         TextScaleText.Text = $"{_settings.Overlay.TextScale:0.0}×";
         ShrinkText.Text = $"{_settings.Overlay.ScaleWithZoom:0.00}";

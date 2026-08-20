@@ -38,14 +38,15 @@ for the list, plan-page key warnings, and the quest wiki carousel.
 
 - [x] **The popped-out items list is a one-way trip.** Once torn off, there is no way to put it
   back. It needs a close control that returns it into the map overlay, **collapsed**.
-- [ ] **Position the list at the bottom left or bottom right of the map**, as a toggle.
-  - Note: a left/right side swap (`⇄`) already exists but is only visible in interact mode (`F6`),
-    so it may simply not have been findable. Worth confirming whether this replaces that or is a
-    separate bottom-corner placement. `[?]`
+- [x] **Position the list at the bottom left or bottom right of the map**, as a toggle. Superseded
+  by what was actually built and later asked for: the items list and the quest log are **drawers**
+  that sit on either side, swap sides, collapse, pop out, and stack with the quest log on top when
+  they share a side. Their handles are at the bottom-left of the overlay.
 - [x] **The popped-out window should open at the height of its contents** — quests, hideout and
   watchlist combined — rather than needing to be dragged to size every single time it is opened.
-- [ ] **All of the above persists across sessions**, so relaunching RatNav or the game picks up
-  where it left off. Stored **separately from the F9 view**, like the F5/F9 split already is.
+- [x] **All of the above persists across sessions.** Placement — position, size, zoom, pan, follow,
+  ink, opacity — is stored **per presentation**, so the F5 box and the F9 wireframe keep their own.
+  Everything else (drawer sides and widths, what is collapsed, every scale) is shared.
 
 ### Items list
 
@@ -140,10 +141,9 @@ them separately.
 
 ### Map text, spawns, and quest imagery
 
-- [ ] **Text on the map needs its own scale control**, alongside the artifact scale from the first
-  item of this round. Covers street names, building names, area names, and waypoint names.
-  - `[?]` One scale for everything drawn, or separate dials for text and iconography? The first
-    item asked for ×3 on icons specifically, which suggests they may want to move independently.
+- [x] **Text on the map needs its own scale control.** Answered the open question by building both:
+  `PINS` and `TEXT` are separate dials in the control stack, plus `YOU` for the player marker and
+  `SHRINK` for how much all of them ease off as you zoom out.
 - [x] **Spawn locations, toggleable on the map.** `SPAWNS` in the control stack cycles
   off / pmc / scav / both.
   - tarkov.dev's REST maps document does carry them, and distinguishes both things that matter:
@@ -188,8 +188,13 @@ them separately.
     of `(-x, -z)` at 12.7pp — a poor fit even as a winner — while the solver settles on `(x, z)`.
     Worth a fresh screenshot at a known extract to settle it.
   - Factory and Terminal need the same: one screenshot each, standing somewhere identifiable.
-- [ ] **The buddy app should get the same map controls as the overlay** — ink, fade, ghosting,
-  place names, floor selection, artifact and text scale, zoom, right-drag pan.
+- [x] **The buddy app should get the same map controls as the overlay** — ink, ghosting, place
+  names, floor selection, zoom, right-drag pan, extracts, plus place search and marking a spot,
+  which the overlay does not have.
+  - **Deliberately not carried over: halo, fade, and the marker/text scales.** Every one of them
+    exists because the overlay draws over an unpredictable, high-contrast game scene at a distance.
+    A browser on a second monitor has a known background and a readable distance, and a control
+    that does nothing useful is worse than a missing one.
   - **Not** "follows you": there is no you in a browser.
   - Extends the Round 5 item "Map controls to match the overlay", which is still open — do them
     together rather than twice.
@@ -552,14 +557,21 @@ The research is kept below in case it is ever wanted again.
 
 ### Extracts actually available to you
 
-- [ ] **Read the in-raid extract list and show only what you can use.** Pressing `O` twice in raid
-  lists the extracts open to you this run; the map shows every extract the map has, and several are
-  never available on a given raid — wrong side, wrong conditions, wrong faction.
-  - Toggleable in the overlay: all extracts, or only the ones offered to you.
-  - The reading is the same technique as item identification — capture the screen, OCR it, match
-    the names against the map's extracts. `ScreenTextReader` and the fuzzy matcher both exist.
-  - `[?]` Triggered how? A hotkey pressed just after the game's list is up is the obvious route,
-    since RatNav cannot know you pressed `O` without watching the keyboard, which it will not do.
+- [x] **Read the in-raid extract list and show only what you can use.** `F11` while the game's list
+  is up. It reads the screen, matches what it finds against the map's extracts, and the overlay
+  then draws only those; a `showing N · all` button puts everything back.
+  - `[?]` answered the obvious way: **a hotkey**, because RatNav cannot know you pressed `O`
+    without watching the keyboard, which it will not do. It says so in the settings.
+  - Matching is deliberately forgiving, because this reads a game scene and one misread word is
+    the normal case — most of a name's distinctive words, including one long one, is enough. A
+    short line only matches when the name *starts* with it: names lose their tail, not their head,
+    so "RUAF" is RUAF Roadblock while "Taxi" is not Primorsky Ave Taxi V-Ex.
+  - Nothing read means nothing hidden. "Not asked yet" and "none are open" are different answers,
+    and a map that goes blank because you have not pressed a key is worse than one showing an
+    extract you cannot use.
+  - **Verified end to end against Streets' real 17 extracts** with realistic screen lines — three
+    matched, the interface headings and the SURVIVED line ignored. **Not yet verified against
+    actual OCR of the game's own list**; that needs a raid.
 
 ### Bulk item import from a screenshot
 
@@ -581,7 +593,7 @@ The research is kept below in case it is ever wanted again.
 
 ### Quest log pane
 
-- [ ] **A quest log on the overlay**, listing the active quests being worked in this raid.
+- [x] **A quest log on the overlay**, listing the active quests being worked in this raid.
   - A **collapsible pane** alongside the items list. Either can be collapsed, and their order is
     yours — so whichever matters more that raid sits where you want it.
   - **Poppable out** into its own window, exactly like the items list.
@@ -663,8 +675,9 @@ The research is kept below in case it is ever wanted again.
   - **Watchlist** — items of interest, with **subsections for Barter and Crafting**. Each names the
     barter or craft being worked towards and lists what it needs.
   - **Later** — still there, but focused purely on quests and hideout.
-- [ ] **Look-ahead applies to quests as well as the hideout**, and is a toggle, not a fixed depth:
-  immediate need, or one or two levels ahead.
+- [x] **Look-ahead applies to quests as well as the hideout**, and is a toggle, not a fixed depth:
+  immediate need, or one or two levels ahead. *(Duplicate of the entry above; done in the same
+  pass — depth 1 is what you could accept today, past that it follows the prerequisite chain.)*
   - **Helper text beside each section title** saying which it is currently showing — immediate
     need, or looking ahead. Without that the same list means two different things on different
     days and nothing on screen says which.
