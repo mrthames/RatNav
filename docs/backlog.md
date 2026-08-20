@@ -120,7 +120,7 @@ Captured before execution.
 
 ### Knowing why an item is on the list
 
-- [ ] **An info control on each item row** — quest and hideout list, overlay and buddy app —
+- [x] **An info control on each item row** — quest and hideout list, overlay and buddy app —
   opening what it belongs to. Which quest, or which station and level.
 
 ### The quest log
@@ -172,7 +172,9 @@ Captured before execution.
 - [ ] **Match the overlay.** Art style, zoom, click-and-drag, layering, extracts, place labels and
   quest markers — all of it.
 - [x] **Same iconography.** The buddy app draws circles where the overlay draws waypoint symbols.
-- [ ] **Mark newer maps `[WIP]`** beside the name. Quest positions and details on them will need
+- [x] **Mark newer maps `[WIP]`** beside the name. A hand-kept list, because nothing in the data
+  marks it — Ground Zero 21+, the Ground Zero tutorial and Terminal today. When a map settles, take
+  it out of the list. Quest positions and details on them will need
   adjusting over time and it is honest to say which are settled.
 
 ### Setup, cut back

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, type TrackedItem, type GoalView } from './api'
+import { QuestBrief } from './QuestBrief'
+import { api, type TrackedItem, type GoalView, type ItemDetail } from './api'
 
 type Tab = 'needed' | 'watchlist' | 'goals' | 'search'
 
@@ -34,6 +35,9 @@ export function ItemsView() {
   const [lookAhead, setLookAhead] = useState(2)
   const [rows, setRows] = useState<TrackedItem[]>([])
   const [filter, setFilter] = useState<FilterId>('all')
+
+  /** The quest opened from an item's reasons, if any. */
+  const [readingQuest, setReadingQuest] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -87,6 +91,10 @@ export function ItemsView() {
 
   return (
     <div className="flex flex-col gap-4">
+      {readingQuest && (
+        <QuestBrief taskId={readingQuest} onClose={() => setReadingQuest(null)} />
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-px">
           {(['needed', 'watchlist', 'goals', 'search'] as Tab[]).map((id) => (
@@ -251,7 +259,13 @@ export function ItemsView() {
             </thead>
             <tbody>
               {shown.map((row) => (
-                <Row key={row.id} row={row} onChange={replace} watchlist={tab === 'watchlist'} />
+                <Row
+                  key={row.id}
+                  row={row}
+                  onChange={replace}
+                  watchlist={tab === 'watchlist'}
+                  onReadQuest={setReadingQuest}
+                />
               ))}
             </tbody>
           </table>
@@ -557,15 +571,108 @@ function GoalForm({
   )
 }
 
+/**
+ * Why an item is on the list, when the row's one line cannot say it.
+ *
+ * <p>A row reads "3 for quests" because naming three quests would not fit. That is the right
+ * summary and the wrong answer to "which ones" — and which ones decides whether you carry the
+ * thing out or leave it.</p>
+ *
+ * <p>Quest names open the quest, so the chain from "why am I carrying this" to "here is the door"
+ * is two clicks rather than a browser tab.</p>
+ */
+function Why({ itemId, onReadQuest }: { itemId: string; onReadQuest: (taskId: string) => void }) {
+  const [detail, setDetail] = useState<ItemDetail | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    api.item(itemId).then(setDetail).catch(() => setFailed(true))
+  }, [itemId])
+
+  if (failed) return <p className="px-3 py-2 text-xs text-warn">Could not load this item.</p>
+  if (!detail) return <p className="px-3 py-2 font-mono text-[11px] text-muted">loading…</p>
+
+  const nothing =
+    detail.quests.length === 0 && detail.hideout.length === 0 && detail.asKey.length === 0
+
+  return (
+    <div className="flex flex-col gap-1 px-3 py-2">
+      {detail.quests.map((quest) => (
+        <button
+          key={quest.objectiveId}
+          type="button"
+          onClick={() => onReadQuest(quest.taskId)}
+          className="flex flex-wrap items-baseline gap-x-2 text-left font-mono text-[11px]
+                     text-muted transition-colors hover:text-ink
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <span className="text-route">QUEST</span>
+          <span className="text-ink">{quest.count}×</span>
+          <span>{quest.taskName}</span>
+          {quest.traderName && <span>· {quest.traderName}</span>}
+          {quest.foundInRaid && <span className="text-need">· found in raid</span>}
+        </button>
+      ))}
+
+      {detail.hideout.map((station) => (
+        <p
+          key={`${station.stationName}-${station.level}`}
+          className="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] text-muted"
+        >
+          <span className="text-route">HIDEOUT</span>
+          <span className="text-ink">{station.count}×</span>
+          <span>{station.stationName} level {station.level}</span>
+        </p>
+      ))}
+
+      {detail.asKey.map((quest) => (
+        <button
+          key={quest.taskId}
+          type="button"
+          onClick={() => onReadQuest(quest.taskId)}
+          className="flex flex-wrap items-baseline gap-x-2 text-left font-mono text-[11px]
+                     text-muted transition-colors hover:text-ink
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <span className="text-accent">KEY</span>
+          <span>opens the way for {quest.taskName}</span>
+        </button>
+      ))}
+
+      {nothing && (
+        <p className="font-mono text-[11px] text-muted">
+          No quest or hideout upgrade wants this. It is here because you put it there.
+        </p>
+      )}
+
+      {detail.item.wikiUrl && (
+        <a
+          href={detail.item.wikiUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono text-[11px] text-accent hover:underline
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          wiki ↗
+        </a>
+      )}
+    </div>
+  )
+}
+
 function Row({
-  row, onChange, watchlist,
+  row, onChange, watchlist, onReadQuest,
 }: {
   row: TrackedItem
   onChange: (item: TrackedItem) => void
   /** On the watchlist the numbers are yours: an editable target, and a count kept apart from the stash. */
   watchlist: boolean
+  onReadQuest: (taskId: string) => void
 }) {
   const [busy, setBusy] = useState(false)
+
+  /** Whether the row is showing what wants it. */
+  const [why, setWhy] = useState(false)
 
   /**
    * The watchlist keeps its own count.
@@ -612,9 +719,27 @@ function Row({
   }
 
   return (
+    <>
     <tr className="border-b border-line-soft last:border-0 hover:bg-panel/60">
       <Td>
         <div className="flex items-center gap-2.5">
+          {/*
+            The row's one line says "3 for quests" because naming three would not fit. Which three
+            is what decides whether you carry the thing out.
+          */}
+          <button
+            type="button"
+            aria-expanded={why}
+            aria-label={`Why ${row.name} is on the list`}
+            onClick={() => setWhy(!why)}
+            className="size-5 flex-none rounded-full border border-line font-mono text-[10px]
+                       text-muted transition-colors hover:border-muted hover:text-ink
+                       aria-expanded:border-accent aria-expanded:text-accent
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            i
+          </button>
+
           {row.iconUrl
             ? <img src={row.iconUrl} alt="" loading="lazy" className="size-7 flex-none rounded-xs bg-panel-hi object-contain" />
             : <div className="size-7 flex-none rounded-xs bg-panel-hi" />}
@@ -729,6 +854,15 @@ function Row({
         </button>
       </Td>
     </tr>
+
+    {why && (
+      <tr className="border-b border-line-soft bg-ground/60">
+        <td colSpan={5}>
+          <Why itemId={row.id} onReadQuest={onReadQuest} />
+        </td>
+      </tr>
+    )}
+    </>
   )
 }
 

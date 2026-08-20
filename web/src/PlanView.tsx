@@ -189,6 +189,9 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                        focus-visible:outline-2 focus-visible:outline-accent"
           >
             {map.name}
+            {map.workInProgress && (
+              <span className="ml-1.5 font-mono text-[10px] text-warn">[WIP]</span>
+            )}
           </button>
         ))}
       </div>

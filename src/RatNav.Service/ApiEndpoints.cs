@@ -2192,9 +2192,36 @@ public sealed record TaskSummary
 
 public sealed record MapSummary
 {
+    /// <summary>
+    /// Maps whose quest positions and detail are still settling.
+    ///
+    /// <para>The community's data catches up with a new location over weeks, not days: objectives
+    /// arrive without coordinates, land in roughly the right place, and get corrected. Saying which
+    /// maps are in that state costs a bracket and saves somebody walking to a pin that moved.</para>
+    ///
+    /// <para>A hand-kept list because nothing in the data marks it. When a map settles, take it out
+    /// of here.</para>
+    /// </summary>
+    private static readonly HashSet<string> StillSettling = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ground-zero-21",
+        "ground-zero-tutorial",
+        "terminal",
+    };
+
+
     public required string Id { get; init; }
     public required string Name { get; init; }
     public string? NormalizedName { get; init; }
+
+    /// <summary>
+    /// Whether this map's quest positions and detail are still settling.
+    ///
+    /// <para>Shown as <c>[WIP]</c> beside the name. The community's data catches up with a new
+    /// location over weeks: objectives arrive without coordinates, land roughly right, and get
+    /// corrected. Saying so costs a bracket and saves somebody walking to a pin that moved.</para>
+    /// </summary>
+    public bool WorkInProgress { get; init; }
 
     /// <summary>False when we have no calibrated image, so the UI can say why pins are missing.</summary>
     public bool Calibrated { get; init; }
@@ -2229,6 +2256,7 @@ public sealed record MapSummary
         Id = map.Id,
         Name = map.Name,
         NormalizedName = map.NormalizedName,
+        WorkInProgress = map.NormalizedName is { Length: > 0 } key && StillSettling.Contains(key),
         Calibrated = map.Image is not null,
         CalibrationVerified = map.Image?.CalibrationVerified ?? false,
         Confidence = map.Image?.Confidence.ToString() ?? "Unknown",

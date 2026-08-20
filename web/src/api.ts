@@ -16,6 +16,8 @@ export interface MapSummary {
   id: string
   name: string
   normalizedName: string | null
+  /** Quest positions on this map are still settling — shown as [WIP] beside the name. */
+  workInProgress: boolean
   calibrated: boolean
   imageUrl: string | null
   coordinateRotation: number
@@ -215,6 +217,23 @@ export interface PlannableObjective {
   place: string | null
   neededKeyItemIds: string[]
   itemIds: string[]
+}
+
+export interface ItemDetail {
+  item: { id: string; name: string; shortName: string | null; wikiUrl: string | null }
+  /** Every quest that wants it, whether or not you have started them. */
+  quests: {
+    taskId: string
+    taskName: string
+    objectiveId: string
+    count: number
+    foundInRaid: boolean
+    traderName: string | null
+  }[]
+  hideout: { stationName: string; level: number; count: number }[]
+  /** Quests this item opens the way for, when it is a key. */
+  asKey: { taskId: string; taskName: string }[]
+  have: number
 }
 
 export interface QuestBriefing {
@@ -517,9 +536,7 @@ export const api = {
       + (objectiveId ? `?objectiveId=${encodeURIComponent(objectiveId)}` : '')),
 
   /** One item, with everything anyone asks about it: why it is needed, and how many you have. */
-  item: (id: string) =>
-    get<{ item: { id: string; name: string; shortName: string | null }; have: number }>(
-      `/api/items/${encodeURIComponent(id)}`),
+  item: (id: string) => get<ItemDetail>(`/api/items/${encodeURIComponent(id)}`),
 
   /**
    * Asks the desktop app to open a folder picker, and returns what was chosen.
