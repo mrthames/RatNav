@@ -41,6 +41,14 @@ public sealed class ScreenshotWatcher : IDisposable
     /// <summary>What to do with a screenshot after reading it.</summary>
     public ScreenshotDisposal Disposal { get; set; } = ScreenshotDisposal.Archive;
 
+    /// <summary>
+    /// Where to record the names of screenshots that have been read, or null not to.
+    ///
+    /// <para>Set by the host to a file in RatNav's own data folder, so the evidence outlives the
+    /// picture it came from.</para>
+    /// </summary>
+    public string? LogPath { get; set; }
+
     /// <summary>The most recent fix, or null if none this session.</summary>
     public PositionFix? Latest { get; private set; }
 
@@ -109,8 +117,35 @@ public sealed class ScreenshotWatcher : IDisposable
         Latest = fix;
         PositionFixed?.Invoke(this, fix);
 
+        // The name, before the file goes. Everything a position fix knows is in its filename —
+        // the coordinates and the camera rotation — so this is the whole of it, at a few dozen
+        // bytes instead of thirteen megabytes.
+        Remember(path);
+
         Dispose(path);
         return true;
+    }
+
+    /// <summary>
+    /// Writes a processed screenshot's name to a log beside the archive.
+    ///
+    /// <para>This is what makes throwing the picture away safe. A marker that lands in the wrong
+    /// place is diagnosed from the coordinates in the filename, and those survive here — the
+    /// pixels never had anything to add.</para>
+    /// </summary>
+    private void Remember(string path)
+    {
+        if (LogPath is not { Length: > 0 } log) return;
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(log)!);
+            File.AppendAllText(log, Path.GetFileName(path) + Environment.NewLine);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A log nobody can write is not worth losing a fix over.
+        }
     }
 
     private void Dispose(string path)

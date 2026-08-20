@@ -22,6 +22,7 @@ public sealed class RaidHost(
     private ScreenshotWatcher? _screenshots;
     private LogWatcher? _logs;
     private Timer? _refresh;
+    private Timer? _sweep;
 
     /// <summary>How the last data refresh went, for the UI to report honestly.</summary>
     public RefreshResult? LastRefresh { get; private set; }
@@ -36,10 +37,18 @@ public sealed class RaidHost(
         _screenshots = new ScreenshotWatcher(settings.ScreenshotDirectory)
         {
             Disposal = settings.ScreenshotDisposal,
+            LogPath = settings.Origin is { Length: > 0 } data
+                ? Path.Combine(data, "screenshots-read.log")
+                : null,
         };
 
         _screenshots.PositionFixed += (_, fix) => session.OnPositionFixed(fix);
         _screenshots.Start();
+
+        // Sweep at launch, then daily. These are thirteen-megabyte pictures of a 4K screen, and
+        // one development machine had put away 3.9 GB of them before anybody looked.
+        Sweep();
+        _sweep = new Timer(_ => Sweep(), null, TimeSpan.FromDays(1), TimeSpan.FromDays(1));
 
         // A fix taken before RatNav started is still the player's current position, and the first
         // screenshot of a raid is usually taken before anyone thinks about the app.
@@ -62,6 +71,42 @@ public sealed class RaidHost(
 
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Clears out screenshots that have already been read.
+    ///
+    /// <para>Two days, and half a gigabyte at the outside. The age cap is what somebody would ask
+    /// for; the size cap is what actually saves them, because three hundred files in two evenings
+    /// of playing is four gigabytes and every one of them is inside the age limit.</para>
+    ///
+    /// <para>What is lost is only pixels. Every position fix's filename is written to a log first,
+    /// and the filename is the whole of what a fix knows.</para>
+    /// </summary>
+    private void Sweep()
+    {
+        // The configured folder or the default one. ScreenshotDirectory is null until somebody
+        // sets it by hand, which is the ordinary case — reading it directly took RatNav down at
+        // startup, because tidying up threw out of the code path that starts everything else.
+        var folder = settings.ScreenshotDirectory ?? RatNavPaths.DefaultScreenshotDirectory;
+
+        if (folder is not { Length: > 0 }) return;
+
+        try
+        {
+            var result = ArchiveSweeper.Sweep(folder, TimeSpan.FromDays(2), 512L * 1024 * 1024);
+
+            if (result.Removed > 0) LastSweep = result;
+        }
+        catch (Exception ex)
+        {
+            // Anything at all. Tidying is never worth interrupting anything for, least of all the
+            // thing that starts the app.
+            _ = ex;
+        }
+    }
+
+    /// <summary>What the last sweep cleared, for saying so in Setup.</summary>
+    public SweepResult? LastSweep { get; private set; }
 
     /// <summary>
     /// Brings game data up to date, passing the running game's version so a patch forces a full
@@ -138,6 +183,7 @@ public sealed class RaidHost(
     {
         _screenshots?.Stop();
         _refresh?.Dispose();
+        _sweep?.Dispose();
         return Task.CompletedTask;
     }
 
@@ -146,6 +192,7 @@ public sealed class RaidHost(
         (_screenshots as IDisposable)?.Dispose();
         _logs?.Dispose();
         _refresh?.Dispose();
+        _sweep?.Dispose();
     }
 }
 

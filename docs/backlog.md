@@ -320,6 +320,25 @@ What to change:
 
 ---
 
+## Round 12 — 2026-08-20
+
+### Disk space
+
+- [x] **The archive was 3.9 GB in 295 files**, and nothing ever cleared it. Found by looking.
+- [x] **Swept at launch and daily.** Two days, and half a gigabyte at the outside.
+  - The **recommendation asked for**, instead of a plain time rule: keep a file only while it still
+    has a job. A position fix's entire information content is its **filename** — the coordinates
+    and the camera rotation are in it — so the name goes into a log and the thirteen megabytes of
+    pixels do not. An inventory screenshot is the other way round, and is worth keeping only until
+    its scan has been reviewed and applied.
+  - The **size cap is what actually saves you**. Two evenings of playing is three hundred files and
+    four gigabytes, every one of them inside a two-day age limit.
+  - It took RatNav down at startup on the first attempt: the screenshot folder is null until
+    somebody sets it by hand, and tidying up threw out of the code path that starts everything
+    else. Tidying now catches everything and returns quietly.
+
+---
+
 ## Round 8 — 2026-08-20
 
 Captured before execution.
