@@ -223,7 +223,7 @@ public sealed class TarkovDevClient(HttpClient http)
                         from spawn in pair.Value.Spawns ?? []
                         where spawn.Position is not null
                         select new SpawnAreas.RawSpawn(
-                            spawn.Position.ToGamePosition(),
+                            spawn.Position!.ToGamePosition(),
                             spawn.Sides ?? [],
                             spawn.Categories ?? [],
                             spawn.ZoneName)),

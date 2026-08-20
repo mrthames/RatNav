@@ -1,7 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <!--
+      The icon Windows shows for the executable, the taskbar and the installer. Built from
+      brand/ratnav-mark.svg by brand/render.ps1 — see brand/README.md before editing it here.
+    -->
+    <ApplicationIcon>ratnav.ico</ApplicationIcon>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Also embedded, so the tray icon can load the real thing rather than a system stand-in. -->
+    <Resource Include="ratnav.ico" />
   </ItemGroup>
 
   <ItemGroup>

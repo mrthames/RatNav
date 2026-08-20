@@ -38,6 +38,11 @@ OutputBaseFilename=RatNav-{#AppVersion}-setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+
+; RatNav's own mark, so the installer and the Add/Remove entry are recognisable rather than
+; generic. Built from brand/ratnav-mark.svg by brand/render.ps1.
+SetupIconFile=..\brand\ratnav.ico
+atnav.ico
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 

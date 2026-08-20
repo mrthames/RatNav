@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 using RatNav.Service;
 
@@ -38,13 +39,37 @@ public sealed class TrayIcon : IDisposable
 
         _icon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            // RatNav's own mark rather than the generic application icon. A tray full of
+            // identical grey squares is a tray nobody can use, and this is the only place many
+            // people will see the app while it is running.
+            Icon = Mark(),
             Text = "RatNav",
             Visible = true,
             ContextMenuStrip = menu,
         };
 
         _icon.DoubleClick += (_, _) => onToggleOverlay();
+    }
+
+    /// <summary>
+    /// RatNav's mark, from the icon embedded in this assembly.
+    ///
+    /// <para>Falls back to the system icon rather than throwing. A missing icon should cost you a
+    /// nice picture in the tray, not the tray — and with it the only way to quit the app.</para>
+    /// </summary>
+    private static Icon Mark()
+    {
+        try
+        {
+            var stream = System.Windows.Application
+                .GetResourceStream(new Uri("ratnav.ico", UriKind.Relative))?.Stream;
+
+            return stream is null ? SystemIcons.Application : new Icon(stream);
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException)
+        {
+            return SystemIcons.Application;
+        }
     }
 
     /// <summary>

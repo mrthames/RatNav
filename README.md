@@ -1,3 +1,5 @@
+<img src="brand/ratnav-mark-512.png" alt="" width="88" align="left" hspace="12" />
+
 # RatNav
 
 A raid planner and navigation overlay for Escape from Tarkov.

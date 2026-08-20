@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none" role="img" aria-label="RatNav">
+  <title>RatNav</title>
+
+  <!--
+    One shape that is a navigation arrow and a rat at the same time.
+
+    A navigation arrow leads with a narrow point and widens behind it. So does a rat, seen from
+    above — the snout leads and the skull widens to the ears. Putting the ears on the arrow's
+    flanks is the whole idea; the tail is the only thing added, and it is added last.
+
+    Built to survive being small. Drop the tail below about 32 pixels and what remains is a legible
+    arrow with two ears, which is the size at which an icon has to work hardest.
+
+    Ink is currentColor, so one file serves the badge, the favicon, a wordmark lockup, and anywhere
+    it has to be a single flat colour. Nothing here depends on a gradient or a filter.
+  -->
+
+  <!-- Behind the body, so it reads as coming out from under it. -->
+  <path
+    d="M 196,188 C 224,204 218,236 184,239 C 158,241 150,222 164,213"
+    stroke="currentColor"
+    stroke-width="14"
+    stroke-linecap="round" />
+
+  <!-- Ears. Half on the flank, half off it — breaking the outline is what makes it an animal. -->
+  <circle cx="72" cy="110" r="28" fill="currentColor" />
+  <circle cx="184" cy="110" r="28" fill="currentColor" />
+
+  <!-- The arrow, and the head. The notch is what keeps it reading as a heading rather than a triangle. -->
+  <path d="M 128,18 L 198,186 L 128,150 L 58,186 Z" fill="currentColor" />
+</svg>

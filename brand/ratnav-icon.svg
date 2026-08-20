@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="RatNav">
+  <title>RatNav</title>
+
+  <!--
+    The badge: the mark on RatNav's own ground, in the rounded square every platform expects to
+    crop. Use this for the executable, the taskbar, and app listings; use ratnav-mark.svg wherever
+    the surface already has a background of its own.
+
+    The corner radius is 22% of the side, which is what iOS, Windows 11 and Android all round to
+    within a hair of — a badge cut for one of them does not look wrong on the others.
+  -->
+
+  <rect width="256" height="256" rx="56" fill="#0b0f13" />
+
+  <g color="#8ec8ff">
+    <path
+      d="M 196,188 C 224,204 218,236 184,239 C 158,241 150,222 164,213"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="14"
+      stroke-linecap="round" />
+
+    <circle cx="72" cy="110" r="28" fill="currentColor" />
+    <circle cx="184" cy="110" r="28" fill="currentColor" />
+
+    <path d="M 128,18 L 198,186 L 128,150 L 58,186 Z" fill="currentColor" />
+  </g>
+</svg>
