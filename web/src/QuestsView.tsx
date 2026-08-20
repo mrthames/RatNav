@@ -118,53 +118,80 @@ export function QuestsView() {
         the endpoint that would needs your account password. Clicking a name filters to their
         quests, which is how the game organises them.
       */}
-      <div className="flex flex-wrap gap-px border border-line bg-line-soft">
-        {traders.map((t) => (
-          <div
-            key={t.name}
-            className={`flex items-center gap-2 bg-panel px-2.5 py-1.5 ${
-              trader === t.name ? 'ring-1 ring-accent ring-inset' : ''}`}
-          >
-            <button
-              type="button"
-              onClick={() => setTrader(trader === t.name ? null : t.name)}
-              className="text-sm text-ink hover:text-accent
-                         focus-visible:outline-2 focus-visible:outline-accent"
+      <div className="flex flex-wrap gap-3">
+        {traders.map((t) => {
+          const next = t.levels?.find((l) => l.level === t.level + 1)
+          const canRaise = t.level < 4 && (next?.reachable ?? true)
+
+          return (
+            <div
+              key={t.name}
+              className={`flex w-[104px] flex-col items-center gap-1 border bg-panel p-2
+                          ${trader === t.name ? 'border-accent' : 'border-line'}`}
             >
-              {t.name}
-            </button>
+              {/* The portrait, so this reads like the trader screen rather than a table of names. */}
+              <button
+                type="button"
+                onClick={() => setTrader(trader === t.name ? null : t.name)}
+                title={`Show only ${t.name}'s quests`}
+                className="flex flex-col items-center gap-1
+                           focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                {t.imageUrl ? (
+                  <img
+                    src={t.imageUrl}
+                    alt=""
+                    className={`size-14 object-cover transition-opacity
+                                ${trader && trader !== t.name ? 'opacity-40' : ''}`}
+                  />
+                ) : (
+                  <span className="grid size-14 place-items-center bg-panel-hi font-display
+                                   text-xl font-bold text-muted">
+                    {t.name.slice(0, 2)}
+                  </span>
+                )}
 
-            <span className="font-mono text-[11px] text-muted">LL</span>
-            {[1, 2, 3, 4].map((level) => {
-              const rule = t.levels?.find((l) => l.level === level)
-              const reachable = rule?.reachable ?? true
+                <span className="text-xs text-ink">{t.name}</span>
+              </button>
 
-              return (
+              {/*
+                The level it is at, with one step either way. Four buttons with the current one lit
+                meant reading four things to learn one, and the number that mattered was the same
+                size as the three that did not.
+              */}
+              <div className="flex items-center gap-1">
                 <button
-                  key={level}
                   type="button"
-                  aria-pressed={t.level === level}
-                  disabled={!reachable}
-                  title={reachable
-                    ? `${t.name} loyalty ${level}`
-                    : `Needs character level ${rule?.requiredPlayerLevel}`}
-                  aria-label={`${t.name} loyalty ${level}`}
-                  onClick={() => void setTraderLevel(t.name, level)}
+                  disabled={t.level <= 1}
+                  onClick={() => void setTraderLevel(t.name, t.level - 1)}
+                  aria-label={`${t.name} one loyalty level lower`}
                   className="size-5 rounded-sm bg-panel-hi font-mono text-[11px] text-muted
-                             transition-colors hover:text-ink aria-pressed:bg-accent
-                             aria-pressed:text-ground disabled:opacity-25 disabled:hover:text-muted
+                             transition-colors hover:text-ink disabled:opacity-25
                              focus-visible:outline-2 focus-visible:outline-accent"
                 >
-                  {level}
+                  −
                 </button>
-              )
-            })}
 
-            {t.availableNow > 0 && (
-              <span className="font-mono text-[11px] text-accent">{t.availableNow} ready</span>
-            )}
-          </div>
-        ))}
+                <span className="font-mono text-sm tabular-nums text-accent">LL{t.level}</span>
+
+                <button
+                  type="button"
+                  disabled={!canRaise}
+                  title={canRaise
+                    ? undefined
+                    : `Needs character level ${next?.requiredPlayerLevel}`}
+                  onClick={() => void setTraderLevel(t.name, t.level + 1)}
+                  aria-label={`${t.name} one loyalty level higher`}
+                  className="size-5 rounded-sm bg-panel-hi font-mono text-[11px] text-muted
+                             transition-colors hover:text-ink disabled:opacity-25
+                             focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       {loading && <Empty>loading…</Empty>}

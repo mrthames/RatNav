@@ -356,6 +356,7 @@ public static class ApiEndpoints
                 select new
                 {
                     name = byTrader.Key,
+                    imageUrl = def?.ImageUrl,
 
                     // What each loyalty level costs, so a level you cannot have reached can be
                     // shown as out of reach rather than merely unselected.

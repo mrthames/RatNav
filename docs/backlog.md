@@ -89,12 +89,12 @@ Captured before execution.
 
 ### Quests tab
 
-- [ ] **Traders should look like traders.** The current row of names and numbers is not it. Wanted:
+- [x] **Traders should look like traders.** The current row of names and numbers is not it. Wanted:
   each trader's **portrait**, small, with a **level indicator underneath** and a simple control to
   raise or lower it — including reverting a mistake.
   - Stop showing "level 1" as though it were a statement when the trader is at 2. The indicator
     should read the level it is at.
-- [ ] **Drop the "ready" count.** It is left over from a workflow that no longer exists — quests
+- [x] **Drop the "ready" count.** It is left over from a workflow that no longer exists — quests
   are managed by activating them and searching the **All** tab, and a count of "ready" answers a
   question nobody is asking any more.
 

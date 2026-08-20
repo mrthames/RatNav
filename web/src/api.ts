@@ -149,6 +149,8 @@ export interface Settings {
 
 export interface Trader {
   name: string
+  /** The trader's portrait, so a list of them looks like the ones in the game. */
+  imageUrl: string | null
   /** Loyalty level, 1–4. Set by hand: nothing on disk reports it. */
   level: number
   /** What each loyalty level costs, and whether your character level can have reached it. */

@@ -283,6 +283,7 @@ public sealed class TarkovDevClient(HttpClient http)
                     Id = pair.Key,
                     Name = text.Of(pair.Value!.Name) ?? pair.Value.NormalizedName ?? pair.Key,
                     NormalizedName = pair.Value.NormalizedName,
+                    ImageUrl = pair.Value.ImageLink,
                     Levels =
                     [
                         .. (pair.Value.Levels ?? [])
@@ -494,7 +495,7 @@ public sealed class TarkovDevClient(HttpClient http)
     private sealed record SkillRequirementDto(string? Name, int Level);
 
     private sealed record TraderDto(
-        string? Name, string? NormalizedName, List<TraderLevelDto>? Levels);
+        string? Name, string? NormalizedName, string? ImageLink, List<TraderLevelDto>? Levels);
 
     private sealed record BarterDto(
         string? Id,
