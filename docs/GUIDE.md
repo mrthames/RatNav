@@ -11,6 +11,7 @@ Everything RatNav does, in the order you would meet it. If you have just install
 - [Reading a quest from its waypoint](#reading-a-quest-from-its-waypoint)
 - [Marking your own spots](#marking-your-own-spots)
 - [Items, and why they are needed](#items-and-why-they-are-needed)
+- [Your three characters](#your-three-characters)
 - [Tracking something yourself](#tracking-something-yourself)
 - [The hideout as a build order](#the-hideout-as-a-build-order)
 - [Quests and traders](#quests-and-traders)
@@ -200,6 +201,25 @@ or keys. Each filter carries its count, so the row doubles as a summary before y
 Have-counts are typed by hand — your stash is not in any file on disk, and RatNav will not guess.
 The point of the list is what is still *needed*, so the number you touch most is the one that goes
 down as you find things.
+
+---
+
+## Your three characters
+
+Escape from Tarkov gives you a PvE character, a PvP character, and a seasonal PvP one. They share
+nothing — different quests accepted, different hideout, different trader loyalty, different level —
+so RatNav keeps a separate set of everything for each.
+
+Switch between them from the **menu at the right of the top navigation**. RatNav opens on whichever
+you chose last.
+
+What is shared, because none of it belongs to a character: where the game is installed, your
+hotkeys, your screenshot key, and the cached copy of the game's data.
+
+**Starting one over** is in **Setup**, under *Start a character over*. It clears everything recorded
+for that one character — quests, hideout, loyalty, level, what you are tracking, plans and marks —
+and leaves the others alone. It asks you to type the character's name first, because it cannot be
+undone.
 
 ---
 

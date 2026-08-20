@@ -114,6 +114,10 @@ folder never fills up.
 anything else worth remembering — filtered to found-in-raid, or keys, or whatever a trade is
 waiting on.
 
+**Three characters, kept apart.** PvE, PvP and PvP Seasonal each get their own quests, hideout,
+loyalty and level — because the game does too. Switch from the menu in the navigation; start one
+over from Setup.
+
 **Track something of your own.** "Document case", and the seven plugs it takes. Each item has a
 `+`/`−` and the number shown is what is **left** — found four of six and it asks for two. Counted
 *apart* from quests and the hideout, because an item wanted three times for a quest and seven for

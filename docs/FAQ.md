@@ -20,6 +20,7 @@
 - [Does it work on Steam? On Linux? On a second PC?](#does-it-work-on-steam-on-linux-on-a-second-pc)
 - [Can my friend and I see each other on the map?](#can-my-friend-and-i-see-each-other-on-the-map)
 - [Can I see it on my phone or tablet?](#can-i-see-it-on-my-phone-or-tablet)
+- [I switched character and everything is empty](#i-switched-character-and-everything-is-empty)
 - [How do I move to a new PC?](#how-do-i-move-to-a-new-pc)
 - [How do I uninstall it completely?](#how-do-i-uninstall-it-completely)
 - [Something is broken. Where do I report it?](#something-is-broken-where-do-i-report-it)
@@ -238,6 +239,16 @@ Opening it to your network is a deliberate change, not the default.
 
 For a second monitor on the same machine, `http://localhost:8722/` in any browser is the whole
 answer — the panel is built for a tall narrow window.
+
+## I switched character and everything is empty
+
+That is what switching to a character RatNav has not seen before looks like — each one keeps its
+own quests, hideout, loyalty and level, so a fresh one starts fresh. Switch back from the menu at
+the right of the top navigation and your progress is where you left it.
+
+If you upgraded from a version before characters existed, everything you had was adopted into
+**PvP**. If what you were actually playing was PvE or seasonal, switch to that one and set it up
+there — the old profile can be cleared from **Setup → Start a character over** once you have.
 
 ## How do I move to a new PC?
 
