@@ -463,7 +463,16 @@ public sealed record RatNavSettings
         /// look. Drawn as outlines, because crossing ground wants roads and structures and not
         /// much else.
         /// </summary>
-        public OverlayPlacement Wireframe { get; init; } = new() { Ink = "outline" };
+        /// <para>The zoom and follow are measured from a real arrangement rather than left at
+        /// their neutral values. Fully zoomed out is the whole map at once, which is not a useful
+        /// place to open a view whose job is showing the ground around you; and a centred map that
+        /// does not follow you is a centred map of somewhere you were.</para>
+        public OverlayPlacement Wireframe { get; init; } = new()
+        {
+            Ink = "outline",
+            Zoom = 3.0,
+            Follow = true,
+        };
 
         /// <summary>
         /// How much of the screen the centred view covers, as a fraction.
@@ -492,6 +501,18 @@ public sealed record RatNavSettings
         /// fading out inside one would just look like a fault.</para>
         /// </summary>
         public double EdgeFade { get; init; } = 0.55;
+
+        /// <summary>
+        /// Whether the centred map turns so your heading points up the screen.
+        ///
+        /// <para>On, because it is the reason to have a map in the middle of the screen: what is
+        /// drawn at the top is what is in front of you. A setting rather than a rule because
+        /// north-up is what a map normally means, and somebody who thinks in compass directions
+        /// should be able to keep it.</para>
+        ///
+        /// <para>Has no effect on the corner panel, which is deliberately still.</para>
+        /// </summary>
+        public bool TurnWithYou { get; init; } = true;
 
         /// <summary>
         /// How strongly map lines glow in the full-screen HUD.

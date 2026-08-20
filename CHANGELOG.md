@@ -40,6 +40,22 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **The centred map turns with you.** Your heading points up the screen, so what is drawn at the
+  top is what is in front of you — no more reading a route that runs behind you off the top of a
+  monitor that is in front of you. Your cone points straight up, because up is now where you are
+  looking, and the captions and place names stay upright while their positions turn. **north up**
+  in the controls keeps the old behaviour. The corner panel never turns: it is a small still map
+  you glance at to orient against buildings, and one that spun every time you turned would be
+  unreadable.
+- **The fade stops dimming the controls.** In the centred view, turning the map down to a faint
+  wash took the control panel with it — so the setting you most want was the one that made the
+  controls hardest to use. The map carries the fade there; the controls stay solid.
+- **No edge arrows in the centred view.** They stay in the corner panel, which is small enough
+  that something just outside it is genuinely lost. The centred view is large and already shows the
+  ground you are crossing, so the same arrows ringed the edge of the thing you were looking
+  through — at exactly the point where the drawing is deliberately fading out.
+- **The centred view opens where it is useful** — zoomed in and following you, rather than fully
+  zoomed out and still. `outline` stays its default.
 - **The centred map turns into a full-screen HUD.** A **Coverage** dial in the controls: at 100%
   the centred view takes the whole screen, the drawing **dissolves toward the edges** instead of
   stopping at a border, and the map lines **glow** rather than sit in ink. Below 100% it is the

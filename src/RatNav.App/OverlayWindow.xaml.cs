@@ -249,6 +249,12 @@ public partial class OverlayWindow : Window
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
 
+        TurnButton.Click += (_, _) =>
+        {
+            Remember(_settings.Overlay with { TurnWithYou = !_settings.Overlay.TurnWithYou });
+            Draw();
+        };
+
         CoverageUp.Click += (_, _) => StepCoverage(+0.05);
         CoverageDown.Click += (_, _) => StepCoverage(-0.05);
         FadeEdgeUp.Click += (_, _) => StepEdgeFade(+0.05);
@@ -1353,8 +1359,25 @@ public partial class OverlayWindow : Window
         Draw();
     }
 
-    private void ApplyWindowOpacity() =>
-        Opacity = Math.Clamp(Placement.WindowOpacity, 0.2, 1.0);
+    /// <summary>
+    /// Fades the map, and only the map.
+    ///
+    /// <para>Applied to the window in the corner panel, where the thing being faded is the panel:
+    /// its scrim, its lists and its map are one object and dimming them together is the point.</para>
+    ///
+    /// <para>The centred view has no panel. It is a map over the game with controls floating on
+    /// top, and fading the window took the controls down with it — so the setting people actually
+    /// want, a barely-there map, was the one that made the controls hardest to work. The map layer
+    /// carries it there and the controls stay solid.</para>
+    /// </summary>
+    private void ApplyWindowOpacity()
+    {
+        var fade = Math.Clamp(Placement.WindowOpacity, 0.2, 1.0);
+        var centred = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe;
+
+        Opacity = centred ? 1 : fade;
+        MapInk.Opacity = centred ? fade : 1;
+    }
 
     private void StepUiScale(double by)
     {
@@ -2388,6 +2411,8 @@ public partial class OverlayWindow : Window
         TextScaleText.Text = $"{_settings.Overlay.TextScale:0.0}×";
         PlaceNameText.Text = $"{_settings.Overlay.PlaceNameScale:0.0}×";
 
+        TurnButton.Content = _settings.Overlay.TurnWithYou ? "turns with you" : "north up";
+
         CoverageText.Text = $"{Coverage * 100:F0}%";
         FadeEdgeText.Text = $"{_settings.Overlay.EdgeFade * 100:F0}%";
         GlowText.Text = $"{_settings.Overlay.Glow:0.0}×";
@@ -2674,8 +2699,43 @@ public partial class OverlayWindow : Window
             width / 2 - focusX * _mapViewBox.Width * fit,
             height / 2 - focusY * _mapViewBox.Height * fit));
 
+        // Turned so that up the screen is the way you are facing.
+        //
+        // Applied last, about the middle of the view, which is where you are — the rotation is
+        // around the player, not around the middle of the map.
+        if (TurnBy(view) is { } degrees)
+            transform.Children.Add(new RotateTransform(degrees, width / 2, height / 2));
+
         transform.Freeze();
         return transform;
+    }
+
+    /// <summary>
+    /// How far to turn the map so your heading points up the screen, or null to leave it north-up.
+    ///
+    /// <para><b>The centred view only.</b> That view is in front of you and is read while moving,
+    /// so a route behind you being drawn above you means doing the rotation in your head every
+    /// time you glance at it. Turning the map instead makes what is at the top of the screen the
+    /// thing that is in front of you, which is the reason to have a map in the middle of the
+    /// screen at all.</para>
+    ///
+    /// <para><b>Never the corner panel.</b> That is a small static map you glance at to orient
+    /// against buildings, and one that spun every time you turned would be unreadable. Its cone
+    /// already answers which way you are facing. The two views are for different things, and this
+    /// is the sharpest case of it.</para>
+    /// </summary>
+    private double? TurnBy(RaidView view)
+    {
+        if (_settings.Overlay.Mode != RatNavSettings.OverlayMode.Wireframe) return null;
+        if (!_settings.Overlay.TurnWithYou) return null;
+
+        // Only while the map is following you. The turn is about the middle of the view, which is
+        // where you are *because* it follows — hold the map still and the middle is an arbitrary
+        // point, so the map would spin around somewhere that is not you and swing you around the
+        // outside of it.
+        if (!Following) return null;
+
+        return view.HeadingDegrees is { } heading ? -heading : null;
     }
 
     /// <summary>
@@ -2773,9 +2833,25 @@ public partial class OverlayWindow : Window
         var fit = FitScale(width, height);
         var (focusX, focusY) = Focus(view);
 
-        return new Point(
+        var at = new Point(
             width / 2 + (x - focusX) * _mapViewBox.Width * fit,
             height / 2 + (y - focusY) * _mapViewBox.Height * fit);
+
+        // Positions turn with the map; the things drawn at them do not.
+        //
+        // The pins, captions and place names sit on their own layer above the map precisely so
+        // this can be true. Rotating that layer wholesale would turn the text with it, and a map
+        // whose labels are upside down whenever you walk north is worse than one that does not
+        // turn at all.
+        if (TurnBy(view) is not { } degrees) return at;
+
+        var radians = degrees * Math.PI / 180;
+        var (sin, cos) = (Math.Sin(radians), Math.Cos(radians));
+        var (dx, dy) = (at.X - width / 2, at.Y - height / 2);
+
+        return new Point(
+            width / 2 + dx * cos - dy * sin,
+            height / 2 + dx * sin + dy * cos);
     }
 
     private double FitScale(double width, double height) =>
@@ -2890,9 +2966,25 @@ public partial class OverlayWindow : Window
         return true;
     }
 
+    /// <summary>
+    /// Whether waypoints off the edge of the view get an arrow pointing at them.
+    ///
+    /// <para><b>The corner panel only.</b> That map is small enough that something just outside it
+    /// is genuinely lost, which is what an arrow is for. The centred view is large and already
+    /// shows the ground you are crossing, so the same arrows became a ring of clutter around the
+    /// edge of exactly the thing you were trying to see through — and the edges of that view are
+    /// where the drawing is deliberately fading out.</para>
+    ///
+    /// <para>This reverses part of the HUD's original premise, which called the edge arrows the
+    /// part that made it worth doing. They were, in the small view.</para>
+    /// </summary>
+    private bool ShowsEdgeMarkers => _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box;
+
     /// <summary>An arrow on the edge of the view, pointing at something you cannot currently see.</summary>
     private void EdgeMarker(Point at, double bearing, Brush colour, double scale, string? label)
     {
+        if (!ShowsEdgeMarkers) return;
+
         var arrow = new Path
         {
             Data = Geometry.Parse("M 0,-7 L 5,4 L 0,1 L -5,4 Z"),
@@ -3267,7 +3359,10 @@ public partial class OverlayWindow : Window
                     Children =
                     {
                         new ScaleTransform(you * 0.7, you * 0.7),
-                        new RotateTransform(heading),
+
+                        // Straight up once the map turns with you, because up is then where you
+                        // are looking. Turning the cone as well would turn it twice.
+                        new RotateTransform(TurnBy(view) is null ? heading : 0),
                     },
                 },
                 IsHitTestVisible = false,

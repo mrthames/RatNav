@@ -932,6 +932,16 @@
                                 sit in ink.
                             -->
                             <StackPanel x:Name="HudControls" Visibility="Collapsed">
+                                <!--
+                                    Which way is up. Turning the map means what is drawn at the top
+                                    of the screen is what is in front of you, which is the reason
+                                    to have a map in the middle of the screen at all. North-up is
+                                    still here because that is what a map normally means.
+                                -->
+                                <Button x:Name="TurnButton" Style="{StaticResource Chip}"
+                                        Content="turns with you" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                        ToolTip="Turn the map so your heading points up the screen, or keep it north-up" />
+
                                 <TextBlock Style="{StaticResource Label}" Text="COVERAGE" Margin="0,0,0,2"
                                            ToolTip="How much of the screen the centred map takes. 100% is the full-screen HUD." />
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
