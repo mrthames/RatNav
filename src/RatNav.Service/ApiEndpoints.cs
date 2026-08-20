@@ -936,7 +936,8 @@ public static class ApiEndpoints
 
         // Builds a route from the objectives you ticked, and saves it.
         api.MapPost("/plans", (
-            RatNavState state, PlanStore plans, RatNavSettings settings, BuildPlanRequest request) =>
+            RatNavState state, PlanStore plans, RatNavSettings settings,
+            CustomWaypointStore marks, BuildPlanRequest request) =>
         {
             var map = FindMap(state, request.MapId);
             if (map is null) return Results.NotFound(new { error = $"No map called '{request.MapId}'." });
@@ -960,8 +961,38 @@ public static class ApiEndpoints
                      NeededKeyItemIds = objective.NeededKeyItemIds,
                  }).ToList();
 
+            // Marks of your own, alongside the quest objectives.
+            //
+            // Their positions are stored against the image rather than the world — they were put
+            // there by clicking a map, and that survives a change of calibration where world
+            // coordinates would not — so they come back through the transform to get there.
+            if (map.Image is { } image)
+            {
+                var transform = new CoordinateTransform(image);
+
+                waypoints.AddRange(
+                    from id in request.WaypointIds ?? []
+                    let mark = marks.Get(id)
+                    where mark is not null
+                        && string.Equals(mark.MapId, map.Id, StringComparison.OrdinalIgnoreCase)
+                    select new Waypoint
+                    {
+                        ObjectiveId = mark!.Id,
+
+                        // No quest behind it, and nothing downstream should pretend there is: a
+                        // mark cannot be turned in, and a turn-in prompt for one would be a lie.
+                        TaskId = "",
+                        TaskName = mark.Label,
+                        Description = mark.Kind == MarkKind.Item
+                            ? $"Pick up: {mark.Label}"
+                            : $"Your mark: {mark.Label}",
+                        Position = transform.ToGamePosition(
+                            new MapPoint(mark.X * image.PixelWidth, mark.Y * image.PixelHeight)),
+                    });
+            }
+
             if (waypoints.Count == 0)
-                return Results.BadRequest(new { error = "None of those objectives have a position on this map." });
+                return Results.BadRequest(new { error = "Nothing you picked has a position on this map." });
 
             var plan = RaidPlanner.Plan(map, waypoints);
             var document = PlanDocument.From(plan, settings.Owner, request.ShoppingListItemIds);
@@ -1396,7 +1427,11 @@ public static class ApiEndpoints
         api.MapPost("/maps/{id}/waypoints", (
             CustomWaypointStore marks, string id, WaypointRequest request) =>
         {
-            var mark = marks.Add(id, request.Label ?? "", request.X, request.Y, request.Floor);
+            var kind = request.Kind?.Equals("item", StringComparison.OrdinalIgnoreCase) == true
+                ? MarkKind.Item
+                : MarkKind.Place;
+
+            var mark = marks.Add(id, request.Label ?? "", request.X, request.Y, request.Floor, kind);
 
             WaypointsChanged?.Invoke();
             return Results.Ok(mark);
@@ -1681,7 +1716,10 @@ public sealed record MergeRequest(IReadOnlyList<string> PlanIds);
 public sealed record BuildPlanRequest(
     string MapId,
     IReadOnlyList<string> ObjectiveIds,
-    IReadOnlyList<string>? ShoppingListItemIds = null);
+    IReadOnlyList<string>? ShoppingListItemIds = null,
+
+    /// <summary>Marks of your own to run alongside the quest objectives, in the order given.</summary>
+    IReadOnlyList<string>? WaypointIds = null);
 
 /// <summary>Either an absolute count or a nudge. The +/- buttons send a delta.</summary>
 public sealed record HaveRequest(int? Count, int? Delta);
@@ -2069,7 +2107,7 @@ public sealed record TradeCost
 
 public sealed record TradeRequest(bool Tracked, string? Kind, int? Times);
 
-public sealed record WaypointRequest(string? Label, double X, double Y, string? Floor);
+public sealed record WaypointRequest(string? Label, double X, double Y, string? Floor, string? Kind = null);
 
 /// <summary>Where you were, and where that is on the map image.</summary>
 public sealed record CalibrateRequest(

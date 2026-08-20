@@ -58,7 +58,7 @@ export function MapView({ map }: { map: MapSummary }) {
    * nothing — a map you cannot look at without marking it is a map you stop looking at.</p>
    */
   const [marks, setMarks] = useState<CustomWaypoint[]>([])
-  const [placing, setPlacing] = useState(false)
+  const [placing, setPlacing] = useState<'Place' | 'Item' | null>(null)
 
   /**
    * Finding somewhere by name.
@@ -114,12 +114,14 @@ export function MapView({ map }: { map: MapSummary }) {
 
     // Asked for straight away rather than placed and named later. An unnamed dot is a puzzle, and
     // "name it afterwards" is a step people skip.
-    const label = window.prompt('What is here?')
+    const label = window.prompt(
+      placing === 'Item' ? 'What is here to pick up?' : 'What is here?')
+
     if (label === null) return
 
-    await api.addWaypoint(map.id, label, x, y, floor)
+    await api.addWaypoint(map.id, label, x, y, floor, placing)
     await loadMarks()
-    setPlacing(false)
+    setPlacing(null)
   }
 
   async function forget(id: string) {
@@ -284,16 +286,15 @@ export function MapView({ map }: { map: MapSummary }) {
           </div>
         )}
 
-        <button
-          type="button"
-          aria-pressed={placing}
-          onClick={() => setPlacing((on) => !on)}
-          className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
-                     hover:text-ink aria-pressed:bg-mark aria-pressed:text-ground
-                     focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          {placing ? 'Click the map…' : 'Mark a spot'}
-        </button>
+        {/* Two kinds, chosen before the click rather than corrected after it. */}
+        <Segment
+          label="Mark"
+          options={[['off', 'Off'], ['Place', 'A place'], ['Item', 'An item']]}
+          value={placing ?? 'off'}
+          onChange={(v) => setPlacing(v === 'off' ? null : (v as 'Place' | 'Item'))}
+        />
+
+        {placing && <span className="text-xs text-mark">Click the map…</span>}
 
         {/* Straight onto the overlay, no plan required — for a look before you queue. */}
         <button
@@ -451,7 +452,7 @@ export function MapView({ map }: { map: MapSummary }) {
         {marks.map((mark) => (
           <div
             key={mark.id}
-            title={`${mark.label} · your mark`}
+            title={mark.kind === 'Item' ? `${mark.label} · pick up` : `${mark.label} · your mark`}
             className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
             style={{ left: `${mark.x * 100}%`, top: `${mark.y * 100}%` }}
           >
@@ -459,8 +460,11 @@ export function MapView({ map }: { map: MapSummary }) {
               viewBox="-9 -9 18 18"
               style={{ width: `${16 / zoom}px`, height: `${16 / zoom}px`, display: 'block' }}
             >
+              {/* A diamond is a place; a box is something to pick up when you get there. */}
               <path
-                d="M 0,-7 L 7,0 L 0,7 L -7,0 Z"
+                d={mark.kind === 'Item'
+                  ? 'M -6,-6 L 6,-6 L 6,6 L -6,6 Z'
+                  : 'M 0,-7 L 7,0 L 0,7 L -7,0 Z'}
                 fill="var(--color-ground)"
                 stroke="var(--color-mark)"
                 strokeWidth="1.8"

@@ -2180,12 +2180,16 @@ public partial class OverlayWindow : Window
                 continue;
             }
 
-            // A diamond, so the shape carries it too. Colour alone fails for anyone who cannot
-            // separate these two hues, and a navigation overlay is a bad place to learn that.
+            // Shape carries two things at once. Against a quest's pin it says this is yours —
+            // colour alone fails for anyone who cannot separate the hues, and a navigation overlay
+            // is a bad place to learn that. Between marks it says which kind: a diamond is a
+            // place, a box is something to pick up when you get there.
             MapCanvas.Children.Add(Positioned(
                 new Path
                 {
-                    Data = Geometry.Parse("M 0,-7 L 7,0 L 0,7 L -7,0 Z"),
+                    Data = Geometry.Parse(mark.Kind == MarkKind.Item
+                        ? "M -6,-6 L 6,-6 L 6,6 L -6,6 Z"
+                        : "M 0,-7 L 7,0 L 0,7 L -7,0 Z"),
                     Stroke = colour,
                     StrokeThickness = 1.8,
                     Fill = (Brush)FindResource("Ground"),
@@ -2196,7 +2200,11 @@ public partial class OverlayWindow : Window
                 at.Y));
 
             Label(mark.Label, at.X, at.Y + 9 * scale, colour, 9 * textScale);
-            Hoverable(at, 8 * scale, $"{mark.Label} · your mark");
+            Hoverable(
+                at, 8 * scale,
+                mark.Kind == MarkKind.Item
+                    ? $"{mark.Label} · pick up"
+                    : $"{mark.Label} · your mark");
         }
 
         // No line between stops. A dashed path across a map implies a route through walls and

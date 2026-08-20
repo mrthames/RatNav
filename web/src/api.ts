@@ -247,6 +247,8 @@ export interface CustomWaypoint {
   x: number
   y: number
   floor: string | null
+  /** "Place" for somewhere worth remembering, "Item" for something to pick up. */
+  kind: 'Place' | 'Item'
   createdAt: string
 }
 
@@ -393,9 +395,15 @@ export const api = {
   plannable: (mapId: string) =>
     get<PlannableObjective[]>(`/api/maps/${encodeURIComponent(mapId)}/plannable`),
 
-  buildPlan: (mapId: string, objectiveIds: string[], shoppingListItemIds?: string[]) =>
+  buildPlan: (
+    mapId: string,
+    objectiveIds: string[],
+    shoppingListItemIds?: string[],
+    /** Marks of your own to run alongside the quest objectives, in the order given. */
+    waypointIds?: string[],
+  ) =>
     post<{ id: string; plan: { stops: unknown[] } }>('/api/plans', {
-      mapId, objectiveIds, shoppingListItemIds,
+      mapId, objectiveIds, shoppingListItemIds, waypointIds,
     }),
 
   activatePlan: (id: string) =>
@@ -529,9 +537,12 @@ export const api = {
   waypoints: (mapId: string) =>
     get<CustomWaypoint[]>(`/api/maps/${encodeURIComponent(mapId)}/waypoints`),
 
-  addWaypoint: (mapId: string, label: string, x: number, y: number, floor?: string | null) =>
+  addWaypoint: (
+    mapId: string, label: string, x: number, y: number,
+    floor?: string | null, kind: 'Place' | 'Item' = 'Place',
+  ) =>
     post<CustomWaypoint>(
-      `/api/maps/${encodeURIComponent(mapId)}/waypoints`, { label, x, y, floor }),
+      `/api/maps/${encodeURIComponent(mapId)}/waypoints`, { label, x, y, floor, kind }),
 
   renameWaypoint: (id: string, label: string) =>
     post<unknown>(`/api/waypoints/${encodeURIComponent(id)}/label`, { label, x: 0, y: 0 }),

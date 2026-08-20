@@ -141,6 +141,65 @@ Captured before execution.
 
 ---
 
+## Round 8 — 2026-08-20
+
+Captured before execution.
+
+### Say what is true
+
+- [ ] **The Plan page claims stops can be dragged.** Confirm that is actually so, and fix whichever
+  half is wrong — the sentence or the behaviour.
+- [ ] **Use the same words on both surfaces.** The overlay and the buddy app should not have two
+  names for one thing.
+
+### Items
+
+- [ ] **Drop the "for a trade" filter** now that the barter picker is being replaced.
+- [ ] **Drop the "keys" filter too** unless it earns its place.
+
+### Quest detail from a waypoint
+
+- [ ] **Click a waypoint on the overlay to open the quest.** What it is, what part of it you are on,
+  and the wiki's image carousel. Never seen working — it does not exist yet.
+- [ ] **The same on the buddy app's map.** Clicking a marker there should open the same thing.
+
+### The Maps page
+
+- [ ] **Match the overlay.** Art style, zoom, click-and-drag, layering, extracts, place labels and
+  quest markers — all of it.
+- [ ] **Same iconography.** The buddy app draws circles where the overlay draws waypoint symbols.
+- [ ] **Mark newer maps `[WIP]`** beside the name. Quest positions and details on them will need
+  adjusting over time and it is honest to say which are settled.
+
+### Setup, cut back
+
+- [ ] **"RatNav can see your game" is shown while the game is closed.** It is also redundant — the
+  status list below already says *game not running*. Remove the banner; the Refresh control in the
+  top navigation is the right way to re-check.
+- [ ] **Character level belongs in the top navigation**, not buried in Setup. One number with a
+  plus and a minus, labelled *Character level*. It changes constantly and should be reachable from
+  wherever you are.
+- [ ] **Drop the "more than one install" section.** Plan for one game folder on one drive, detected,
+  with a **file browser** to change it when detection is wrong.
+- [ ] **Pick keys by pressing them, not by typing them.** Click the field, press the key, it is
+  recorded. For the hotkeys, and for the in-game screenshot key.
+  - `[?]` **Is the screenshot key setting needed at all?** It is only used to name the key in
+    prompts — RatNav never presses it. Say so plainly either way.
+- [ ] **Drop the second-screen instructions from Setup.** Useless if the buddy app is closed. Put
+  them in the README, and give the overlay's control drawer a way to open the buddy app.
+
+### Hotkeys, cut back
+
+- [ ] **Remove "open the full panel".** The buddy app launches with the app instead.
+- [ ] **Remove "tick objective off".** Ticking is better done by hand in the buddy app.
+- [ ] **Renumber what is left from `F5`**, now that there are fewer of them.
+
+### Later
+
+- [ ] **Item recognition** to be tested in game.
+
+---
+
 ## Round 6 — 2026-08-19
 
 **Decisions taken before execution:**

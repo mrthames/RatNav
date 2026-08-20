@@ -2,6 +2,16 @@ namespace RatNav.Core.Tracking;
 
 using System.Text.Json;
 
+/// <summary>What kind of thing a mark is.</summary>
+public enum MarkKind
+{
+    /// <summary>Somewhere worth remembering — a stash, an angle, a way through.</summary>
+    Place,
+
+    /// <summary>Something to pick up when you are there.</summary>
+    Item,
+}
+
 /// <summary>
 /// A spot someone marked on a map, with a short name for it.
 ///
@@ -22,6 +32,15 @@ public sealed record CustomWaypoint
 
     /// <summary>The floor it belongs to, when the map has floors and one was chosen.</summary>
     public string? Floor { get; init; }
+
+    /// <summary>
+    /// Whether this is a place or a thing to pick up.
+    ///
+    /// <para>Drawn as a different shape rather than a different colour. Colour already carries
+    /// something — that this is yours rather than a quest's — and a second meaning stacked onto it
+    /// would need both to be read at once.</para>
+    /// </summary>
+    public MarkKind Kind { get; init; } = MarkKind.Place;
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 }
@@ -72,10 +91,13 @@ public sealed class CustomWaypointStore(string dataDirectory)
     }
 
     /// <summary>Marks a spot. Returns what was stored, id and all.</summary>
-    public CustomWaypoint Add(string mapId, string label, double x, double y, string? floor = null)
+    public CustomWaypoint Add(
+        string mapId, string label, double x, double y,
+        string? floor = null, MarkKind kind = MarkKind.Place)
     {
         var mark = new CustomWaypoint
         {
+            Kind = kind,
             Id = Guid.NewGuid().ToString("n"),
             MapId = mapId,
 
@@ -105,6 +127,27 @@ public sealed class CustomWaypointStore(string dataDirectory)
         Save();
 
         return true;
+    }
+
+    /// <summary>Changes what kind of thing a mark is, without moving or renaming it.</summary>
+    public bool SetKind(string id, MarkKind kind)
+    {
+        lock (_gate)
+        {
+            var at = _marks.FindIndex(m => m.Id == id);
+            if (at < 0) return false;
+
+            _marks[at] = _marks[at] with { Kind = kind };
+        }
+        Save();
+
+        return true;
+    }
+
+    /// <summary>One mark by id, or null.</summary>
+    public CustomWaypoint? Get(string id)
+    {
+        lock (_gate) return _marks.FirstOrDefault(m => m.Id == id);
     }
 
     public bool Remove(string id)

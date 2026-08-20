@@ -6,6 +6,7 @@ import {
   type RaidView,
   type SavedPlan,
   type TurnIn,
+  type CustomWaypoint,
 } from './api'
 
 /**
@@ -15,6 +16,15 @@ import {
 export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | null }) {
   const [mapId, setMapId] = useState<string | null>(null)
   const [objectives, setObjectives] = useState<PlannableObjective[]>([])
+
+  /**
+   * Your own marks for this map, offered alongside the quest objectives.
+   *
+   * <p>They live in the same picked list, so a run can be "these two quest steps, then the stash
+   * behind the garage" in whatever order you want — which is the only reason to put a mark in a
+   * plan rather than just leave it drawn on the map.</p>
+   */
+  const [marks, setMarks] = useState<CustomWaypoint[]>([])
   /**
    * The objectives picked, per map, in the order they were picked.
    *
@@ -57,6 +67,12 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
     } catch {
       setObjectives([])
     }
+
+    try {
+      setMarks(await api.waypoints(mapId))
+    } catch {
+      setMarks([])
+    }
   }, [mapId])
 
   useEffect(() => { load() }, [load])
@@ -91,12 +107,37 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
     return [...ids]
   }, [objectives, chosen])
 
-  /** The picked objectives themselves, in plan order — what the route panel lists. */
+  /**
+   * What was picked, in plan order — objectives and your own marks together.
+   *
+   * <p>Both end up as stops with numbers on the map, so the panel treats them as one list rather
+   * than two. What tells them apart is the label, and on the map, the shape.</p>
+   */
   const route = useMemo(
-    () => chosen
-      .map((id) => objectives.find((o) => o.objectiveId === id))
-      .filter((o): o is PlannableObjective => o !== undefined),
-    [chosen, objectives])
+    () => chosen.flatMap((id) => {
+      const objective = objectives.find((o) => o.objectiveId === id)
+
+      if (objective) {
+        return [{
+          id,
+          title: objective.description || objective.taskName,
+          subtitle: objective.taskName,
+          mark: false,
+        }]
+      }
+
+      const own = marks.find((m) => m.id === id)
+
+      return own
+        ? [{
+            id,
+            title: own.label,
+            subtitle: own.kind === 'Item' ? 'your mark · pick up' : 'your mark',
+            mark: true,
+          }]
+        : []
+    }),
+    [chosen, objectives, marks])
 
   async function build() {
     if (!mapId || chosen.length === 0) return
@@ -106,7 +147,14 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       // Only what this map still offers. A pick kept from an earlier visit can outlive the quest
       // that produced it — completed since, or dropped by a patch — and sending a dead id would
       // silently shorten the plan rather than say so.
-      const built = await api.buildPlan(mapId, route.map((o) => o.objectiveId))
+      const built = await api.buildPlan(
+        mapId,
+        route.filter((r) => !r.mark).map((r) => r.id),
+        undefined,
+
+        // Sent in the order they were picked, the same as the objectives, so a plan can interleave
+        // "this quest step, then my stash, then that one".
+        route.filter((r) => r.mark).map((r) => r.id))
       await api.activatePlan(built.id)
       setNote(`Plan active — ${built.plan.stops.length} stops.`)
       setPlanned((n) => n + 1)
@@ -162,10 +210,50 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
       <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
         <div className="flex flex-col gap-3">
-          {objectives.length === 0 ? (
+          {/*
+            Your own marks, offered the same way the quest objectives are. Above them, because a
+            short list you wrote yourself should not be below forty derived rows.
+          */}
+          {marks.length > 0 && (
+            <div className="border border-mark/40">
+              <p className="border-b border-mark/30 bg-mark/5 px-3 py-1.5 font-mono text-[11px]
+                            uppercase tracking-wider text-mark">
+                Your marks
+              </p>
+              <ul>
+                {marks.map((mark) => (
+                  <li key={mark.id} className="border-b border-line-soft last:border-0">
+                    <label className="flex cursor-pointer items-start gap-2.5 px-3 py-2 hover:bg-panel/60">
+                      <input
+                        type="checkbox"
+                        checked={chosen.includes(mark.id)}
+                        onChange={() => toggle(mark.id)}
+                        className="mt-1 accent-accent"
+                      />
+
+                      {chosen.includes(mark.id) && (
+                        <span className="mt-0.5 font-mono text-[11px] tabular-nums text-mark">
+                          {chosen.indexOf(mark.id) + 1}
+                        </span>
+                      )}
+
+                      <span className="min-w-0">
+                        <span className="block text-sm">{mark.label}</span>
+                        <span className="font-mono text-[11px] text-muted">
+                          {mark.kind === 'Item' ? 'something to pick up' : 'a place'}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {objectives.length === 0 && marks.length === 0 ? (
             <Empty>
               No active quests have objectives on this map. Mark some quests active on the Quests
-              view and they will show up here.
+              view and they will show up here — or mark a spot of your own on the Maps view.
             </Empty>
           ) : (
             byPlace.map(([place, group]) => (
@@ -322,7 +410,7 @@ function Keys({ itemIds }: { itemIds: string[] }) {
 function Route({
   stops, onMove, onRemove,
 }: {
-  stops: PlannableObjective[]
+  stops: { id: string; title: string; subtitle: string; mark: boolean }[]
   onMove: (from: number, to: number) => void
   onRemove: (objectiveId: string) => void
 }) {
@@ -333,7 +421,7 @@ function Route({
     <ol className="flex flex-col gap-px border-t border-line pt-2">
       {stops.map((stop, index) => (
         <li
-          key={stop.objectiveId}
+          key={stop.id}
           draggable
           onDragStart={() => setDragging(index)}
           onDragEnd={() => { setDragging(null); setOver(null) }}
@@ -348,13 +436,15 @@ function Route({
                       ${over === index && dragging !== index ? 'bg-accent/15' : ''}
                       ${dragging === index ? 'opacity-40' : ''}`}
         >
-          <span className="font-mono text-[11px] tabular-nums text-accent">{index + 1}</span>
+          <span className={`font-mono text-[11px] tabular-nums ${stop.mark ? 'text-mark' : 'text-accent'}`}>
+            {index + 1}
+          </span>
 
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-xs" title={stop.description || stop.taskName}>
-              {stop.place ?? stop.description ?? stop.taskName}
+            <span className="block truncate text-xs" title={stop.title}>{stop.title}</span>
+            <span className={`block truncate font-mono text-[10px] ${stop.mark ? 'text-mark' : 'text-muted'}`}>
+              {stop.subtitle}
             </span>
-            <span className="block truncate font-mono text-[10px] text-muted">{stop.taskName}</span>
           </span>
 
           {/* The keyboard route to the same thing the drag does. */}
@@ -363,7 +453,7 @@ function Route({
               type="button"
               disabled={index === 0}
               onClick={() => onMove(index, index - 1)}
-              aria-label={`Move ${stop.taskName} earlier`}
+              aria-label={`Move ${stop.title} earlier`}
               className="font-mono text-[9px] leading-tight text-muted hover:text-ink disabled:opacity-20
                          focus-visible:outline-2 focus-visible:outline-accent"
             >
@@ -373,7 +463,7 @@ function Route({
               type="button"
               disabled={index === stops.length - 1}
               onClick={() => onMove(index, index + 1)}
-              aria-label={`Move ${stop.taskName} later`}
+              aria-label={`Move ${stop.title} later`}
               className="font-mono text-[9px] leading-tight text-muted hover:text-ink disabled:opacity-20
                          focus-visible:outline-2 focus-visible:outline-accent"
             >
@@ -383,8 +473,8 @@ function Route({
 
           <button
             type="button"
-            onClick={() => onRemove(stop.objectiveId)}
-            aria-label={`Drop ${stop.taskName} from the plan`}
+            onClick={() => onRemove(stop.id)}
+            aria-label={`Drop ${stop.title} from the plan`}
             className="font-mono text-[11px] text-muted hover:text-need
                        focus-visible:outline-2 focus-visible:outline-accent"
           >
