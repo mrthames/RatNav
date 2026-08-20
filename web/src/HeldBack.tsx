@@ -2,18 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type HeldBackMap, type InkLevel } from './api'
 
 /**
- * The maps RatNav will not offer yet, and the thirty seconds that fixes most of them.
+ * The maps that are coming, and the thirty seconds that finishes each one.
  *
- * <p>Two different problems wear the same label. Some of the game's locations have no community
- * drawing at all, and nothing here can conjure one. The rest have a drawing whose orientation
- * cannot be settled from published data — every extract sits inside the border, so mirroring the
- * layout moves nothing off the edge and no amount of arithmetic distinguishes it from the truth.
- * A person who stood somewhere and can point at it distinguishes it immediately.</p>
+ * <p>Every map here has a drawing. What none of them has is a settled orientation: each one's
+ * extracts all sit inside its border, so mirroring the layout moves nothing off the edge and no
+ * amount of arithmetic tells the mirror from the truth. A person who stood somewhere and can
+ * point at it on the picture tells them apart immediately.</p>
  *
  * <p>So: take a screenshot in game somewhere you can recognise, come back, and click that spot.
  * The margin is enormous — a wrong layout is a mirror image and misses by around half the map,
  * while a hurried click misses by a few percent — so there is no realistic way to click badly
  * enough to pick the wrong answer.</p>
+ *
+ * <p>Maps with no drawing at all are not listed here and are not called "coming soon" anywhere,
+ * because nothing in this app can make one arrive. That is a rule rather than an oversight.</p>
  */
 export function HeldBack({ onSettled }: { onSettled: () => void }) {
   const [maps, setMaps] = useState<HeldBackMap[]>([])
@@ -26,51 +28,37 @@ export function HeldBack({ onSettled }: { onSettled: () => void }) {
 
   if (maps.length === 0) return null
 
-  const settleable = maps.filter((m) => m.canBeSettled)
-  const impossible = maps.filter((m) => !m.canBeSettled)
-
   return (
     <section className="flex flex-col gap-3 border border-line bg-panel p-4">
       <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">
-        Maps not offered yet
+        Coming soon
       </h2>
 
-      {settleable.length > 0 && (
-        <>
-          <p className="text-xs text-muted">
-            These have a drawing, but which way round it goes cannot be worked out from published
-            data — every extract sits inside the border, so a mirrored layout looks exactly as
-            valid as the real one. <b>One position settles it.</b> Take a screenshot in game
-            somewhere you can recognise on the map, then come back and click that spot.
-          </p>
+      <p className="text-xs text-muted">
+        These have a drawing, but which way round it goes cannot be worked out from published
+        data — every extract sits inside the border, so a mirrored layout looks exactly as
+        valid as the real one. <b>One position settles it.</b> Take a screenshot in game
+        somewhere you can recognise on the map, then come back and click that spot.
+      </p>
 
-          <ul className="flex flex-col gap-px">
-            {settleable.map((map) => (
-              <li key={map.id} className="flex flex-wrap items-center gap-3 bg-ground px-3 py-2">
-                <span className="text-sm">{map.name}</span>
+      <ul className="flex flex-col gap-px">
+        {maps.map((map) => (
+          <li key={map.id} className="flex flex-wrap items-center gap-3 bg-ground px-3 py-2">
+            <span className="text-sm">{map.name}</span>
 
-                <button
-                  type="button"
-                  onClick={() => setSettling(map)}
-                  className="ml-auto rounded-sm bg-panel-hi px-2.5 py-1 font-mono text-[11px]
-                             uppercase tracking-wider text-muted transition-colors
-                             hover:bg-accent hover:text-ground
-                             focus-visible:outline-2 focus-visible:outline-accent"
-                >
-                  Settle it
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {impossible.length > 0 && (
-        <p className="text-xs text-muted">
-          <b>No drawing exists</b> for {impossible.map((m) => m.name).join(', ')}. Nothing here can
-          fix that — it needs someone in the community to draw one.
-        </p>
-      )}
+            <button
+              type="button"
+              onClick={() => setSettling(map)}
+              className="ml-auto rounded-sm bg-panel-hi px-2.5 py-1 font-mono text-[11px]
+                         uppercase tracking-wider text-muted transition-colors
+                         hover:bg-accent hover:text-ground
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              Settle it
+            </button>
+          </li>
+        ))}
+      </ul>
 
       {settling && (
         <Settle

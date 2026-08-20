@@ -244,7 +244,7 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
             Tasks = tasks ?? [],
             Items = items ?? [],
             HideoutStations = hideout ?? [],
-            Maps = maps,
+            Maps = FoldVariants(maps),
             Barters = barters ?? [],
             Crafts = crafts ?? [],
             Traders = traders ?? [],
@@ -363,8 +363,6 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
     /// anything is. They arrive from the game data under their own names, which no drawing exists
     /// for, and were being left uncalibrated: three maps you could load into and get no map.</para>
     ///
-    /// <para>Only these three. Guessing by prefix in general would eventually hand one map's
-    /// drawing to somewhere that merely sounds similar, which is worse than no drawing at all.</para>
     /// </summary>
     private static MapCalibration? Drawing(
         string? normalizedName, IReadOnlyDictionary<string, MapCalibration> byKey)
@@ -372,17 +370,84 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
         if (normalizedName is not { Length: > 0 } name) return null;
         if (byKey.TryGetValue(name, out var exact)) return exact;
 
-        var sharesGroundWith = name switch
-        {
-            "ground-zero-21" => "ground-zero",
-            "ground-zero-tutorial" => "ground-zero",
-            "night-factory" => "factory",
-            _ => null,
-        };
-
-        return sharesGroundWith is not null && byKey.TryGetValue(sharesGroundWith, out var shared)
-            ? shared
+        return SharesGroundWith(name) is { } shared && byKey.TryGetValue(shared, out var borrowed)
+            ? borrowed
             : null;
+    }
+
+    /// <summary>
+    /// The map whose ground this one is, or null when it is its own place.
+    ///
+    /// <para>Only these three. Guessing by prefix in general would eventually hand one map's
+    /// drawing to somewhere that merely sounds similar, which is worse than no drawing at all.</para>
+    /// </summary>
+    internal static string? SharesGroundWith(string? normalizedName) => normalizedName switch
+    {
+        "ground-zero-21" => "ground-zero",
+        "ground-zero-tutorial" => "ground-zero",
+        "night-factory" => "factory",
+        _ => null,
+    };
+
+    /// <summary>
+    /// Folds the variants that are the same ground into the map they share.
+    ///
+    /// <para>Ground Zero 21+ is Ground Zero above level 21. Same buildings, same streets, same
+    /// drawing, same six extracts — the game splits the location so it can decide who you meet
+    /// there. Offered separately it put two identical Ground Zeros in the picker, one of them
+    /// marked <c>[WIP]</c>, and left somebody choosing between them with nothing to choose on.</para>
+    ///
+    /// <para>The variant's id is kept on the survivor rather than discarded. Quests are attached
+    /// to a location, so a quest on Ground Zero 21+ has to keep finding its way onto the one
+    /// Ground Zero; and a plan saved before this change refers to an id that has to keep
+    /// opening.</para>
+    /// </summary>
+    internal static List<MapDef> FoldVariants(List<MapDef> maps)
+    {
+        var byName = maps
+            .Where(m => m.NormalizedName is { Length: > 0 })
+            .ToDictionary(m => m.NormalizedName!, StringComparer.OrdinalIgnoreCase);
+
+        var absorbed = new Dictionary<string, List<MapDef>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var map in maps)
+        {
+            var parent = SharesGroundWith(map.NormalizedName);
+
+            // A variant whose parent is missing keeps its place. Dropping it would lose the map
+            // rather than tidy it.
+            if (parent is null || !byName.ContainsKey(parent)) continue;
+
+            if (!absorbed.TryGetValue(parent, out var into)) absorbed[parent] = into = [];
+            into.Add(map);
+        }
+
+        if (absorbed.Count == 0) return maps;
+
+        var folded = new HashSet<string>(
+            absorbed.Values.SelectMany(v => v).Select(m => m.Id), StringComparer.OrdinalIgnoreCase);
+
+        return
+        [
+            .. maps
+                .Where(m => !folded.Contains(m.Id))
+                .Select(m => m.NormalizedName is { } n && absorbed.TryGetValue(n, out var variants)
+                    ? m with
+                    {
+                        AlsoKnownAs = [.. variants.Select(v => v.Id).Distinct(StringComparer.OrdinalIgnoreCase)],
+
+                        // The log names come along too, or a raid started on the variant stops
+                        // being recognised the moment the variant stops being a map.
+                        LogAliases =
+                        [
+                            .. m.LogAliases
+                                .Concat(variants.SelectMany(v => v.LogAliases))
+                                .Concat(variants.Select(v => v.Name))
+                                .Distinct(StringComparer.OrdinalIgnoreCase),
+                        ],
+                    }
+                    : m)
+        ];
     }
 
     private string PathFor(string? gameVersion) =>

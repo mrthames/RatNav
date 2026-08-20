@@ -15,7 +15,7 @@ public sealed record GameData
     /// until the six-hour age check happens to fire — so a new layer looks broken rather than
     /// absent, and the person who has it worst is whoever just updated.</para>
     /// </summary>
-    public const int CurrentSchema = 9;
+    public const int CurrentSchema = 10;
 
     /// <summary>The schema this copy was written with. Zero on anything written before schemas.</summary>
     public int Schema { get; init; }
@@ -227,6 +227,25 @@ public sealed record MapDef
 
     /// <summary>Names this map goes by in EFT's log files, so a raid start can be matched to a map.</summary>
     public IReadOnlyList<string> LogAliases { get; init; } = [];
+
+    /// <summary>
+    /// Other locations this map stands for, because they are the same ground.
+    ///
+    /// <para>The game splits some places into several locations that share every building and
+    /// street: Ground Zero has one for under level 21 and one for 21+, Factory has a night
+    /// version, Ground Zero has a tutorial. They differ in who spawns and when, never in where
+    /// anything is, and the community draws one map for all of them.</para>
+    ///
+    /// <para>Offering them separately gave the picker two identical Ground Zeros. So the variants
+    /// fold into the map they share, and their ids live here — a quest attached to any of them
+    /// still finds its way onto the one map, and a plan saved against an old id still opens.</para>
+    /// </summary>
+    public IReadOnlyList<string> AlsoKnownAs { get; init; } = [];
+
+    /// <summary>Whether a location id is this map or one of the variants folded into it.</summary>
+    public bool Covers(string id) =>
+        string.Equals(Id, id, StringComparison.OrdinalIgnoreCase)
+        || AlsoKnownAs.Any(other => string.Equals(other, id, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Image + coordinate calibration. Null when we have no calibrated image for the map yet.</summary>
     public MapImage? Image { get; init; }

@@ -114,18 +114,23 @@ so there may genuinely be nothing to read until your next raid.
 
 ## A map I play is not in the list
 
-RatNav offers the maps it can put a marker on and be right about. Two things keep one off the list,
-and the **Maps** page shows which applies:
+RatNav offers the maps it can put a marker on and be right about. Two things keep one off the list.
 
-- **Its layout is not settled.** The drawing exists, but which way round it goes cannot be worked
-  out from published data — on some maps every extract sits inside the border, so a mirrored layout
-  looks exactly as valid as the real one. **You can settle this in thirty seconds:** take a
-  screenshot in game somewhere you can recognise, open **Maps → Settle it**, and click that spot.
-  The map joins the list immediately, and stays settled.
-- **No drawing exists.** The Lab, The Labyrinth and Icebreaker have no community map yet. Nothing
-  in RatNav can fix that.
+**Its layout is not settled.** The drawing exists, but which way round it goes cannot be worked out
+from published data — on some maps every extract sits inside the border, so a mirrored layout looks
+exactly as valid as the real one. These appear under **Coming soon** on the **Maps** page, and
+**you can settle one in thirty seconds:** take a screenshot in game somewhere you can recognise,
+open **Maps → Settle it**, and click that spot. The map joins your list immediately and stays
+settled. Settling changes only your own copy; maps are finished and released here.
 
-Settling one changes only your own copy. Maps are finished and released here.
+**No drawing exists.** The Lab, The Labyrinth and Icebreaker have no community map with coordinates
+— what is published for them is a flat picture, which cannot place a marker anywhere. RatNav draws
+its maps from [tarkov.dev](https://tarkov.dev), and nothing in RatNav can conjure one that is not
+there.
+
+That is why those maps are not listed as "coming soon" anywhere in the app. Calling them coming
+soon would be a promise resting entirely on somebody else drawing something, and a promise that
+cannot be kept is worse than an honest gap. If a drawing appears, the map appears with it.
 
 ## My marker is in the wrong place
 

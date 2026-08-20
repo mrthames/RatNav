@@ -9,7 +9,15 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Maps
 
-- **Ground Zero 21+ and the Ground Zero tutorial variants join the maps they share.**
+- **One Ground Zero, not two.** Ground Zero 21+ is the same buildings, the same streets, the same
+  drawing and the same six extracts as Ground Zero — the game splits the location to decide who
+  you meet there, not where anything is. It folded into Ground Zero, along with the tutorial
+  variant and Night Factory into Factory. Quests attached to any of them still arrive on the one
+  map, and a plan saved against an old one still opens.
+- **"Coming soon" means a map that can actually arrive.** A map is listed only when a drawing
+  exists and the sole thing missing is which way round it goes — Factory, Reserve and Terminal
+  today, each one position away from being finished. The Lab, The Labyrinth and Icebreaker have no
+  community drawing with coordinates, so they are not listed and not promised. The FAQ says why.
 - **`[WIP]` beside a map still being worked on.** A stable release only ever contains finished ones.
 - **Settle a map yourself** from **Maps → Settle it**: take a screenshot somewhere you recognise and
   click the spot.

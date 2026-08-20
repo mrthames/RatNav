@@ -776,7 +776,9 @@ public static class ApiEndpoints
                 from task in data.Tasks
                 where progress.StateOf(task.Id) == QuestState.Active
                 from objective in task.Objectives
-                where objective.Position is not null && objective.MapIds.Contains(map.Id)
+                // Covers rather than equals: Ground Zero 21+ folds into Ground Zero, and its
+                // quests have to keep arriving on the map that absorbed it.
+                where objective.Position is not null && objective.MapIds.Any(map.Covers)
                 let position = objective.Position.GetValueOrDefault()
                 let point = transform.ToNormalized(position)
                 select new
@@ -1226,7 +1228,9 @@ public static class ApiEndpoints
                 // Match on the resolved map's own id, not the URL segment — the route accepts a
                 // normalized name too, and comparing that against tarkov.dev ids silently
                 // matched nothing.
-                where objective.Position is not null && objective.MapIds.Contains(map.Id)
+                // Covers rather than equals: Ground Zero 21+ folds into Ground Zero, and its
+                // quests have to keep arriving on the map that absorbed it.
+                where objective.Position is not null && objective.MapIds.Any(map.Covers)
                 let position = objective.Position.GetValueOrDefault()
                 let point = transform.ToNormalized(position)
                 select new ObjectivePin
@@ -1435,25 +1439,31 @@ public static class ApiEndpoints
             });
         });
 
-        // The maps RatNav will not offer yet, and why.
+        // The maps that are coming, and what each is waiting on.
+        //
+        // A map with no community drawing is not on this list, and that is the whole rule. Labs,
+        // Labyrinth and Icebreaker have no drawing anywhere in the sources RatNav reads — the
+        // published files for them are flat pictures with no coordinate projection, which cannot
+        // put a marker anywhere. Listing them as "coming soon" would be a promise resting on
+        // somebody else drawing something, and if that never happens the promise never comes
+        // good. So they are simply absent, and the FAQ answers why for anyone who wonders.
+        //
+        // What is left is a real queue: a drawing exists, and the only thing missing is which way
+        // round it goes, which one position settles.
         api.MapGet("/maps/held-back", (RatNavState state) =>
             Results.Ok(
                 from map in state.Cache.Current?.Maps ?? []
-                where !Trustworthy(map)
+                where !Trustworthy(map) && map.Image is not null
                 orderby map.Name
                 select new
                 {
                     map.Id,
                     map.Name,
                     map.NormalizedName,
-
-                    // The two reasons are not the same problem. One needs a drawing that does not
-                    // exist; the other needs thirty seconds from somebody who plays the map.
-                    hasDrawing = map.Image is not null,
-                    confidence = map.Image?.Confidence.ToString() ?? "Unknown",
-                    reason = map.Image?.CalibrationReason
-                        ?? "No community drawing exists for this map yet.",
-                    canBeSettled = map.Image is not null,
+                    hasDrawing = true,
+                    confidence = map.Image!.Confidence.ToString(),
+                    reason = map.Image.CalibrationReason ?? "",
+                    canBeSettled = true,
                 }));
 
         // Settle one, from a position and the spot on the map where that position actually is.
@@ -1684,7 +1694,11 @@ public static class ApiEndpoints
         if (maps is null) return null;
 
         return maps.FirstOrDefault(m => string.Equals(m.Id, id, StringComparison.OrdinalIgnoreCase))
-            ?? maps.FirstOrDefault(m => string.Equals(m.NormalizedName, id, StringComparison.OrdinalIgnoreCase));
+            ?? maps.FirstOrDefault(m => string.Equals(m.NormalizedName, id, StringComparison.OrdinalIgnoreCase))
+
+            // A variant that has been folded away, from a plan saved before it was. Resolving it
+            // to the map that absorbed it is what stops that plan going missing.
+            ?? maps.FirstOrDefault(m => m.Covers(id));
     }
 
     /// <summary>Empty is a real answer — it means "detect it" — so it is stored as null, not "".</summary>
