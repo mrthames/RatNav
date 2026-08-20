@@ -134,10 +134,12 @@ Captured before execution.
 
 ### Custom waypoints, second pass
 
-- [ ] **Choose custom waypoints as part of a plan**, from the Plan page, alongside quest
-  objectives. Creating them on the Maps tab already works; putting them in a plan does not.
-- [ ] **Distinguish kinds of mark.** A mark may be an item or a location of interest, and those
-  want telling apart — as they already are from quest waypoints.
+- [x] **Choose custom waypoints as part of a plan**, from the Plan page, alongside quest
+  objectives. They tick, number, drag and reorder in the same list, so a run can be "this quest
+  step, then my stash, then that one".
+- [x] **Distinguish kinds of mark.** A diamond is a place, a box is something to pick up. Shape
+  rather than a second colour: colour already says "this is yours rather than a quest's", and
+  stacking a second meaning onto it would need both read at once.
 
 ---
 
@@ -193,6 +195,12 @@ Captured before execution.
 - [ ] **Remove "open the full panel".** The buddy app launches with the app instead.
 - [ ] **Remove "tick objective off".** Ticking is better done by hand in the buddy app.
 - [ ] **Renumber what is left from `F5`**, now that there are fewer of them.
+
+### Last, after everything else
+
+- [ ] **Audit the whole repo against what the app actually does.** Walk the overlay and the buddy
+  app feature by feature, then walk the README, the guide, the FAQ and the changelog, and reconcile
+  them. Several rounds of change have landed since those were written and they have drifted.
 
 ### Later
 

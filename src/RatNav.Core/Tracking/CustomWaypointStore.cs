@@ -3,6 +3,7 @@ namespace RatNav.Core.Tracking;
 using System.Text.Json;
 
 /// <summary>What kind of thing a mark is.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
 public enum MarkKind
 {
     /// <summary>Somewhere worth remembering — a stash, an angle, a way through.</summary>

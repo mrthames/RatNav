@@ -41,8 +41,10 @@ public static class PlanConversion
                 {
                     ObjectiveId = s.ObjectiveId,
                     TaskId = s.TaskId,
-                    TaskName = task?.Name ?? "(unknown quest)",
-                    Description = objective?.Description ?? "",
+                    // A stop with no quest behind it is a mark of your own, and carries its own
+                    // name — there is no game data to look it up in.
+                    TaskName = task?.Name ?? s.Label ?? "(unknown quest)",
+                    Description = objective?.Description ?? s.Label ?? "",
                     Position = new GamePosition(s.X, s.Y, s.Z),
                     TraderName = task?.TraderName,
                     Owner = s.Owner,

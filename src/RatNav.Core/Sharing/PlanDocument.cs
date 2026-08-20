@@ -102,6 +102,11 @@ public sealed record PlanDocument
                 ObjectiveId = w.ObjectiveId,
                 TaskId = w.TaskId,
                 Owner = w.Owner ?? owner,
+
+                // Only carried when nothing else can supply it. A quest objective's name comes
+                // back from game data on import, and shipping a copy would mean a plan showing an
+                // old name after a patch renamed the quest.
+                Label = w.TaskId is { Length: > 0 } ? null : w.TaskName,
                 X = w.Position.X,
                 Y = w.Position.Y,
                 Z = w.Position.Z,
@@ -123,6 +128,15 @@ public sealed record PlanStop
 
     /// <summary>Whose objective this is. Set on every stop once plans are merged.</summary>
     public string? Owner { get; init; }
+
+    /// <summary>
+    /// What to call this stop when no quest can supply the name.
+    ///
+    /// <para>A stop for a quest objective needs no label: the name is re-derived from game data on
+    /// import, which is what lets a plan survive a patch renaming something. A mark of your own has
+    /// no game data behind it, so its name has to travel with it or it arrives as an unnamed dot.</para>
+    /// </summary>
+    public string? Label { get; init; }
 
     public required double X { get; init; }
     public double Y { get; init; }
