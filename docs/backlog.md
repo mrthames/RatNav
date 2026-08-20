@@ -215,6 +215,34 @@ Captured before execution. Builds directly on the stash scan.
     pixels: wide enough to step from one container to the next and call the pair one grid. That
     made a four-container screen read as **no containers at all**.
 
+### The workflow, thought through
+
+Answers to "what factors need considering", to be built to:
+
+- **Scav and PMC are different, and the difference is one screenshot.** A PMC packs from the stash,
+  so what is carried in was already counted and the haul is *after minus before*. A scav's kit is
+  spawned, not taken from your stash, so **everything** carried out is new — which means a scav run
+  needs the **end shot only**. Asking for a start shot on a scav run would be asking for a number
+  to subtract that should be zero.
+- [ ] **Ask which it was, or read it from the log**, and take one screenshot or two accordingly.
+- [ ] **Dying is the normal case, not an edge case.** There is no inventory screen after a death, so
+  the end shot cannot exist. Offer *I died* alongside *skip*: what was carried in is gone, minus
+  whatever was in the secure container, and that list comes from the start shot — reviewable like
+  everything else, because RatNav cannot tell which container was secure.
+- **Extracting with less than you went in with needs nothing special.** The comparison already
+  reports losses.
+- **The point of all of it** is that the buddy app's counts stay true to the stash without typing.
+  Everything else here serves that.
+
+### What to sell
+
+- [ ] **Say what is safe to sell.** Items you hold that **nothing** wants — no active quest, no
+  upgrade inside the look-ahead, no goal, not on the watchlist — are cash, and they are the ones
+  that sit in a stash for a wipe because nobody remembers why they were kept.
+  - **The watchlist and goals overrule it, always.** That is exactly what they are for: the things
+    you decided to keep for a reason RatNav cannot derive.
+  - Wanted alongside it: which trader pays best, which is already in the data.
+
 ### Named containers
 
 *(Justin's, after tagging two junk boxes "junk one" and "junk two".)*
