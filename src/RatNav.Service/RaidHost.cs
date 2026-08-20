@@ -465,8 +465,42 @@ public sealed record RatNavSettings
         /// </summary>
         public OverlayPlacement Wireframe { get; init; } = new() { Ink = "outline" };
 
-        /// <summary>Fraction of the screen the centred map covers before it is arranged by hand.</summary>
+        /// <summary>
+        /// How much of the screen the centred view covers, as a fraction.
+        ///
+        /// <para>This is the dial that turns the centred map into a HUD. At 1.0 it takes the whole
+        /// screen, the drawing fades out toward the edges, and everything off-view is an arrow
+        /// pointing at it. Below 1.0 it is a window in the middle of the screen with a border,
+        /// which is what it has always been. One continuum rather than two modes, because
+        /// <c>Box</c> and <c>Wireframe</c> already carry separate settings and a third would be a
+        /// third of everything.</para>
+        ///
+        /// <para>Unlike the corner panel, this is not overridden by dragging: the centred view is
+        /// centred, so the only thing to decide about its rectangle is how big it is.</para>
+        /// </summary>
         public double WireframeScale { get; init; } = 0.7;
+
+        /// <summary>
+        /// Where the drawing starts fading toward the edges of the full-screen HUD, as a fraction
+        /// of the way out from the centre.
+        ///
+        /// <para>At 1.0 nothing fades and the map ends at a hard edge, which is the thing the HUD
+        /// is trying not to look like. Lower starts the fade sooner, so the map dissolves into the
+        /// game instead of stopping at a border.</para>
+        ///
+        /// <para>Only used at full coverage. A windowed centred map has a border already, and
+        /// fading out inside one would just look like a fault.</para>
+        /// </summary>
+        public double EdgeFade { get; init; } = 0.55;
+
+        /// <summary>
+        /// How strongly map lines glow in the full-screen HUD.
+        ///
+        /// <para>Drawn as a wide, dim stroke under the real one rather than as a blur effect. A
+        /// map runs to several hundred paths and a <c>DropShadowEffect</c> on each is a frame
+        /// budget spent on decoration.</para>
+        /// </summary>
+        public double Glow { get; init; } = 1.6;
 
         /// <summary>
         /// How strongly the map is drawn, 0 to 1. Lower is more of the game showing through; this

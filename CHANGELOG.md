@@ -40,6 +40,20 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **The centred map turns into a full-screen HUD.** A **Coverage** dial in the controls: at 100%
+  the centred view takes the whole screen, the drawing **dissolves toward the edges** instead of
+  stopping at a border, and the map lines **glow** rather than sit in ink. Below 100% it is the
+  centred window it has always been — one dial rather than a third view to configure, since `Box`
+  and `Wireframe` already carry separate settings. **Edge fade** and **Glow** are their own dials
+  and appear only at full coverage.
+
+  **Clicks pass through the HUD except on a control.** Click-through is a whole-window setting,
+  which is fine until the window *is* the screen — then reaching a control means the whole screen
+  stops passing clicks, so you cannot shoot, and an interact key hit by accident mid-raid leaves
+  you unable to click at anything. At full coverage the window answers per point instead.
+
+  The centred view is also now genuinely centred: its position and size come from the dial, so it
+  no longer offers a drag handle and a resize corner that the next layout would undo.
 - **The overlay's map controls read like the app's Maps page.** A **Quests** control — *Active*,
   *All*, *Off* — under the same name as the app's: active is the plan's stops, all adds every other
   started quest's objective on this map drawn hollow and unnumbered, off leaves the map clean. Draw

@@ -369,6 +369,19 @@
                             BorderBrush="{StaticResource Line}"
                             BorderThickness="1">
                         <Grid ClipToBounds="True">
+                            <!--
+                                Two layers, and the split is what makes the HUD's edge fade
+                                possible at all.
+
+                                The drawing fades out toward the edges of a full-screen HUD so the
+                                map dissolves into the game rather than stopping at a border. That
+                                is an OpacityMask, and a mask over everything would take the edge
+                                arrows with it — which are drawn at the edges precisely because
+                                that is where the things you cannot see are. So the map goes on its
+                                own layer and the mask goes on that; the pins, captions and arrows
+                                sit above it and are never faded.
+                            -->
+                            <Canvas x:Name="MapInk" ClipToBounds="True" />
                             <Canvas x:Name="MapCanvas" ClipToBounds="True" />
 
                             <!--
@@ -909,6 +922,47 @@
                                         Margin="2,0,0,0"
                                         ToolTip="Recentre on you and follow again"
                                         Visibility="Collapsed" />
+                            </StackPanel>
+
+                            <!--
+                                The centred view's own three, hidden in the corner panel because
+                                none of them mean anything there. Coverage is the dial that turns
+                                the centred map into a HUD: at 100% it takes the whole screen, the
+                                drawing dissolves toward the edges, and the lines glow rather than
+                                sit in ink.
+                            -->
+                            <StackPanel x:Name="HudControls" Visibility="Collapsed">
+                                <TextBlock Style="{StaticResource Label}" Text="COVERAGE" Margin="0,0,0,2"
+                                           ToolTip="How much of the screen the centred map takes. 100% is the full-screen HUD." />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="CoverageDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="CoverageText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="70%" />
+                                    <Button x:Name="CoverageUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
+
+                                <StackPanel x:Name="FullScreenControls" Visibility="Collapsed">
+                                    <TextBlock Style="{StaticResource Label}" Text="EDGE FADE" Margin="0,0,0,2"
+                                               ToolTip="Where the drawing starts dissolving into the game. Lower fades sooner." />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <Button x:Name="FadeEdgeDown" Style="{StaticResource Chip}" Content="−" />
+                                        <TextBlock x:Name="FadeEdgeText" Style="{StaticResource Label}"
+                                                   Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                                   MinWidth="46" TextAlignment="Center" Text="55%" />
+                                        <Button x:Name="FadeEdgeUp" Style="{StaticResource Chip}" Content="+" />
+                                    </StackPanel>
+
+                                    <TextBlock Style="{StaticResource Label}" Text="GLOW" Margin="0,0,0,2"
+                                               ToolTip="How much the map lines bloom" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <Button x:Name="GlowDown" Style="{StaticResource Chip}" Content="−" />
+                                        <TextBlock x:Name="GlowText" Style="{StaticResource Label}"
+                                                   Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                                   MinWidth="46" TextAlignment="Center" Text="1.6×" />
+                                        <Button x:Name="GlowUp" Style="{StaticResource Chip}" Content="+" />
+                                    </StackPanel>
+                                </StackPanel>
                             </StackPanel>
 
                             <TextBlock Style="{StaticResource Label}" Text="EXITS" Margin="0,0,0,2" />

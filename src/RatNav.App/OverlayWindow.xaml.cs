@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -187,7 +188,12 @@ public partial class OverlayWindow : Window
         ApplyMapDrawer();
         ApplyItemsPanel();
 
-        SourceInitialized += (_, _) => OverlayWindowStyles.Apply(this, _clickThrough);
+        SourceInitialized += (_, _) =>
+        {
+            OverlayWindowStyles.Apply(this, _clickThrough);
+
+            if (PresentationSource.FromVisual(this) is HwndSource source) source.AddHook(OnHitTest);
+        };
         SizeChanged += (_, _) => Draw();
 
         DragHandle.MouseLeftButtonDown += (_, _) => DragMove();
@@ -242,6 +248,13 @@ public partial class OverlayWindow : Window
         FollowButton.Click += (_, _) => ToggleFollowing();
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
+
+        CoverageUp.Click += (_, _) => StepCoverage(+0.05);
+        CoverageDown.Click += (_, _) => StepCoverage(-0.05);
+        FadeEdgeUp.Click += (_, _) => StepEdgeFade(+0.05);
+        FadeEdgeDown.Click += (_, _) => StepEdgeFade(-0.05);
+        GlowUp.Click += (_, _) => StepGlow(+0.2);
+        GlowDown.Click += (_, _) => StepGlow(-0.2);
         QuestVisibility.Click += (_, _) => CycleQuests();
         OfferedButton.Click += (_, _) => ForgetOfferedExtracts();
 
@@ -393,13 +406,19 @@ public partial class OverlayWindow : Window
             // a window the size of two lists.
             if (Folded) Remember(_settings.Overlay with { FoldedWidth = Width });
 
-            Place(p => p with
+            // The centred view has no arrangement to save: it is centred, and how big it is comes
+            // from the coverage dial. Writing the rectangle it happens to occupy would be storing
+            // a value nothing reads.
+            if (_settings.Overlay.Mode != RatNavSettings.OverlayMode.Wireframe)
             {
-                Left = Left,
-                Top = Top,
-                Width = Folded ? p.Width : Width,
-                Height = Height,
-            });
+                Place(p => p with
+                {
+                    Left = Left,
+                    Top = Top,
+                    Width = Folded ? p.Width : Width,
+                    Height = Height,
+                });
+            }
         }
     }
 
@@ -557,20 +576,36 @@ public partial class OverlayWindow : Window
         var bounds = _settings.Overlay;
         var placement = bounds.Current;
 
-        if (placement.Unplaced)
+        // The centred view is centred, always. Its rectangle has one thing to decide — how much of
+        // the screen it covers — and dragging it somewhere is not a thing that makes sense for a
+        // view whose whole idea is that you are in the middle of it. So it is placed from the dial
+        // every time rather than from a saved rectangle, which also means turning the dial to 1.0
+        // takes effect immediately instead of on the next fresh install.
+        if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
         {
-            // Never arranged. The corner panel gets a corner; the centred map gets most of the
-            // screen. Once either is moved, that arrangement is what comes back.
+            // The whole screen at full coverage, not the work area: the HUD is meant to reach the
+            // edges, and the taskbar is not something to leave a gap for when the game is over it.
+            var full = Coverage >= 1;
+
+            // The whole primary screen, not the virtual desktop: a second monitor to the left
+            // puts the virtual origin at a negative x, which would centre the HUD across both and
+            // leave half of it on the wrong one. WorkArea is the primary monitor too, so this
+            // stays on the same screen the centred map has always used.
+            var screen = full
+                ? new Rect(0, 0, SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight)
+                : SystemParameters.WorkArea;
+
+            Width = screen.Width * Coverage;
+            Height = screen.Height * Coverage;
+            Left = screen.Left + (screen.Width - Width) / 2;
+            Top = screen.Top + (screen.Height - Height) / 2;
+        }
+        else if (placement.Unplaced)
+        {
+            // Never arranged. The corner panel gets a corner; once it is moved, that arrangement
+            // is what comes back.
             var screen = SystemParameters.WorkArea;
 
-            if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
-            {
-                Width = screen.Width * bounds.WireframeScale;
-                Height = screen.Height * bounds.WireframeScale;
-                Left = screen.Left + (screen.Width - Width) / 2;
-                Top = screen.Top + (screen.Height - Height) / 2;
-            }
-            else
             {
                 // Kept as a share of the screen rather than a pixel rectangle. These numbers come
                 // from a real arrangement — low on the left, clear of the game's health tracker
@@ -628,6 +663,103 @@ public partial class OverlayWindow : Window
     {
         Width = Math.Max(220, Width + e.HorizontalChange);
         Height = Math.Max(160, Height + e.VerticalChange);
+    }
+
+    private const int WM_NCHITTEST = 0x0084;
+    private const int HTTRANSPARENT = -1;
+
+    /// <summary>
+    /// Lets a click through the HUD unless it lands on a control.
+    ///
+    /// <para>Click-through is a whole-window style, which is right until the window is the whole
+    /// screen. Then turning it off to reach a control means the entire screen stops passing
+    /// clicks — so you cannot shoot, and an interact key pressed by accident mid-raid leaves you
+    /// unable to click at anything. The corner panel never had this problem because it is small
+    /// and in a corner; a HUD has no margin at all.</para>
+    ///
+    /// <para>So at full coverage the window answers per point instead: the controls take their
+    /// clicks and everywhere else says it is not there. Panning by right-drag goes with it, which
+    /// is the right trade — a HUD is centred on you and there is nothing to drag it to.</para>
+    /// </summary>
+    private IntPtr OnHitTest(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        // Below full coverage this is the centred *window*, which behaves as it always has.
+        // And while click-through is on, the extended style has already answered.
+        if (message != WM_NCHITTEST || !Hud || _clickThrough) return IntPtr.Zero;
+
+        var packed = (int)(lParam.ToInt64() & 0xFFFFFFFF);
+        var screen = new Point((short)(packed & 0xFFFF), (short)((packed >> 16) & 0xFFFF));
+
+        try
+        {
+            if (OverControl(PointFromScreen(screen))) return IntPtr.Zero;
+        }
+        catch (InvalidOperationException)
+        {
+            return IntPtr.Zero;
+        }
+
+        handled = true;
+        return new IntPtr(HTTRANSPARENT);
+    }
+
+    /// <summary>Whether a point in window space is over something meant to be clicked.</summary>
+    private bool OverControl(Point point)
+    {
+        foreach (var element in new FrameworkElement[] { ControlStack, CentredControls, QuickBar })
+        {
+            if (!element.IsVisible) continue;
+
+            var origin = element.TransformToAncestor(this).Transform(new Point(0, 0));
+            if (new Rect(origin, element.RenderSize).Contains(point)) return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>How much of the screen the centred view takes, clamped to something usable.</summary>
+    private double Coverage => Math.Clamp(_settings.Overlay.WireframeScale, 0.3, 1.0);
+
+    /// <summary>
+    /// True when the centred view has been turned up to cover the whole screen.
+    ///
+    /// <para>The HUD and the windowed centred map are the same view at two ends of one dial, so
+    /// this is what everything that only applies to the HUD — the edge fade, the glow, and letting
+    /// clicks through where there is no control — asks.</para>
+    /// </summary>
+    private bool Hud =>
+        _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe && Coverage >= 1;
+
+    private void StepCoverage(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            WireframeScale = Math.Clamp(_settings.Overlay.WireframeScale + by, 0.3, 1.0),
+        });
+
+        ApplyBounds();
+        ApplyControlStack();
+        Draw();
+    }
+
+    private void StepEdgeFade(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            EdgeFade = Math.Clamp(_settings.Overlay.EdgeFade + by, 0.2, 1.0),
+        });
+
+        Draw();
+    }
+
+    private void StepGlow(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            Glow = Math.Clamp(_settings.Overlay.Glow + by, 1.0, 4.0),
+        });
+
+        Draw();
     }
 
     private Point? _panFrom;
@@ -2018,6 +2150,15 @@ public partial class OverlayWindow : Window
         // cursor — and left no way back except the collapse arrow, which is somewhere else.
         var centred = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe;
 
+        // The centred view is centred, and its size comes from the coverage dial. Dragging it or
+        // pulling its corner would move it until the next thing that laid it out put it back,
+        // which is worse than not offering either.
+        DragHandle.Visibility = centred ? Visibility.Collapsed : Visibility.Visible;
+        ResizeGrip.Visibility = centred ? Visibility.Collapsed : Visibility.Visible;
+
+        HudControls.Visibility = centred ? Visibility.Visible : Visibility.Collapsed;
+        FullScreenControls.Visibility = Hud ? Visibility.Visible : Visibility.Collapsed;
+
         // One gear each, because they live in different places for good reasons. The corner view's
         // is in the footer with the drawer handles; the centred view has no footer, so its own
         // floats over the map.
@@ -2129,7 +2270,10 @@ public partial class OverlayWindow : Window
     {
         var view = _view;
 
+        MapInk.Children.Clear();
         MapCanvas.Children.Clear();
+
+        ApplyEdgeFade();
 
         // Cleared with the scene they describe. A hover target left pointing at a marker that is
         // no longer there is worse than none — it names the wrong thing rather than nothing.
@@ -2243,6 +2387,10 @@ public partial class OverlayWindow : Window
         MarkerText.Text = $"{_settings.Overlay.MarkerScale:0.0}×";
         TextScaleText.Text = $"{_settings.Overlay.TextScale:0.0}×";
         PlaceNameText.Text = $"{_settings.Overlay.PlaceNameScale:0.0}×";
+
+        CoverageText.Text = $"{Coverage * 100:F0}%";
+        FadeEdgeText.Text = $"{_settings.Overlay.EdgeFade * 100:F0}%";
+        GlowText.Text = $"{_settings.Overlay.Glow:0.0}×";
         ShrinkText.Text = $"{_settings.Overlay.ScaleWithZoom:0.00}";
         YouText.Text = $"{_settings.Overlay.PlayerScale:0.0}×";
         HaloButton.Content = _settings.Overlay.Halo ? "halo on" : "halo off";
@@ -2255,6 +2403,45 @@ public partial class OverlayWindow : Window
     /// Draws the map itself: terrain as a whisper, structure and roads carrying it. Whether zoom
     /// holds the map still or keeps you centred is <see cref="RatNavSettings.OverlayBounds.FollowPlayer"/>.
     /// </summary>
+    /// <summary>
+    /// Dissolves the map into the game toward the edges of the full-screen HUD.
+    ///
+    /// <para>A radial <see cref="OpacityMask"/> over the map layer, which costs nothing per shape
+    /// — it is one brush over the finished layer rather than an effect on each of several hundred
+    /// paths. Relative units, so it stays an ellipse matching the screen and reaches every edge at
+    /// the same point rather than fading the sides sooner than the top.</para>
+    ///
+    /// <para>Only in the HUD. A windowed centred map has a border of its own, and something
+    /// fading out just inside a visible border reads as a rendering fault.</para>
+    /// </summary>
+    private void ApplyEdgeFade()
+    {
+        if (!Hud)
+        {
+            MapInk.OpacityMask = null;
+            return;
+        }
+
+        var starts = Math.Clamp(_settings.Overlay.EdgeFade, 0.2, 1.0);
+
+        var mask = new RadialGradientBrush
+        {
+            GradientOrigin = new Point(0.5, 0.5),
+            Center = new Point(0.5, 0.5),
+            RadiusX = 0.5,
+            RadiusY = 0.5,
+            GradientStops =
+            {
+                new GradientStop(Colors.White, 0),
+                new GradientStop(Colors.White, starts),
+                new GradientStop(Colors.Transparent, 1),
+            },
+        };
+
+        mask.Freeze();
+        MapInk.OpacityMask = mask;
+    }
+
     private void DrawMap(RaidView view)
     {
         if (_mapShapes.Count == 0) return;
@@ -2320,7 +2507,7 @@ public partial class OverlayWindow : Window
                 if (styled.Dash is { Count: > 0 } dash)
                     drawn.StrokeDashArray = [.. dash];
 
-                MapCanvas.Children.Add(drawn);
+                MapInk.Children.Add(drawn);
 
                 continue;
             }
@@ -2357,19 +2544,29 @@ public partial class OverlayWindow : Window
             // backgrounds run from snowfield to unlit basement. No single line colour survives
             // both, and turning the opacity up until it does buries the game instead. A halo
             // separates the line from whatever is behind it, so the line itself can stay thin.
-            if (_settings.Overlay.Halo && stroke is not null && weight > 0)
+            //
+            // In the HUD the same pass does the opposite job. There the map is meant to read as
+            // light rather than as ink — outlines glowing over the game — so the wide stroke
+            // underneath takes the line's own colour at low opacity instead of the dark ground.
+            // A blur would be the obvious way to glow and the wrong one: several hundred paths
+            // each carrying a DropShadowEffect is a frame budget spent on decoration.
+            if ((_settings.Overlay.Halo || Hud) && stroke is not null && weight > 0)
             {
+                var glowing = Hud;
+
                 var halo = new Path
                 {
                     Data = shape.Geometry,
                     RenderTransform = transform,
-                    Stroke = (Brush)FindResource("Ground"),
-                    StrokeThickness = weight * 3.2,
-                    Opacity = Math.Min(1, shapeOpacity * 1.4),
+                    Stroke = glowing ? stroke : (Brush)FindResource("Ground"),
+                    StrokeThickness = weight * (glowing ? 2.0 * _settings.Overlay.Glow : 3.2),
+                    Opacity = glowing
+                        ? Math.Min(1, shapeOpacity * 0.35)
+                        : Math.Min(1, shapeOpacity * 1.4),
                     IsHitTestVisible = false,
                 };
 
-                MapCanvas.Children.Add(halo);
+                MapInk.Children.Add(halo);
             }
 
             var path = new Path
@@ -2383,7 +2580,7 @@ public partial class OverlayWindow : Window
                 IsHitTestVisible = false,
             };
 
-            MapCanvas.Children.Add(path);
+            MapInk.Children.Add(path);
         }
 
         // Structures traced over the top of the graphical base.
@@ -2398,7 +2595,7 @@ public partial class OverlayWindow : Window
             {
                 if (shape.Role is not (MapShapeRole.Structure or MapShapeRole.Boundary)) continue;
 
-                MapCanvas.Children.Add(new Path
+                MapInk.Children.Add(new Path
                 {
                     Data = shape.Geometry,
                     RenderTransform = transform,
@@ -2425,7 +2622,7 @@ public partial class OverlayWindow : Window
             // back, and only then is a dashed line worth the loss of clarity.
             var clashes = _overlap?.Conflicts(shape) ?? true;
 
-            MapCanvas.Children.Add(new Path
+            MapInk.Children.Add(new Path
             {
                 Data = shape.Geometry,
                 RenderTransform = transform,
