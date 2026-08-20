@@ -27,14 +27,6 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **An info control on every item row**, saying which quests and which hideout levels want it.
   Quest names open the quest.
 
-### Reading your stash
-
-- **Scan a container from a screenshot** — a scav junk box, or a block of stash. Items are named by
-  matching against the icons of what you already track, and nothing is written until you confirm
-  it.
-- **A row of one repeated item reads as a divider**, so a block taller than the screen can be shot
-  in pieces without counting the overlap twice.
-
 ### Goals
 
 - **Name what you are collecting for**, and list what it takes. This replaces the searchable
@@ -61,6 +53,12 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **One alphabetical list**, on the overlay and in the buddy app. Found-in-raid items are no longer
   lifted into their own block — the colour says which they are wherever they sit, and two alphabets
   meant looking twice.
+
+### Items
+
+- **Reading a stash from a screenshot is gone.** It was built to fill in have-counts quickly, and
+  have-counts are not the point of the list — what is still *needed* is. A feature kept because it
+  works, rather than because it earns its place, is one more thing to explain and maintain.
 
 ### Quests and maps
 

@@ -92,7 +92,6 @@ public partial class App : Application
         // a Kestrel thread that has no business doing that.
         // Windows' own OCR, which lives on this side of the app. The service asks; the pixels
         // never leave here.
-        ApiEndpoints.ReadImageText = ScreenTextReader.ReadImageAsync;
 
         ApiEndpoints.BrowseForFolder = start => Dispatcher.Invoke(() =>
         {

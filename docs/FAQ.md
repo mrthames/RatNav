@@ -184,8 +184,12 @@ So have-counts are typed, and the app is built around that being true — the wa
 count separately, so what is promised to the hideout is not silently counted as available for a
 goal.
 
-`F8` over an item is the fast way to check one thing without going near the number, and
-**Items → Scan** reads a scav box or a block of stash off a screenshot for a first import.
+`F8` over an item is the fast way to check one thing without going near the number.
+
+RatNav did once read a container off a screenshot. It worked — the game prints each item's short
+name on its cell, so it was reading a printed label rather than guessing at a picture — but it
+existed to fill in have-counts, and have-counts are not what the list is for. What matters is what
+is still needed, so the feature was taken out rather than kept for its own sake.
 
 ## Why can't it read my trader loyalty or my level?
 

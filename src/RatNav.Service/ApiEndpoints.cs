@@ -9,7 +9,6 @@ using RatNav.Core.Model;
 using RatNav.Core.Planning;
 using RatNav.Core.Progress;
 using RatNav.Core.Sharing;
-using RatNav.Core.Stash;
 using RatNav.Core.Tracking;
 using RatNav.Core.Watchers;
 
@@ -42,15 +41,6 @@ public static class ApiEndpoints
 
     /// <summary>Raised when someone asks for the overlay to be put back where it started.</summary>
     public static event Action? OverlayResetRequested;
-
-    /// <summary>
-    /// Reads every word on a picture, with where it sits.
-    ///
-    /// <para>A hook rather than a call, because the OCR belongs to Windows and reaching it needs
-    /// the desktop app's target framework. Same shape as the folder picker above, and the same
-    /// reason: every pixel RatNav looks at stays on the desktop side.</para>
-    /// </summary>
-    public static Func<byte[], Task<IReadOnlyList<TextBlock>>>? ReadImageText { get; set; }
 
     /// <summary>
     /// Opens a folder picker and returns what was chosen, or null if it was cancelled.
@@ -193,90 +183,6 @@ public static class ApiEndpoints
 
             ItemsChanged?.Invoke();
             return Results.Ok(Track(state, tracker, progress, settings, id));
-        });
-
-        // ---- reading a container out of a screenshot
-
-        // Reads what is in a container from the labels the game prints on it.
-        //
-        // Escape from Tarkov writes each item's short name across the top of its cell — "Sodium",
-        // "OScope", "T-Plug". That is the field RatNav already holds for every item, so this reads
-        // a printed label rather than comparing pictures: more accurate, nothing to download, and
-        // it fails into "I could not read that" rather than into a confident wrong answer.
-        //
-        // What counts depends on what the picture is of, and the caller says which — a container
-        // window, a block of stash bounded by bandages, or an inventory screen where only what is
-        // carried counts. See LabelReader.
-        api.MapPost("/stash/scan", async (
-            RatNavState state, HttpRequest request, string? kind, CancellationToken ct) =>
-        {
-            if (ReadImageText is not { } read)
-                return Results.BadRequest(new { error = "Reading pictures needs the desktop app." });
-
-            if (!request.HasFormContentType) return Results.BadRequest(new { error = "Send an image." });
-
-            var form = await request.ReadFormAsync(ct);
-            var file = form.Files.FirstOrDefault();
-
-            if (file is null || file.Length == 0)
-                return Results.BadRequest(new { error = "Send an image." });
-
-            if (state.Index is not { } index) return Results.BadRequest(new { error = "No item data yet." });
-
-            using var memory = new MemoryStream();
-            await file.CopyToAsync(memory, ct);
-
-            var blocks = await read(memory.ToArray());
-
-            if (blocks.Count == 0)
-            {
-                return Results.Ok(new
-                {
-                    found = false,
-                    problem = "Nothing readable in that picture. Windows needs an OCR language pack, "
-                        + "and the screenshot needs to be the game at its own resolution.",
-                });
-            }
-
-            var reading = LabelReader.Read(
-                blocks,
-                kind?.ToLowerInvariant() switch
-                {
-                    "stash" => ImportKind.Stash,
-                    "carried" => ImportKind.Carried,
-                    _ => ImportKind.Container,
-                },
-                label => index.ByShortName(label) is { } item ? (item.Id, item.Name) : null);
-
-            return Results.Ok(new
-            {
-                found = reading.Items.Count > 0,
-                reading.ContainerName,
-                items = reading.Items,
-
-                // Said out loud rather than swallowed. A label RatNav could not place is either an
-                // item it does not know or a word OCR got wrong, and both are worth seeing.
-                reading.Unrecognised,
-            });
-        }).DisableAntiforgery();
-
-        // Applies what was confirmed on the review screen, and only that.
-        api.MapPost("/stash/apply", (ItemTracker tracker, StashApplyRequest request) =>
-        {
-            var applied = 0;
-
-            foreach (var count in request.Counts ?? [])
-            {
-                if (count.ItemId is not { Length: > 0 }) continue;
-
-                // Set, not add. A scan is a reading of what is there, and adding would double
-                // everything the second time somebody scanned the same box.
-                tracker.SetHave(count.ItemId, Math.Max(0, count.Count));
-                applied++;
-            }
-
-            ItemsChanged?.Invoke();
-            return Results.Ok(new { applied });
         });
 
         // ---- goals you are collecting for
@@ -2198,10 +2104,6 @@ public sealed record WaypointRequest(string? Label, double X, double Y, string? 
 public sealed record BrowseRequest(string? Start);
 
 /// <summary>What somebody confirmed on the review screen, and nothing else.</summary>
-public sealed record StashApplyRequest(IReadOnlyList<StashCount>? Counts);
-
-public sealed record StashCount(string ItemId, int Count);
-
 public sealed record CalibrateRequest(
     double X, double Y, double Z, double ImageX, double ImageY);
 

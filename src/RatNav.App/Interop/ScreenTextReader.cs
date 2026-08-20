@@ -6,7 +6,6 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.Versioning;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
-using RatNav.Core.Stash;
 using Windows.Storage.Streams;
 
 namespace RatNav.App.Interop;
@@ -108,46 +107,6 @@ public static class ScreenTextReader
         }
     }
 
-    /// <summary>
-    /// Every word on a picture, with where it sits.
-    ///
-    /// <para>Words rather than lines. The game prints one item's short name per cell, and a line of
-    /// OCR across a container's row is seven names run together — which no lookup can undo.
-    /// Positions are what say which cell a name belongs to, and a line has only one.</para>
-    /// </summary>
-    public static async Task<IReadOnlyList<TextBlock>> ReadImageAsync(byte[] image)
-    {
-        if (Engine is null || image.Length == 0) return [];
-
-        try
-        {
-            using var stream = new InMemoryRandomAccessStream();
-
-            await stream.WriteAsync(image.AsBuffer());
-            stream.Seek(0);
-
-            var decoder = await BitmapDecoder.CreateAsync(stream);
-            using var software = await decoder.GetSoftwareBitmapAsync();
-
-            var result = await Engine.RecognizeAsync(software);
-
-            return
-            [
-                .. from line in result.Lines
-                   from word in line.Words
-                   select new TextBlock(
-                       word.Text,
-                       word.BoundingRect.X,
-                       word.BoundingRect.Y,
-                       word.BoundingRect.Width,
-                       word.BoundingRect.Height)
-            ];
-        }
-        catch (Exception ex) when (ex is COMException or InvalidOperationException or ExternalException or IOException or ArgumentException)
-        {
-            return [];
-        }
-    }
 
     /// <summary>Where the pointer is, in screen pixels.</summary>
     public static (int X, int Y) CursorPosition()

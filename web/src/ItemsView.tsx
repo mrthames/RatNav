@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { QuestBrief } from './QuestBrief'
-import { StashScan } from './StashScan'
 import { api, type TrackedItem, type GoalView, type ItemDetail } from './api'
 
-type Tab = 'needed' | 'watchlist' | 'goals' | 'scan' | 'search'
+type Tab = 'needed' | 'watchlist' | 'goals' | 'search'
 
 /**
  * What to show of the list.
@@ -44,7 +43,7 @@ export function ItemsView() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      if (tab === 'goals' || tab === 'scan') {
+      if (tab === 'goals') {
         // Their own components, with their own data. Nothing to load here.
         setRows([])
       } else if (tab === 'search') {
@@ -98,7 +97,7 @@ export function ItemsView() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-px">
-          {(['needed', 'watchlist', 'goals', 'scan', 'search'] as Tab[]).map((id) => (
+          {(['needed', 'watchlist', 'goals', 'search'] as Tab[]).map((id) => (
             <button
               key={id}
               type="button"
@@ -172,7 +171,7 @@ export function ItemsView() {
           />
         )}
 
-        {tab !== 'goals' && tab !== 'scan' && (
+        {tab !== 'goals' && (
           <p className="ml-auto font-mono text-xs text-muted tabular-nums">
             {totals.items} items · {totals.remaining} still needed · {totals.fir} found-in-raid
           </p>
@@ -234,15 +233,14 @@ export function ItemsView() {
       )}
 
       {tab === 'goals' && <Goals />}
-      {tab === 'scan' && <StashScan onApplied={load} />}
 
-      {tab !== 'goals' && tab !== 'scan' && loading && <Empty>loading…</Empty>}
+      {tab !== 'goals' && loading && <Empty>loading…</Empty>}
 
-      {tab !== 'goals' && tab !== 'scan' && !loading && shown.length === 0 && rows.length > 0 && (
+      {tab !== 'goals' && !loading && shown.length === 0 && rows.length > 0 && (
         <Empty>Nothing here matches that filter.</Empty>
       )}
 
-      {tab !== 'goals' && tab !== 'scan' && !loading && rows.length === 0 && (
+      {tab !== 'goals' && !loading && rows.length === 0 && (
         <Empty>
           {tab === 'needed'
             ? 'Nothing needed. Mark some quests active on the Quests view and they will appear here.'
@@ -252,7 +250,7 @@ export function ItemsView() {
         </Empty>
       )}
 
-      {tab !== 'goals' && tab !== 'scan' && !loading && shown.length > 0 && (
+      {tab !== 'goals' && !loading && shown.length > 0 && (
         <div className="overflow-x-auto border border-line">
           <table className="w-full border-collapse text-sm">
             <thead>

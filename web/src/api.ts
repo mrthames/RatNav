@@ -292,22 +292,6 @@ export interface CustomWaypoint {
   createdAt: string
 }
 
-export interface StashScan {
-  found: boolean
-  /** Why nothing was found, in words, when that is the answer. */
-  problem: string | null
-  columns: number
-  rows: number
-  /** Rows filled with one repeated item — dividers rather than loot, never counted. */
-  separatorRows: number[]
-  cells: {
-    column: number
-    row: number
-    /** What it might be, nearest first. Empty when nothing came close enough. */
-    matches: { itemId: string; name: string; distance: number; confidence: number }[]
-  }[]
-}
-
 export interface GoalView {
   id: string
   name: string
@@ -504,24 +488,6 @@ export const api = {
     post<unknown>(
       `/api/hideout/${encodeURIComponent(stationId)}/levels/${level}/target`, { targeted }),
 
-  /**
-   * Reads a container out of a screenshot: a scav box, or one block of a stash.
-   *
-   * Nothing is written by this. It comes back as a list to look at.
-   */
-  scanStash: async (file: File) => {
-    const body = new FormData()
-    body.append('screenshot', file)
-
-    const response = await fetch('/api/stash/scan', { method: 'POST', body })
-    if (!response.ok) throw new Error(`scan ${response.status}`)
-
-    return (await response.json()) as StashScan
-  },
-
-  /** Writes the counts somebody confirmed, and only those. */
-  applyStash: (counts: { itemId: string; count: number }[]) =>
-    post<{ applied: number }>('/api/stash/apply', { counts }),
 
   /**
    * The goals you are collecting for, named by you.
