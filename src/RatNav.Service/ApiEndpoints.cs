@@ -39,6 +39,9 @@ public static class ApiEndpoints
     /// </summary>
     public static event Action? WaypointsChanged;
 
+    /// <summary>Raised when someone asks for the overlay to be put back where it started.</summary>
+    public static event Action? OverlayResetRequested;
+
     public static void MapRatNavApi(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api");
@@ -1214,6 +1217,46 @@ public static class ApiEndpoints
             settings.Remember(s => s.Overlay = s.Overlay with { OfferedExtracts = [] });
 
             return Results.Ok(new { offered = Array.Empty<string>() });
+        });
+
+        // Put the overlay back where it started.
+        //
+        // A window dragged onto a monitor that is no longer there cannot be dragged back — there
+        // is nothing to grab. Without this, a change of monitors leaves someone with an overlay
+        // they can neither see nor recover, and the only fix is editing settings.json by hand.
+        api.MapPost("/settings/overlay/reset", (RatNavSettings settings) =>
+        {
+            var fresh = new RatNavSettings.OverlayBounds();
+
+            settings.Remember(s => s.Overlay = s.Overlay with
+            {
+                // Position and size only. Everything else — ink, scales, which drawers are open —
+                // is a preference someone chose on purpose, and resetting a window is not a
+                // reason to throw those away.
+                Box = s.Overlay.Box with
+                {
+                    Left = fresh.Box.Left,
+                    Top = fresh.Box.Top,
+                    Width = fresh.Box.Width,
+                    Height = fresh.Box.Height,
+                    Zoom = fresh.Box.Zoom,
+                    PanX = 0,
+                    PanY = 0,
+                },
+                Wireframe = s.Overlay.Wireframe with
+                {
+                    Left = fresh.Wireframe.Left,
+                    Top = fresh.Wireframe.Top,
+                    Width = fresh.Wireframe.Width,
+                    Height = fresh.Wireframe.Height,
+                    Zoom = fresh.Wireframe.Zoom,
+                    PanX = 0,
+                    PanY = 0,
+                },
+            });
+
+            OverlayResetRequested?.Invoke();
+            return Results.Ok(settings.Overlay);
         });
 
         // ---- marks of your own

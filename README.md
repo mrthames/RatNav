@@ -11,6 +11,8 @@ wherever you actually are.
 
 **Status: working, and rough.**
 
+📖 **[Full guide](docs/GUIDE.md)** · ❓ **[FAQ and troubleshooting](docs/FAQ.md)**
+
 ## Install
 
 1. Download **`RatNav-<version>-setup.exe`** from the
@@ -87,7 +89,18 @@ snaps, the route re-orders from where you actually are, and the screenshot is ar
 folder never fills up.
 
 **Between raids.** What every active quest needs, minus what you have, with a watchlist for
-anything else worth remembering.
+anything else worth remembering — filtered to found-in-raid, or keys, or whatever a trade is
+waiting on.
+
+**Barters and crafts.** Say you are working towards Therapist's Dorm 303 trade and the seven plugs
+it costs join your list — counted *apart* from quests and the hideout, because an item wanted three
+times for a quest and seven for a barter is two reasons, not a single ten.
+
+**Marks of your own.** Click a spot on the map, name it, and it draws in raid from then on. They
+are not part of a plan, so they outlive every plan.
+
+**Quest photos.** The wiki's screenshots for a quest, from the app — the ones showing which
+building and which door.
 
 **The hideout, as a build order.** Tell RatNav where each station is and it works out what that
 makes reachable next, following the game's own prerequisites. A **Look ahead** control decides how
@@ -143,6 +156,7 @@ guessing:
 | `F8` | tick the current objective off |
 | `F9` | switch between the corner box and the centred map |
 | `F10` | say what the item under your cursor is for |
+| `F11` | read the extract list the game is showing, and draw only those |
 
 All rebindable. RatNav registers each combination with Windows rather than watching the keyboard,
 and tells you if another application already owns one.
@@ -162,26 +176,46 @@ OCR misreads, so RatNav says how sure it is rather than presenting a guess as fa
 
 ## The map
 
-The overlay draws the real map, and how it draws is yours to set. Press `F6` and the controls
-appear along the bottom:
+The overlay draws the real map, and how it draws is yours to set. Press `F6` and a control stack
+appears down the side:
 
 | | |
 |---|---|
-| **Floor** | Steps through the map's levels, bottom to top. A fix picks the floor on its own from the height you are at; choosing one by hand lasts until your next fix, and the name turns amber while you are looking at a level you are not standing on. |
-| **Ink** | `full`, `structure`, or `outline`. Drops whole categories of detail rather than fading everything — hazards and boundaries survive every level. |
-| **Fade** | How strongly the map is drawn over the game. |
-| **Zoom** | Click to reset. |
-| **Map** | `still` holds the map in place and lets your marker travel across it; `follows you` keeps you centred and slides the map underneath. |
-| **Exits** | `pmc`, `scav`, or `off`. Shared extracts show under either. |
-| **Items** | Opens the watchlist and what quests and the hideout still want. Can be torn off into its own window for a second monitor. |
+| **Floor** | Steps through the map's levels. A fix picks the floor on its own from the height you are at; choosing one by hand lasts until your next fix. Other floors draw solid where nothing on yours sits above them, dashed and dim only where they genuinely stack. |
+| **Draw** | `graphical` uses the map's own palette, the way its author drew it. `full`, `structure` and `outline` drop whole categories of detail rather than fading everything — which is what you want over a firefight. |
+| **Fade / Line** | How strongly the overlay is drawn over the game, and how heavy the map's own strokes are. |
+| **Pins / Text / You** | Separate size dials for markers, captions, and your own marker — with **Shrink** deciding how much they ease off as you zoom out. |
+| **Map** | `still` holds the map and lets your marker travel across it; `follows you` keeps you centred. |
+| **Exits** | `pmc`, `scav`, `both`, or `off`. Shared extracts show under either. `F11` narrows it to the ones the game says are open this raid. |
+| **Spawns** | Roughly where the other players started, as areas rather than the hundreds of points the data holds. |
 
-Everything here is remembered, along with where you put the overlay and how big it is.
+Two drawers open from the bottom-left: the **quest log** and the **items list**. Either can swap
+sides, collapse, or tear off into its own window for a second monitor.
+
+Everything here is remembered — placement, zoom and opacity per presentation, so setting up the
+corner box does not disturb the centred map.
+
+The full tour is in the **[guide](docs/GUIDE.md)**.
 
 ## Building it
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: `npm run build` in `web/`, then
 `dotnet run --project src/RatNav.App`.
 
+
+## Answers to the first questions people ask
+
+- **Will I get banned?** RatNav does not touch the game — no memory, no injection, no hooks, no
+  synthetic input. See [Is this safe to use?](#is-this-safe-to-use) above and the
+  [FAQ](docs/FAQ.md).
+- **Nothing appears over the game.** The game is in exclusive fullscreen. Switch to Borderless.
+- **The overlay never notices a raid.** It is watching the wrong game folder — check Setup.
+- **Why do I have to press a key to see where I am?** Because a filename is the only place Tarkov
+  writes your position. [The long answer](docs/FAQ.md#why-do-i-have-to-press-a-key-to-see-where-i-am).
+- **Why do I have to type my quests, stash and trader levels in?** None of them are on disk in a
+  form anything can read, and the only interface that knows them wants your account password.
+
+There are twenty more in the **[FAQ](docs/FAQ.md)**.
 
 ## Requirements
 
@@ -203,6 +237,9 @@ RatNav is built on data generously maintained by the community:
 - [the-hideout/TarkovMonitor](https://github.com/the-hideout/TarkovMonitor) — prior art for reading
   game logs safely, and the reason quest tracking took hours rather than days
 - The map authors credited in the data itself — RatNav names them in the app
+- The [Escape from Tarkov Wiki](https://escapefromtarkov.fandom.com), for the quest screenshots
+  RatNav shows. They are loaded from the wiki and credited there, never redistributed; the wiki's
+  text and images are CC BY-SA.
 
 Escape from Tarkov is a trademark of Battlestate Games. RatNav is an unofficial fan project with no
 affiliation.

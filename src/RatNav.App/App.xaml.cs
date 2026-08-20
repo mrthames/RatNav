@@ -84,6 +84,7 @@ public partial class App : Application
         // of one, rather than waiting for the next thing the raid happens to do.
         ApiEndpoints.ItemsChanged += () => _overlay?.RefreshItemsNow();
         ApiEndpoints.WaypointsChanged += () => _overlay?.RefreshWaypointsNow();
+        ApiEndpoints.OverlayResetRequested += () => _overlay?.ReturnToDefaultPlace();
 
         _overlay.ExpandRequested += (_, _) => ToggleExpanded();
         _overlay.CompleteRequested += (_, _) => CompleteCurrentStop(session);

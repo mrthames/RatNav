@@ -252,6 +252,28 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
         </div>
       </div>
 
+      {/*
+        Recovery, not a preference. A window dragged onto a monitor that is no longer attached
+        cannot be dragged back — there is nothing on screen to grab — and without this the only
+        way out is editing settings.json by hand.
+      */}
+      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
+        <button
+          type="button"
+          onClick={() => void api.resetOverlayPlace()}
+          className="rounded-sm bg-panel-hi px-3 py-1.5 font-mono text-[11px] uppercase
+                     tracking-wider text-muted transition-colors hover:text-ink
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Put the overlay back
+        </button>
+
+        <span className="text-xs text-muted">
+          Moves it to its starting corner and shows it. Use this if it has ended up on a monitor
+          you no longer have. Everything else about it — size, ink, scales — is left alone.
+        </span>
+      </div>
+
       {error && <p className="text-xs text-need">{error}</p>}
 
       <div className="flex items-center gap-3">

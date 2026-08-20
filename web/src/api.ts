@@ -422,6 +422,14 @@ export const api = {
   saveSettings: (update: Partial<Omit<Settings, 'resolvedGameDirectory' | 'resolvedScreenshotDirectory' | 'gameDirectoryDetected'>>) =>
     post<Settings>('/api/settings', update),
 
+  /**
+   * Puts the overlay back where it starts.
+   *
+   * The recovery for a window dragged onto a monitor that is no longer there: there is nothing on
+   * screen to grab, so no amount of dragging brings it back.
+   */
+  resetOverlayPlace: () => post<unknown>('/api/settings/overlay/reset', {}),
+
   hideout: (lookAhead?: number) =>
     get<HideoutState>(`/api/hideout${lookAhead ? `?lookAhead=${lookAhead}` : ''}`),
 

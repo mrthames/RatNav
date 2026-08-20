@@ -356,6 +356,22 @@ public partial class OverlayWindow : Window
         });
     }
 
+    /// <summary>
+    /// Puts the overlay back where it starts, and makes sure it is visible.
+    ///
+    /// <para>The recovery for a window dragged onto a monitor that is no longer there: there is
+    /// nothing on screen to grab, so no amount of dragging brings it back.</para>
+    /// </summary>
+    public void ReturnToDefaultPlace() => Dispatcher.Invoke(() =>
+    {
+        ApplyBounds();
+
+        // Shown as well as moved. Someone asking for this has lost the window, and putting it
+        // somewhere correct but still hidden would look exactly like the button doing nothing.
+        Show();
+        Draw();
+    });
+
     private void ApplyBounds()
     {
         var bounds = _settings.Overlay;
