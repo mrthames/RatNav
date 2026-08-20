@@ -127,6 +127,8 @@ export interface HotKeys {
   completeObjective: string
   toggleMode: string
   identifyItem: string
+  /** Read the extract list the game is showing, while it is showing it. */
+  readExtracts: string
 }
 
 export interface Settings {

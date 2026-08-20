@@ -312,6 +312,7 @@ const HOTKEYS: [keyof HotKeys, string][] = [
   ['completeObjective', 'Tick objective off'],
   ['toggleMode', 'Switch overlay style'],
   ['identifyItem', 'Identify item under cursor'],
+  ['readExtracts', "Read the game's extract list"],
 ]
 
 function Field({
