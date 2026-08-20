@@ -118,13 +118,8 @@ public partial class OverlayWindow : Window
         new Dictionary<string, MapStyle>(StringComparer.OrdinalIgnoreCase);
     private static readonly string[] ExtractModes = ["pmc", "scav", "both", "off"];
 
-    private static readonly string[] SpawnModes = ["off", "pmc", "scav", "both"];
-
     /// <summary>Extracts for the current map, fetched once per map alongside its floors.</summary>
     private IReadOnlyList<ExtractPin> _extracts = [];
-
-    /// <summary>Where the other players started, grouped into areas by the service.</summary>
-    private IReadOnlyList<SpawnPin> _spawns = [];
 
     /// <summary>Spots marked by hand. Not part of any plan, so they outlive every plan.</summary>
     private IReadOnlyList<CustomWaypoint> _marks = [];
@@ -193,7 +188,6 @@ public partial class OverlayWindow : Window
         FollowButton.Click += (_, _) => ToggleFollowing();
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
-        SpawnButton.Click += (_, _) => CycleSpawns();
         OfferedButton.Click += (_, _) => ForgetOfferedExtracts();
         HaloButton.Click += (_, _) => ToggleHalo();
         GhostButton.Click += (_, _) => ToggleGhost();
@@ -597,9 +591,6 @@ public partial class OverlayWindow : Window
             _places = await _http.GetFromJsonAsync<List<PlaceLabel>>(
                 $"{root}/maps/{Uri.EscapeDataString(mapId)}/places") ?? [];
 
-            _spawns = await _http.GetFromJsonAsync<List<SpawnPin>>(
-                $"{root}/maps/{Uri.EscapeDataString(mapId)}/spawns") ?? [];
-
             _marks = await _http.GetFromJsonAsync<List<CustomWaypoint>>(
                 $"{root}/maps/{Uri.EscapeDataString(mapId)}/waypoints") ?? [];
 
@@ -610,7 +601,6 @@ public partial class OverlayWindow : Window
             _floors = [];
             _extracts = [];
             _places = [];
-            _spawns = [];
             _marks = [];
         }
     }
@@ -1445,12 +1435,6 @@ public partial class OverlayWindow : Window
         Draw();
     }
 
-    private void CycleSpawns()
-    {
-        var at = Array.IndexOf(SpawnModes, _settings.Overlay.Spawns);
-        Remember(_settings.Overlay with { Spawns = SpawnModes[(at + 1 + SpawnModes.Length) % SpawnModes.Length] });
-    }
-
     private void CycleExtracts()
     {
         var at = Array.IndexOf(ExtractModes, _settings.Overlay.Extracts);
@@ -1556,7 +1540,6 @@ public partial class OverlayWindow : Window
         // people to ignore it.
         RecentreButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
         ExtractButton.Content = _settings.Overlay.Extracts;
-        SpawnButton.Content = $"spawns {_settings.Overlay.Spawns}";
 
         // Only worth a button once there is something to undo. Until the list has been read this
         // does nothing, and a control that does nothing is one more thing to wonder about.
@@ -2142,48 +2125,6 @@ public partial class OverlayWindow : Window
                 // White. At full ink the map's own roads and rock are pale enough that a muted
                 // grey caption disappears into them.
                 Label(place.Text, at.X, at.Y, Brushes.White, 9 * textScale);
-            }
-        }
-
-        // Spawn points, under everything else. They are ground rather than furniture — places
-        // something happens, not things standing on the map — so they draw first and stay small.
-        if (_settings.Overlay.Spawns is var spawnMode && spawnMode != "off")
-        {
-            // Deliberately small and fixed, not scaled with the marker dial. There are 140 of
-            // these on Woods and 196 on Streets; at waypoint size they are a rash across the map,
-            // and what you want from one is a location rather than something to aim at.
-            var dot = Math.Max(1.5, 2.6 * Math.Sqrt(scale));
-
-            foreach (var spawn in _spawns)
-            {
-                if (spawnMode != "both"
-                    && !spawn.Faction.Equals(spawnMode, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                var scav = spawn.Faction.Equals("scav", StringComparison.OrdinalIgnoreCase);
-                var at = Place(spawn.X, spawn.Y);
-
-                if (at.X < -dot || at.Y < -dot || at.X > width + dot || at.Y > height + dot)
-                    continue;
-
-                var colour = (Brush)FindResource(scav ? "ScavExit" : "PmcExit");
-
-                MapCanvas.Children.Add(Positioned(
-                    new Ellipse
-                    {
-                        Width = dot * 2,
-                        Height = dot * 2,
-                        Fill = colour,
-
-                        // A dark rim, so a dot over pale ground is still a dot rather than a
-                        // smudge. Cheaper than a halo and it survives every ink level.
-                        Stroke = (Brush)FindResource("Ground"),
-                        StrokeThickness = 0.8,
-                        Opacity = 0.85,
-                        IsHitTestVisible = false,
-                    },
-                    at.X - dot,
-                    at.Y - dot));
             }
         }
 

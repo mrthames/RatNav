@@ -215,18 +215,6 @@ public sealed class TarkovDevClient(HttpClient http)
                                 Position = e.Position?.ToGamePosition(),
                             })
                     ],
-
-                    // Filtered here rather than on the way out: the raw list is mostly bot
-                    // spawns, and the cache has no reason to hold three hundred points it will
-                    // never draw.
-                    Spawns = SpawnPoints.From(
-                        from spawn in pair.Value.Spawns ?? []
-                        where spawn.Position is not null
-                        select new SpawnPoints.RawSpawn(
-                            spawn.Position!.ToGamePosition(),
-                            spawn.Sides ?? [],
-                            spawn.Categories ?? [],
-                            spawn.ZoneName)),
                 })
         ];
     }
@@ -526,11 +514,7 @@ public sealed class TarkovDevClient(HttpClient http)
         List<BarterItemDto>? RequiredItems, BarterItemDto? ProductItem);
 
     private sealed record MapDto(
-        string? Name, string? NormalizedName, string? NameId,
-        List<ExtractDto>? Extracts, List<SpawnDto>? Spawns);
-
-    private sealed record SpawnDto(
-        PositionDto? Position, List<string>? Sides, List<string>? Categories, string? ZoneName);
+        string? Name, string? NormalizedName, string? NameId, List<ExtractDto>? Extracts);
 
     private sealed record ExtractDto(string? Name, string? Faction, PositionDto? Position);
 }

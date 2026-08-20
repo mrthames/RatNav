@@ -56,11 +56,10 @@ Captured before execution.
 
 ### Spawns
 
-- [x] **Pinpoint spawn marks, not areas.** The clustered regions are not what was wanted. Other
-  maps show individual spawn points and that is the expectation.
-  - The data does carry exact points — 327 on Woods, 420 on Streets — so this is a drawing
-    decision, not a data limitation.
-  - Done: every player spawn draws as its own small dot. The clustering is gone.
+- [x] **Spawns removed entirely.** Built twice — clustered regions, then individual points — and
+  neither read well on a map you are trying to navigate. The call was that it is not important
+  enough to keep iterating on, and the option in the original request was to drop it, so it is
+  gone: the layer, the control, the endpoint, the model and the fetch.
 
 ### Overlay
 
@@ -267,7 +266,8 @@ them separately.
 - [x] **Text on the map needs its own scale control.** Answered the open question by building both:
   `PINS` and `TEXT` are separate dials in the control stack, plus `YOU` for the player marker and
   `SHRINK` for how much all of them ease off as you zoom out.
-- [x] **Spawn locations, toggleable on the map.** `SPAWNS` in the control stack cycles
+- [~] **Spawn locations, toggleable on the map.** Built, then **removed** in round 7 — see there.
+  Kept here for the finding, which is still true: `SPAWNS` in the control stack cycled
   off / pmc / scav / both.
   - tarkov.dev's REST maps document does carry them, and distinguishes both things that matter:
     `sides` (pmc / scav / all) and `categories` (player / bot / boss). Bot-only points are dropped

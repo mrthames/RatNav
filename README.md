@@ -183,7 +183,6 @@ appears down the side:
 | **Pins / Text / You** | Separate size dials for markers, captions, and your own marker — with **Shrink** deciding how much they ease off as you zoom out. |
 | **Map** | `still` holds the map and lets your marker travel across it; `follows you` keeps you centred. |
 | **Exits** | `pmc`, `scav`, `both`, or `off`. Shared extracts show under either. `F11` narrows it to the ones the game says are open this raid. |
-| **Spawns** | Roughly where the other players started, as areas rather than the hundreds of points the data holds. |
 
 Two drawers open from the bottom-left: the **quest log** and the **items list**. Either can swap
 sides, collapse, or tear off into its own window for a second monitor.

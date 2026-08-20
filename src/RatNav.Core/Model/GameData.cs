@@ -15,7 +15,7 @@ public sealed record GameData
     /// until the six-hour age check happens to fire — so a new layer looks broken rather than
     /// absent, and the person who has it worst is whoever just updated.</para>
     /// </summary>
-    public const int CurrentSchema = 6;
+    public const int CurrentSchema = 7;
 
     /// <summary>The schema this copy was written with. Zero on anything written before schemas.</summary>
     public int Schema { get; init; }
@@ -226,9 +226,6 @@ public sealed record MapDef
 
     public IReadOnlyList<MapExtract> Extracts { get; init; } = [];
 
-    /// <summary>Every place a player can spawn in on this map.</summary>
-    public IReadOnlyList<MapSpawnPoint> Spawns { get; init; } = [];
-
     /// <summary>Named places on this map, for naming route stops the way a player would.</summary>
     public IReadOnlyList<MapLabel> Labels { get; init; } = [];
 
@@ -360,20 +357,6 @@ public sealed record MapLabel
     /// <summary>Height band this label belongs to, for maps whose levels have different names.</summary>
     public double? MinHeight { get; init; }
     public double? MaxHeight { get; init; }
-}
-
-/// <summary>Which players start at a spawn area.</summary>
-public enum SpawnFaction
-{
-    Pmc,
-    Scav,
-}
-
-/// <summary>One place a player can spawn in.</summary>
-public sealed record MapSpawnPoint
-{
-    public required GamePosition Position { get; init; }
-    public required SpawnFaction Faction { get; init; }
 }
 
 public sealed record MapExtract

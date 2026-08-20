@@ -20,9 +20,6 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### On the map
 
-- **Spawn areas**, toggleable — roughly where the other players in your raid started. Clustered
-  from the hundreds of individual points the data holds into a dozen regions, because a rash of
-  dots answers no question.
 - **Marks of your own.** Click a spot on the Maps page, name it, and it draws in raid — purple and
   diamond-shaped, so it never reads as a quest objective. They are not part of a plan, so they
   outlive every plan.

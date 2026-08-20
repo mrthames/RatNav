@@ -1419,27 +1419,6 @@ public static class ApiEndpoints
             return Results.Ok(new { id = markId });
         });
 
-        // Every place a player can spawn in. Bot-only spawns are already dropped by the time the
-        // data reaches here.
-        api.MapGet("/maps/{id}/spawns", (RatNavState state, string id) =>
-        {
-            var map = FindMap(state, id);
-            if (map?.Image is null) return Results.NotFound();
-
-            var transform = new CoordinateTransform(map.Image);
-
-            return Results.Ok(
-                from spawn in map.Spawns
-                let point = transform.ToNormalized(spawn.Position)
-                select new SpawnPin
-                {
-                    Faction = spawn.Faction == SpawnFaction.Pmc ? "pmc" : "scav",
-                    X = point.X,
-                    Y = point.Y,
-                    Elevation = spawn.Position.Y,
-                });
-        });
-
         // The names players use for places — "Old Gas", "Dorms". Drawn on the map so it reads the
         // way people talk about it rather than as anonymous geometry.
         api.MapGet("/maps/{id}/places", (RatNavState state, string id) =>
@@ -2094,17 +2073,6 @@ public sealed record WaypointRequest(string? Label, double X, double Y, string? 
 /// <summary>Where you were, and where that is on the map image.</summary>
 public sealed record CalibrateRequest(
     double X, double Y, double Z, double ImageX, double ImageY);
-
-/// <summary>One spawn, placed on the map image.</summary>
-public sealed record SpawnPin
-{
-    /// <summary>"pmc" or "scav".</summary>
-    public required string Faction { get; init; }
-
-    public required double X { get; init; }
-    public required double Y { get; init; }
-    public double Elevation { get; init; }
-}
 
 /// <summary>An extract, placed on the map image.</summary>
 public sealed record ExtractPin

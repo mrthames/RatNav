@@ -538,11 +538,6 @@
                                     Content="all extracts" HorizontalAlignment="Stretch" Margin="0,2,0,6"
                                     ToolTip="Show every extract again, forgetting what the game listed" />
 
-                            <TextBlock Style="{StaticResource Label}" Text="SPAWNS" Margin="0,0,0,2"
-                                       ToolTip="Roughly where the other players in your raid started" />
-                            <Button x:Name="SpawnButton" Style="{StaticResource Chip}"
-                                    Content="spawns off" HorizontalAlignment="Stretch" />
-
                             <!--
                                 No items toggle here. The drawer handles sit at the bottom of the
                                 window whenever interact mode is on, which is exactly when this

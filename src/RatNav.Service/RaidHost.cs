@@ -419,14 +419,6 @@ public sealed record RatNavSettings
         /// <summary>Which extracts to draw: "pmc", "scav", or "off".</summary>
         public string Extracts { get; init; } = "pmc";
 
-        /// <summary>
-        /// Which spawn areas to draw: "off", "pmc", "scav", or "both".
-        ///
-        /// <para>Off by default. It answers a question you ask before the raid — where might the
-        /// others have come from — and having it always on puts a dozen circles over a map you
-        /// are trying to navigate.</para>
-        /// </summary>
-        public string Spawns { get; init; } = "off";
 
         /// <summary>
         /// How large the overlay's own furniture is drawn — buttons, labels, lists, headings.

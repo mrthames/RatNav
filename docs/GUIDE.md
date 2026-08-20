@@ -134,7 +134,6 @@ Press `F6` and a control stack appears down the side.
 | **Shrink** | How much all of those ease off as you zoom out. At zero they stay the size you set; at one they scale with the map. |
 | **Map** | `still` holds the map and lets your marker travel across it. `follows you` keeps you centred. A recentre button appears once you have dragged away. |
 | **Exits** | `pmc`, `scav`, `both`, or `off`. Shared extracts show under either faction. |
-| **Spawns** | Off, `pmc`, `scav`, or `both`. Roughly where the other players in your raid started, drawn as areas rather than the hundreds of individual points the data holds. |
 
 Right-drag pans. The wheel zooms. Anything off the visible area gets an arrow at the edge pointing
 at where it really is, with the name abbreviated.
