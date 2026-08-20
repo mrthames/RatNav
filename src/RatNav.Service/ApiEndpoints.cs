@@ -211,8 +211,12 @@ public static class ApiEndpoints
                         {
                             item.ItemId,
                             name = def?.Name ?? item.ItemId,
+                            iconUrl = def?.IconUrl,
                             item.Count,
-                            have = tracker.GetHave(item.ItemId),
+
+                            // This collection's own count, not a stash total. Items put aside for
+                            // one collection are not also available for another.
+                            item.Found,
                         },
                 });
         });
@@ -222,8 +226,19 @@ public static class ApiEndpoints
             var goal = tracker.SaveGoal(
                 request.Id,
                 request.Name ?? "",
-                [.. (request.Items ?? []).Select(i => new GoalItem(i.ItemId, i.Count))],
+                [.. (request.Items ?? []).Select(i => new GoalItem(i.ItemId, i.Count, i.Found))],
                 request.Times ?? 1);
+
+            ItemsChanged?.Invoke();
+            return Results.Ok(goal);
+        });
+
+        // Found one, or put one back. The `+` and `-` on a collection's item row.
+        api.MapPost("/goals/{id}/items/{itemId}", (
+            ItemTracker tracker, string id, string itemId, GoalItemAdjust request) =>
+        {
+            if (tracker.AdjustGoalItem(id, itemId, request.By) is not { } goal)
+                return Results.NotFound();
 
             ItemsChanged?.Invoke();
             return Results.Ok(goal);
@@ -553,6 +568,36 @@ public static class ApiEndpoints
                 };
 
                 panel.Goals.Add(row);
+            }
+
+            // The same items again, kept under the collection that wants them. Built from the
+            // collections rather than the merged demand, because merging is exactly what loses
+            // the grouping.
+            foreach (var goal in tracker.Goals.OrderBy(g => g.CreatedAt))
+            {
+                var group = new GoalGroup { Id = goal.Id, Name = goal.Name };
+
+                foreach (var want in goal.Items)
+                {
+                    var left = Math.Max(0, (want.Count - want.Found) * Math.Max(1, goal.Times));
+                    if (left == 0) continue;
+
+                    var item = index.GetItem(want.ItemId) ?? Unknown(want.ItemId);
+
+                    group.Rows.Add(new PanelRow
+                    {
+                        Id = want.ItemId,
+                        Name = Readable(item),
+                        FullName = item.Name,
+                        Count = left,
+                        Tracked = true,
+                        Reason = $"{want.Found} of {want.Count * Math.Max(1, goal.Times)} for {goal.Name}",
+                        FoundInRaid = false,
+                    });
+                }
+
+                group.Rows.Sort(ByName);
+                if (group.Rows.Count > 0) panel.Goalsets.Add(group);
             }
 
             panel.Now.Sort(ByName);
@@ -2069,6 +2114,14 @@ public sealed record SettingsView
 /// gated behind something unbuilt and quests you have not accepted — worth knowing before you
 /// vendor something, not worth reading mid-raid, which is why it starts collapsed.</para>
 /// </summary>
+/// <summary>One collection, and what it still wants.</summary>
+public sealed record GoalGroup
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public List<PanelRow> Rows { get; init; } = [];
+}
+
 public sealed record ItemPanel
 {
     public List<PanelRow> Now { get; init; } = [];
@@ -2076,6 +2129,15 @@ public sealed record ItemPanel
 
     /// <summary>What the goals you are collecting for want.</summary>
     public List<PanelRow> Goals { get; init; } = [];
+
+    /// <summary>
+    /// The same items, kept under the collection each belongs to.
+    ///
+    /// <para>The flat list answered "what am I collecting" and lost "what is left for the document
+    /// case", which is the question you actually have. One group per collection, so a collection
+    /// you are not working on folds away.</para>
+    /// </summary>
+    public List<GoalGroup> Goalsets { get; init; } = [];
 
     public List<PanelRow> Later { get; init; } = [];
 
@@ -2200,7 +2262,10 @@ public sealed record PlaceLabel
 public sealed record GoalRequest(
     string? Id, string? Name, int? Times, IReadOnlyList<GoalItemRequest>? Items);
 
-public sealed record GoalItemRequest(string ItemId, int Count);
+public sealed record GoalItemRequest(string ItemId, int Count, int Found = 0);
+
+/// <summary>How far to move one item's found count: +1, -1, or any step.</summary>
+public sealed record GoalItemAdjust(int By);
 
 public sealed record WaypointRequest(string? Label, double X, double Y, string? Floor, string? Kind = null);
 

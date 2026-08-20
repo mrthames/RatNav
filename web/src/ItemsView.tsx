@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { QuestBrief } from './QuestBrief'
-import { api, type TrackedItem, type GoalView, type ItemDetail } from './api'
+import {
+  api,
+  type TrackedItem,
+  type GoalView,
+  type ItemDetail,
+  type HideoutUpgrade,
+} from './api'
 
 type Tab = 'needed' | 'watchlist' | 'goals' | 'search'
 
@@ -338,7 +344,7 @@ function Goals() {
       )}
 
       {goals.map((goal) => {
-        const short = goal.items.filter((i) => i.have < i.count * goal.times).length
+        const short = goal.items.filter((i) => i.found < i.count * goal.times).length
 
         return (
           <div key={goal.id} className="flex flex-col gap-2 border border-line bg-panel px-3 py-2">
@@ -375,21 +381,69 @@ function Goals() {
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px]">
+            {/*
+              A stepper per item, counting this collection's own progress.
+
+              The number that matters is what is *left*, so that is what the row leads with. The
+              count belongs to this collection rather than to a stash total: two collections
+              wanting the same item are two separate answers, and plugs set aside for one are not
+              also available for the other.
+            */}
+            <ul className="flex flex-col gap-px">
               {goal.items.map((item) => {
                 const wanted = item.count * goal.times
+                const left = Math.max(0, wanted - item.found)
 
                 return (
-                  <span
+                  <li
                     key={item.itemId}
-                    className={item.have >= wanted ? 'text-have' : 'text-muted'}
+                    className="flex items-center gap-2 bg-ground px-2 py-1"
                   >
-                    {wanted}× {item.name}
-                    {item.have > 0 && ` (${Math.min(item.have, wanted)})`}
-                  </span>
+                    {item.iconUrl && (
+                      <img src={item.iconUrl} alt="" className="size-6 flex-none object-contain" />
+                    )}
+
+                    <span className={`font-mono text-[11px] tabular-nums
+                                      ${left === 0 ? 'text-have' : 'text-route'}`}>
+                      {left === 0 ? '✓' : left}
+                    </span>
+
+                    <span className={`min-w-0 truncate text-sm
+                                      ${left === 0 ? 'text-muted line-through' : ''}`}>
+                      {item.name}
+                    </span>
+
+                    <span className="ml-auto flex items-center gap-1">
+                      <Step
+                        label={`One fewer ${item.name}`}
+                        disabled={item.found === 0}
+                        onClick={async () => {
+                          await api.adjustGoalItem(goal.id, item.itemId, -1)
+                          void load()
+                        }}
+                      >
+                        −
+                      </Step>
+
+                      <span className="w-14 text-center font-mono text-[11px] tabular-nums text-muted">
+                        {item.found}/{wanted}
+                      </span>
+
+                      <Step
+                        label={`One more ${item.name}`}
+                        disabled={item.found >= wanted}
+                        onClick={async () => {
+                          await api.adjustGoalItem(goal.id, item.itemId, 1)
+                          void load()
+                        }}
+                      >
+                        +
+                      </Step>
+                    </span>
+                  </li>
                 )
               })}
-            </div>
+            </ul>
           </div>
         )
       })}
@@ -420,6 +474,23 @@ function GoalForm({
 
   const [query, setQuery] = useState('')
   const [found, setFound] = useState<TrackedItem[]>([])
+
+  /** Searching hideout upgrades, to take a whole requirement list in one go. */
+  const [station, setStation] = useState('')
+  const [upgrades, setUpgrades] = useState<HideoutUpgrade[]>([])
+
+  useEffect(() => {
+    api.hideout().then((h) => setUpgrades(h.upcoming)).catch(() => setUpgrades([]))
+  }, [])
+
+  const matchingUpgrades = useMemo(() => {
+    const needle = station.trim().toLowerCase()
+    if (needle.length < 2) return []
+
+    return upgrades
+      .filter((u) => u.stationName.toLowerCase().includes(needle))
+      .slice(0, 6)
+  }, [upgrades, station])
 
   // Searching the item list is still how you name an item — RatNav needs its id to count what you
   // have. What is gone is having to search a catalogue of trades to find the one you meant.
@@ -483,6 +554,61 @@ function GoalForm({
                        placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
           />
         </label>
+
+        {/*
+          Straight from a hideout upgrade, because "the items for Workbench 3" is a list somebody
+          has already written down and typing it out again from the hideout page is pure copying.
+        */}
+        <div className="flex flex-col gap-1">
+          <span className="text-sm">Or take the items from a hideout upgrade</span>
+
+          <input
+            value={station}
+            onChange={(e) => setStation(e.target.value)}
+            placeholder="Workbench, Medstation…"
+            className="border border-line bg-ground px-2 py-1.5 text-sm text-ink
+                       placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
+          />
+
+          {matchingUpgrades.length > 0 && (
+            <ul className="flex flex-col gap-px border border-line">
+              {matchingUpgrades.map((upgrade) => (
+                <li key={`${upgrade.stationId}-${upgrade.level}`}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!name.trim()) setName(`${upgrade.stationName} ${upgrade.level}`)
+
+                      setItems((current) => {
+                        const merged = new Map(current.map((i) => [i.itemId, i]))
+
+                        for (const need of upgrade.items) {
+                          if (!merged.has(need.itemId)) {
+                            merged.set(need.itemId, {
+                              itemId: need.itemId, name: need.name, count: need.count,
+                            })
+                          }
+                        }
+
+                        return [...merged.values()]
+                      })
+
+                      setStation('')
+                    }}
+                    className="flex w-full items-baseline gap-2 bg-ground px-2 py-1.5 text-left
+                               text-sm transition-colors hover:bg-panel-hi
+                               focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    {upgrade.stationName} <span className="tabular-nums">{upgrade.level}</span>
+                    <span className="ml-auto font-mono text-[11px] text-muted">
+                      {upgrade.items.length} items
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <label className="flex items-center gap-2">
           <span className="text-sm">How many</span>

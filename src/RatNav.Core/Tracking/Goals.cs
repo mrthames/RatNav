@@ -1,7 +1,14 @@
 namespace RatNav.Core.Tracking;
 
-/// <summary>One item a goal needs, and how many.</summary>
-public readonly record struct GoalItem(string ItemId, int Count);
+/// <summary>
+/// One item a goal needs, how many, and how many of them you have found for <i>this</i> goal.
+///
+/// <para><c>Found</c> is counted per goal rather than against a single stash total on purpose.
+/// The question a collection answers is "how many more for this", and two goals wanting the same
+/// item are two separate answers — three plugs set aside for the document case are not also
+/// available for the workbench.</para>
+/// </summary>
+public readonly record struct GoalItem(string ItemId, int Count, int Found = 0);
 
 /// <summary>
 /// Something you have decided to collect for, named by you.
@@ -56,9 +63,14 @@ public static class GoalDemands
                 // from a file somebody edited by hand.
                 if (item.ItemId is not { Length: > 0 } || item.Count <= 0) continue;
 
+                // What is left, not what the goal asked for. Found four of six and the list should
+                // say two — otherwise it keeps asking for things sitting in your stash.
+                var left = Math.Max(0, item.Count - item.Found);
+                if (left == 0) continue;
+
                 var entry = wants.TryGetValue(item.ItemId, out var found) ? found : (0, []);
 
-                entry.Count += item.Count * times;
+                entry.Count += left * times;
 
                 if (!entry.For.Contains(goal.Name)) entry.For.Add(goal.Name);
 

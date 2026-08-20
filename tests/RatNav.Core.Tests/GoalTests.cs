@@ -123,4 +123,75 @@ public class GoalStoreTests : IDisposable
     {
         if (Directory.Exists(_directory)) Directory.Delete(_directory, recursive: true);
     }
+
+    // ---- what is left, rather than what it asked for
+
+    /// <summary>
+    /// The point of counting per collection: the list asks for what is missing.
+    ///
+    /// <para>Found four of six and it should want two. Asking for six again would keep sending you
+    /// after things already set aside for it.</para>
+    /// </summary>
+    [Fact]
+    public void A_goal_wants_what_is_left_not_what_it_asked_for()
+    {
+        var demand = GoalDemands.From([
+            new Goal { Id = "g", Name = "Document case", Items = [new GoalItem("plug", 6, Found: 4)] },
+        ]);
+
+        Assert.Equal(2, demand["plug"].Count);
+    }
+
+    [Fact]
+    public void An_item_fully_found_drops_off_the_list()
+    {
+        var demand = GoalDemands.From([
+            new Goal { Id = "g", Name = "Document case", Items = [new GoalItem("plug", 3, Found: 3)] },
+        ]);
+
+        Assert.DoesNotContain("plug", demand.Keys);
+    }
+
+    /// <summary>Twice over wants twice what is left, not twice the original figure.</summary>
+    [Fact]
+    public void Times_multiplies_what_remains()
+    {
+        var demand = GoalDemands.From([
+            new Goal
+            {
+                Id = "g",
+                Name = "Document case",
+                Times = 2,
+                Items = [new GoalItem("plug", 4, Found: 1)],
+            },
+        ]);
+
+        Assert.Equal(6, demand["plug"].Count);
+    }
+
+    /// <summary>
+    /// Two collections wanting the same item are two separate answers. Items put aside for one
+    /// are not also available for the other, so the counts add rather than share.
+    /// </summary>
+    [Fact]
+    public void Two_collections_wanting_one_item_each_keep_their_own_count()
+    {
+        var demand = GoalDemands.From([
+            new Goal { Id = "a", Name = "Document case", Items = [new GoalItem("plug", 4, Found: 4)] },
+            new Goal { Id = "b", Name = "Workbench 3", Items = [new GoalItem("plug", 3, Found: 0)] },
+        ]);
+
+        Assert.Equal(3, demand["plug"].Count);
+        Assert.Equal(["Workbench 3"], demand["plug"].For);
+    }
+
+    [Fact]
+    public void Found_beyond_what_is_asked_for_does_not_go_negative()
+    {
+        var demand = GoalDemands.From([
+            new Goal { Id = "g", Name = "Odd", Items = [new GoalItem("plug", 2, Found: 9)] },
+        ]);
+
+        Assert.DoesNotContain("plug", demand.Keys);
+    }
 }

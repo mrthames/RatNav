@@ -312,7 +312,14 @@ export interface GoalView {
   name: string
   /** How many times over. Two of a goal wants twice its items. */
   times: number
-  items: { itemId: string; name: string; count: number; have: number }[]
+  items: {
+    itemId: string
+    name: string
+    iconUrl: string | null
+    count: number
+    /** How many you have found for *this* collection. Not a stash total. */
+    found: number
+  }[]
 }
 
 export interface RaidStop {
@@ -520,6 +527,12 @@ export const api = {
   }) => post<unknown>('/api/goals', goal),
 
   removeGoal: (id: string) => del<unknown>(`/api/goals/${encodeURIComponent(id)}`),
+
+  /** Found one, or put one back. */
+  adjustGoalItem: (goalId: string, itemId: string, by: number) =>
+    post<unknown>(
+      `/api/goals/${encodeURIComponent(goalId)}/items/${encodeURIComponent(itemId)}`,
+      { by }),
 
   /** Quests whose every planned objective is done, waiting on a trader. */
   turnIns: () => get<TurnIn[]>('/api/raid/turn-ins'),

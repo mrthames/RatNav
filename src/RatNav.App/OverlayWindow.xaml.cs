@@ -1165,12 +1165,17 @@ public partial class OverlayWindow : Window
                 // past forty derived rows to reach three deliberate ones.
                 Section("WATCHLIST", panel.Watchlist, label: "WATCHLIST · your targets"),
 
-                // The goals you named, directly under it. They are the same kind of thing — a
-                // decision you made rather than one derived from your progress — and they only
-                // exist at all once you have made one, so an empty section costs nothing.
-                .. panel.Goals.Count > 0
-                    ? new[] { Section("GOALS", panel.Goals, label: "GOALS · what you are collecting for") }
-                    : [],
+                // The collections you named, one section each, directly under it. They are the
+                // same kind of thing — a decision you made rather than one derived from your
+                // progress — and one section per collection means the one you are working on can
+                // stay open while the rest fold away.
+                //
+                // Titled by id rather than by name so renaming a collection does not lose which
+                // sections you had folded.
+                .. panel.Goalsets.Select(group => Section(
+                    $"GOAL:{group.Id}",
+                    group.Rows,
+                    label: $"{group.Name.ToUpperInvariant()} · {group.Rows.Count} left")),
 
                 Section("QUESTS & HIDEOUT", panel.Now, label: $"QUESTS & HIDEOUT · {scope}"),
 

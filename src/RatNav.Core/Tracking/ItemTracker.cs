@@ -156,6 +156,36 @@ public sealed class ItemTracker(string dataDirectory)
         return goal;
     }
 
+    /// <summary>
+    /// Records finding one of a goal's items, or un-finding it.
+    ///
+    /// <para>Per goal rather than against one stash total: two collections wanting the same item
+    /// are two separate counts, and items set aside for one are not also available for the other.
+    /// Clamped to what the goal asks for, so a stuck finger cannot claim you have forty.</para>
+    /// </summary>
+    public Goal? AdjustGoalItem(string goalId, string itemId, int by)
+    {
+        lock (_gate)
+        {
+            var at = _state.Goals.FindIndex(g => g.Id == goalId);
+            if (at < 0) return null;
+
+            var goal = _state.Goals[at];
+            var index = goal.Items.ToList().FindIndex(i => i.ItemId == itemId);
+
+            if (index < 0) return null;
+
+            var item = goal.Items[index];
+            var items = goal.Items.ToList();
+
+            items[index] = item with { Found = Math.Clamp(item.Found + by, 0, item.Count) };
+            _state.Goals[at] = goal with { Items = items };
+
+            Save();
+            return _state.Goals[at];
+        }
+    }
+
     public bool RemoveGoal(string id)
     {
         bool removed;
