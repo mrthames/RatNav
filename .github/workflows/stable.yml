@@ -1,0 +1,84 @@
+name: Latest stable
+
+# Keeps the repository describing what somebody downloading today actually gets.
+#
+# The README's install steps name a version. Left to a human that line goes stale within two
+# releases, and a stale install step is worse than none — it tells somebody to look for a file that
+# is not there. So promoting a release to stable updates it, and nothing has to be remembered.
+#
+# Runs when a release stops being a prerelease, which is exactly the moment "latest stable" changes.
+
+on:
+  release:
+    types: [released, edited]
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Find the latest stable release
+        id: stable
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --exclude-pre-releases is what makes this "stable" rather than "newest".
+          tag=$(gh release list --limit 30 --exclude-pre-releases --exclude-drafts \
+                  --json tagName --jq '.[0].tagName // ""')
+
+          if [ -z "$tag" ]; then
+            echo "No stable release yet — nothing to point at."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Point the README at it
+        if: steps.stable.outputs.found == 'true'
+        run: |
+          # One line, marked so it can be found and replaced without a templating language.
+          marker='<!-- latest-stable -->'
+          line="$marker Latest stable release: **[${{ steps.stable.outputs.tag }}](https://github.com/${{ github.repository }}/releases/latest)** — download \`RatNav-${{ steps.stable.outputs.version }}-setup.exe\`."
+
+          if grep -q "$marker" README.md; then
+            python3 - "$line" <<'PY'
+          import pathlib, sys
+
+          line = sys.argv[1]
+          path = pathlib.Path("README.md")
+          out = []
+
+          for existing in path.read_text(encoding="utf-8").split("\n"):
+              out.append(line if existing.startswith("<!-- latest-stable -->") else existing)
+
+          path.write_text("\n".join(out), encoding="utf-8")
+          PY
+          else
+            echo "No marker in README.md — nothing to update."
+          fi
+
+      - name: Commit if it changed
+        if: steps.stable.outputs.found == 'true'
+        run: |
+          if git diff --quiet; then
+            echo "README already names the latest stable release."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git commit -am "Point the README at ${{ steps.stable.outputs.tag }}"
+          git push

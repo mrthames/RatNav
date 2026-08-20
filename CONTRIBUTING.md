@@ -67,6 +67,18 @@ evidence was wrong.
   from it. The path coordinates are deliberately duplicated between the SVG and the renderer —
   change one, change the other.
 
+## Releases
+
+Work is grouped into a **version**, not shipped a commit at a time.
+
+- **Alphas are tagged with a suffix** — `v0.3.0-alpha.1` — and GitHub marks them prerelease. They do
+  not become "Latest", so the download on the front page keeps pointing at the last stable build.
+- **Promotion to stable is a decision, not a step.** When a version has been tried properly, it is
+  promoted deliberately, because that changes what everybody downloads.
+- **The README names the latest stable release**, updated by a workflow when one is promoted. A
+  version written by hand goes stale in two releases, and a stale install step is worse than none —
+  it sends somebody looking for a file that is not there.
+
 ## House style
 
 **Tests describe behaviour, not methods.** `Replaying_the_logs_cannot_undo_a_correction` says what

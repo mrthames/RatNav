@@ -9,14 +9,34 @@ builds a route with the keys you need to bring and the items you're hunting. In 
 overlay shows that route on the map, tells you the bearing and distance to your next stop, and re-plans from
 wherever you actually are.
 
-**Status: working, and rough.**
+[![Latest release](https://img.shields.io/github/v/release/mrthames/RatNav?display_name=tag&label=latest&color=8ec8ff)](https://github.com/mrthames/RatNav/releases/latest)
+[![Licence](https://img.shields.io/badge/licence-PolyForm%20Noncommercial-8ec8ff)](LICENSE)
+
+## Alpha
+
+RatNav works and is used daily, but it is early. Expect rough edges, expect things to move, and
+expect a version that is not yet the one it will settle into.
+
+Concretely, that means:
+
+- **Nine maps.** The rest are held back until their calibration is settled — a marker that might be
+  on the wrong side of a map is worse than no map, and Setup shows which they are and how to fix one.
+- **Some of it is unverified against the real game.** Where that is true, the docs say so rather
+  than implying otherwise.
+- **Your data is yours and stays put.** Progress, counts and plans live in
+  `%LOCALAPPDATA%\RatNav` and survive updates and uninstalls alike.
+
+If you would rather wait, watch the repository — the [latest
+release](https://github.com/mrthames/RatNav/releases/latest) is always the one to download.
 
 📖 **[Full guide](docs/GUIDE.md)** · ❓ **[FAQ and troubleshooting](docs/FAQ.md)**
 
 ## Install
 
-1. Download **`RatNav-<version>-setup.exe`** from the
-   [latest release](https://github.com/mrthames/RatNav/releases) and run it.
+<!-- latest-stable --> Latest stable release: see [releases](https://github.com/mrthames/RatNav/releases/latest).
+
+1. Download the setup executable from the
+   [latest release](https://github.com/mrthames/RatNav/releases/latest) and run it.
 
    It installs for your user only — no administrator prompt — and adds RatNav to your Start Menu.
    Nothing else needs installing; the .NET runtime is included. There is a portable `.zip` on the
