@@ -521,6 +521,26 @@ public sealed record RatNavSettings
         public bool ShowItems { get; init; }
 
         /// <summary>
+        /// Whether the map is drawn in the panel view, or folded away leaving just the lists.
+        ///
+        /// <para>For the part of a raid spent standing still reading what you still need, where
+        /// the map is the biggest thing on screen and the least useful. Nothing about how the map
+        /// is set up changes while it is folded — the zoom, the ink, the floor and the rest are
+        /// where they were when it comes back.</para>
+        /// </summary>
+        public bool ShowMap { get; init; } = true;
+
+        /// <summary>
+        /// How wide the overlay is with the map folded away. Null until it has been folded once.
+        ///
+        /// <para>Its own width rather than the placement's, because both are worth remembering:
+        /// the strip of two lists wants to be narrow, the map wants room, and a single width would
+        /// mean re-dragging the overlay every time it was folded or unfolded. The placement keeps
+        /// the width with the map; this keeps the width without it.</para>
+        /// </summary>
+        public double? FoldedWidth { get; init; }
+
+        /// <summary>
         /// Whether the map controls are showing while the overlay takes the mouse. Folding them
         /// away leaves one button; how you like to work is worth remembering.
         /// </summary>

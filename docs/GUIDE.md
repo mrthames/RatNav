@@ -111,10 +111,18 @@ opacity are kept per presentation, so setting up one does not disturb the other.
 one and at no other time, and the line at the bottom says how long ago that was — because a marker
 that slid around pretending to know where you are is how an overlay gets someone killed.
 
-**Two drawers.** The buttons at the bottom-left open the **quest log** (your plan's quests,
+**Three drawers.** The buttons at the bottom-left open the **quest log** (your plan's quests,
 numbered as on the map) and the **items list**. Either can be moved to the other side, collapsed,
 or torn off into its own window for a second monitor. When they share a side the quest log sits on
-top.
+top, and the divider between them drags.
+
+**map** is the third, and it folds the map itself away — leaving a narrow strip of just the two
+lists, for when you are standing still reading what you still need rather than navigating. Nothing
+about the map is lost while it is folded: the zoom, the floor, the ink and the rest come back the
+way you left them, and the overlay remembers a width for each state so neither has to be dragged
+back into shape.
+
+Every panel edge that meets the map is draggable, on both sides.
 
 ---
 

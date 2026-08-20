@@ -158,6 +158,7 @@ public partial class OverlayWindow : Window
         _saveSettings = saveSettings;
 
         ApplyBounds();
+        ApplyMapDrawer();
         ApplyItemsPanel();
 
         SourceInitialized += (_, _) => OverlayWindowStyles.Apply(this, _clickThrough);
@@ -260,6 +261,7 @@ public partial class OverlayWindow : Window
         CollapseItems.Click += (_, _) => ToggleItems();
         ItemsDrawer.Click += (_, _) => ToggleItems();
         QuestDrawer.Click += (_, _) => ToggleQuests();
+        MapDrawer.Click += (_, _) => ToggleMapDrawer();
         CollapseQuests.Click += (_, _) => ToggleQuests();
         SwapQuestsSide.Click += (_, _) => SwapQuestsToOtherSide();
         DetachQuests.Click += (_, _) => DetachQuestPanel();
@@ -354,8 +356,108 @@ public partial class OverlayWindow : Window
         {
             // Where it ended up is where it should be next time — for this presentation only.
             // The list width saves itself as it is dragged, so there is nothing to read back here.
-            Place(p => p with { Left = Left, Top = Top, Width = Width, Height = Height });
+            //
+            // With the map folded, the width on screen is the strip's, not the map's. Writing it
+            // into the placement would lose the width the map wants, and unfolding would open onto
+            // a window the size of two lists.
+            if (Folded) Remember(_settings.Overlay with { FoldedWidth = Width });
+
+            Place(p => p with
+            {
+                Left = Left,
+                Top = Top,
+                Width = Folded ? p.Width : Width,
+                Height = Height,
+            });
         }
+    }
+
+    /// <summary>True when the panel view is showing its lists with the map folded away.</summary>
+    private bool Folded =>
+        !_settings.Overlay.ShowMap && _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box;
+
+    /// <summary>
+    /// Folds the map away, leaving the lists — or brings it back.
+    ///
+    /// <para>Nothing about the map is given up on the way. Zoom, ink, floor, follow and which side
+    /// the panels are on are all settings, and folding does not touch any of them; the map that
+    /// comes back is the one that went away.</para>
+    ///
+    /// <para>The window's width is the exception, because it has to change: the map was most of
+    /// it. Both widths are kept — the placement's with the map, <c>FoldedWidth</c> without — so
+    /// neither has to be dragged back into shape.</para>
+    /// </summary>
+    private void ToggleMapDrawer()
+    {
+        // The centred view *is* the map. There would be nothing left of it to fold into.
+        if (_settings.Overlay.Mode != RatNavSettings.OverlayMode.Box) return;
+
+        var folding = _settings.Overlay.ShowMap;
+
+        // Folding the map with both lists already away would leave a strip of nothing — on
+        // screen, not foldable any further, and with no visible handle to bring anything back.
+        // The quest log opens instead, so there is always something in the window.
+        var lists = _settings.Overlay.ShowItems || _settings.Overlay.ShowQuests;
+
+        Remember(_settings.Overlay with
+        {
+            ShowMap = !folding,
+            ShowQuests = folding && !lists || _settings.Overlay.ShowQuests,
+
+            // The width being left behind is the one worth keeping.
+            FoldedWidth = folding ? _settings.Overlay.FoldedWidth : Width,
+        });
+
+        if (folding) Place(p => p with { Width = Width });
+
+        ApplyMapDrawer();
+        ApplyItemsPanel();
+        RefreshItems();
+        Draw();
+    }
+
+    /// <summary>Gives the map its column, or takes it away.</summary>
+    private void ApplyMapDrawer()
+    {
+        var folded = Folded;
+
+        MapFrame.Visibility = folded ? Visibility.Collapsed : Visibility.Visible;
+
+        // The column has to give up its minimum as well as its width. Left at 80 it holds the
+        // window open by that much with nothing in it.
+        MapSlot.Width = folded ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        MapSlot.MinWidth = folded ? 0 : 80;
+
+        // The map controls act on something that is not there. The gear and the stack are handled
+        // by ApplyControlStack, which reads this.
+        QuickBar.Visibility = folded ? Visibility.Collapsed : Visibility.Visible;
+
+        MapDrawer.Content = folded ? "map ▸" : "map ▾";
+        MapDrawer.ToolTip = folded
+            ? "Bring the map back, the size it was"
+            : "Fold the map away, leaving the lists";
+
+        Width = folded
+            ? _settings.Overlay.FoldedWidth ?? StripWidth()
+            : Placement.Width;
+
+        ApplyControlStack();
+    }
+
+    /// <summary>
+    /// How wide the strip of lists should open the first time the map is folded.
+    ///
+    /// <para>Measured from the panels rather than picked, so it lands right whatever they have
+    /// been dragged to, and clamped because a fold that opens a window too narrow to read is not
+    /// obviously a fold at all.</para>
+    /// </summary>
+    private double StripWidth()
+    {
+        var sides = (Occupied(LeftDrawers) ? SideWidth(left: true) : 0)
+            + (Occupied(RightDrawers) ? SideWidth(left: false) : 0);
+
+        // The frame, the padding either side, and the gutter each panel keeps against the map.
+        return Math.Clamp(sides + 32, 160, Math.Max(160, SystemParameters.WorkArea.Width));
     }
 
     /// <summary>Switches between the corner panel and the centred wireframe map.</summary>
@@ -368,6 +470,7 @@ public partial class OverlayWindow : Window
         Remember(_settings.Overlay with { Mode = mode });
 
         ApplyBounds();
+        ApplyMapDrawer();
         ApplyItemsPanel();
         Draw();
     }
@@ -1121,6 +1224,16 @@ public partial class OverlayWindow : Window
             return;
         }
 
+        // Folding the last list while the map is already folded would empty the overlay. The map
+        // comes back instead — the list you just closed is closed either way, and what is left is
+        // a window with something in it.
+        if (Folded && _settings.Overlay.ShowItems && !_settings.Overlay.ShowQuests)
+        {
+            Remember(_settings.Overlay with { ShowItems = false });
+            ToggleMapDrawer();
+            return;
+        }
+
         Remember(_settings.Overlay with { ShowItems = !_settings.Overlay.ShowItems });
         ApplyItemsPanel();
         RefreshItems();
@@ -1206,6 +1319,11 @@ public partial class OverlayWindow : Window
 
         ItemsDrawer.Visibility = handles;
         QuestDrawer.Visibility = handles;
+
+        // Nothing to fold in the centred view, which is the map and little else.
+        MapDrawer.Visibility = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box
+            ? handles
+            : Visibility.Collapsed;
         CollapseItems.Visibility = handles;
         CollapseQuests.Visibility = handles;
     }
@@ -1503,6 +1621,14 @@ public partial class OverlayWindow : Window
             return;
         }
 
+        // As with the items list: the overlay never folds down to nothing.
+        if (Folded && _settings.Overlay.ShowQuests && !_settings.Overlay.ShowItems)
+        {
+            Remember(_settings.Overlay with { ShowQuests = false });
+            ToggleMapDrawer();
+            return;
+        }
+
         Remember(_settings.Overlay with { ShowQuests = !_settings.Overlay.ShowQuests });
         ApplyItemsPanel();
         RefreshItems();
@@ -1776,7 +1902,9 @@ public partial class OverlayWindow : Window
     {
         // Only ever while the overlay takes the mouse. Controls you cannot click have no business
         // over the game.
-        var editing = !_clickThrough;
+        // Never with the map folded away: every control in the stack acts on a map that is not
+        // on screen, and the gear that opens it would be a button that does nothing visible.
+        var editing = !_clickThrough && !Folded;
         var open = _settings.Overlay.ShowControls;
 
         ControlStack.Visibility = editing && open ? Visibility.Visible : Visibility.Collapsed;

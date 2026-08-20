@@ -16,6 +16,13 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### Overlay
 
+- **Fold the map away and keep the lists.** A **map** handle next to **quests** and **items**, in
+  the panel view. Folding it leaves a narrow strip of exactly the two lists — for the part of a
+  raid spent standing still reading what you still need, where the map is the biggest thing on
+  screen and the least useful. Nothing about the map is given up: the zoom, ink, floor, follow and
+  panel sides all come back as they were. Both widths are remembered — the one with the map and
+  the one without — so neither has to be dragged back into shape. Folding the last list while the
+  map is away brings the map back rather than leaving an empty window.
 - **A divider wherever a panel meets the map — both sides.** There was one handle and it followed
   the items list, so with the list on the left and the quest log on the right only the left edge
   could be grabbed. Each side now has its own, and its own remembered width: pulling one edge in no

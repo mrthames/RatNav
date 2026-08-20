@@ -269,7 +269,7 @@
                 <Grid Grid.Row="1" Margin="0,4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition x:Name="LeftSlot" Width="0" />
-                        <ColumnDefinition Width="*" MinWidth="80" />
+                        <ColumnDefinition x:Name="MapSlot" Width="*" MinWidth="80" />
                         <ColumnDefinition x:Name="RightSlot" Width="Auto" />
                     </Grid.ColumnDefinitions>
 
@@ -544,8 +544,18 @@
                                 Content="quests" Margin="0,0,4,0"
                                 ToolTip="The plan's quests, numbered as on the map" />
                         <Button x:Name="ItemsDrawer" Style="{StaticResource Chip}"
-                                Content="items" Margin="0,0,8,0"
+                                Content="items" Margin="0,0,4,0"
                                 ToolTip="What to pick up" />
+
+                        <!--
+                            The map is a drawer too, and for the same reason the lists are: when
+                            you are standing in a corner reading what you still need, the map is
+                            the biggest thing on screen and the least useful. Folding it leaves a
+                            narrow strip of exactly the two lists.
+                        -->
+                        <Button x:Name="MapDrawer" Style="{StaticResource Chip}"
+                                Content="map" Margin="0,0,8,0"
+                                ToolTip="Fold the map away, leaving the lists" />
 
                         <TextBlock x:Name="ProgressText" Style="{StaticResource Label}"
                                    VerticalAlignment="Center" />
