@@ -200,7 +200,13 @@ ban-safe tool in this space works the same way.
   and the app says how old it is.
 - **A map marked `[WIP]` is one still being worked on.** Those are not in a stable release.
 
-![RatNav's overlay over a raid on Streets of Tarkov: the quest log numbered to match the pins on the map, the items to look for, and the map itself with extracts and place names](docs/screenshot-overlay.png)
+![The RatNav panel over a raid on Customs: the quest log numbered to match the pins on the map, the items to look for beside it, the map with extracts and place names, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
+
+The same map, the same raid, as a full-screen HUD — outlines glowing over the game, dissolving
+toward the edges, turned so what is in front of you is up the screen. `F6` switches between the
+two.
+
+![The same raid with RatNav's full-screen HUD: building outlines and place names drawn as glowing lines over the game, fading out toward the edges of the screen](docs/screenshot-hud.jpg)
 
 ## Hotkeys
 

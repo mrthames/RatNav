@@ -33,8 +33,12 @@
   --color-warn: #ffc24a;
 
   /* Marks of your own. Its own hue, so "a quest asked for this" and "I noted this" never
-     have to be told apart by reading the label. Mirrored in the overlay's ResourceDictionary. */
-  --color-mark: #c98ef5;
+     have to be told apart by reading the label. Mirrored in the overlay's ResourceDictionary.
+
+     Orange rather than the yellow it reads as: yellow is already what a scav extract is, and two
+     things on one map sharing a colour is the thing this hue exists to avoid. Far enough from the
+     quests' red-orange to separate at a glance, which is the pair that actually matters. */
+  --color-mark: #ffa033;
 
   /* Extracts. The colour carries the faction; the shape is the same for both. Mirrored in the
      overlay's ResourceDictionary, so an exit looks like an exit on either screen. */

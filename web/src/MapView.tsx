@@ -384,7 +384,20 @@ export function MapView({
             )}
           </div>
 
-        {/* Two kinds, chosen before the click rather than corrected after it. */}
+        </div>
+      )}
+
+      {/*
+        Marking a spot, on every map — the Plan page's included.
+
+        Outside the !minimal block, unlike everything else here, because this is the one control
+        the Plan page needs: it is where you build a raid, and "I want to go here as well" is part
+        of building one. Sending someone to the Maps page to place a mark and back to the Plan page
+        to add it to the plan is two navigations for one thought.
+
+        Two kinds, chosen before the click rather than corrected after it.
+      */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <Segment
           label="Mark"
           options={[['off', 'Off'], ['Place', 'A place'], ['Item', 'An item']]}
@@ -393,8 +406,7 @@ export function MapView({
         />
 
         {placing && <span className="text-xs text-mark">Click the map…</span>}
-        </div>
-      )}
+      </div>
 
       <div
         ref={frame}
