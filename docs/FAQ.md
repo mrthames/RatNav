@@ -143,7 +143,7 @@ and the file is enough to get it fixed properly rather than worked around.
 
 ## Everything is tiny on my 4K screen
 
-Press `F6`, then turn **Size** up in the row along the top of the overlay. RatNav's defaults are
+Press `F7`, then turn **Size** up in the row along the top of the overlay. RatNav's defaults are
 drawn for 1080p; a 4K screen has four times the pixels in the same physical space, so everything
 lands at a quarter of the area until you say otherwise.
 

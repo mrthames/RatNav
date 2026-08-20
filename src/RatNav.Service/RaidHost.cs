@@ -334,14 +334,14 @@ public sealed record RatNavSettings
         /// <summary>Show or hide the overlay.</summary>
         public string ToggleOverlay { get; set; } = "F5";
 
+        /// <summary>Switch between the corner panel and the centred wireframe map.</summary>
+        public string ToggleMode { get; set; } = "F6";
+
         /// <summary>
         /// Let the mouse reach the overlay, so it can be moved, resized and zoomed. Off by
         /// default in raid: an overlay that swallows a click is worse than one you cannot drag.
         /// </summary>
-        public string ToggleInteract { get; set; } = "F6";
-
-        /// <summary>Switch between the corner panel and the centred wireframe map.</summary>
-        public string ToggleMode { get; set; } = "F7";
+        public string ToggleInteract { get; set; } = "F7";
 
         /// <summary>
         /// Identify whatever the mouse is hovering, by reading the tooltip off the screen.
@@ -613,6 +613,21 @@ public sealed record RatNavSettings
             Mode == OverlayMode.Wireframe ? this with { Wireframe = placement } : this with { Box = placement };
     }
 
+    /// <summary>
+    /// Which round of settings migrations this file has already been through.
+    ///
+    /// <para>A file written before this existed reads as 0 and gets every migration, which is
+    /// exactly right — that is what those files need.</para>
+    /// </summary>
+    public int Revision { get; set; }
+
+    /// <summary>
+    /// Bumped whenever a migration is added below, so it runs once and then stops.
+    ///
+    /// <para>1 — the hotkeys renumbered down from F9–F11, and the F6/F7 pair swapped.</para>
+    /// </summary>
+    private const int CurrentRevision = 1;
+
     public static RatNavSettings Load(string dataDirectory)
     {
         var path = Path.Combine(dataDirectory, "settings.json");
@@ -643,7 +658,27 @@ public sealed record RatNavSettings
     private static RatNavSettings Stamp(RatNavSettings settings, string dataDirectory)
     {
         settings.Origin = dataDirectory;
+
+        if (settings.Revision >= CurrentRevision) return settings;
+
         Renumber(settings.Hotkeys);
+        settings.Revision = CurrentRevision;
+
+        // Written back so a migration runs once rather than on every launch. That is what stops
+        // it from being sticky: somebody who deliberately wants the arrangement a migration
+        // moved them off can set it and keep it, because the file already says it has been
+        // through this round.
+        //
+        // A settings file that cannot be written is not worth failing to start over — the
+        // migrated values are correct in memory either way, and the only cost is doing it again
+        // next launch.
+        try
+        {
+            settings.Save(dataDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
 
         return settings;
     }
@@ -663,6 +698,28 @@ public sealed record RatNavSettings
         if (keys.ToggleMode == "F9") keys.ToggleMode = "F7";
         if (keys.IdentifyItem == "F10") keys.IdentifyItem = "F8";
         if (keys.ReadExtracts == "F11") keys.ReadExtracts = "F9";
+
+        SwapModeAndInteract(keys);
+    }
+
+    /// <summary>
+    /// Moves an existing settings file onto the new F6/F7 pairing.
+    ///
+    /// <para>The view you flip between constantly now sits next to show/hide, and the key that
+    /// hands the overlay the mouse moved out one place. That is a change to the shipped pair
+    /// rather than to anybody's own choice, so a file still carrying the old pair comes with it —
+    /// otherwise everyone who installed before today keeps the old arrangement forever and the
+    /// documentation is wrong for them.</para>
+    ///
+    /// <para>It fires only on the exact old pair, both keys together. One of them moved by hand
+    /// is a choice, and a half-match is somebody's arrangement that happens to share a key.</para>
+    /// </summary>
+    private static void SwapModeAndInteract(HotKeySettings keys)
+    {
+        if (keys.ToggleInteract != "F6" || keys.ToggleMode != "F7") return;
+
+        keys.ToggleMode = "F6";
+        keys.ToggleInteract = "F7";
     }
 
     public void Save(string dataDirectory)

@@ -2,6 +2,19 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
+## Unreleased
+
+### Hotkeys
+
+- **`F6` and `F7` swapped.** `F6` now switches between the corner panel and the centred map, and
+  `F7` is the one that hands the overlay your mouse. The view you flip between constantly belongs
+  next to show/hide; the key you press to go and adjust something belongs further out. `F5`, `F8`
+  and `F9` have not moved.
+- **Your settings file comes with it.** A file still carrying the old pair is swapped once, on the
+  next launch, and stamped so it is never rearranged again — which means you can now deliberately
+  bind the old arrangement back and keep it. A file where only one of the two had been rebound is
+  somebody's own choice and is left alone.
+
 ## 0.4.0 — 2026-08-20
 
 Still alpha in the sense that matters — it is early, and it is being built as it is used — but this

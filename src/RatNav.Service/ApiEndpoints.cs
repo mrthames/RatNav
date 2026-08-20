@@ -875,8 +875,8 @@ public static class ApiEndpoints
             {
                 new { key = settings.ScreenshotKey, does = "update location" },
                 new { key = keys.ToggleOverlay, does = "show/hide" },
-                new { key = keys.ToggleInteract, does = "controls" },
                 new { key = keys.ToggleMode, does = "panel/map" },
+                new { key = keys.ToggleInteract, does = "controls" },
                 new { key = keys.IdentifyItem, does = "check item" },
                 new { key = keys.ReadExtracts, does = "update extracts" },
             }.Where(h => h.key is { Length: > 0 }));

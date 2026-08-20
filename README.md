@@ -208,8 +208,8 @@ ban-safe tool in this space works the same way.
 |---|---|
 | *your in-game screenshot key* | take a position fix |
 | `F5` | show or hide the overlay |
-| `F6` | let the mouse reach the overlay — move, resize, zoom, and the map controls |
-| `F7` | switch between the corner box and the centred map |
+| `F6` | switch between the corner box and the centred map |
+| `F7` | let the mouse reach the overlay — move, resize, zoom, and the map controls |
 | `F8` | say what the item under your cursor is for |
 | `F9` | read the extract list the game is showing, and draw only those |
 
@@ -231,7 +231,7 @@ OCR misreads, so RatNav says how sure it is rather than presenting a guess as fa
 
 ## The map
 
-The overlay draws the real map, and how it draws is yours to set. Press `F6` and a control stack
+The overlay draws the real map, and how it draws is yours to set. Press `F7` and a control stack
 appears down the side:
 
 | | |

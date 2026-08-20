@@ -387,8 +387,8 @@ function WipeProfile() {
 
 const HOTKEYS: [keyof HotKeys, string][] = [
   ['toggleOverlay', 'Show / hide overlay'],
-  ['toggleInteract', 'Interact with overlay'],
   ['toggleMode', 'Switch overlay style'],
+  ['toggleInteract', 'Interact with overlay'],
   ['identifyItem', 'Identify item under cursor'],
   ['readExtracts', "Read the game's extract list"],
 ]

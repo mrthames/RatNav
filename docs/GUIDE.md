@@ -98,13 +98,13 @@ the first time you take a position fix. Ones you have ticked off stay put.
 |---|---|
 | *your screenshot key* | Take a position fix |
 | `F5` | Show or hide the overlay |
-| `F6` | Let the mouse reach it — move, resize, and use the map controls |
-| `F7` | Switch between the corner box and the centred map |
+| `F6` | Switch between the corner box and the centred map |
+| `F7` | Let the mouse reach it — move, resize, and use the map controls |
 | `F8` | Say what the item under your cursor is for |
 | `F9` | Read the game's extract list |
 
-**Two presentations, remembered separately.** `F5` is a small panel in a corner, out of the way.
-`F7` is the map itself, large and translucent over the centre. Position, size, zoom, pan and
+**Two presentations, remembered separately.** The corner panel is small and out of the way; `F6`
+swaps it for the map itself, large and translucent over the centre. Position, size, zoom, pan and
 opacity are kept per presentation, so setting up one does not disturb the other.
 
 **Nothing animates.** The overlay is a still image between fixes. Your marker snaps when you take
@@ -120,7 +120,7 @@ top.
 
 ## Reading the map
 
-Press `F6` and a control stack appears down the side.
+Press `F7` and a control stack appears down the side.
 
 | Control | What it does |
 |---|---|
