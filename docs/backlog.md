@@ -324,12 +324,24 @@ What to change:
 
 ### Licence and support
 
-- [x] **Not open source after all.** Free to use, source published so anyone can check what it
-  does, maintained by its owner and invited contributors. MIT let anyone fork, rebrand, sell or
-  redistribute a modified copy — and for a tool that runs alongside a game people can be banned
-  from, a modified copy carrying this name is a real risk to everyone who trusts it.
-  - `[?]` Not lawyer-drafted, and it says so. If it ever has to hold up under pressure, PolyForm
-    publish off-the-shelf source-available licences written by people who are.
+- [x] **PolyForm Noncommercial 1.0.0.** Settled after three passes, which is what it took to say the
+  thing out loud: forks are fine, personal use is fine, **making money off it is not**.
+  - MIT was too loose — it permits selling. A hand-written proprietary licence was too tight, and
+    also written by someone who is not a lawyer. PolyForm is lawyer-drafted, plain-language, and
+    means exactly this. Taken verbatim from the source rather than paraphrased, because a licence
+    reworded from memory is not a licence.
+- [x] **The name and the mark are reserved**, and they are not an extra restriction: copyright
+  licences have never covered a name — PolyForm does not, MIT does not, Apache says so out loud.
+  So "RatNav Plus" is out and "a fork of RatNav" is welcome. The name's only job is telling people
+  which one they downloaded, and it stops doing that job the moment two things answer to it.
+- [x] **No pull requests.** Not because contributions are unwelcome, but because running a review
+  queue is a commitment a one-person project cannot make, and an ignored PR is worse than an honest
+  "no". Said in CONTRIBUTING, in a PR template, and on the new-issue screen. Issues stay open —
+  bug reports are how anything gets found — with no promise of a reply.
+- [x] **`docs/SAFETY.md`.** What RatNav reads, what it never does, why that is the established way
+  to build one of these, and the part nobody can promise: Battlestate Games make the rules and can
+  change them. Stated plainly rather than alarmingly, and every claim in it is checkable against
+  three named files.
 - [x] **Buy me a coffee**, in the README and at the foot of Setup. Asked once, on the page nobody
   visits twice — RatNav is free and stays free, so this is somewhere to say thank you rather than
   something to be nudged about.

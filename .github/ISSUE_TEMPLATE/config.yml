@@ -3,6 +3,12 @@
 blank_issues_enabled: false
 
 contact_links:
+  - name: A note on what to expect
+    url: https://github.com/mrthames/RatNav/blob/main/CONTRIBUTING.md
+    about: >-
+      RatNav is one person's side project. Issues are read — bug reports especially — but a reply
+      is not guaranteed and a fix is not promised. Pull requests are not taken; forking is welcome.
+
   - name: Read the FAQ first
     url: https://github.com/mrthames/RatNav/blob/main/docs/FAQ.md
     about: >-

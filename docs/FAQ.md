@@ -37,9 +37,15 @@ hotkeys with Windows the ordinary way rather than watching your keyboard, and it
 mouse clicks over other applications, which is why identifying an item is a keypress rather than a
 shift-click.
 
-Nobody can promise you what a third party will do about anything. What we can tell you is exactly
-what it does, and the answer is above; every one of those claims is something you can check in the
-source.
+Nobody can promise you what a third party will do about anything — Battlestate Games set the rules
+for their own game and can change them whenever they like. What can be told to you is exactly what
+RatNav does, and every one of those claims is checkable in the source.
+
+**RatNav is used at your own risk, and its author is not liable for what follows** — including
+action taken against a game account. That is in the [licence](../LICENSE) too.
+
+The full account, including why this is the established way to build a tool like this, is in
+[how it works](SAFETY.md).
 
 ## What does it actually read?
 

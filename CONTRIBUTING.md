@@ -4,22 +4,25 @@ RatNav reads two things Escape from Tarkov writes to your own disk: log files, a
 screenshots. It does not read game memory, inject code, hook rendering, modify game files, or send
 input to the game — and it never will. **A contribution that changes that will not be accepted**,
 however useful the feature. The value of this project rests on being safe to run, and that is not
-tradeable.
+tradeable. [How it works](docs/SAFETY.md) sets out where the line is and why it is there.
 
 ## How this project is run
 
-RatNav is **free to use and source-published, but not open source**. It is maintained by its owner
-and a small number of invited contributors, and the [licence](LICENSE) does not grant a right to
-fork or redistribute it.
+RatNav is one person's side project, kept free under
+[PolyForm Noncommercial](LICENSE). Two things follow from that, and both are worth knowing before
+you spend an evening on something.
 
-That is not a reason not to contribute. Issues, ideas and pull requests are all welcome and all
-read. It does mean two things worth knowing before you spend an evening on something:
+**Forking is welcome; there is no review queue here.** Pull requests are not the way in — not
+because contributions are unwelcome, but because running a review process is a commitment this
+project cannot make. If you want a change, the licence lets you fork and make it. Give your version
+its own name.
 
-- **Ask first for anything large.** Open an issue and let us agree the shape of it. A big change
-  that does not fit the project is a waste of your time, and that is on us to prevent rather than
-  on you to guess.
-- **A contribution is licensed to the project.** You keep your copyright; you grant the right to
-  ship what you wrote as part of RatNav. The [licence](LICENSE) says this in one paragraph.
+**Issues are read.** Bug reports especially: a wrong marker, a map that will not load, a quest that
+reads incorrectly. Those are how anything gets found. A reply is not guaranteed and a fix is not
+promised, which is the honest position for a project of one.
+
+The most useful thing anybody can send is in [Sharing a map calibration](#sharing-a-map-calibration)
+below — one screenshot settles a map for everyone.
 
 ## Getting it running
 
@@ -89,5 +92,7 @@ data and RatNav shows it.
 ## Sharing a map calibration
 
 If you have a map RatNav marks as uncertain, `tools/make-calibration-page.py` builds a one-click
-page for settling it. Take a screenshot somewhere you can point at on the map, click that spot,
-and open a pull request with the result. A calibration solved once ships for everyone.
+page for settling it — though **Maps → Settle it** in the app does the same job without leaving it.
+
+Either way, open an issue with the map and the position you used. A calibration solved once ships
+for everyone.

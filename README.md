@@ -51,6 +51,9 @@ Nothing is hardcoded. Every path is either detected or set by you, and RatNav sa
 
 ## Is this safe to use?
 
+*(The short version. The long one, with everything checkable against the source, is in
+[docs/SAFETY.md](docs/SAFETY.md).)*
+
 Yes, and here is exactly why.
 
 RatNav reads **two things the game already writes to your own disk**:
@@ -251,11 +254,16 @@ affiliation.
 
 ## License
 
-**Free to use, source published, not open source.**
+**[PolyForm Noncommercial 1.0.0](LICENSE)** — free for anything that is not about making money.
 
-RatNav costs nothing and always will. The source is here so anyone can check what it does — which
-matters more than usual for a tool that runs alongside a game people can be banned from. What it is
-not is a project anyone can fork and redistribute: it is maintained by its owner and the
-contributors he invites.
+Use it, change it, fork it, share your fork. What is not permitted is selling it, charging for
+access to it, or building a paid product on top of it.
 
-The full terms are short and in plain language — see [LICENSE](LICENSE).
+The **name "RatNav" and the mark** are not part of that licence — copyright licences never cover a
+name — so please give your fork its own. Saying it is based on RatNav is accurate and welcome; being
+called RatNav Plus is not, because then nobody can tell which one they downloaded.
+
+RatNav reads only what the game already writes to your disk, and never touches the game itself.
+**[How it works, and why it is built that way](docs/SAFETY.md)** sets that out in full, along with
+the one thing nobody can promise: Battlestate Games set the rules for their own game and can change
+them. RatNav is used at your own risk.
