@@ -183,6 +183,33 @@ The pieces:
 
 ---
 
+## Round 10 — 2026-08-20
+
+### What you brought back
+
+Captured before execution. Builds directly on the stash scan.
+
+- [ ] **Two screenshots, one raid.** Shoot the inventory screen before you queue and again when you
+  are out. What is there at the end and was not there at the start is what you found.
+- [ ] **A yes-or-no setting**, asked in Setup: *Do you want raid inventory tracking?* Off means
+  none of the prompts below ever appear.
+- [ ] **Prompted at both ends.** Before the raid, a reminder to take the shot and a confirmation
+  that it was taken. After it, *before moving on: was an inventory screenshot taken?* — with a
+  **skip**, because sometimes you have already moved everything into the stash.
+- [ ] **Only what the tracker cares about.** Quest items, hideout materials, and what your goals
+  need. Not guns, not armour, not attachments — nothing that is only ever gear.
+- [ ] **Only what is carried, never what is worn.** Explicitly: a **backpack**, **pockets**, a
+  **chest rig**, or a **secure container**. Never the weapon, armour, helmet, mask, glasses,
+  headset, armband, or anything attached to them.
+  - `[?]` How is that enforced from a picture? First guess, to be checked against a real
+    screenshot: **carried containers are grids of uniform cells and worn equipment is not** — a
+    weapon slot is one wide box, armour is one box. If that holds, the existing grid detection
+    already draws the line and the rule is a consequence rather than a special case.
+- [ ] **Several grids, not one.** A backpack, a rig, pockets and a secure container are four
+  containers on one screen. The scan finds the largest grid today; it needs all of them.
+
+---
+
 ## Round 8 — 2026-08-20
 
 Captured before execution.
