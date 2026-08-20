@@ -243,6 +243,37 @@ Answers to "what factors need considering", to be built to:
     you decided to keep for a reason RatNav cannot derive.
   - Wanted alongside it: which trader pays best, which is already in the data.
 
+### What the real screenshots changed
+
+Three 4K screenshots settled several questions and overturned one decision.
+
+- **The game prints an item's short name on every cell.** "Sodium", "H2O2", "OScope", "Duct tape",
+  "T-Plug" — white, high contrast, top-right of the cell. That is `ItemDef.ShortName`, which RatNav
+  already holds for every item.
+  - **So this is OCR, not icon matching.** Reading a printed label beats comparing pictures on
+    every count: more accurate, no icon downloads, and it degrades into "I could not read that"
+    rather than into a confident wrong answer. The icon signature work stays for now but is no
+    longer the way in.
+- **A container modal shows its own name in the title bar.** The screenshot of *Junk 1* says
+  "Junk 1" in the corner. Container naming does not need to be typed — RatNav can read the name the
+  same way it reads everything else, and offer it for confirmation.
+- **Sections carry printed headers**: `POCKETS`, `BACKPACK`, `POUCH`, `SPECIAL SLOTS`. So "only
+  what is carried, never what is worn" is expressible as a rule about text on the screen rather
+  than a guess about pixels.
+- **The bandage separator works exactly as described** — a full row top and bottom, with the
+  tracked area between them.
+
+### Classifying the import
+
+*(Justin's, and what makes the region rules possible.)*
+
+- [ ] **Say what is being imported**, because each kind means a different part of the screen:
+  - **A container modal** — the grid inside the modal, named by its title bar.
+  - **The main inventory** — only what sits **between the bandage rows**.
+  - **Pre-raid or post-raid** — only **pockets, backpack, pouch and tactical rig**. Never worn gear.
+- [ ] **Pre-raid and post-raid are the same picture, read the same way** — what differs is only
+  which end of the raid it came from.
+
 ### Named containers
 
 *(Justin's, after tagging two junk boxes "junk one" and "junk two".)*
