@@ -118,10 +118,9 @@ RatNav offers the maps it can put a marker on and be right about. Two things kee
 
 **Its layout is not settled.** The drawing exists, but which way round it goes cannot be worked out
 from published data — on some maps every extract sits inside the border, so a mirrored layout looks
-exactly as valid as the real one. These appear under **Coming soon** on the **Maps** page, and
-**you can settle one in thirty seconds:** take a screenshot in game somewhere you can recognise,
-open **Maps → Settle it**, and click that spot. The map joins your list immediately and stays
-settled. Settling changes only your own copy; maps are finished and released here.
+exactly as valid as the real one. Telling the mirror from the truth takes somebody who stood
+somewhere and can point at it, which is work done here rather than by you. Those maps are listed
+under **Coming soon** on the **Maps** page, and they arrive finished.
 
 **No drawing exists.** The Lab, The Labyrinth and Icebreaker have no community map with coordinates
 — what is published for them is a flat picture, which cannot place a marker anywhere. RatNav draws
@@ -138,8 +137,8 @@ A map marked `[WIP]` is still being worked on, and that is where this is most li
 is a bug worth reporting: the map name and the screenshot filename are enough, because the
 coordinates are in the name.
 
-If you settled the map yourself from a position, **Maps → Settle it** can be redone: take a fresh
-screenshot somewhere nearer an edge of the map and click again.
+The screenshot filename is the whole of what is needed to reproduce it, so a report naming the map
+and the file is enough to get it fixed properly rather than worked around.
 
 ## Everything is tiny on my 4K screen
 

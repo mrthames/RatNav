@@ -9,8 +9,10 @@ import { api, type TaskSummary, type Trader, type WikiImage } from './api'
  * be certain a quest is available, and a tab claiming to know sorts quests you *can* take into a
  * list called Locked.
  *
- * All is searchable and shows everything. You can see the trader screen; RatNav cannot. What it
- * knows about the gates still appears on each row, where it informs rather than hides.
+ * For the same reason the rows say nothing about gates any more. They carried an "available" tag
+ * and a line of "needs Prapor LL2" reasons, and both were RatNav guessing at a screen the player
+ * is looking at. You can see the trader; RatNav cannot. So: All is a searchable list of every
+ * quest, you make one active, and it moves to Active and then to Complete.
  */
 type Filter = 'active' | 'complete' | 'all'
 
@@ -228,13 +230,6 @@ export function QuestsView() {
                   )}
 
                   {task.kappa && <Tag className="border-warn/50 text-warn">κ</Tag>}
-                  {/* A padlock tells you nothing; "needs level 20" tells you what to do. */}
-                  {task.blockers.map((why) => (
-                    <span key={why} className="font-mono text-[11px] text-warn">{why}</span>
-                  ))}
-                  {task.available && task.state === 'NotStarted' && (
-                    <Tag className="border-have/50 text-have">available</Tag>
-                  )}
                   {task.positionedObjectiveCount > 0 && (
                     <Tag className="border-line text-muted">
                       {task.positionedObjectiveCount} on map

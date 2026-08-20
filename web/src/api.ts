@@ -583,7 +583,7 @@ export const api = {
     return answer?.path ?? null
   },
 
-  /** Maps RatNav will not offer yet, and why — with whether one screenshot would settle it. */
+  /** Maps that are coming: a drawing exists and only the orientation is still being worked out. */
   heldBackMaps: () => get<HeldBackMap[]>('/api/maps/held-back'),
 
   /** The last position read from a screenshot, before it is placed on any map. */

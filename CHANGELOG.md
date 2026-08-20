@@ -19,8 +19,6 @@ The first public release. Alpha: it works and is used daily, but it is early.
   today, each one position away from being finished. The Lab, The Labyrinth and Icebreaker have no
   community drawing with coordinates, so they are not listed and not promised. The FAQ says why.
 - **`[WIP]` beside a map still being worked on.** A stable release only ever contains finished ones.
-- **Settle a map yourself** from **Maps → Settle it**: take a screenshot somewhere you recognise and
-  click the spot.
 
 ### Reading a quest
 
@@ -63,6 +61,16 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **One alphabetical list**, on the overlay and in the buddy app. Found-in-raid items are no longer
   lifted into their own block — the colour says which they are wherever they sit, and two alphabets
   meant looking twice.
+
+### Quests and maps
+
+- **The Quests list says less, on purpose.** The "available" tag and the "needs Prapor LL2" gate
+  reasons are gone. Both were RatNav guessing at a screen you are looking at — you can see the
+  trader, RatNav cannot. **All** is a searchable list of every quest; make one active and it moves
+  to **Active**, complete it and it moves to **Complete**.
+- **Coming soon is a list, not a job.** Settling a map's orientation is work for whoever builds
+  RatNav, not for somebody who installed it, so the control asking you to do it is gone. Those maps
+  arrive finished.
 
 ### Fixed
 
