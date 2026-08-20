@@ -42,6 +42,17 @@ public static class ApiEndpoints
     /// <summary>Raised when someone asks for the overlay to be put back where it started.</summary>
     public static event Action? OverlayResetRequested;
 
+    /// <summary>
+    /// Opens a folder picker and returns what was chosen, or null if it was cancelled.
+    ///
+    /// <para>A hook rather than an event, because this one has an answer. Set by the desktop app,
+    /// which is the only part of RatNav that can put a window on screen — a browser cannot ask
+    /// the operating system for a path, and typing one is where people get it wrong.</para>
+    ///
+    /// <para>Null when nothing set it, which is what a headless run looks like.</para>
+    /// </summary>
+    public static Func<string?, string?>? BrowseForFolder { get; set; }
+
     public static void MapRatNavApi(this IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api");
@@ -807,10 +818,9 @@ public static class ApiEndpoints
                     {
                         ToggleOverlay = keys.ToggleOverlay ?? current.Hotkeys.ToggleOverlay,
                         ToggleInteract = keys.ToggleInteract ?? current.Hotkeys.ToggleInteract,
-                        ExpandPanel = keys.ExpandPanel ?? current.Hotkeys.ExpandPanel,
-                        CompleteObjective = keys.CompleteObjective ?? current.Hotkeys.CompleteObjective,
                         ToggleMode = keys.ToggleMode ?? current.Hotkeys.ToggleMode,
                         IdentifyItem = keys.IdentifyItem ?? current.Hotkeys.IdentifyItem,
+                        ReadExtracts = keys.ReadExtracts ?? current.Hotkeys.ReadExtracts,
                     };
                 }
             });
@@ -1307,6 +1317,21 @@ public static class ApiEndpoints
         });
 
         // ---- settling a map that the data cannot
+
+        // Asks the desktop app to open a folder picker.
+        //
+        // Detection handles the ordinary install. This is for the drive you keep games on, where
+        // typing the path is the step people get subtly wrong and the failure arrives later as an
+        // overlay that never notices a raid.
+        api.MapPost("/settings/browse", (BrowseRequest request) =>
+        {
+            if (BrowseForFolder is not { } browse)
+                return Results.BadRequest(new { error = "No window to open a picker in." });
+
+            var chosen = browse(request.Start);
+
+            return chosen is { Length: > 0 } ? Results.Ok(new { path = chosen }) : Results.NoContent();
+        });
 
         // The last position read from a screenshot, before it is placed on any map.
         //
@@ -1872,10 +1897,9 @@ public sealed record HotKeyUpdate
 {
     public string? ToggleOverlay { get; init; }
     public string? ToggleInteract { get; init; }
-    public string? ExpandPanel { get; init; }
-    public string? CompleteObjective { get; init; }
     public string? ToggleMode { get; init; }
     public string? IdentifyItem { get; init; }
+    public string? ReadExtracts { get; init; }
 }
 
 /// <summary>
@@ -2110,6 +2134,8 @@ public sealed record TradeRequest(bool Tracked, string? Kind, int? Times);
 public sealed record WaypointRequest(string? Label, double X, double Y, string? Floor, string? Kind = null);
 
 /// <summary>Where you were, and where that is on the map image.</summary>
+public sealed record BrowseRequest(string? Start);
+
 public sealed record CalibrateRequest(
     double X, double Y, double Z, double ImageX, double ImageY);
 

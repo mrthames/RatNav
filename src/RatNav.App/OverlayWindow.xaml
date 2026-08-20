@@ -534,6 +534,10 @@
                             <Button x:Name="ExtractButton" Style="{StaticResource Chip}"
                                     Content="pmc" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
 
+                            <Button x:Name="OpenBuddyButton" Style="{StaticResource Chip}"
+                                    Content="open planner" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                    ToolTip="Open the buddy app in your browser" />
+
                             <Button x:Name="OfferedButton" Style="{StaticResource Chip}"
                                     Content="all extracts" HorizontalAlignment="Stretch" Margin="0,2,0,6"
                                     ToolTip="Show every extract again, forgetting what the game listed" />

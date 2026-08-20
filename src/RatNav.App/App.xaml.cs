@@ -86,8 +86,28 @@ public partial class App : Application
         ApiEndpoints.WaypointsChanged += () => _overlay?.RefreshWaypointsNow();
         ApiEndpoints.OverlayResetRequested += () => _overlay?.ReturnToDefaultPlace();
 
+        // A folder picker, for the drive somebody keeps their games on. Marshalled onto the UI
+        // thread because it puts a window on screen, and the request that asked for it arrives on
+        // a Kestrel thread that has no business doing that.
+        ApiEndpoints.BrowseForFolder = start => Dispatcher.Invoke(() =>
+        {
+            using var dialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Where Escape from Tarkov is installed",
+                UseDescriptionForTitle = true,
+                ShowNewFolderButton = false,
+            };
+
+            if (start is { Length: > 0 } && Directory.Exists(start))
+                dialog.SelectedPath = start;
+
+            return dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK
+                ? dialog.SelectedPath
+                : null;
+        });
+
         _overlay.ExpandRequested += (_, _) => ToggleExpanded();
-        _overlay.CompleteRequested += (_, _) => CompleteCurrentStop(session);
+        _overlay.OpenBuddyAppRequested += (_, _) => OpenInBrowser();
 
         // Push, not poll: the overlay redraws when something happens and at no other time.
         session.Changed += (_, view) => _overlay.Update(view);
@@ -101,6 +121,11 @@ public partial class App : Application
             onOpenPanel: ToggleExpanded,
             onOpenBrowser: OpenInBrowser,
             onQuit: Shutdown);
+
+        // The buddy app opens with RatNav. The hotkey that used to put the panel over the game is
+        // gone, and something has to bring up the half of the app that does the planning — being
+        // told to type a localhost address is not that.
+        if (settings.OpenBuddyAppAtStart) OpenInBrowser();
     }
 
     /// <summary>

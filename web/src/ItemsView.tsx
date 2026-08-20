@@ -16,7 +16,6 @@ const FILTERS = [
   { id: 'fir', label: 'Found in raid', of: (r: TrackedItem) => r.foundInRaid },
   { id: 'quests', label: 'For quests', of: (r: TrackedItem) => r.questNeeded > 0 },
   { id: 'hideout', label: 'For the hideout', of: (r: TrackedItem) => r.hideoutNeeded > 0 },
-  { id: 'trades', label: 'For a trade', of: (r: TrackedItem) => r.tradeNeeded > 0 },
   { id: 'keys', label: 'Keys', of: (r: TrackedItem) => r.isKey },
 ] as const
 

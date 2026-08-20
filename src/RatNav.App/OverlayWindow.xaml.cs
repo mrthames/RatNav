@@ -189,6 +189,7 @@ public partial class OverlayWindow : Window
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
         OfferedButton.Click += (_, _) => ForgetOfferedExtracts();
+        OpenBuddyButton.Click += (_, _) => OpenBuddyAppRequested?.Invoke(this, EventArgs.Empty);
         HaloButton.Click += (_, _) => ToggleHalo();
         GhostButton.Click += (_, _) => ToggleGhost();
         PlacesButton.Click += (_, _) => TogglePlaces();
@@ -224,7 +225,9 @@ public partial class OverlayWindow : Window
     }
 
     public event EventHandler? ExpandRequested;
-    public event EventHandler? CompleteRequested;
+
+    /// <summary>Raised when someone asks for the buddy app, from the control drawer.</summary>
+    public event EventHandler? OpenBuddyAppRequested;
 
     /// <summary>
     /// Binds the configured hotkeys, reporting any that could not be set. Safe to call again
@@ -240,8 +243,6 @@ public partial class OverlayWindow : Window
 
         Bind(keys.ToggleOverlay, "Show/hide overlay", ToggleVisible);
         Bind(keys.ToggleInteract, "Interact with overlay", ToggleInteractive);
-        Bind(keys.ExpandPanel, "Open panel", () => ExpandRequested?.Invoke(this, EventArgs.Empty));
-        Bind(keys.CompleteObjective, "Tick objective off", () => CompleteRequested?.Invoke(this, EventArgs.Empty));
         Bind(keys.ToggleMode, "Switch overlay style", ToggleMode);
         Bind(keys.IdentifyItem, "Identify item under cursor", IdentifyUnderCursor);
         Bind(keys.ReadExtracts, "Read the game's extract list", ReadOfferedExtracts);

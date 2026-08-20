@@ -123,8 +123,6 @@ export interface TurnIn {
 export interface HotKeys {
   toggleOverlay: string
   toggleInteract: string
-  expandPanel: string
-  completeObjective: string
   toggleMode: string
   identifyItem: string
   /** Read the extract list the game is showing, while it is showing it. */
@@ -507,6 +505,16 @@ export const api = {
   item: (id: string) =>
     get<{ item: { id: string; name: string; shortName: string | null }; have: number }>(
       `/api/items/${encodeURIComponent(id)}`),
+
+  /**
+   * Asks the desktop app to open a folder picker, and returns what was chosen.
+   *
+   * Null when it was cancelled, or when nothing can put a window on screen.
+   */
+  browseForFolder: async (start?: string | null) => {
+    const answer = await post<{ path: string } | null>('/api/settings/browse', { start })
+    return answer?.path ?? null
+  },
 
   /** Maps RatNav will not offer yet, and why — with whether one screenshot would settle it. */
   heldBackMaps: () => get<HeldBackMap[]>('/api/maps/held-back'),

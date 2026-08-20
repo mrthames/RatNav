@@ -156,8 +156,10 @@ Captured before execution.
 
 ### Items
 
-- [ ] **Drop the "for a trade" filter** now that the barter picker is being replaced.
-- [ ] **Drop the "keys" filter too** unless it earns its place.
+- [x] **Drop the "for a trade" filter** now that the barter picker is being replaced.
+- [x] **Drop the "keys" filter too** unless it earns its place. **Kept.** It answers a question
+  nothing else on the page can — "what am I carrying doors for" — and it is the one category where
+  missing something costs you the raid rather than a trip.
 
 ### Quest detail from a waypoint
 
@@ -175,26 +177,30 @@ Captured before execution.
 
 ### Setup, cut back
 
-- [ ] **"RatNav can see your game" is shown while the game is closed.** It is also redundant — the
+- [x] **"RatNav can see your game" is shown while the game is closed.** It is also redundant — the
   status list below already says *game not running*. Remove the banner; the Refresh control in the
   top navigation is the right way to re-check.
-- [ ] **Character level belongs in the top navigation**, not buried in Setup. One number with a
+- [x] **Character level belongs in the top navigation**, not buried in Setup. One number with a
   plus and a minus, labelled *Character level*. It changes constantly and should be reachable from
   wherever you are.
-- [ ] **Drop the "more than one install" section.** Plan for one game folder on one drive, detected,
+- [x] **Drop the "more than one install" section.** Plan for one game folder on one drive, detected,
   with a **file browser** to change it when detection is wrong.
-- [ ] **Pick keys by pressing them, not by typing them.** Click the field, press the key, it is
+- [x] **Pick keys by pressing them, not by typing them.** Click the field, press the key, it is
   recorded. For the hotkeys, and for the in-game screenshot key.
-  - `[?]` **Is the screenshot key setting needed at all?** It is only used to name the key in
-    prompts — RatNav never presses it. Say so plainly either way.
-- [ ] **Drop the second-screen instructions from Setup.** Useless if the buddy app is closed. Put
+  - **Yes, the screenshot key setting is needed.** RatNav never presses it, but every prompt that
+    asks you to take a fix names it, and naming a key you did not bind is worse than naming none.
+    It is a key-capture field now like the rest.
+- [x] **Drop the second-screen instructions from Setup.** The buddy app opens with RatNav now, and
+  the overlay's control drawer has an **open planner** button. Useless if the buddy app is closed. Put
   them in the README, and give the overlay's control drawer a way to open the buddy app.
 
 ### Hotkeys, cut back
 
-- [ ] **Remove "open the full panel".** The buddy app launches with the app instead.
-- [ ] **Remove "tick objective off".** Ticking is better done by hand in the buddy app.
-- [ ] **Renumber what is left from `F5`**, now that there are fewer of them.
+- [x] **Remove "open the full panel".** The buddy app launches with the app instead.
+- [x] **Remove "tick objective off".** Ticking is better done by hand in the buddy app.
+- [x] **Renumber what is left from `F5`.** F5 F6 F7 F8 F9. Existing settings are migrated, but
+  only where the binding still sits on its old default — somebody who chose their own keys chose
+  them.
 
 ### Last, after everything else
 

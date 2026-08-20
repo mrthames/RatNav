@@ -229,6 +229,14 @@ public sealed record RatNavSettings
     /// </summary>
     public Dictionary<string, string> ConfirmedMaps { get; set; } = [];
 
+    /// <summary>
+    /// Whether to open the buddy app in a browser when RatNav starts.
+    ///
+    /// <para>On, because the panel hotkey that used to do this is gone and something has to. Off
+    /// for anyone who would rather open it themselves.</para>
+    /// </summary>
+    public bool OpenBuddyAppAtStart { get; set; } = true;
+
     public OverlayBounds Overlay { get; set; } = new();
 
     /// <summary>Bindable hotkeys. Anything <see cref="string"/> here is parsed at startup.</summary>
@@ -274,14 +282,8 @@ public sealed record RatNavSettings
         /// </summary>
         public string ToggleInteract { get; set; } = "F6";
 
-        /// <summary>Open the full management panel over the game.</summary>
-        public string ExpandPanel { get; set; } = "F7";
-
-        /// <summary>Tick the current objective off without leaving the game.</summary>
-        public string CompleteObjective { get; set; } = "F8";
-
         /// <summary>Switch between the corner panel and the centred wireframe map.</summary>
-        public string ToggleMode { get; set; } = "F9";
+        public string ToggleMode { get; set; } = "F7";
 
         /// <summary>
         /// Identify whatever the mouse is hovering, by reading the tooltip off the screen.
@@ -291,7 +293,7 @@ public sealed record RatNavSettings
         /// to use for the keyboard and for the same reason. A hotkey is registered with Windows
         /// the ordinary way and touches nothing.</para>
         /// </summary>
-        public string IdentifyItem { get; set; } = "F10";
+        public string IdentifyItem { get; set; } = "F8";
 
         /// <summary>
         /// Read the extract list the game is showing, and keep only those on the map.
@@ -300,7 +302,7 @@ public sealed record RatNavSettings
         /// RatNav cannot know you pressed <c>O</c> without watching the keyboard, which it will
         /// not do, so it asks you to tell it.</para>
         /// </summary>
-        public string ReadExtracts { get; set; } = "F11";
+        public string ReadExtracts { get; set; } = "F9";
     }
 
     /// <summary>How the overlay presents itself.</summary>
@@ -569,7 +571,26 @@ public sealed record RatNavSettings
     private static RatNavSettings Stamp(RatNavSettings settings, string dataDirectory)
     {
         settings.Origin = dataDirectory;
+        Renumber(settings.Hotkeys);
+
         return settings;
+    }
+
+    /// <summary>
+    /// Closes the gaps left by the two hotkeys that were removed.
+    ///
+    /// <para>Opening the panel and ticking an objective off are gone — the buddy app opens with
+    /// RatNav, and ticking is better done by hand where you can see the list — which left F7 and
+    /// F8 empty and the rest stranded at F9 to F11.</para>
+    ///
+    /// <para>Only bindings still sitting on their old defaults are moved. Somebody who chose their
+    /// own keys chose them, and a settings file quietly rewriting itself is worse than a gap.</para>
+    /// </summary>
+    private static void Renumber(HotKeySettings keys)
+    {
+        if (keys.ToggleMode == "F9") keys.ToggleMode = "F7";
+        if (keys.IdentifyItem == "F10") keys.IdentifyItem = "F8";
+        if (keys.ReadExtracts == "F11") keys.ReadExtracts = "F9";
     }
 
     public void Save(string dataDirectory)

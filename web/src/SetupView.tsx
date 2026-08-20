@@ -34,14 +34,6 @@ export function SetupView() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className={`border px-4 py-3 ${state.ready
-        ? 'border-have/40 bg-have/5 text-have'
-        : 'border-warn/40 bg-warn/5 text-warn'}`}>
-        <p className="font-mono text-sm">
-          {state.ready ? 'RatNav can see your game.' : 'RatNav cannot see your game yet.'}
-        </p>
-      </div>
-
       <ul className="flex flex-col gap-px border border-line bg-line-soft">
         {state.checks.map((check) => (
           <li key={check.name} className="flex items-start gap-3 bg-panel px-3 py-2.5">
@@ -63,51 +55,6 @@ export function SetupView() {
       </ul>
 
       {settings && <SettingsForm settings={settings} onSaved={(s) => { setSettings(s); load() }} />}
-
-      {state.installs.length > 1 && (
-        <div className="border border-line">
-          <p className="border-b border-line bg-panel px-3 py-1.5 font-mono text-[11px]
-                        uppercase tracking-wider text-muted">
-            More than one install
-          </p>
-          <ul>
-            {state.installs.map((install) => (
-              <li key={install.directory}
-                  className="flex flex-wrap items-baseline gap-x-3 border-b border-line-soft px-3 py-2 last:border-0">
-                <span className={`font-mono text-xs ${install.chosen ? 'text-accent' : 'text-muted'}`}>
-                  {install.chosen ? '→ watching' : '  ignoring'}
-                </span>
-                <span className="text-sm">{install.directory}</span>
-                <span className="font-mono text-[11px] text-muted">
-                  {install.version ?? 'never launched'}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="px-3 py-2 text-xs text-muted">
-            RatNav watches whichever install was played most recently. An old copy on another
-            drive would otherwise be read forever, reporting no raids and never saying why. Set
-            the folder above to override that.
-          </p>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-2 border border-line bg-panel p-4">
-        <p className="font-mono text-[11px] uppercase tracking-wider text-muted">On a second screen</p>
-        <p className="text-sm">
-          Open{' '}
-          <a href={state.openInBrowserUrl}
-             className="text-accent underline-offset-2 hover:underline
-                        focus-visible:outline-2 focus-visible:outline-accent">
-            {state.openInBrowserUrl}
-          </a>{' '}
-          in any browser and put it wherever you like. It is the same app the overlay's panel
-          shows, reading the same live state, so both stay in step.
-        </p>
-        <p className="text-xs text-muted">
-          Served on loopback only — it is not reachable from your network.
-        </p>
-      </div>
     </div>
   )
 }
@@ -148,15 +95,35 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
     <section className="flex flex-col gap-4 border border-line bg-panel p-4">
       <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Settings</h2>
 
-      <Field
-        label="Escape from Tarkov folder"
-        hint={draft.gameDirectory
-          ? 'RatNav reads the Logs folder inside this one.'
-          : `Detected: ${settings.resolvedGameDirectory ?? 'nothing found — set it here'}`}
-        value={draft.gameDirectory ?? ''}
-        placeholder={settings.resolvedGameDirectory ?? 'C:\\Battlestate Games\\EFT'}
-        onChange={(gameDirectory) => setDraft({ ...draft, gameDirectory })}
-      />
+      <div className="flex items-end gap-2">
+        <div className="flex-1">
+          <Field
+            label="Escape from Tarkov folder"
+            hint={draft.gameDirectory
+              ? 'RatNav reads the Logs folder inside this one.'
+              : `Detected: ${settings.resolvedGameDirectory ?? 'nothing found — set it here'}`}
+            value={draft.gameDirectory ?? ''}
+            placeholder={settings.resolvedGameDirectory ?? 'C:\\Battlestate Games\\EFT'}
+            onChange={(gameDirectory) => setDraft({ ...draft, gameDirectory })}
+          />
+        </div>
+
+        {/* Detection covers the ordinary install. This is for the drive you keep games on,
+            where typing the path is where it goes subtly wrong. */}
+        <button
+          type="button"
+          onClick={async () => {
+            const chosen = await api.browseForFolder(
+              draft.gameDirectory || settings.resolvedGameDirectory)
+
+            if (chosen) setDraft({ ...draft, gameDirectory: chosen })
+          }}
+          className="mb-px rounded-sm bg-panel-hi px-3 py-1.5 text-xs text-muted transition-colors
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Browse…
+        </button>
+      </div>
 
       <Field
         label="Screenshot folder"
@@ -168,37 +135,30 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
         onChange={(screenshotDirectory) => setDraft({ ...draft, screenshotDirectory })}
       />
 
-      <Field
-        label="Your in-game screenshot key"
-        hint="Set this to whatever you bound in Tarkov → Settings → Controls → Screenshot. RatNav
-              never presses it — this is so every prompt names the key you actually use."
-        value={draft.screenshotKey}
-        onChange={(screenshotKey) => setDraft({ ...draft, screenshotKey })}
-      />
-
-      <label className="flex flex-col gap-1">
-        <span className="text-sm">Your character level</span>
-        <input
-          type="number"
-          min={1}
-          max={79}
-          value={draft.playerLevel ?? ''}
-          placeholder={settings.suggestedPlayerLevel ? `at least ${settings.suggestedPlayerLevel}` : '1'}
-          onChange={(e) => setDraft({
-            ...draft,
-            playerLevel: e.target.value === '' ? null : Number(e.target.value),
-          })}
-          className="w-24 border border-line bg-ground px-2 py-1.5 font-mono text-xs text-ink
-                     placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
-        />
-        <span className="text-xs text-muted">
-          Most quests gate on it, so without this the planner offers quests you cannot accept yet.
-          Set by hand — nothing the game writes to disk reports your level, and the endpoint that
-          would needs your account password, which RatNav will not ask for.
-          {settings.suggestedPlayerLevel != null &&
-            ` The quests you have marked complete put you at level ${settings.suggestedPlayerLevel} or above.`}
+      {/*
+        Kept, and worth keeping: RatNav never presses this, but every prompt that asks you to take
+        a fix names it, and naming the wrong key is worse than naming none.
+      */}
+      <div className="flex items-center justify-between gap-3">
+        <span className="min-w-0">
+          <span className="block text-sm">Your in-game screenshot key</span>
+          <span className="block text-xs text-muted">
+            Whatever you bound in Tarkov → Settings → Controls → Screenshot. RatNav never presses
+            it — this is so every prompt names the key you actually use.
+          </span>
         </span>
-      </label>
+
+        <KeyField
+          value={draft.screenshotKey}
+          onChange={(screenshotKey) => setDraft({ ...draft, screenshotKey })}
+        />
+      </div>
+
+      {/*
+        Character level moved to the top navigation. It gates which quests count as available and
+        it changes every few raids — buried here it went stale, and a stale level quietly narrows
+        every list downstream of it.
+      */}
 
       <label className="flex flex-col gap-1">
         <span className="text-sm">Which edition you own</span>
@@ -231,23 +191,19 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
       <div className="flex flex-col gap-2">
         <p className="font-mono text-[11px] uppercase tracking-wider text-muted">Hotkeys</p>
         <p className="text-xs text-muted">
-          Written as text — <code className="font-mono">F5</code>,{' '}
-          <code className="font-mono">Alt+F6</code>,{' '}
-          <code className="font-mono">Ctrl+Shift+M</code>. Changes apply immediately, and RatNav
-          says if another application already owns one.
+          Click a key and press the one you want. RatNav says if another application already owns
+          it.
         </p>
 
         <div className="grid gap-2 sm:grid-cols-2">
           {HOTKEYS.map(([key, label]) => (
-            <label key={key} className="flex items-center justify-between gap-3">
+            <div key={key} className="flex items-center justify-between gap-3">
               <span className="text-sm">{label}</span>
-              <input
+              <KeyField
                 value={draft.hotkeys[key]}
-                onChange={(e) => setDraft({ ...draft, hotkeys: { ...draft.hotkeys, [key]: e.target.value } })}
-                className="w-32 border border-line bg-ground px-2 py-1 font-mono text-xs text-ink
-                           focus-visible:outline-2 focus-visible:outline-accent"
+                onChange={(v) => setDraft({ ...draft, hotkeys: { ...draft.hotkeys, [key]: v } })}
               />
-            </label>
+            </div>
           ))}
         </div>
       </div>
@@ -308,12 +264,62 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
 const HOTKEYS: [keyof HotKeys, string][] = [
   ['toggleOverlay', 'Show / hide overlay'],
   ['toggleInteract', 'Interact with overlay'],
-  ['expandPanel', 'Open full panel'],
-  ['completeObjective', 'Tick objective off'],
   ['toggleMode', 'Switch overlay style'],
   ['identifyItem', 'Identify item under cursor'],
   ['readExtracts', "Read the game's extract list"],
 ]
+
+/**
+ * A hotkey field you set by pressing the key.
+ *
+ * <p>Typing `Ctrl+Shift+M` into a text box is an invitation to get it subtly wrong — a misspelt
+ * modifier, a key name that is not the one Windows uses — and the failure arrives later, as a key
+ * that quietly does nothing. Pressing the key cannot be misspelt.</p>
+ *
+ * <p>Modifiers alone are ignored while held, so `Ctrl+Shift+M` records on the M rather than
+ * committing to `Ctrl` the moment it goes down.</p>
+ */
+function KeyField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [listening, setListening] = useState(false)
+
+  function capture(e: React.KeyboardEvent<HTMLButtonElement>) {
+    e.preventDefault()
+
+    if (e.key === 'Escape') { setListening(false); return }
+
+    // A modifier on its own is somebody still reaching for the key they mean.
+    if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return
+
+    const parts: string[] = []
+
+    if (e.ctrlKey) parts.push('Ctrl')
+    if (e.altKey) parts.push('Alt')
+    if (e.shiftKey) parts.push('Shift')
+
+    // Windows names a letter key by the letter, not by "KeyM".
+    const key = e.key.length === 1 ? e.key.toUpperCase() : e.key
+
+    parts.push(key)
+    onChange(parts.join('+'))
+    setListening(false)
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setListening(true)}
+      onBlur={() => setListening(false)}
+      onKeyDown={listening ? capture : undefined}
+      className={`w-36 border px-2 py-1 text-left font-mono text-xs transition-colors
+                  focus-visible:outline-2 focus-visible:outline-accent
+                  ${listening
+                    ? 'border-accent bg-accent/10 text-accent'
+                    : 'border-line bg-ground text-ink hover:border-muted'}`}
+    >
+      {listening ? 'press a key…' : value || 'not set'}
+    </button>
+  )
+}
 
 function Field({
   label, hint, value, placeholder, onChange,

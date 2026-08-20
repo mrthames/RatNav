@@ -10,6 +10,62 @@ import { SetupView } from './SetupView'
 
 type View = 'plan' | 'items' | 'hideout' | 'quests' | 'maps' | 'setup'
 
+/**
+ * Your character level, in the navigation.
+ *
+ * <p>It decides which quests count as available — 109 of them gate on it — and it changes every
+ * few raids. Buried in Setup it went stale, and a stale level quietly narrows every list
+ * downstream of it without saying so.</p>
+ *
+ * <p>Saved as you press, with no Save button, because a number you nudge is not a form.</p>
+ */
+function Level() {
+  const [level, setLevel] = useState<number | null>(null)
+
+  useEffect(() => {
+    api.settings().then((s) => setLevel(s.playerLevel)).catch(() => setLevel(null))
+  }, [])
+
+  async function step(by: number) {
+    const next = Math.max(1, Math.min(79, (level ?? 1) + by))
+
+    setLevel(next)
+    await api.saveSettings({ playerLevel: next }).catch(() => {})
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+        Character level
+      </span>
+
+      <button
+        type="button"
+        onClick={() => void step(-1)}
+        aria-label="One level lower"
+        className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                   hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+      >
+        −
+      </button>
+
+      <span className="w-7 text-center font-mono text-sm tabular-nums text-ink">
+        {level ?? '—'}
+      </span>
+
+      <button
+        type="button"
+        onClick={() => void step(1)}
+        aria-label="One level higher"
+        className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
+                   hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+      >
+        +
+      </button>
+    </div>
+  )
+}
+
 export default function App() {
   const [view, setView] = useState<View>('plan')
   const [status, setStatus] = useState<DataStatus | null>(null)
@@ -74,11 +130,14 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/*
+            Character level, where you can reach it. It gates which quests count as available, it
+            changes constantly, and it was three clicks deep in Setup — which meant it went stale
+            and quietly narrowed everything downstream of it.
+          */}
+          <Level />
+
           <div className="text-right font-mono text-xs leading-relaxed text-muted">
-            <div>
-              {status?.taskCount ?? 0} quests · {status?.itemCount ?? 0} items ·{' '}
-              {status?.calibratedMapCount ?? 0} maps
-            </div>
             <div className={status?.servingStale ? 'text-warn' : ''}>
               updated {ago(status?.fetchedAt ?? null)}
               {status?.servingStale && ' · serving cached data'}
