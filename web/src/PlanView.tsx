@@ -329,9 +329,9 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
           {note && <p className="font-mono text-xs text-have">{note}</p>}
 
           <p className="text-xs leading-relaxed text-muted">
-            Stops run in the order you ticked them. Drag to change it. Once you are in raid, the
-            stops you have not reached re-order around wherever you actually are, the first time
-            you take a position fix.
+            Stops run in the order you ticked them. Drag a row, or use the arrows, to change it.
+            Once you are in raid the stops you have not reached re-order around wherever you
+            actually are, the first time you take a position fix.
           </p>
         </aside>
       </div>
@@ -426,9 +426,20 @@ function Route({
         <li
           key={stop.id}
           draggable
-          onDragStart={() => setDragging(index)}
+          onDragStart={(e) => {
+            setDragging(index)
+
+            // Firefox refuses to start a drag unless something is on the clipboard for it, and
+            // the sentence beside this list promises dragging works.
+            e.dataTransfer.effectAllowed = 'move'
+            e.dataTransfer.setData('text/plain', stop.id)
+          }}
           onDragEnd={() => { setDragging(null); setOver(null) }}
-          onDragOver={(e) => { e.preventDefault(); setOver(index) }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.dataTransfer.dropEffect = 'move'
+            setOver(index)
+          }}
           onDrop={(e) => {
             e.preventDefault()
             if (dragging !== null) onMove(dragging, index)

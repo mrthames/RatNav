@@ -149,9 +149,13 @@ Captured before execution.
 
 ### Say what is true
 
-- [ ] **The Plan page claims stops can be dragged.** Confirm that is actually so, and fix whichever
+- [x] **The Plan page claims stops can be dragged.** It could, in Chrome. Firefox refuses to start
+  a drag unless something is put on the clipboard for it, which nothing was — so the sentence was
+  true on one browser and a lie on another. Fixed, and the sentence now names the arrows too. Confirm that is actually so, and fix whichever
   half is wrong — the sentence or the behaviour.
-- [ ] **Use the same words on both surfaces.** The overlay and the buddy app should not have two
+- [x] **Use the same words on both surfaces.** The map control the overlay calls *Draw* was *Ink*
+  in the buddy app, and *Ghost others* is now *Ghost other floors*. Both surfaces offer the same
+  four draw levels under the same names. The overlay and the buddy app should not have two
   names for one thing.
 
 ### Items

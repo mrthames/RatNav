@@ -197,7 +197,7 @@ export function MapView({ map }: { map: MapSummary }) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <Segment
-          label="Ink"
+          label="Draw"
           options={[
             ['graphical', 'Graphical'],
             ['full', 'Full'],
@@ -223,7 +223,7 @@ export function MapView({ map }: { map: MapSummary }) {
                 onChange={(e) => setGhost(e.target.checked)}
                 className="accent-accent"
               />
-              Ghost others
+              Ghost other floors
             </label>
           </>
         )}
