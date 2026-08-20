@@ -700,6 +700,10 @@ public static class ApiEndpoints
                     place = map.NearestLabel(position)?.Text,
                     neededKeyItemIds = objective.NeededKeyItemIds,
                     itemIds = objective.Items.Select(i => i.ItemId),
+
+                    // Named, not counted. "needs a key" tells you there is a problem; "needs
+                    // Dorm room 314 marked key" tells you whether you already have it.
+                    required = Carry(state, objective),
                 };
 
             return Results.Ok(rows);
@@ -1215,6 +1219,11 @@ public static class ApiEndpoints
                         done = done.Contains(objective.Id),
                     },
 
+                // What to bring, which is the thing you can still act on while you are reading
+                // this. Turning up at the right door without the key wastes the whole raid, and
+                // the quest text does not always say which key it is.
+                required = Required(state, task),
+
                 images = await wiki.ForAsync(id, task.WikiUrl, ct),
             });
         });
@@ -1602,6 +1611,74 @@ public static class ApiEndpoints
             WatchNote = watch?.Note,
             Confidence = confidence,
         };
+    }
+
+    /// <summary>What one objective needs carried in, keys first, with names rather than ids.</summary>
+    private static IReadOnlyList<object> Carry(RatNavState state, TaskObjective objective)
+    {
+        var index = state.Index;
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var carry = new List<object>();
+
+        void Add(string itemId, bool isKey)
+        {
+            if (itemId is not { Length: > 0 } || !seen.Add(itemId)) return;
+
+            carry.Add(new
+            {
+                itemId,
+                name = index?.GetItem(itemId)?.Name ?? itemId,
+                isKey,
+            });
+        }
+
+        foreach (var key in objective.NeededKeyItemIds) Add(key, isKey: true);
+        foreach (var item in objective.Items) Add(item.ItemId, isKey: false);
+
+        return carry;
+    }
+
+    /// <summary>
+    /// What a quest needs you to carry in, keys first.
+    ///
+    /// <para>Two different kinds of thing wear the word "needed". A key is required to reach a
+    /// place and is handed back to you; a quest item is handed over. Both have to be in your
+    /// container when you queue, so both are listed — but keys lead, because forgetting one costs
+    /// the raid and forgetting the other costs a trip back to the stash.</para>
+    ///
+    /// <para>Deduplicated across objectives: a quest with four steps behind the same door asks for
+    /// that key four times, and a list saying so four times is a worse list.</para>
+    /// </summary>
+    private static IReadOnlyList<object> Required(RatNavState state, TaskDef task)
+    {
+        var index = state.Index;
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var required = new List<object>();
+
+        void Add(string itemId, bool isKey)
+        {
+            if (itemId is not { Length: > 0 } || !seen.Add(itemId)) return;
+
+            var item = index?.GetItem(itemId);
+
+            required.Add(new
+            {
+                itemId,
+                name = item?.Name ?? itemId,
+                iconUrl = item?.IconUrl,
+                isKey,
+            });
+        }
+
+        foreach (var objective in task.Objectives)
+            foreach (var key in objective.NeededKeyItemIds)
+                Add(key, isKey: true);
+
+        foreach (var objective in task.Objectives)
+            foreach (var item in objective.Items)
+                Add(item.ItemId, isKey: false);
+
+        return required;
     }
 
     private static MapDef? FindMap(RatNavState state, string id)

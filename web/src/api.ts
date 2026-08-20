@@ -217,6 +217,8 @@ export interface PlannableObjective {
   place: string | null
   neededKeyItemIds: string[]
   itemIds: string[]
+  /** What to carry in for this step, keys first and named rather than counted. */
+  required: { itemId: string; name: string; isKey: boolean }[]
 }
 
 export interface ItemDetail {
@@ -252,6 +254,13 @@ export interface QuestBriefing {
     /** True for the step the waypoint you clicked serves. */
     current: boolean
     done: boolean
+  }[]
+  /** What to carry in. Keys first — turning up without one wastes the raid. */
+  required: {
+    itemId: string
+    name: string
+    iconUrl: string | null
+    isKey: boolean
   }[]
   images: WikiImage[]
 }

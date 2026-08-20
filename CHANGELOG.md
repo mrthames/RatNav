@@ -66,6 +66,13 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Quests and maps
 
+- **What to bring, named.** The quest modal lists what a quest needs carried in, keys first — and
+  the Plan page says it on the row you tick, before you queue rather than after. It used to read
+  "needs a key", which told you there was a problem; "Dorm room 314 marked key" tells you whether
+  you already have it.
+- **The steps in a quest modal are clickable**, so reading a neighbouring step no longer means
+  closing it, going back to the map and hunting for that waypoint.
+
 - **The Quests list says less, on purpose.** The "available" tag and the "needs Prapor LL2" gate
   reasons are gone. Both were RatNav guessing at a screen you are looking at — you can see the
   trader, RatNav cannot. **All** is a searchable list of every quest; make one active and it moves

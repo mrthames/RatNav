@@ -23,10 +23,15 @@ export function QuestBrief({
   const [failed, setFailed] = useState(false)
   const [at, setAt] = useState(0)
 
+  // Which step is marked. Starts at the one the waypoint you clicked serves, and moves when you
+  // click another — kept here rather than refetched, because the answer is already on screen.
+  const [atObjective, setAtObjective] = useState<string | null>(null)
+
   useEffect(() => {
     setBrief(null)
     setFailed(false)
     setAt(0)
+    setAtObjective(null)
 
     api.questBrief(taskId, objectiveId).then(setBrief).catch(() => setFailed(true))
   }, [taskId, objectiveId])
@@ -96,32 +101,80 @@ export function QuestBrief({
         {failed && <p className="text-xs text-warn">Could not load this quest.</p>}
 
         {/* Every step, with the one this waypoint serves marked. A pin out of context is a pin. */}
+        {/*
+          The steps are clickable, so reading a neighbouring step does not mean closing this,
+          going back to the map and hunting for its waypoint.
+
+          It moves the mark and nothing else, on purpose. The wiki pictures belong to the quest
+          rather than to a step — there is one set for all four — so a click that implied it was
+          fetching different ones would be lying about what it did.
+        */}
         {brief && (
           <ol className="flex flex-col gap-px border border-line">
-            {brief.objectives.map((objective) => (
-              <li
-                key={objective.id}
-                className={`flex items-start gap-2.5 px-3 py-1.5 text-sm
-                            ${objective.current ? 'bg-accent/10' : 'bg-ground'}`}
-              >
-                <span
-                  aria-hidden
-                  className={`mt-1.5 size-1.5 flex-none rounded-full
-                              ${objective.done ? 'bg-have' : objective.current ? 'bg-accent' : 'bg-muted/40'}`}
-                />
+            {brief.objectives.map((objective) => {
+              // Before anything is clicked, the marked step is whichever the brief called
+              // current — the one the waypoint served.
+              const here = atObjective === null ? objective.current : objective.id === atObjective
 
-                <span className={objective.done ? 'text-muted line-through' : ''}>
-                  {objective.description}
-                  {objective.optional && (
-                    <span className="ml-2 font-mono text-[10px] text-muted">optional</span>
-                  )}
-                  {objective.current && (
-                    <span className="ml-2 font-mono text-[10px] text-accent">you are here</span>
-                  )}
-                </span>
-              </li>
-            ))}
+              return (
+                <li key={objective.id}>
+                  <button
+                    type="button"
+                    onClick={() => setAtObjective(objective.id)}
+                    aria-current={here}
+                    className={`flex w-full items-start gap-2.5 px-3 py-1.5 text-left text-sm
+                                transition-colors hover:bg-panel-hi
+                                focus-visible:outline-2 focus-visible:outline-accent
+                                ${here ? 'bg-accent/10' : 'bg-ground'}`}
+                  >
+                    <span
+                      aria-hidden
+                      className={`mt-1.5 size-1.5 flex-none rounded-full
+                                  ${objective.done ? 'bg-have' : here ? 'bg-accent' : 'bg-muted/40'}`}
+                    />
+
+                    <span className={objective.done ? 'text-muted line-through' : ''}>
+                      {objective.description}
+                      {objective.optional && (
+                        <span className="ml-2 font-mono text-[10px] text-muted">optional</span>
+                      )}
+                      {here && (
+                        <span className="ml-2 font-mono text-[10px] text-accent">you are here</span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
           </ol>
+        )}
+
+        {/*
+          What to carry in. This is the one thing in the modal you can still act on before you
+          queue, and the quest text does not always name the key.
+        */}
+        {brief && brief.required.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <h3 className="font-mono text-[11px] uppercase tracking-wider text-muted">Bring</h3>
+
+            <ul className="flex flex-wrap gap-1.5">
+              {brief.required.map((need) => (
+                <li
+                  key={need.itemId}
+                  className={`flex items-center gap-1.5 border px-2 py-1 text-xs
+                              ${need.isKey
+                                ? 'border-warn/50 bg-warn/10 text-warn'
+                                : 'border-line bg-ground text-ink'}`}
+                >
+                  {need.iconUrl && (
+                    <img src={need.iconUrl} alt="" className="size-5 flex-none object-contain" />
+                  )}
+                  {need.name}
+                  {need.isKey && <span className="font-mono text-[10px] opacity-70">key</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {brief && count === 0 && (

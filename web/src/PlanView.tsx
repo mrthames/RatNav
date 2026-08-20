@@ -292,8 +292,28 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                           <span className="font-mono text-[11px] text-muted">
                             {[o.taskName, o.traderName, o.optional ? 'optional' : null]
                               .filter(Boolean).join(' · ')}
-                            {o.neededKeyItemIds.length > 0 && ' · needs a key'}
                           </span>
+
+                          {/*
+                            Named, and on the row you tick rather than a panel you open after.
+                            "needs a key" said there was a problem; the name says whether you
+                            already have it, which is the question you are actually asking.
+                          */}
+                          {o.required.length > 0 && (
+                            <span className="mt-1 flex flex-wrap gap-1">
+                              {o.required.map((need) => (
+                                <span
+                                  key={need.itemId}
+                                  className={`border px-1.5 py-0.5 font-mono text-[10px]
+                                              ${need.isKey
+                                                ? 'border-warn/50 text-warn'
+                                                : 'border-line text-muted'}`}
+                                >
+                                  {need.isKey ? 'key: ' : ''}{need.name}
+                                </span>
+                              ))}
+                            </span>
+                          )}
                         </span>
                       </label>
                     </li>
