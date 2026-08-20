@@ -1198,7 +1198,8 @@ public partial class OverlayWindow : Window
                 // past forty derived rows to reach three deliberate ones.
                 Section("WATCHLIST", panel.Watchlist, label: "WATCHLIST · your targets"),
 
-                // The collections you named, one section each, directly under it. They are the
+                // The things you are tracking yourself, one section each, directly under it.
+                // They are the
                 // same kind of thing — a decision you made rather than one derived from your
                 // progress — and one section per collection means the one you are working on can
                 // stay open while the rest fold away.

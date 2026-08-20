@@ -6,10 +6,9 @@ import {
   type TrackedItem,
   type GoalView,
   type ItemDetail,
-  type HideoutUpgrade,
 } from './api'
 
-type Tab = 'needed' | 'watchlist' | 'goals' | 'search'
+type Tab = 'needed' | 'watchlist' | 'custom' | 'search'
 
 /**
  * What to show of the list.
@@ -50,7 +49,7 @@ export function ItemsView() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      if (tab === 'goals') {
+      if (tab === 'custom') {
         // Their own components, with their own data. Nothing to load here.
         setRows([])
       } else if (tab === 'search') {
@@ -104,7 +103,7 @@ export function ItemsView() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-px">
-          {(['needed', 'watchlist', 'goals', 'search'] as Tab[]).map((id) => (
+          {(['needed', 'watchlist', 'custom', 'search'] as Tab[]).map((id) => (
             <button
               key={id}
               type="button"
@@ -178,7 +177,7 @@ export function ItemsView() {
           />
         )}
 
-        {tab !== 'goals' && (
+        {tab !== 'custom' && (
           <p className="ml-auto font-mono text-xs text-muted tabular-nums">
             {totals.items} items · {totals.remaining} still needed · {totals.fir} found-in-raid
           </p>
@@ -239,15 +238,15 @@ export function ItemsView() {
         </p>
       )}
 
-      {tab === 'goals' && <Goals />}
+      {tab === 'custom' && <Custom />}
 
-      {tab !== 'goals' && loading && <Empty>loading…</Empty>}
+      {tab !== 'custom' && loading && <Empty>loading…</Empty>}
 
-      {tab !== 'goals' && !loading && shown.length === 0 && rows.length > 0 && (
+      {tab !== 'custom' && !loading && shown.length === 0 && rows.length > 0 && (
         <Empty>Nothing here matches that filter.</Empty>
       )}
 
-      {tab !== 'goals' && !loading && rows.length === 0 && (
+      {tab !== 'custom' && !loading && rows.length === 0 && (
         <Empty>
           {tab === 'needed'
             ? 'Nothing needed. Mark some quests active on the Quests view and they will appear here.'
@@ -257,7 +256,7 @@ export function ItemsView() {
         </Empty>
       )}
 
-      {tab !== 'goals' && !loading && shown.length > 0 && (
+      {tab !== 'custom' && !loading && shown.length > 0 && (
         <div className="overflow-x-auto border border-line">
           <table className="w-full border-collapse text-sm">
             <thead>
@@ -288,7 +287,7 @@ export function ItemsView() {
 }
 
 /**
- * The things you are collecting for, named by you.
+ * Things you are tracking yourself: a name, and the items under it.
  *
  * <p>This replaced a searchable catalogue of all 789 barters and 214 crafts. Finding the one you
  * meant needed you to already know which of Therapist's four Dorm 303 trades it was, and what you
@@ -298,7 +297,7 @@ export function ItemsView() {
  * a kit you build for yourself, or a promise to a friend — RatNav has no business having an
  * opinion about which.</p>
  */
-function Goals() {
+function Custom() {
   const [goals, setGoals] = useState<GoalView[]>([])
   const [editing, setEditing] = useState<GoalView | 'new' | null>(null)
   const [loading, setLoading] = useState(true)
@@ -325,13 +324,14 @@ function Goals() {
           className="rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider
                      text-ground focus-visible:outline-2 focus-visible:outline-accent"
         >
-          New goal
+          Add tracking
         </button>
 
         <p className="text-xs text-muted">
-          Name what you are collecting for and list what it takes. It joins your list in its own
-          section, <b>counted apart</b> from quests and the hideout — so finishing a quest does not
-          make a goal look done.
+          Name something you are tracking and put items under it — a barter, a hideout upgrade, a
+          kit, anything you are setting things aside for. Each item counts down as you find it,
+          <b>counted apart</b> from quests and the hideout, so finishing a quest does not make it
+          look done.
         </p>
       </div>
 
@@ -339,8 +339,8 @@ function Goals() {
 
       {!loading && goals.length === 0 && (
         <Empty>
-          Nothing yet. A goal is a barter, a craft, a kit, or anything else you are putting items
-          aside for.
+          Nothing yet. This is for a barter, a hideout upgrade, a kit, or anything else you are
+          putting items aside for.
         </Empty>
       )}
 
@@ -469,29 +469,12 @@ function GoalForm({
   onSaved: () => void
 }) {
   const [name, setName] = useState(goal?.name ?? '')
-  const [times, setTimes] = useState(goal?.times ?? 1)
   const [items, setItems] = useState<{ itemId: string; name: string; count: number }[]>(
     goal?.items.map((i) => ({ itemId: i.itemId, name: i.name, count: i.count })) ?? [])
 
   const [query, setQuery] = useState('')
   const [found, setFound] = useState<TrackedItem[]>([])
 
-  /** Searching hideout upgrades, to take a whole requirement list in one go. */
-  const [station, setStation] = useState('')
-  const [upgrades, setUpgrades] = useState<HideoutUpgrade[]>([])
-
-  useEffect(() => {
-    api.hideout().then((h) => setUpgrades(h.upcoming)).catch(() => setUpgrades([]))
-  }, [])
-
-  const matchingUpgrades = useMemo(() => {
-    const needle = station.trim().toLowerCase()
-    if (needle.length < 2) return []
-
-    return upgrades
-      .filter((u) => u.stationName.toLowerCase().includes(needle))
-      .slice(0, 6)
-  }, [upgrades, station])
 
   // Searching the item list is still how you name an item — RatNav needs its id to count what you
   // have. What is gone is having to search a catalogue of trades to find the one you meant.
@@ -509,7 +492,7 @@ function GoalForm({
     await api.saveGoal({
       id: goal?.id,
       name,
-      times,
+      times: 1,
       items: items.map((i) => ({ itemId: i.itemId, count: i.count })),
     })
 
@@ -520,7 +503,7 @@ function GoalForm({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={goal ? `Edit ${goal.name}` : 'New goal'}
+      aria-label={goal ? `Edit ${goal.name}` : 'Add tracking'}
       onClick={onClose}
       className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
     >
@@ -530,7 +513,7 @@ function GoalForm({
       >
         <div className="flex items-center justify-between">
           <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">
-            {goal ? 'Edit goal' : 'New goal'}
+            {goal ? 'Edit' : 'Add tracking'}
           </h2>
 
           <button
@@ -545,7 +528,7 @@ function GoalForm({
         </div>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm">What are you collecting for?</span>
+          <span className="text-sm">What are you tracking?</span>
           <input
             autoFocus
             value={name}
@@ -556,72 +539,6 @@ function GoalForm({
           />
         </label>
 
-        {/*
-          Straight from a hideout upgrade, because "the items for Workbench 3" is a list somebody
-          has already written down and typing it out again from the hideout page is pure copying.
-        */}
-        <div className="flex flex-col gap-1">
-          <span className="text-sm">Or take the items from a hideout upgrade</span>
-
-          <input
-            value={station}
-            onChange={(e) => setStation(e.target.value)}
-            placeholder="Workbench, Medstation…"
-            className="border border-line bg-ground px-2 py-1.5 text-sm text-ink
-                       placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
-          />
-
-          {matchingUpgrades.length > 0 && (
-            <ul className="flex flex-col gap-px border border-line">
-              {matchingUpgrades.map((upgrade) => (
-                <li key={`${upgrade.stationId}-${upgrade.level}`}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!name.trim()) setName(`${upgrade.stationName} ${upgrade.level}`)
-
-                      setItems((current) => {
-                        const merged = new Map(current.map((i) => [i.itemId, i]))
-
-                        for (const need of upgrade.items) {
-                          if (!merged.has(need.itemId)) {
-                            merged.set(need.itemId, {
-                              itemId: need.itemId, name: need.name, count: need.count,
-                            })
-                          }
-                        }
-
-                        return [...merged.values()]
-                      })
-
-                      setStation('')
-                    }}
-                    className="flex w-full items-baseline gap-2 bg-ground px-2 py-1.5 text-left
-                               text-sm transition-colors hover:bg-panel-hi
-                               focus-visible:outline-2 focus-visible:outline-accent"
-                  >
-                    {upgrade.stationName} <span className="tabular-nums">{upgrade.level}</span>
-                    <span className="ml-auto font-mono text-[11px] text-muted">
-                      {upgrade.items.length} items
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <label className="flex items-center gap-2">
-          <span className="text-sm">How many</span>
-          <input
-            type="number"
-            min={1}
-            value={times}
-            onChange={(e) => setTimes(Math.max(1, Number(e.target.value) || 1))}
-            className="w-20 border border-line bg-ground px-2 py-1 font-mono text-xs text-ink
-                       focus-visible:outline-2 focus-visible:outline-accent"
-          />
-        </label>
 
         {items.length > 0 && (
           <ul className="flex flex-col gap-px border border-line">

@@ -114,9 +114,10 @@ folder never fills up.
 anything else worth remembering — filtered to found-in-raid, or keys, or whatever a trade is
 waiting on.
 
-**Goals you name.** "Document case", and the seven plugs it takes. They join your list in their
-own section, counted *apart* from quests and the hideout — an item wanted three times for a quest
-and seven for a goal is two reasons, not a single ten.
+**Track something of your own.** "Document case", and the seven plugs it takes. Each item has a
+`+`/`−` and the number shown is what is **left** — found four of six and it asks for two. Counted
+*apart* from quests and the hideout, because an item wanted three times for a quest and seven for
+a barter is two reasons, not a single ten.
 
 **Click a waypoint to read the quest.** What it wants, which step this pin serves, and the wiki's
 screenshots of the place — which is what turns "walk to this pin" into "find this door".

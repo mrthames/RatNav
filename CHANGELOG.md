@@ -27,11 +27,11 @@ The first public release. Alpha: it works and is used daily, but it is early.
 - **An info control on every item row**, saying which quests and which hideout levels want it.
   Quest names open the quest.
 
-### Goals
+### Tracking something yourself
 
-- **Name what you are collecting for**, and list what it takes. This replaces the searchable
-  catalogue of 789 barters and 214 crafts: finding the one you meant needed you to already know
-  which of Therapist's four Dorm 303 trades it was.
+- **Items → Custom → Add tracking.** Name it, search for the items, say how many. This replaces the
+  searchable catalogue of 789 barters and 214 crafts: finding the one you meant needed you to
+  already know which of Therapist's four Dorm 303 trades it was.
 
 ### The overlay
 
@@ -87,15 +87,12 @@ The first public release. Alpha: it works and is used daily, but it is early.
 
 ### Items
 
-- **Collections count down.** Every item in a collection has a `+`/`−` of its own, and the number
+- **Each item counts down.** Every item in a collection has a `+`/`−` of its own, and the number
   it shows is what is **left** — found four of six and the list asks for two. The count belongs to
   that collection rather than to a stash total, so two collections wanting the same item are two
   separate answers: plugs set aside for the document case are not also available for the workbench.
-- **Take a hideout upgrade's items in one go.** Search for the station in the collection editor and
-  its whole requirement list arrives, named and counted, instead of being typed out from the
-  hideout page.
-- **The overlay shows a section per collection**, foldable, so the one you are working on stays
-  open while the rest are out of the way.
+- **The overlay shows a foldable section for each**, so the one you are working on stays open
+  while the rest are out of the way.
 
 - **Reading a stash from a screenshot is gone.** It was built to fill in have-counts quickly, and
   have-counts are not the point of the list — what is still *needed* is. A feature kept because it

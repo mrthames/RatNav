@@ -11,7 +11,7 @@ Everything RatNav does, in the order you would meet it. If you have just install
 - [Reading a quest from its waypoint](#reading-a-quest-from-its-waypoint)
 - [Marking your own spots](#marking-your-own-spots)
 - [Items, and why they are needed](#items-and-why-they-are-needed)
-- [Goals](#goals)
+- [Tracking something yourself](#tracking-something-yourself)
 - [The hideout as a build order](#the-hideout-as-a-build-order)
 - [Quests and traders](#quests-and-traders)
 - [Identifying loot](#identifying-loot)
@@ -190,8 +190,8 @@ floor controls the overlay has, and every quest objective and extract for the ma
   looking at.
 - **Watchlist** — anything else worth collecting, with **your own** target and count. Kept apart
   from your stash number on purpose: twenty bundles of wires with fifteen promised to the hideout
-  is not twenty available for a goal.
-- **Goals** — see below.
+  is not twenty available for something you are tracking.
+- **Custom** — see below.
 - **Search** — every item in the game, with why it is wanted.
 
 The filter row shows only what is found-in-raid, or for quests, or for the hideout, or for a trade,
@@ -203,18 +203,27 @@ down as you find things.
 
 ---
 
-## Goals
+## Tracking something yourself
 
 Therapist will trade a Dorm 303 key for seven T-shaped plugs and three rolls of insulating tape.
-On **Items → Goals**, call it "Document case", list what it takes, and those plugs join your list.
+On **Items → Custom**, press **Add tracking**, call it "Document case", search for those items and
+say how many — and they join what you are looking for.
 
-A goal is anything you are putting items aside for — a barter, a craft, a kit you build for
-yourself, a promise to a friend. Nothing checks it against the game's own trades, because RatNav
-has no business having an opinion about which.
+It can be anything you are setting items aside for: a barter, a craft, a hideout upgrade, a kit you
+build for yourself, a promise to a friend. Nothing checks it against the game's own trades, because
+RatNav has no business having an opinion about which.
 
-Those counts stay **apart** from quests and the hideout. An item wanted three times for a quest and
-seven for a goal is two reasons, not a single ten — and only the split tells you that finishing the
-quest leaves seven still to find.
+**Each item counts down.** A `+` and a `−` on every row, and the number the list leads with is what
+is *left*: found four of six and it asks for two. That count belongs to the list rather than to a
+stash total, which is the point — four plugs set aside for the document case are not also available
+for the workbench, and a single number cannot say both.
+
+These stay **apart** from quests and the hideout. An item wanted three times for a quest and seven
+for something you are tracking is two reasons, not a single ten — and only the split tells you that
+finishing the quest leaves seven still to find.
+
+The overlay shows one foldable section for each, so the one you are working on can stay open while
+the others are out of the way.
 
 ---
 
@@ -259,7 +268,7 @@ Hover an item in game so its tooltip is showing and press `F8`.
 RatNav reads the tooltip **off the screen**, using the OCR built into Windows, and answers the
 question you are actually asking: **Keep**, **Keep — found in raid**, **Not now**, or **Leave it**,
 followed by the reasons that are things you are working on. Everything else — quests you have not
-started, goals you have not made — gets one counted line rather than a recital.
+started, things you have not started tracking — gets one counted line rather than a recital.
 
 It is a key rather than shift-click because catching a mouse click over another application needs a
 system-wide mouse hook, which is the same machinery RatNav refuses to use for the keyboard.
