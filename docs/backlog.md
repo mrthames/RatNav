@@ -6,7 +6,24 @@ This exists because a long working session gets summarised as it runs, and anyth
 conversation can be lost when that happens. A request that made it to this file survives; one that
 did not, might not. So: capture first, then execute, then tick.
 
-Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[?]` needs a decision
+Status: `[ ]` not started · `[~]` in progress · `[x]` done · `[?]` a finding, not a task
+
+`[?]` marks something that was investigated and turned out not to be buildable from what is
+available. Those entries carry the measurement that settled it, so nobody spends a day rediscovering
+it. They are not waiting on effort; they are waiting on a source.
+
+---
+
+## Still open
+
+Everything else in this file is done. What is left:
+
+| | |
+|---|---|
+| **Interior detail on maps** `[?]` | tarkov.dev's drawings have no room-level geometry for most buildings. Measured at a real position on Streets: exactly one ground-level shape covers it, and it is a footprint. |
+| **Finer place names** `[?]` | 16 area labels per map is what the data has. Map Genie's "Warehouse 2" and "Guard House" are their own editorial work, and their maps are a commercial product we will not copy. |
+| **Storyline / side quest split** `[?]` | Not in the data at all. The task document has no category field — trader, level, requirements, rewards, objectives, and flags for Kappa, Lightkeeper, faction and restartable. Needs a source before it needs a design. |
+| **Bulk import from a stash screenshot** | Deliberately out of scope at the start, and the reasoning still holds: grid detection plus icon template matching is a different discipline, needs tuning against real screenshots, and is never accurate enough to apply without review. Worth doing as its own project. |
 
 ---
 
@@ -88,7 +105,7 @@ for the list, plan-page key warnings, and the quest wiki carousel.
   ghost toggle. Merged at full strength it read as your floor — a stairwell one storey up looked
   like a room beside you — and it ignored the ghost toggle entirely, which a toggle called "ghost"
   should not be able to do.
-- [ ] **Streets has no interior geometry for most buildings.** `[?]` Measured at a real position
+- [?] **Streets has no interior geometry for most buildings.** `[?]` Measured at a real position
   inside a room off the street (0.811, 0.907): exactly one ground-level shape covers that point and
   it is large — a footprint. No room-sized geometry exists there on *any* floor. The small squares
   visible nearby are the handful of buildings that do have interiors, which live in `Floor-2`.
@@ -262,7 +279,7 @@ them separately.
   finished states, and a failed quest that reads as done is one you never go back and look at.
 - [x] **Setting a quest active does nothing.** Fixed by the tab rebuild. Verified live: marking
   *Stick to It* active took the Active tab from 52 quests to 53 and the quest appeared in it.
-- [ ] **Storyline quests are missing entirely.** `[?]` **The distinction is not in the data.**
+- [?] **Storyline quests are missing entirely.** `[?]` **The distinction is not in the data.**
   tarkov.dev's tasks document carries no category field of any kind — the 24 keys on a task are
   trader, level, requirements, rewards, objectives, and flags for `kappaRequired` (13 quests),
   `lightkeeperRequired` (7), `factionName` (BEAR 6 / USEC 6) and `restartable` (16). Nothing names
@@ -382,7 +399,7 @@ them separately.
 - [x] **Markers and text ease off as you zoom out**, with a **Shrink** control (0 = fixed size,
   1 = scales with the map, 0.55 default). Sized for reading a building they became a wall of
   overlapping furniture across a whole map.
-- [ ] **Finer place names are not available to us.** `[?]` Map Genie shows "Warehouse 2", "Guard
+- [?] **Finer place names are not available to us.** `[?]` Map Genie shows "Warehouse 2", "Guard
   House" and the like on Woods; tarkov.dev gives 16 area labels and no more, the SVG carries no
   text elements at all, and Map Genie's are their own editorial work in a commercial product.
   - What tarkov.dev *does* carry, positioned and unused: 428 loot containers, 387 loose loot
@@ -475,7 +492,7 @@ The research is kept below in case it is ever wanted again.
 
 ### Maps tab, and custom waypoints
 
-- [ ] **Keep the Maps tab, but bring it up to the overlay's standard.** *(Revised — the first
+- [x] **Keep the Maps tab, but bring it up to the overlay's standard.** *(Revised — the first
   instinct was to drop it.)* It is the weakest surface in the app: the overlay's map has had
   several passes of work and this has had none, so it reads as unfinished beside it.
   - **Not** aiming at Map Genie's level of detail. That is a different product and does it better;
@@ -511,7 +528,7 @@ The research is kept below in case it is ever wanted again.
 - [x] **The floor follows your elevation automatically** — already how it works: a position fix
   picks the floor from the height band your Y lands in, and a floor chosen by hand lasts only
   until the next fix.
-- [ ] **More room-level detail inside structures**, where the source has it. `[?]` Measured
+- [?] **More room-level detail inside structures**, where the source has it. `[?]` Measured
   earlier: on Streets most buildings have no interior geometry at all in tarkov.dev's drawing —
   only footprints on the ground floor and interiors for a handful of buildings one level up. Worth
   checking whether other maps are better served before deciding this is achievable.
@@ -575,7 +592,8 @@ The research is kept below in case it is ever wanted again.
 
 ### Bulk item import from a screenshot
 
-- [ ] **Read a stash or scav-box screenshot and set have-counts from it**, as a first import rather
+- [ ] **Read a stash or scav-box screenshot and set have-counts from it.** *(Its own project —
+  see the summary at the top of this file.)*, as a first import rather
   than typing thirty numbers in by hand.
   - This is the **inventory OCR** that was deliberately left out of the original plan, now being
     asked for. Worth re-reading that reasoning before starting: it is grid detection plus icon
