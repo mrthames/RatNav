@@ -2,7 +2,13 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
-## Unreleased
+## 0.1.0 — 2026-08-20
+
+The first release, and the numbering starts here. Everything below was built before it: the
+versions published while RatNav was being figured out are gone, and this is the one to download.
+
+**Alpha, and the version number says so.** RatNav works and is used daily. `v1` is for when it has
+settled.
 
 ### Verified before release
 
@@ -224,6 +230,15 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
   next launch, and stamped so it is never rearranged again — which means you can now deliberately
   bind the old arrangement back and keep it. A file where only one of the two had been rebound is
   somebody's own choice and is left alone.
+
+---
+
+## Before the first release
+
+The versions below were published while RatNav was being worked out, and were removed when the
+numbering restarted at 0.1.0. **All of this is in 0.1.0** — the sections are kept because they say
+*why* things are the way they are, which is worth more than the version numbers they were filed
+under.
 
 ## 0.4.0 — 2026-08-20
 
