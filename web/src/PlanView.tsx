@@ -9,7 +9,6 @@ import {
   type CustomWaypoint,
 } from './api'
 import { MapPicker } from './MapPicker'
-import { MapView } from './MapView'
 
 /**
  * The pre-raid ritual, in the order it is actually done: pick a map, tick the objectives you are
@@ -52,8 +51,6 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   /** Whether the plan menu — sharing and importing — is open. */
   const [planMenu, setPlanMenu] = useState(false)
 
-  /** Whether the map is unfolded. Closed to start with: it is worth seeing, not worth the height. */
-  const [mapOpen, setMapOpen] = useState(false)
   const [objectives, setObjectives] = useState<PlannableObjective[]>([])
 
   /**
@@ -79,34 +76,6 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
   const chosen = useMemo(() => (mapId ? picks[mapId] ?? [] : []), [picks, mapId])
 
-  const chosenMap = useMemo(
-    () => maps.find((m) => m.id === mapId) ?? null, [maps, mapId])
-
-  /**
-   * The stops you have ticked, as pins for the map above the list.
-   *
-   * <p>Numbered in the order you picked them, so a pin and its row say the same thing — and only
-   * what is ticked, which is the difference between this map and the one on the Maps page.</p>
-   */
-  const chosenPins = useMemo(
-    () => chosen
-      .map((id) => objectives.find((o) => o.objectiveId === id))
-      .filter((o): o is PlannableObjective => o !== undefined)
-      .map((o) => ({
-        taskId: o.taskId,
-        taskName: o.taskName,
-        traderName: o.traderName,
-        objectiveId: o.objectiveId,
-        description: o.description,
-        type: null,
-        optional: o.optional,
-        x: o.x,
-        y: o.y,
-        elevation: 0,
-        neededKeyItemIds: o.neededKeyItemIds,
-      })),
-    [chosen, objectives],
-  )
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
@@ -301,11 +270,17 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
     <div className="flex flex-col gap-4">
 
       {/*
-        Shown whether or not you are in a raid. A plan outlives the raid it was built for, and the
-        usual next move after extracting is to strike off what is no longer worth doing and keep
-        the rest — which needs the plan still on screen.
+        In the order the work is done: which map, what it will cost you and the button that
+        commits it, then the plan itself, then the list you are picking from.
+
+        The plan used to sit at the top, above the thing that builds it, which reads as an answer
+        printed before the question.
+
+        And no map preview any more. The Maps page is where a map is looked at; a second copy here
+        was a third panel changing size while you worked, on the one page that had already been
+        rearranged once to stop things moving under the cursor.
       */}
-      {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
+
       {/*
         Which map, and what you can do with the plan as a whole.
 
@@ -435,35 +410,11 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       )}
 
       {/*
-        Collapsed to start with. It is worth seeing while you build a plan and it is not worth the
-        height every time you open the page.
+        Shown whether or not you are in a raid. A plan outlives the raid it was built for, and the
+        usual next move after extracting is to strike off what is no longer worth doing and keep
+        the rest — which needs the plan still on screen.
       */}
-      {building && mapId && chosenMap && (
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => setMapOpen((open) => !open)}
-            aria-expanded={mapOpen}
-            className="self-start font-mono text-[11px] uppercase tracking-wider text-muted
-                       hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            {mapOpen ? '▾' : '▸'} Map
-            {chosenPins.length > 0 && ` · ${chosenPins.length} on it`}
-          </button>
-
-          {mapOpen && (
-            <div className="border border-line bg-ground p-2">
-              <MapView
-                key={`plan-${chosenMap.id}`}
-                map={chosenMap}
-                objectives={chosenPins}
-                minimal
-              />
-            </div>
-          )}
-        </div>
-      )}
-
+      {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
       {route.length > 0 && (
         <details className="border border-line bg-panel">
           <summary className="cursor-pointer px-3 py-2 font-mono text-[11px] uppercase
