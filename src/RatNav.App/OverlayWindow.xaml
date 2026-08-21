@@ -146,18 +146,21 @@
           <Button Style="{StaticResource RowButton}" Command="{Binding Activate}">
             <Grid Margin="0,1">
                 <Grid.ColumnDefinitions>
+                    <!-- The tick-off controls, when a row has them: a column of their own so the
+                         number is never underneath them. -->
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
                 <!-- Count first and right-aligned in a fixed column, so the numbers line up. -->
-                <TextBlock Grid.Column="0"
+                <TextBlock Grid.Column="1"
                            FontFamily="Consolas" FontSize="11"
                            Foreground="{Binding Colour}"
                            MinWidth="26" TextAlignment="Right" Margin="0,0,7,0"
                            Text="{Binding Count}" />
 
-                <TextBlock Grid.Column="1"
+                <TextBlock Grid.Column="2"
                            FontFamily="Segoe UI" FontSize="11"
                            Foreground="{StaticResource Ink}"
                            TextTrimming="CharacterEllipsis"
@@ -173,8 +176,16 @@
                     for the name; they sit over the right-hand end of it where a long name is
                     already being ellipsised.
                 -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal"
-                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                <!--
+                    Before the number, not after the name.
+
+                    On the right they sat past a name that is ellipsised when it is long — so the
+                    rows where you would most want to press one were the rows where it had been
+                    pushed off the edge. Here they are in the same place on every row whatever the
+                    name does, and the number moves aside for them rather than the name.
+                -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,5,0"
                             Visibility="{Binding Editing, Converter={StaticResource Show}}">
                     <Button Style="{StaticResource Chip}" Content="✓"
                             Command="{Binding Done}"
@@ -1423,7 +1434,16 @@
                     <TextBlock Style="{StaticResource Label}" Text="EXITS" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <Button x:Name="QuickExtracts" Style="{StaticResource Chip}"
                             MinWidth="52" Content="Both"
-                            ToolTip="Which exits to draw: PMC, Scav, Both or Off" />
+                            ToolTip="Whose extracts to draw: Both, PMC, Scav or Off" />
+
+                    <!--
+                        Transits, separately. Two questions rather than one: whose extracts you
+                        want and whether you want the ways onward as well. Anybody can take a
+                        transit, so the faction control has nothing to say about them.
+                    -->
+                    <Button x:Name="QuickTransits" Style="{StaticResource Chip}"
+                            MinWidth="66" Content="transit off" Margin="4,0,0,0"
+                            ToolTip="Draw transits to other maps" />
 
                     <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
 

@@ -93,7 +93,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         // Round 2 still ran.
         Assert.False(settings.Overlay.ShowControls);
-        Assert.Equal(5, settings.Revision);
+        Assert.Equal(6, settings.Revision);
     }
 
     /// <summary>The map settings stack shipped open and should not have; files on it come along.</summary>
@@ -215,6 +215,69 @@ public sealed class SettingsMigrationTests : IDisposable
         WriteSettings(new { revision = 4, hideoutLookAhead = before });
 
         Assert.Equal(after, RatNavSettings.Load(_dir).HideoutLookAhead);
+    }
+
+    /// <summary>
+    /// Round 6: a file still on the old shipped sizes comes onto the tuned ones.
+    ///
+    /// <para>The defaults were wrong — 3.0 markers on a 1440p screen were called "crazy big" by
+    /// the first person to see them — which is the whole reason they were measured again. A file
+    /// that never chose them has nothing to lose by moving.</para>
+    /// </summary>
+    [Fact]
+    public void A_file_on_the_old_shipped_sizes_reads_one_afterwards()
+    {
+        WriteSettings(new
+        {
+            revision = 5,
+            overlay = new { markerScale = 3.0, textScale = 2.0, placeNameScale = 2.0, playerScale = 3.0 },
+        });
+
+        var o = RatNavSettings.Load(_dir).Overlay;
+
+        Assert.Equal(1.0, o.MarkerScale);
+        Assert.Equal(1.0, o.TextScale);
+        Assert.Equal(1.0, o.PlaceNameScale);
+        Assert.Equal(1.0, o.PlayerScale);
+    }
+
+    /// <summary>
+    /// And a size somebody chose keeps drawing at that size.
+    ///
+    /// <para>0.75 was the tuned base, so a marker set to 1.5 by hand is twice it and stays twice
+    /// it. The number in the file changes; nothing on screen does.</para>
+    /// </summary>
+    [Fact]
+    public void A_size_chosen_by_hand_still_draws_the_same()
+    {
+        WriteSettings(new { revision = 5, overlay = new { markerScale = 1.5, playerScale = 5.0 } });
+
+        var o = RatNavSettings.Load(_dir).Overlay;
+
+        Assert.Equal(2.0, o.MarkerScale);
+        Assert.Equal(2.0, o.PlayerScale);
+    }
+
+    /// <summary>A UI scale never set is never chosen, so it comes onto the default.</summary>
+    [Fact]
+    public void An_unset_ui_scale_stays_unset()
+    {
+        WriteSettings(new { revision = 5, overlay = new { markerScale = 3.0 } });
+
+        Assert.Null(RatNavSettings.Load(_dir).Overlay.UiScale);
+    }
+
+    /// <summary>And a fresh install reads 1.0 on every dial, which is the point of the exercise.</summary>
+    [Fact]
+    public void A_fresh_install_reads_one_everywhere()
+    {
+        var o = RatNavSettings.Load(_dir).Overlay;
+
+        Assert.Equal(1.0, o.MarkerScale);
+        Assert.Equal(1.0, o.TextScale);
+        Assert.Equal(1.0, o.PlaceNameScale);
+        Assert.Equal(1.0, o.PlayerScale);
+        Assert.Null(o.UiScale);
     }
 
     /// <summary>And having moved, a zero somebody chose stays zero rather than going negative.</summary>

@@ -124,13 +124,12 @@ public partial class OverlayWindow : Window
     private IReadOnlyDictionary<string, MapStyle> _palette =
         new Dictionary<string, MapStyle>(StringComparer.OrdinalIgnoreCase);
     /// <summary>
-    /// What the exits control cycles through, in the order it offers them.
+    /// Whose extracts the exits control cycles through. Transits are their own toggle.
     ///
-    /// <para>Widest first and narrowest last, so pressing it repeatedly takes things away rather
-    /// than moving between two arrangements of the same amount. "off" is last because it is the
-    /// one nobody wants to land on by accident.</para>
+    /// <para>Widest first and "off" last, because it is the one nobody wants to land on by
+    /// accident.</para>
     /// </summary>
-    private static readonly string[] ExtractModes = ["all", "both", "pmc", "scav", "transit", "off"];
+    private static readonly string[] ExtractModes = ["both", "pmc", "scav", "off"];
 
     /// <summary>
     /// The smallest a marker, a label or the player mark may be drawn.
@@ -373,6 +372,12 @@ public partial class OverlayWindow : Window
         UiScaleUp.Click += (_, _) => StepUiScale(+0.1);
         QuickFollow.Click += (_, _) => ToggleFollowing();
         QuickExtracts.Click += (_, _) => CycleExtracts();
+
+        QuickTransits.Click += (_, _) =>
+        {
+            Remember(_settings.Overlay with { ShowTransits = !_settings.Overlay.ShowTransits });
+            Draw();
+        };
         CollapseItems.Click += (_, _) => ToggleItems();
         ItemsDrawer.Click += (_, _) => ToggleItems();
         QuestDrawer.Click += (_, _) => ToggleQuests();
@@ -467,6 +472,11 @@ public partial class OverlayWindow : Window
 
         ApplyControlStack();
         ApplyItemsPanel();
+
+        // Rebuilt, not just re-shown. A row carries whether it may offer its tick-off controls,
+        // decided when it was built — so entering edit mode changed the window and left every
+        // existing row still saying no, which looks exactly like controls that were never added.
+        RefreshItems();
 
         if (interactive)
         {
@@ -1283,15 +1293,12 @@ public partial class OverlayWindow : Window
             return false;
         }
 
-        // Transits are their own answer rather than a faction.
-        //
-        // Anybody standing at one can take it, which is why they used to be exempt from this dial
-        // and drawn whatever it said. But "who may take one" and "do I want to see them" are
-        // different questions, and only the second is what a control like this is being asked.
-        if (extract.Transit) return mode is "all" or "transit";
-        if (mode == "transit") return false;
+        // A transit answers to its own setting and nothing else. Anybody can take one whatever
+        // they queued as, so "whose exits" has nothing to say about them — and the offered list
+        // above does not either, since the game lists transits separately from the extracts.
+        if (extract.Transit) return _settings.Overlay.ShowTransits;
 
-        if (mode is "all" or "both") return true;
+        if (mode == "both") return true;
 
         return extract.Faction.Equals("shared", StringComparison.OrdinalIgnoreCase)
             || extract.Faction.Equals(mode, StringComparison.OrdinalIgnoreCase);
@@ -1780,7 +1787,9 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            UiScale = Math.Clamp(EffectiveUiScale + by, MinUiScale, 3.0),
+            // The multiplier, not the size. Stepping the effective value and storing it as a
+            // multiplier would fold the base and the screen factor into it again on every press.
+            UiScale = Snap((_settings.Overlay.UiScale ?? 1.0) + by, MinUiScale, 3.0),
         });
 
         ApplyUiScale();
@@ -1815,7 +1824,42 @@ public partial class OverlayWindow : Window
     /// running 1.0 by hand on 4K against a derived 2.6, which is the same evidence from the other
     /// end of the range.</para>
     /// </summary>
-    private double EffectiveUiScale => _settings.Overlay.UiScale ?? 1.0;
+    /// <summary>
+    /// How much bigger everything should be than the 1080p tuning, for this screen.
+    ///
+    /// <para>WPF measures in device-independent pixels, so display scaling is already divided out:
+    /// a 1080-dip screen and a 1440-dip one differ by a real 1.33, and furniture drawn at a fixed
+    /// dip size covers proportionally less of the taller one. Scaling by the ratio keeps it the
+    /// same apparent size.</para>
+    ///
+    /// <para>Never below 1 — the tuning is a floor, and nobody should get furniture smaller than
+    /// the screen it was measured on. Capped at 1.75, because past a point a very tall desktop is
+    /// one you sit further from, and doubling everything is how the old derivation produced the
+    /// 1.95 that made the overlay unusable on somebody else's monitor.</para>
+    ///
+    /// <para>Applied to the tuned base and never to anything the player set, so their dial goes on
+    /// reading 1.0 and means "the right size for this screen".</para>
+    /// </summary>
+    private static double ScreenScale
+    {
+        get
+        {
+            var height = SystemParameters.PrimaryScreenHeight;
+            return height <= 0 ? 1.0 : Math.Clamp(height / 1080.0, 1.0, 1.75);
+        }
+    }
+
+    /// <summary>The player's multiplier applied to the tuned base, for this screen.</summary>
+    private static double Sized(double multiplier, double tuned) => tuned * ScreenScale * multiplier;
+
+    private double MarkerSize => Sized(_settings.Overlay.MarkerScale, RatNavSettings.TunedFor1080p.Marker);
+    private double TextSize => Sized(_settings.Overlay.TextScale, RatNavSettings.TunedFor1080p.Text);
+    private double PlaceNameSize => Sized(_settings.Overlay.PlaceNameScale, RatNavSettings.TunedFor1080p.PlaceName);
+    private double PlayerSize => Sized(_settings.Overlay.PlayerScale, RatNavSettings.TunedFor1080p.Player);
+
+    /// <summary>The overlay's own furniture, which is a multiplier of the tuned base like the rest.</summary>
+    private double EffectiveUiScale =>
+        Sized(_settings.Overlay.UiScale ?? 1.0, RatNavSettings.TunedFor1080p.Ui);
 
     private void ApplyUiScale()
     {
@@ -1827,7 +1871,7 @@ public partial class OverlayWindow : Window
             element.LayoutTransform = scale == 1 ? Transform.Identity : new ScaleTransform(scale, scale);
         }
 
-        UiScaleText.Text = $"{scale:0.0}×";
+        UiScaleText.Text = $"{_settings.Overlay.UiScale ?? 1.0:0.0}×";
 
         MatchPopOuts();
     }
@@ -2960,6 +3004,7 @@ public partial class OverlayWindow : Window
         // map follows you, and which exits are drawn. Everything else is in the gear.
         QuickFollow.Content = Following ? "follows" : "still";
         QuickExtracts.Content = Titled(_settings.Overlay.Extracts);
+        QuickTransits.Content = _settings.Overlay.ShowTransits ? "transit on" : "transit off";
 
         // Says which way it will go, not which way it is: a control labelled with the state you
         // are already in leaves you guessing what pressing it does.
@@ -3623,7 +3668,7 @@ public partial class OverlayWindow : Window
         {
             Text = label,
             FontFamily = new FontFamily("Consolas"),
-            FontSize = 9 * _settings.Overlay.TextScale,
+            FontSize = 9 * TextSize,
             FontWeight = FontWeights.Bold,
             Foreground = colour,
             IsHitTestVisible = false,
@@ -3713,12 +3758,12 @@ public partial class OverlayWindow : Window
             0.6,
             1.5);
 
-        var scale = _settings.Overlay.MarkerScale * relative;
-        var textScale = _settings.Overlay.TextScale * relative;
+        var scale = MarkerSize * relative;
+        var textScale = TextSize * relative;
 
         // Place names have their own dial. They are the backdrop rather than a destination, and
         // want a different size from the captions on the things you are walking to.
-        var placeScale = _settings.Overlay.PlaceNameScale * relative;
+        var placeScale = PlaceNameSize * relative;
 
         // Place names first — they are the backdrop. Drawn after the pins they sat on top of the
         // thing you were navigating to, which is exactly backwards.
@@ -3995,7 +4040,7 @@ public partial class OverlayWindow : Window
         // Everything else eases off as the map pulls back, which is right for furniture — but you
         // pull back precisely to ask "where am I and which way am I pointing", and a marker that
         // shrank along with the pins stops answering it at the moment it is asked.
-        var you = _settings.Overlay.PlayerScale;
+        var you = PlayerSize;
 
         if (view.HeadingDegrees is { } heading)
         {

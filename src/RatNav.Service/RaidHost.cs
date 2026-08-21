@@ -335,6 +335,26 @@ public sealed record RatNavSettings
         if (Origin is { Length: > 0 } directory) Save(directory);
     }
 
+    /// <summary>
+    /// The sizes RatNav ships with, measured on a 1920×1080 screen at 100% scaling.
+    ///
+    /// <para>Not guesses. Somebody sat in front of the overlay at that resolution and turned every
+    /// dial until it looked right, and these are the numbers he arrived at. That is why they are
+    /// odd — 0.75, 0.7, 2.5 — and why they are worth keeping exactly.</para>
+    ///
+    /// <para>The settings hold a <b>multiplier</b> of these rather than the sizes themselves, so
+    /// every dial reads 1.0 on a fresh install and moves either way from a value that is already
+    /// right. "0.75" tells nobody anything; "a bit smaller than default" tells everybody.</para>
+    /// </summary>
+    public static class TunedFor1080p
+    {
+        public const double Marker = 0.75;
+        public const double Text = 1.0;
+        public const double PlaceName = 0.7;
+        public const double Player = 2.5;
+        public const double Ui = 0.9;
+    }
+
     public sealed record HotKeySettings
     {
         /// <summary>Show or hide the overlay.</summary>
@@ -464,7 +484,7 @@ public sealed record RatNavSettings
         /// 1080p, so the position is kept as a share of the screen and turned into pixels once
         /// there is a screen to measure.</para>
         /// </summary>
-        public OverlayPlacement Box { get; init; } = new() { Follow = true, Zoom = 3.46 };
+        public OverlayPlacement Box { get; init; } = new() { Follow = true, Zoom = 5.26 };
 
         /// <summary>
         /// Where the corner panel starts, as a share of the screen.
@@ -473,8 +493,9 @@ public sealed record RatNavSettings
         /// the health tracker above it and the toolbars below, which is where it stays out of the
         /// way while you are playing.</para>
         /// </summary>
+        /// <para>Measured from the arrangement Justin tuned at 1920×1080: 10,272 and 519×414.</para>
         public static (double Left, double Top, double Width, double Height) BoxShare =>
-            (0.0065, 0.229, 0.216, 0.279);
+            (0.0052, 0.2519, 0.2703, 0.3833);
 
         /// <summary>
         /// The large centred map. Follows you by default — a centred map that does not is a
@@ -548,7 +569,7 @@ public sealed record RatNavSettings
         /// How strongly the map is drawn, 0 to 1. Lower is more of the game showing through; this
         /// is the dial that decides whether an overlay helps or gets in the way.
         /// </summary>
-        public double MapOpacity { get; init; } = 0.55;
+        public double MapOpacity { get; init; } = 1.0;
 
         /// <summary>
         /// Draw the floors below the one you are on, faintly, underneath it.
@@ -563,15 +584,26 @@ public sealed record RatNavSettings
         public bool ShowPlaceNames { get; init; } = true;
 
         /// <summary>
-        /// Which ways off the map to draw.
+        /// Whose extracts to draw: "both", "pmc", "scav", or "off".
         ///
-        /// <para>"all" is every one including transits; "both" is both extract factions without
-        /// them; "pmc" and "scav" are one faction and the shared ones; "transit" is transits
-        /// alone; "off" is none. Transits are separated from the faction choices because who may
-        /// take one and whether you want to see one are different questions — anybody can take a
-        /// transit, which is why they used to ignore this dial entirely and were always drawn.</para>
+        /// <para>Both by default. Which of them you can actually take is not knowable until the
+        /// game says so — that is what <c>update extracts</c> is for — and until then showing
+        /// everything is the honest answer.</para>
         /// </summary>
-        public string Extracts { get; init; } = "pmc";
+        public string Extracts { get; init; } = "both";
+
+        /// <summary>
+        /// Whether transits are drawn, independently of whose extracts are.
+        ///
+        /// <para>Its own setting rather than a position in the extracts cycle, because they are
+        /// two questions and not one: anybody can take a transit whatever they queued as, so
+        /// "whose exits" has nothing to say about them, and folding them into that cycle meant
+        /// choosing between seeing your faction's extracts and seeing transits.</para>
+        ///
+        /// <para>Off by default. A transit is a way to keep playing rather than a way out with
+        /// your loot, which makes it the rarer thing to be looking for.</para>
+        /// </summary>
+        public bool ShowTransits { get; init; }
 
         /// <summary>
         /// Which quest waypoints to draw — "active", "all" or "off".
@@ -698,7 +730,7 @@ public sealed record RatNavSettings
         /// read rather than scan, so it needs less room than the list of everything you still
         /// need.</para>
         /// </summary>
-        public double QuestShare { get; init; } = 0.42;
+        public double QuestShare { get; init; } = 0.295;
 
         /// <summary>
         /// Sections of the items list that are folded away, by title. Remembered, because the
@@ -721,13 +753,13 @@ public sealed record RatNavSettings
         /// <para>Scalable rather than fixed because players run wildly different resolutions, and
         /// a marker sized for 1080p is a speck on a 4K screen.</para>
         /// </summary>
-        public double MarkerScale { get; init; } = 3.0;
+        public double MarkerScale { get; init; } = 1.0;
 
         /// <summary>
         /// Size of text drawn on the map — place names, extract names. Separate from
         /// <see cref="MarkerScale"/>: a map can want big markers and small labels, or the reverse.
         /// </summary>
-        public double TextScale { get; init; } = 2.0;
+        public double TextScale { get; init; } = 1.0;
 
         /// <summary>
         /// How big the map's own place names are.
@@ -737,7 +769,7 @@ public sealed record RatNavSettings
         /// which end of the map you are looking at; a waypoint's caption is the thing you are
         /// navigating to. One control for both meant neither was ever the right size.</para>
         /// </summary>
-        public double PlaceNameScale { get; init; } = 2.0;
+        public double PlaceNameScale { get; init; } = 1.0;
 
         /// <summary>
         /// How much markers and text shrink as the map is zoomed out, 0 to 1.
@@ -757,7 +789,7 @@ public sealed record RatNavSettings
         /// to see the whole map and that is exactly when a marker that has shrunk with everything
         /// else stops answering the question you pulled back to ask.</para>
         /// </summary>
-        public double PlayerScale { get; init; } = 3.0;
+        public double PlayerScale { get; init; } = 1.0;
 
         /// <summary>
         /// Draw the floor above the ground together with it, rather than ghosted.
@@ -816,8 +848,9 @@ public sealed record RatNavSettings
     /// <para>3 — the F6/F7 pair swapped back, putting edit mode beside show/hide.</para>
     /// <para>4 — F5 to F11 run in the order the keys are actually used.</para>
     /// <para>5 — the hideout look-ahead counts from zero rather than from one.</para>
+    /// <para>6 — the size dials became multipliers of a tuned base.</para>
     /// </summary>
-    private const int CurrentRevision = 5;
+    private const int CurrentRevision = 6;
 
     public static RatNavSettings Load(string dataDirectory)
     {
@@ -834,7 +867,7 @@ public sealed record RatNavSettings
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
                     }) is { } loaded
                     ? Stamp(loaded, dataDirectory)
-                    : Stamp(new RatNavSettings(), dataDirectory);
+                    : Fresh(dataDirectory);
             }
         }
         catch (Exception ex) when (ex is System.Text.Json.JsonException or IOException)
@@ -843,8 +876,22 @@ public sealed record RatNavSettings
             // customisations in it.
         }
 
-        return Stamp(new RatNavSettings(), dataDirectory);
+        return Fresh(dataDirectory);
     }
+
+    /// <summary>
+    /// Defaults, already through every migration there is.
+    ///
+    /// <para>There is nothing to migrate: the defaults <em>are</em> the current shape. Running the
+    /// rounds over them treats today's values as though they were yesterday's and converts them
+    /// twice — which round 6 did, turning a fresh install's 1.0 markers into 1.33 because it could
+    /// not tell a new default from an old customisation.</para>
+    ///
+    /// <para>Only for a file that does not exist or could not be read. A file that <em>does</em>
+    /// exist and simply has no revision in it is genuinely old and still gets every round.</para>
+    /// </summary>
+    private static RatNavSettings Fresh(string dataDirectory) =>
+        Stamp(new RatNavSettings { Revision = CurrentRevision }, dataDirectory);
 
     private static RatNavSettings Stamp(RatNavSettings settings, string dataDirectory)
     {
@@ -863,6 +910,7 @@ public sealed record RatNavSettings
         if (settings.Revision < 3) PairEditModeWithToggle(settings.Hotkeys);
         if (settings.Revision < 4) RunKeysInUseOrder(settings.Hotkeys);
         if (settings.Revision < 5) CountLookAheadFromZero(settings);
+        if (settings.Revision < 6) SizesBecomeMultipliers(settings);
 
         settings.Revision = CurrentRevision;
 
@@ -988,6 +1036,37 @@ public sealed record RatNavSettings
     /// </summary>
     private static void CountLookAheadFromZero(RatNavSettings settings) =>
         settings.HideoutLookAhead = Math.Max(0, settings.HideoutLookAhead - 1);
+
+    /// <summary>
+    /// Turns saved sizes into multipliers of the tuned base.
+    ///
+    /// <para>Two files to tell apart. One still carrying an <b>old shipped default</b> comes onto
+    /// the new one and reads 1.0 — the defaults were wrong, which is the whole reason they were
+    /// measured. One somebody <b>tuned</b> keeps the size it has, converted to whatever multiplier
+    /// produces it, because a size chosen on purpose is not ours to change.</para>
+    ///
+    /// <para>Same rule as rounds 2 and 3, and the same reason: a shipped default changing should
+    /// carry files that never chose it, and nothing else.</para>
+    /// </summary>
+    private static void SizesBecomeMultipliers(RatNavSettings settings)
+    {
+        var o = settings.Overlay;
+
+        settings.Overlay = o with
+        {
+            MarkerScale = AsMultiple(o.MarkerScale, was: 3.0, of: TunedFor1080p.Marker),
+            TextScale = AsMultiple(o.TextScale, was: 2.0, of: TunedFor1080p.Text),
+            PlaceNameScale = AsMultiple(o.PlaceNameScale, was: 2.0, of: TunedFor1080p.PlaceName),
+            PlayerScale = AsMultiple(o.PlayerScale, was: 3.0, of: TunedFor1080p.Player),
+
+            // Never set means never chosen, which is exactly the case that comes onto the default.
+            UiScale = o.UiScale is { } ui ? AsMultiple(ui, was: 1.0, of: TunedFor1080p.Ui) : null,
+        };
+    }
+
+    /// <summary>The shipped default becomes 1.0; anything else keeps the size it draws at.</summary>
+    private static double AsMultiple(double value, double was, double of) =>
+        Math.Abs(value - was) < 0.001 ? 1.0 : Math.Round(value / of, 2);
 
     /// <summary>
     /// Closes the map settings stack on files that never chose to have it open.
