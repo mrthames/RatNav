@@ -505,17 +505,12 @@ export function MapView({
           {placing ? 'Click the map...' : '+ Waypoint'}
         </button>
 
-        {!minimal && (
-          /* Straight onto the overlay, no plan required -- for a look before you queue. */
-          <button
-            type="button"
-            onClick={() => void api.showMap(map.id)}
-            className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
-                       hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            Show on overlay
-          </button>
-        )}
+        {/*
+          No "Show on overlay" button. It existed so you could join a raid without a plan and still
+          have a map on screen — and the raid already says which map it is loading, so the overlay
+          draws it without being asked. A button for something that happens by itself is a button
+          that teaches people it does not.
+        */}
 
         {/*
           Last, and the only one that comes and goes -- because it is the one control that is

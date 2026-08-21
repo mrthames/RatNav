@@ -682,17 +682,54 @@ public partial class OverlayWindow : Window
     {
         var had = PlanApplies(_view);
         var lastFix = _view?.FixedAt;
+        var wasInRaid = _view?.InRaid ?? false;
 
         _view = view;
         Dispatcher.Invoke(async () =>
         {
+            // The first view is the one that decides how the overlay opens, and there is no
+            // "change" to follow for it.
+            if (!_opened)
+            {
+                _opened = true;
+                CloseEmptyQuestPanel();
+            }
+
             FollowPlan(had, PlanApplies(view));
+            FollowRaid(wasInRaid, view.InRaid);
             RevealOnFix(lastFix, view.FixedAt);
 
             await EnsureMapAsync(view);
             Draw();
             RefreshItems();
         });
+    }
+
+    /// <summary>
+    /// Shows the overlay when a raid starts, and puts it away when one ends.
+    ///
+    /// <para>Between raids the overlay is over the stash, the flea and the trader screens — which
+    /// is where you are sorting inventory and clicking through menus, and the last thing wanted
+    /// there is a map sitting on top of it. It has nothing to say then either: no position, and a
+    /// plan for a raid that has not started.</para>
+    ///
+    /// <para>On the change, never on the state. Following the state would put the overlay back on
+    /// screen every publish for anybody who had hidden it mid-raid, which is a reasonable thing to
+    /// do and would then be impossible.</para>
+    /// </summary>
+    private void FollowRaid(bool was, bool now)
+    {
+        if (was == now) return;
+
+        if (now)
+        {
+            if (!IsVisible) ToggleVisible();
+            return;
+        }
+
+        // Interact mode goes with it. A raid ending with the mouse handed to the overlay would
+        // leave it captured over the menus you are about to use.
+        if (IsVisible) ToggleVisible();
     }
 
     /// <summary>
@@ -733,6 +770,25 @@ public partial class OverlayWindow : Window
         if (had == has) return;
 
         Remember(_settings.Overlay with { ShowQuests = has });
+        ApplyItemsPanel();
+    }
+
+    /// <summary>
+    /// Closes the waypoints panel at start-up when there is no plan to put in it.
+    ///
+    /// <para><see cref="FollowPlan"/> acts on the change, which is right while running and does
+    /// nothing for the state the overlay opens in — so a session that ended with a plan opened the
+    /// next one showing an empty panel headed WAYPOINTS above the words "no plan yet", holding a
+    /// side of the overlay for nothing.</para>
+    ///
+    /// <para>Only the waypoints panel. The items list is worth reading between raids — it is the
+    /// shopping list — so it opens however it was left.</para>
+    /// </summary>
+    private void CloseEmptyQuestPanel()
+    {
+        if (PlanApplies(_view) || !_settings.Overlay.ShowQuests) return;
+
+        Remember(_settings.Overlay with { ShowQuests = false });
         ApplyItemsPanel();
     }
 
@@ -1468,6 +1524,9 @@ public partial class OverlayWindow : Window
 
     /// <summary>One line of a quest's steps, coloured by where you are in it.</summary>
     private sealed record BriefStep(string Text, Brush Colour);
+
+    /// <summary>Whether a view has arrived yet, so the first one can settle the opening state.</summary>
+    private bool _opened;
 
     private SettingsWindow? _settingsWindow;
     private Panel? _settingsHome;
