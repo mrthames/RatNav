@@ -1383,6 +1383,10 @@ public partial class OverlayWindow : Window
     {
         QuestBrief.Visibility = Visibility.Collapsed;
         QuestBriefScrim.Visibility = Visibility.Collapsed;
+
+        // Closing the window returns the brief through Closed, so this is only ever the one that
+        // is already home.
+        _briefWindow?.Close();
     }
 
     /// <summary>
@@ -1408,6 +1412,80 @@ public partial class OverlayWindow : Window
         QuestBriefScroll.MaxHeight = Math.Max(48, available * 0.3);
     }
 
+    private QuestBriefWindow? _briefWindow;
+    private Panel? _briefHome;
+
+    /// <summary>
+    /// Puts the brief where it belongs for how the log is currently arranged.
+    ///
+    /// <para>Over the panel while the log is docked, because that is where you are looking. In a
+    /// window of its own once the log has been torn off, because tearing it off is what you do
+    /// when you do not want the map covered — and covering it anyway is the one thing that
+    /// gesture was against.</para>
+    ///
+    /// <para>The same controls either way. The brief is moved rather than rebuilt, so the
+    /// carousel, the wiki link and the step list keep working without a second copy of any of
+    /// them to keep in step.</para>
+    /// </summary>
+    private void ShowBriefWhereItBelongs()
+    {
+        _briefHome ??= QuestBrief.Parent as Panel;
+
+        if (_questWindow is null)
+        {
+            SizeQuestBrief();
+            QuestBriefScrim.Visibility = Visibility.Visible;
+            QuestBrief.Visibility = Visibility.Visible;
+            return;
+        }
+
+        // Torn off. The sheet stays down: there is no map underneath this one to dim.
+        QuestBriefScrim.Visibility = Visibility.Collapsed;
+
+        if (_briefWindow is null)
+        {
+            _briefWindow = new QuestBriefWindow();
+
+            // Closing it by any route — the window, the ✕ inside it — puts the brief back where
+            // it came from, so docking the log again finds it there.
+            _briefWindow.Closed += (_, _) =>
+            {
+                _briefWindow = null;
+                ReturnBriefHome();
+            };
+        }
+
+        if (!ReferenceEquals(QuestBrief.Parent, _briefWindow))
+        {
+            if (QuestBrief.Parent is Panel current) current.Children.Remove(QuestBrief);
+            _briefWindow.Content = QuestBrief;
+        }
+
+        // Filling the window rather than centred in it, and no ceiling: the window is the size
+        // limit now.
+        QuestBrief.VerticalAlignment = VerticalAlignment.Stretch;
+        QuestBrief.MaxHeight = double.PositiveInfinity;
+        QuestBriefScroll.MaxHeight = double.PositiveInfinity;
+        QuestBrief.Visibility = Visibility.Visible;
+
+        _briefWindow.Show();
+        _briefWindow.Activate();
+    }
+
+    /// <summary>Moves the brief back into the overlay, hidden, however it was last shown.</summary>
+    private void ReturnBriefHome()
+    {
+        if (_briefHome is null || ReferenceEquals(QuestBrief.Parent, _briefHome)) return;
+
+        if (_briefWindow is not null) _briefWindow.Content = null;
+        if (QuestBrief.Parent is Panel current) current.Children.Remove(QuestBrief);
+
+        _briefHome.Children.Add(QuestBrief);
+
+        QuestBrief.VerticalAlignment = VerticalAlignment.Center;
+        QuestBrief.Visibility = Visibility.Collapsed;
+    }
+
     private void ShowQuestBrief(RaidStop stop)
     {
         QuestBriefName.Text = stop.TaskName;
@@ -1415,9 +1493,7 @@ public partial class OverlayWindow : Window
         QuestBriefImage.Source = null;
         QuestBriefCaption.Text = "";
 
-        SizeQuestBrief();
-        QuestBriefScrim.Visibility = Visibility.Visible;
-        QuestBrief.Visibility = Visibility.Visible;
+        ShowBriefWhereItBelongs();
 
         _briefImages = [];
         _briefImageAt = 0;
