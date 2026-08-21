@@ -230,8 +230,6 @@ public partial class OverlayWindow : Window
 
         // The stack is placed from the measured height of its neighbours, and both of them change
         // size — the footer wraps, the quick bar grows with the size dial.
-        QuickBar.SizeChanged += (_, _) => ClearNeighbours();
-        StatusRow.SizeChanged += (_, _) => ClearNeighbours();
 
         DragHandle.MouseLeftButtonDown += (_, _) => DragMove();
         ResizeGrip.DragDelta += OnResize;
@@ -276,6 +274,7 @@ public partial class OverlayWindow : Window
         MapFrame.SizeChanged += (_, _) =>
         {
             if (QuestBrief.Visibility == Visibility.Visible) SizeQuestBrief();
+            if (ControlStack.Visibility == Visibility.Visible) ApplyControlStack();
 
         };
         QuestBriefBack.Click += (_, _) => StepQuestImage(-1);
@@ -373,6 +372,7 @@ public partial class OverlayWindow : Window
         SwapQuestsSide.Click += (_, _) => SwapQuestsToOtherSide();
         DetachQuests.Click += (_, _) => DetachQuestPanel();
         CollapseControls.Click += (_, _) => ShowControls(false);
+        ControlScrim.MouseLeftButtonDown += (_, e) => { ShowControls(false); e.Handled = true; };
         ExpandControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
         CentredControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
     }
@@ -884,45 +884,12 @@ public partial class OverlayWindow : Window
         return false;
     }
 
-    /// <summary>
-    /// Keeps the controls stack clear of the things above and below it.
-    ///
-    /// <para>Its margins were fixed numbers — six from the top, twenty-six from the bottom — and
-    /// both were right once. The footer has grown a second row since, and every piece of RatNav's
-    /// furniture scales with the size dial, so any number written down here is wrong at some
-    /// scale. The neighbours know how tall they are; this asks them.</para>
-    ///
-    /// <para>Measured in window space rather than from <c>ActualHeight</c>, because the pieces
-    /// carry layout transforms and their own idea of their height is the one before scaling.</para>
-    /// </summary>
-    private void ClearNeighbours()
-    {
-        const double gap = 6;
-
-        // The stack sits in the row under the grab bar, so its margin is measured from there
-        // rather than from the top of the window.
-        var rowTop = Bounds(DragHandle)?.Bottom ?? 0;
-
-        var top = Math.Max(gap, (Bounds(QuickBar)?.Bottom ?? 0) + gap - rowTop);
-        var bottom = Bounds(StatusRow) is { } footer
-            ? Math.Max(gap, ActualHeight - footer.Top + gap)
-            : gap;
-
-        // The centred view's gear floats where the stack starts, so the stack starts under it.
-        if (Bounds(CentredControls) is { } gear) top = Math.Max(top, gear.Bottom + gap - rowTop);
-
-        var wanted = new Thickness(gap, top, 0, bottom);
-
-        // Assigning triggers a layout pass, which is what measured these in the first place —
-        // so only when it would actually move.
-        if (Math.Abs(ControlStack.Margin.Top - wanted.Top) < 0.5
-            && Math.Abs(ControlStack.Margin.Bottom - wanted.Bottom) < 0.5)
-        {
-            return;
-        }
-
-        ControlStack.Margin = wanted;
-    }
+    // No ClearNeighbours any more.
+    //
+    // It measured the quick bar and the footer on every layout pass and set the controls stack's
+    // margins so a drawer pinned to the left edge would clear both. The stack is a centred panel
+    // now, bounded by a share of the map's height, so it has no edges to keep clear of — and a
+    // margin computed from its neighbours would be the one thing able to push it off centre.
 
     /// <summary>Where a piece of chrome sits in the window, transforms and all, or null if it is not showing.</summary>
     private Rect? Bounds(FrameworkElement element)
@@ -2239,9 +2206,15 @@ public partial class OverlayWindow : Window
     {
         var target = side == "left" ? LeftDrawers : RightDrawers;
 
+        // A gap towards the map and nothing anywhere else.
+        //
+        // There was six at the bottom too, which nothing beside it had: the map runs to the floor
+        // of the row, so a panel that stops six pixels short of it sits visibly high. Stacked, the
+        // same six sat under the quest log and added itself to the splitter, making the space
+        // between the two lists read as a gap rather than as a handle.
         panel.Margin = side == "left"
-            ? new Thickness(0, 0, 6, 6)
-            : new Thickness(6, 0, 0, 6);
+            ? new Thickness(0, 0, 6, 0)
+            : new Thickness(6, 0, 0, 0);
 
         // Grid is a Panel, so one case covers both the starting grid and the other side.
         if (ReferenceEquals(panel.Parent, target)) return;
@@ -2561,7 +2534,14 @@ public partial class OverlayWindow : Window
         var editing = !_clickThrough && !Folded;
         var open = _settings.Overlay.ShowControls;
 
-        ControlStack.Visibility = editing && open ? Visibility.Visible : Visibility.Collapsed;
+        var showing = editing && open;
+
+        ControlStack.Visibility = showing ? Visibility.Visible : Visibility.Collapsed;
+        ControlScrim.Visibility = showing ? Visibility.Visible : Visibility.Collapsed;
+
+        // Tall enough to be worth opening, short enough to stay inside the overlay. Its own
+        // scroller takes whatever will not fit.
+        if (showing && MapFrame.ActualHeight > 0) ControlStack.MaxHeight = MapFrame.ActualHeight * 0.9;
 
         // Filled here as well as at start-up. The first attempt runs while the window is being
         // built, which can be before Kestrel is listening — and a strip that lost that race stayed
@@ -2603,7 +2583,6 @@ public partial class OverlayWindow : Window
             ? Math.Max(200, ActualHeight * 0.75)
             : double.PositiveInfinity;
 
-        ClearNeighbours();
 
         // The bar goes with the rest of the furniture.
         //
@@ -2750,7 +2729,7 @@ public partial class OverlayWindow : Window
         FixAgeText.Text = view.FixedAt is { } at
             ? $"position {Age(DateTimeOffset.Now - at)}"
             : view.InRaid
-                ? $"tap {_settings.ScreenshotKey.ToLowerInvariant()} for position"
+                ? $"press {_settings.ScreenshotKey.ToLowerInvariant()} for position"
 
                 // Rather than telling someone to press a key that will do nothing: outside a raid
                 // the game writes no position for RatNav to read.

@@ -904,14 +904,18 @@ public static class ApiEndpoints
 
             return Results.Ok(new[]
             {
+                // Ordered the way you use them, not the way the settings record happens to
+                // declare them: what you press to tell RatNav where you are, then what shows and
+                // arranges the overlay, then what moves the map, then the two that read the
+                // screen. The overlay strip and Setup both read this order.
                 new { key = settings.ScreenshotKey, does = "update location" },
                 new { key = keys.ToggleOverlay, does = "show/hide" },
-                new { key = keys.ToggleMode, does = "center/panel" },
                 new { key = keys.ToggleInteract, does = "edit mode" },
-                new { key = keys.IdentifyItem, does = "check item" },
-                new { key = keys.ReadExtracts, does = "update extracts" },
-                new { key = keys.CenterMap, does = "center on me" },
+                new { key = keys.ToggleMode, does = "center/panel" },
                 new { key = keys.ToggleFollow, does = "follow/still" },
+                new { key = keys.CenterMap, does = "center on me" },
+                new { key = keys.ReadExtracts, does = "update extracts" },
+                new { key = keys.IdentifyItem, does = "check item" },
             }.Where(h => h.key is { Length: > 0 }));
         });
 

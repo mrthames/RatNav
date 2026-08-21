@@ -351,7 +351,7 @@ public sealed record RatNavSettings
         /// to use for the keyboard and for the same reason. A hotkey is registered with Windows
         /// the ordinary way and touches nothing.</para>
         /// </summary>
-        public string IdentifyItem { get; set; } = "F8";
+        public string IdentifyItem { get; set; } = "F11";
 
         /// <summary>
         /// Read the extract list the game is showing, and keep only those on the map.
@@ -360,7 +360,7 @@ public sealed record RatNavSettings
         /// RatNav cannot know you pressed <c>O</c> without watching the keyboard, which it will
         /// not do, so it asks you to tell it.</para>
         /// </summary>
-        public string ReadExtracts { get; set; } = "F9";
+        public string ReadExtracts { get; set; } = "F10";
 
         /// <summary>
         /// Put the map back on you, without starting to follow.
@@ -370,10 +370,10 @@ public sealed record RatNavSettings
         /// cost is that there is then no quick way to ask "where am I now" without turning follow
         /// on and losing the framing you chose. This is that question, asked once.</para>
         /// </summary>
-        public string CenterMap { get; set; } = "F10";
+        public string CenterMap { get; set; } = "F9";
 
         /// <summary>Hold the map still, or have it keep you centred.</summary>
-        public string ToggleFollow { get; set; } = "F11";
+        public string ToggleFollow { get; set; } = "F8";
     }
 
     /// <summary>How the overlay presents itself.</summary>
@@ -800,8 +800,9 @@ public sealed record RatNavSettings
     /// <para>1 — the hotkeys renumbered down from F9–F11, and the F6/F7 pair swapped.</para>
     /// <para>2 — the map settings stack starts folded.</para>
     /// <para>3 — the F6/F7 pair swapped back, putting edit mode beside show/hide.</para>
+    /// <para>4 — F5 to F11 run in the order the keys are actually used.</para>
     /// </summary>
-    private const int CurrentRevision = 3;
+    private const int CurrentRevision = 4;
 
     public static RatNavSettings Load(string dataDirectory)
     {
@@ -845,6 +846,7 @@ public sealed record RatNavSettings
         if (settings.Revision < 1) Renumber(settings.Hotkeys);
         if (settings.Revision < 2) FoldControls(settings);
         if (settings.Revision < 3) PairEditModeWithToggle(settings.Hotkeys);
+        if (settings.Revision < 4) RunKeysInUseOrder(settings.Hotkeys);
 
         settings.Revision = CurrentRevision;
 
@@ -928,6 +930,36 @@ public sealed record RatNavSettings
 
         keys.ToggleMode = "F7";
         keys.ToggleInteract = "F6";
+    }
+
+    /// <summary>
+    /// Lays F5 to F11 out in the order the keys are used rather than the order they were added.
+    ///
+    /// <para>They accumulated: show/hide, edit mode and the view switcher took F5 to F7, then
+    /// identify and extracts took F8 and F9 because those were next, and centre-on-me and
+    /// follow arrived after that and took what was left. So the two that read the screen sat in
+    /// the middle of the run and the two that move the map sat at the end of it.</para>
+    ///
+    /// <para>The order now is: show/hide, edit mode, centre or panel, follow or still, centre on
+    /// me, update extracts, check item. Arrange the overlay, then move the map, then read the
+    /// screen.</para>
+    ///
+    /// <para>Fires only when every one of the seven is still where RatNav put it. One key moved
+    /// by hand makes the whole set somebody's own arrangement, and shuffling it underneath them
+    /// would be worse than an order that reads oddly.</para>
+    /// </summary>
+    private static void RunKeysInUseOrder(HotKeySettings keys)
+    {
+        var shipped =
+            keys is { ToggleOverlay: "F5", ToggleInteract: "F6", ToggleMode: "F7" }
+            && keys is { IdentifyItem: "F8", ReadExtracts: "F9", CenterMap: "F10", ToggleFollow: "F11" };
+
+        if (!shipped) return;
+
+        keys.ToggleFollow = "F8";
+        keys.CenterMap = "F9";
+        keys.ReadExtracts = "F10";
+        keys.IdentifyItem = "F11";
     }
 
     /// <summary>

@@ -88,7 +88,7 @@ public sealed record Diagnostics
                     Name = "Screenshot key bound",
                     Ok = shotCount is > 0 || HasArchive(screenshots),
                     Detail = shotCount is > 0 || HasArchive(screenshots)
-                        ? $"RatNav has seen screenshots. Tap {settings.ScreenshotKey} in raid for a position fix."
+                        ? $"RatNav has seen screenshots. Press {settings.ScreenshotKey} in raid for a position fix."
                         : "No screenshots seen yet.",
                     Fix = $"Bind one in Tarkov: Settings, Controls, Screenshot. RatNav expects "
                         + $"{settings.ScreenshotKey} — change either to match the other.",

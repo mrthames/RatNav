@@ -681,20 +681,24 @@ function QuitRatNav() {
  */
 const DEFAULT_HOTKEYS: HotKeys = {
   toggleOverlay: 'F5',
-  toggleMode: 'F7',
   toggleInteract: 'F6',
-  identifyItem: 'F8',
-  readExtracts: 'F9',
-  centerMap: 'F10',
+  toggleMode: 'F7',
+  toggleFollow: 'F8',
+  centerMap: 'F9',
+  readExtracts: 'F10',
+  identifyItem: 'F11',
 }
 
+// The order the keys are used, which is also the order F5 to F11 run in and the order the
+// overlay's own strip lists them.
 const HOTKEYS: [keyof HotKeys, string][] = [
   ['toggleOverlay', 'Show / hide overlay'],
-  ['toggleMode', 'Center or panel view'],
   ['toggleInteract', 'Edit mode — move, resize, zoom'],
-  ['identifyItem', 'Identify item under cursor'],
-  ['readExtracts', "Read the game's extract list"],
+  ['toggleMode', 'Center or panel view'],
+  ['toggleFollow', 'Follow me, or hold still'],
   ['centerMap', 'Center the map on me'],
+  ['readExtracts', "Read the game's extract list"],
+  ['identifyItem', 'Identify item under cursor'],
 ]
 
 /**

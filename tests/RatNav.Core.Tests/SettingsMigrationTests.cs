@@ -93,7 +93,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         // Round 2 still ran.
         Assert.False(settings.Overlay.ShowControls);
-        Assert.Equal(3, settings.Revision);
+        Assert.Equal(4, settings.Revision);
     }
 
     /// <summary>The map settings stack shipped open and should not have; files on it come along.</summary>
@@ -161,6 +161,68 @@ public sealed class SettingsMigrationTests : IDisposable
 
         Assert.Equal("F6", settings.Hotkeys.ToggleInteract);
         Assert.Equal("F7", settings.Hotkeys.ToggleMode);
+    }
+
+    /// <summary>
+    /// Round 4: F5 to F11 run in the order the keys are used.
+    ///
+    /// <para>They had accumulated — identify and extracts took F8 and F9 because those were next,
+    /// and the two that move the map arrived later and took what was left — so the keys that read
+    /// the screen sat in the middle of the run.</para>
+    /// </summary>
+    [Fact]
+    public void The_f_keys_are_laid_out_in_the_order_they_are_used()
+    {
+        WriteSettings(new
+        {
+            revision = 3,
+            hotkeys = new
+            {
+                toggleOverlay = "F5",
+                toggleInteract = "F6",
+                toggleMode = "F7",
+                identifyItem = "F8",
+                readExtracts = "F9",
+                centerMap = "F10",
+                toggleFollow = "F11",
+            },
+        });
+
+        var keys = RatNavSettings.Load(_dir).Hotkeys;
+
+        Assert.Equal("F5", keys.ToggleOverlay);
+        Assert.Equal("F6", keys.ToggleInteract);
+        Assert.Equal("F7", keys.ToggleMode);
+        Assert.Equal("F8", keys.ToggleFollow);
+        Assert.Equal("F9", keys.CenterMap);
+        Assert.Equal("F10", keys.ReadExtracts);
+        Assert.Equal("F11", keys.IdentifyItem);
+    }
+
+    /// <summary>One key moved by hand makes the whole set somebody's own arrangement.</summary>
+    [Fact]
+    public void A_set_with_one_key_moved_by_hand_is_left_alone()
+    {
+        WriteSettings(new
+        {
+            revision = 3,
+            hotkeys = new
+            {
+                toggleOverlay = "F5",
+                toggleInteract = "F6",
+                toggleMode = "F7",
+                identifyItem = "F8",
+                readExtracts = "F9",
+                centerMap = "F10",
+                toggleFollow = "F4",
+            },
+        });
+
+        var keys = RatNavSettings.Load(_dir).Hotkeys;
+
+        Assert.Equal("F4", keys.ToggleFollow);
+        Assert.Equal("F8", keys.IdentifyItem);
+        Assert.Equal("F10", keys.CenterMap);
     }
 
     /// <summary>And having been through round 3, choosing the other way round sticks.</summary>

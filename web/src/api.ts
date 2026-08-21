@@ -160,14 +160,18 @@ export interface TurnIn {
   wikiUrl: string | null
 }
 
+/** In the order the keys are used, which is the order F5 to F11 run in. */
 export interface HotKeys {
   toggleOverlay: string
   toggleInteract: string
   toggleMode: string
+  /** Hold the map still, or have it keep you centred. */
+  toggleFollow: string
+  /** Put the map back on you, once, without starting to follow. */
   centerMap: string
-  identifyItem: string
   /** Read the extract list the game is showing, while it is showing it. */
   readExtracts: string
+  identifyItem: string
 }
 
 export interface Settings {

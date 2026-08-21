@@ -615,6 +615,14 @@
                                 Hit-test invisible, so it cannot get between the pointer and
                                 anything, and gone for good once the first fix lands.
                             -->
+                            <!--
+                                Bounded, and everything inside it wraps.
+
+                                It sized itself to the longest line it contained, which on a small
+                                overlay is wider than the map — so the bottom line ran off the
+                                sides and simply was not there. A prompt whose own explanation is
+                                invisible has failed at the one thing it is for.
+                            -->
                             <Border x:Name="NoFixPrompt"
                                     Visibility="Collapsed"
                                     IsHitTestVisible="False"
@@ -623,20 +631,30 @@
                                     BorderBrush="{StaticResource Accent}"
                                     BorderThickness="1"
                                     CornerRadius="2"
-                                    Padding="14,10">
+                                    Padding="10,8"
+
+                                    MaxWidth="260">
                                 <StackPanel>
+                                    <!--
+                                        Sized with the RATNAV title rather than above it. At 18 it
+                                        was the largest thing on screen, for a line that says which
+                                        key to press once per raid.
+                                    -->
                                     <TextBlock x:Name="NoFixKey"
-                                               FontFamily="Consolas" FontSize="18" FontWeight="Bold"
+                                               FontFamily="Consolas" FontSize="13" FontWeight="Bold"
                                                Foreground="{StaticResource Accent}"
+                                               TextWrapping="Wrap" TextAlignment="Center"
                                                HorizontalAlignment="Center" />
                                     <TextBlock Text="to place yourself on the map"
-                                               FontFamily="Segoe UI" FontSize="12"
+                                               FontFamily="Segoe UI" FontSize="11"
                                                Foreground="{StaticResource Ink}"
                                                Margin="0,3,0,0"
+                                               TextWrapping="Wrap" TextAlignment="Center"
                                                HorizontalAlignment="Center" />
                                     <TextBlock Text="the game's screenshot key — RatNav reads where it was taken"
                                                Style="{StaticResource Label}"
                                                Margin="0,5,0,0"
+                                               TextWrapping="Wrap" TextAlignment="Center"
                                                HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -970,16 +988,40 @@
                 Grouped in the order you reach for them: what to draw, how hard to draw it, where
                 the map sits, then the list.
             -->
+            <!--
+                Everything that is not the settings, while the settings are up. Same sheet the
+                quest brief uses, and clicking it puts them away.
+            -->
+            <Border x:Name="ControlScrim" Grid.Row="1"
+                    Visibility="Collapsed"
+                    Background="#66000000" />
+
+            <!--
+                A panel in the middle rather than a drawer down the left edge.
+
+                Down the side it was as narrow as the overlay was, which at 1080p is not very, and
+                every row of it was a cramped little column of chips over the map. Centred it can
+                be a comfortable width and scroll for its height, and what it covers while it is
+                open does not matter — nobody is reading the map while changing how the map is
+                drawn.
+            -->
             <Border x:Name="ControlStack" Grid.Row="1"
-                    HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                    Margin="6,6,0,26" Padding="5,4"
-                    Background="#e60b0f13"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    MinWidth="280" MaxWidth="380"
+                    Padding="12,10"
+                    Background="#f50b0f13"
                     BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
                 <DockPanel>
-                    <Button x:Name="CollapseControls" DockPanel.Dock="Top"
-                            Style="{StaticResource Chip}" Content="«"
-                            HorizontalAlignment="Right" Margin="0,0,0,4"
-                            ToolTip="Fold the controls away" />
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8" LastChildFill="False">
+                        <TextBlock DockPanel.Dock="Left" Text="SETTINGS"
+                                   Style="{StaticResource Label}"
+                                   Foreground="{StaticResource Ink}"
+                                   VerticalAlignment="Center" />
+
+                        <Button x:Name="CollapseControls" DockPanel.Dock="Right"
+                                Style="{StaticResource Chip}" Content="✕"
+                                ToolTip="Close the settings" />
+                    </DockPanel>
 
                     <ScrollViewer x:Name="ControlScroll"
                                   VerticalScrollBarVisibility="Auto"
