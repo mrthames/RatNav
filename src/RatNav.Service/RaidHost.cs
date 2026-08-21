@@ -374,10 +374,25 @@ public sealed record RatNavSettings
     public static class TunedFor1080p
     {
         public const double Marker = 0.75;
-        public const double Text = 1.0;
+
+        /// <summary>Down from 1.0 after a second sitting with the overlay in a live raid.</summary>
+        public const double Text = 0.8;
+
         public const double PlaceName = 0.7;
         public const double Player = 2.5;
         public const double Ui = 0.9;
+
+        /// <summary>
+        /// The edge arrows and their labels, which want to be bigger than the pins rather than
+        /// the same size.
+        ///
+        /// <para>They started as the pin and label sizes because that was the obvious place to
+        /// begin. Turned in a raid they both ended up larger: an edge arrow is standing in for
+        /// something you cannot see, so it has to carry on a glance what a pin gets to say by
+        /// simply being in the right place.</para>
+        /// </summary>
+        public const double EdgeArrow = 0.975;
+        public const double EdgeLabel = 1.2;
     }
 
     public sealed record HotKeySettings
@@ -537,9 +552,26 @@ public sealed record RatNavSettings
         public OverlayPlacement Wireframe { get; init; } = new()
         {
             Ink = "outline",
-            Zoom = 3.0,
+
+            // Measured in a live raid rather than picked. Three was wide enough to see the whole
+            // district and too wide to read the street you are standing on.
+            Zoom = 5.35,
             Follow = true,
         };
+
+        /// <summary>
+        /// Where the centred view sits, as a share of the screen.
+        ///
+        /// <para>Measured from a real arrangement at 1920×1032: a little right of centre and above
+        /// the middle, about two fifths of the width and just under half the height. Smaller than
+        /// it sounds and deliberately so — it is read at a glance while moving, and a map that
+        /// fills the screen is one you have to look *around* rather than at.</para>
+        ///
+        /// <para>A share rather than a rectangle, for the same reason the corner panel keeps one:
+        /// a pixel rectangle measured on one monitor is somewhere else entirely on another.</para>
+        /// </summary>
+        public static (double Left, double Top, double Width, double Height) WireframeShare =>
+            (0.3323, 0.2926, 0.3953, 0.4506);
 
         /// <summary>
         /// How much of the screen the centred view covers, as a fraction.
@@ -897,8 +929,9 @@ public sealed record RatNavSettings
     /// <para>4 — F5 to F11 run in the order the keys are actually used.</para>
     /// <para>5 — the hideout look-ahead counts from zero rather than from one.</para>
     /// <para>6 — the size dials became multipliers of a tuned base.</para>
+    /// <para>7 — that base was measured again, in a raid.</para>
     /// </summary>
-    private const int CurrentRevision = 6;
+    private const int CurrentRevision = 7;
 
     public static RatNavSettings Load(string dataDirectory)
     {
@@ -959,6 +992,7 @@ public sealed record RatNavSettings
         if (settings.Revision < 4) RunKeysInUseOrder(settings.Hotkeys);
         if (settings.Revision < 5) CountLookAheadFromZero(settings);
         if (settings.Revision < 6) SizesBecomeMultipliers(settings);
+        if (settings.Revision < 7) TheBaseWasMeasuredAgain(settings);
 
         settings.Revision = CurrentRevision;
 
@@ -1115,6 +1149,45 @@ public sealed record RatNavSettings
     /// <summary>The shipped default becomes 1.0; anything else keeps the size it draws at.</summary>
     private static double AsMultiple(double value, double was, double of) =>
         Math.Abs(value - was) < 0.001 ? 1.0 : Math.Round(value / of, 2);
+
+    /// <summary>
+    /// Moves saved multipliers onto the base measured in a live raid.
+    ///
+    /// <para>Round 6 measured the overlay sitting still on a desktop. This one was measured with
+    /// the game running and a raid loaded, which turned out to be a different exercise: labels
+    /// wanted to be smaller against a moving background, and the edge arrows and their captions
+    /// wanted to be bigger than the pins rather than the same size — an edge arrow stands in for
+    /// something you cannot see, so it has to carry on a glance what a pin gets to say by being
+    /// in the right place.</para>
+    ///
+    /// <para>Anybody on 1.0 stays on 1.0 and simply gets the better size, which is the whole point
+    /// of the dials being multipliers. Anybody who tuned theirs keeps the size they chose, scaled
+    /// by however much the base under it moved.</para>
+    /// </summary>
+    private static void TheBaseWasMeasuredAgain(RatNavSettings settings)
+    {
+        var o = settings.Overlay;
+
+        settings.Overlay = o with
+        {
+            TextScale = Rebased(o.TextScale, from: 1.0, to: TunedFor1080p.Text),
+
+            // These two had no dial before this round, so there is nothing anybody could have
+            // chosen and nothing to preserve.
+            EdgeArrowScale = 1.0,
+            EdgeLabelScale = 1.0,
+        };
+    }
+
+    /// <summary>
+    /// Keeps a chosen size the same while the base under it changes.
+    ///
+    /// <para>1.0 means "whatever RatNav thinks is right", so it stays 1.0 and picks up the new
+    /// number. Anything else was a decision about how big something should actually be, and that
+    /// decision survives.</para>
+    /// </summary>
+    private static double Rebased(double multiplier, double from, double to) =>
+        Math.Abs(multiplier - 1.0) < 0.001 ? 1.0 : Math.Round(multiplier * from / to, 2);
 
     /// <summary>
     /// Closes the map settings stack on files that never chose to have it open.

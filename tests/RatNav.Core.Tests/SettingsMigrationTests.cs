@@ -93,7 +93,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         // Round 2 still ran.
         Assert.False(settings.Overlay.ShowControls);
-        Assert.Equal(6, settings.Revision);
+        Assert.Equal(7, settings.Revision);
     }
 
     /// <summary>The map settings stack shipped open and should not have; files on it come along.</summary>

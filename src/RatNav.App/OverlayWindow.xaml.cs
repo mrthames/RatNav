@@ -231,6 +231,19 @@ public partial class OverlayWindow : Window
         };
         SizeChanged += (_, _) => Draw();
 
+        // And when the canvas changes size without the window doing so.
+        //
+        // Draw centres the map on MapCanvas.ActualWidth, and switching to the centred view
+        // collapses the list columns beside it — a layout pass that happens after the code asking
+        // for it returns. So the redraw fired while the canvas still had its old width, and the
+        // map was centred on a rectangle that no longer existed: with both lists on the left, the
+        // player sat about a hundred pixels right of the middle of the screen until something
+        // else happened to redraw.
+        //
+        // Hooked to the thing Draw actually depends on rather than to the window, which is only
+        // sometimes the same event.
+        MapCanvas.SizeChanged += (_, _) => Draw();
+
         // The quest log's ceiling is a fraction of the side's height, so it has to be worked out
         // again whenever that height changes — the overlay is resized, or a panel opens beside it.
         LeftDrawers.SizeChanged += (_, _) => ApplyQuestCeiling();
@@ -520,19 +533,15 @@ public partial class OverlayWindow : Window
             // a window the size of two lists.
             if (Folded) Remember(_settings.Overlay with { FoldedWidth = Width });
 
-            // The centred view has no arrangement to save: it is centred, and how big it is comes
-            // from the coverage dial. Writing the rectangle it happens to occupy would be storing
-            // a value nothing reads.
-            if (_settings.Overlay.Mode != RatNavSettings.OverlayMode.Wireframe)
+            // Both views keep where they were left. The centred one used to be excluded, because
+            // its rectangle came from the dial and anything written here was a value nothing read.
+            Place(p => p with
             {
-                Place(p => p with
-                {
-                    Left = Left,
-                    Top = Top,
-                    Width = Folded ? p.Width : Width,
-                    Height = Height,
-                });
-            }
+                Left = Left,
+                Top = Top,
+                Width = Folded ? p.Width : Width,
+                Height = Height,
+            });
         }
     }
 
@@ -752,29 +761,36 @@ public partial class OverlayWindow : Window
         var bounds = _settings.Overlay;
         var placement = bounds.Current;
 
-        // The centred view is centred, always. Its rectangle has one thing to decide — how much of
-        // the screen it covers — and dragging it somewhere is not a thing that makes sense for a
-        // view whose whole idea is that you are in the middle of it. So it is placed from the dial
-        // every time rather than from a saved rectangle, which also means turning the dial to 1.0
-        // takes effect immediately instead of on the next fresh install.
-        if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
+        // The centred view takes the rectangle it was given, and the coverage dial when it has
+        // not been given one.
+        //
+        // It used to be placed from the dial every time, on the reasoning that a view whose whole
+        // idea is that you are in the middle of it has nothing to decide but its size. That is true
+        // of where the *map* is centred and not of where the window sits: a screen-shaped rectangle
+        // at 70% is not the shape everybody wants, and the dial cannot express "wide and short" or
+        // "over to the left of my ultrawide".
+        //
+        // Turning the dial still overrides it, which is what makes the dial worth keeping — it is
+        // the way back to a centred rectangle after dragging one somewhere.
+        if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe && !placement.Unplaced)
         {
-            // The whole screen at full coverage, not the work area: the HUD is meant to reach the
-            // edges, and the taskbar is not something to leave a gap for when the game is over it.
-            var full = Coverage >= 1;
+            Left = placement.Left;
+            Top = placement.Top;
+            Width = placement.Width;
+            Height = placement.Height;
+        }
+        else if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
+        {
+            // Never arranged: the measured default, as a share of whatever screen this is.
+            var (shareLeft, shareTop, shareWidth, shareHeight) =
+                RatNavSettings.OverlayBounds.WireframeShare;
 
-            // The whole primary screen, not the virtual desktop: a second monitor to the left
-            // puts the virtual origin at a negative x, which would centre the HUD across both and
-            // leave half of it on the wrong one. WorkArea is the primary monitor too, so this
-            // stays on the same screen the centred map has always used.
-            var screen = full
-                ? new Rect(0, 0, SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight)
-                : SystemParameters.WorkArea;
+            var area = SystemParameters.WorkArea;
 
-            Width = screen.Width * Coverage;
-            Height = screen.Height * Coverage;
-            Left = screen.Left + (screen.Width - Width) / 2;
-            Top = screen.Top + (screen.Height - Height) / 2;
+            Width = area.Width * shareWidth;
+            Height = area.Height * shareHeight;
+            Left = area.Left + area.Width * shareLeft;
+            Top = area.Top + area.Height * shareTop;
         }
         else if (placement.Unplaced)
         {
@@ -871,9 +887,9 @@ public partial class OverlayWindow : Window
         // neither was offered. Windows will run its own resize loop — real cursors, snapping, the
         // window's own minimum size — as soon as it is told the pointer is on a frame.
         //
-        // Not in the centred view, which is centred and sized from the coverage dial: dragging an
-        // edge there would move it until the next thing that laid it out put it back.
-        if (!_clickThrough && _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box)
+        // Both views, now that the centred one keeps a rectangle of its own rather than deriving
+        // one from the dial on every layout — an edge dragged there used to spring straight back.
+        if (!_clickThrough)
         {
             var edge = ResizeBorder.HitTest(this, lParam);
 
@@ -974,11 +990,42 @@ public partial class OverlayWindow : Window
     private bool Hud =>
         _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe && Coverage >= 1;
 
+    /// <summary>
+    /// A centred rectangle covering that share of the screen.
+    ///
+    /// <para>What the coverage dial writes. It used to clear the rectangle instead and let the
+    /// layout derive one — which stopped working the moment an unset rectangle came to mean "the
+    /// measured default" rather than "compute it from the dial", and would have left the dial
+    /// snapping back to the same size whatever it was turned to.</para>
+    /// </summary>
+    private RatNavSettings.OverlayPlacement CenteredAt(double coverage)
+    {
+        // The whole screen at full coverage, not the work area: a HUD is meant to reach the edges,
+        // and the taskbar is not something to leave a gap for when the game is over it.
+        var screen = coverage >= 1
+            ? new Rect(0, 0, SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight)
+            : SystemParameters.WorkArea;
+
+        var width = screen.Width * coverage;
+        var height = screen.Height * coverage;
+
+        return _settings.Overlay.Wireframe with
+        {
+            Width = width,
+            Height = height,
+            Left = screen.Left + (screen.Width - width) / 2,
+            Top = screen.Top + (screen.Height - height) / 2,
+        };
+    }
+
     private void StepCoverage(double by)
     {
         Remember(_settings.Overlay with
         {
             WireframeScale = Math.Clamp(_settings.Overlay.WireframeScale + by, 0.3, 1.0),
+
+            Wireframe = CenteredAt(
+                Math.Clamp(_settings.Overlay.WireframeScale + by, 0.3, 1.0)),
         });
 
         ApplyBounds();
@@ -1982,10 +2029,9 @@ public partial class OverlayWindow : Window
     private double PlaceNameSize => Sized(_settings.Overlay.PlaceNameScale, RatNavSettings.TunedFor1080p.PlaceName);
     private double PlayerSize => Sized(_settings.Overlay.PlayerScale, RatNavSettings.TunedFor1080p.Player);
 
-    /// <summary>Based on the pin, because that is the size an edge arrow was drawn at before it had a dial.</summary>
-    private double EdgeArrowSize => Sized(_settings.Overlay.EdgeArrowScale, RatNavSettings.TunedFor1080p.Marker);
+    private double EdgeArrowSize => Sized(_settings.Overlay.EdgeArrowScale, RatNavSettings.TunedFor1080p.EdgeArrow);
 
-    private double EdgeLabelSize => Sized(_settings.Overlay.EdgeLabelScale, RatNavSettings.TunedFor1080p.Text);
+    private double EdgeLabelSize => Sized(_settings.Overlay.EdgeLabelScale, RatNavSettings.TunedFor1080p.EdgeLabel);
 
     /// <summary>The overlay's own furniture, which is a multiplier of the tuned base like the rest.</summary>
     private double EffectiveUiScale =>
@@ -2883,8 +2929,11 @@ public partial class OverlayWindow : Window
         // The centred view is centred, and its size comes from the coverage dial. Dragging it or
         // pulling its corner would move it until the next thing that laid it out put it back,
         // which is worse than not offering either.
-        DragHandle.Visibility = centred ? Visibility.Collapsed : Visibility.Visible;
-        ResizeGrip.Visibility = centred ? Visibility.Collapsed : Visibility.Visible;
+        // Both views get handles now. The centred one had none, because its rectangle came from
+        // the coverage dial and there was nothing to drag it to; it has a rectangle of its own to
+        // arrange, so it needs the same grab bar and corner as the panel.
+        DragHandle.Visibility = Visibility.Visible;
+        ResizeGrip.Visibility = Visibility.Visible;
 
         HudControls.Visibility = centred ? Visibility.Visible : Visibility.Collapsed;
         FullScreenControls.Visibility = Hud ? Visibility.Visible : Visibility.Collapsed;
