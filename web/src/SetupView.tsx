@@ -1,5 +1,13 @@
 import { useEffect, useId, useState } from 'react'
-import { api, type Diagnostics, type HotKeys, type LanInfo, type Profiles, type Settings } from './api'
+import {
+  api,
+  type Diagnostics,
+  type HotKeys,
+  type LanInfo,
+  type Profiles,
+  type Settings,
+  type UpdateStatus,
+} from './api'
 
 /**
  * Everything RatNav needs to know about your machine, and whether it has it.
@@ -253,6 +261,11 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
           you no longer have. Everything else about it — size, ink, scales — is left alone.
         </span>
       </div>
+
+      <Updates
+        enabled={draft.checkForUpdates}
+        onToggle={(on) => setDraft({ ...draft, checkForUpdates: on })}
+      />
 
       <QuitRatNav />
 
@@ -611,6 +624,89 @@ function LanPanel() {
  * <p>It asks first. This is not a control anybody wants to hit while reading the page above it,
  * and there is no undo — coming back means launching RatNav again.</p>
  */
+/**
+ * Whether there is a newer RatNav, and whether to keep asking.
+ *
+ * <p>Tell, never do. This reports and links; downloading and running an installer is left to the
+ * person who decides to, because a tool that reads the game's files has no business doing that on
+ * its own.</p>
+ *
+ * <p>The manual check works with the daily one switched off — somebody pressing a button is
+ * somebody asking, and a switch that disables the button as well would be a switch that means
+ * "never tell me" rather than "do not go looking".</p>
+ */
+function Updates({ enabled, onToggle }: { enabled: boolean; onToggle: (on: boolean) => void }) {
+  const [status, setStatus] = useState<UpdateStatus | null>(null)
+  const [checking, setChecking] = useState(false)
+
+  useEffect(() => {
+    void api.update().then(setStatus).catch(() => setStatus(null))
+  }, [])
+
+  async function checkNow() {
+    setChecking(true)
+    try {
+      setStatus(await api.update(true))
+    } catch {
+      setStatus(null)
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-line pt-3">
+      <p className="font-mono text-[11px] uppercase tracking-wider text-muted">Updates</p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="size-4 accent-accent"
+          />
+          Check for a newer version once a day
+        </label>
+
+        <button
+          type="button"
+          disabled={checking}
+          onClick={() => void checkNow()}
+          className="rounded-sm bg-panel-hi px-3 py-1.5 font-mono text-[11px] uppercase
+                     tracking-wider text-muted transition-colors hover:text-ink
+                     disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          {checking ? 'Checking…' : 'Check now'}
+        </button>
+      </div>
+
+      <p className="text-xs text-muted">
+        {status?.available && status.latest ? (
+          <>
+            <b className="text-accent">{status.latest} is out</b> — you are on {status.current}.{' '}
+            <a
+              href={status.url ?? 'https://github.com/mrthames/RatNav/releases/latest'}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              Get it from GitHub
+            </a>
+            . Quit RatNav first — an installer cannot replace files a running program has open.
+          </>
+        ) : status?.problem ? (
+          <>You are on {status.current}. Could not reach GitHub to check for a newer one.</>
+        ) : status?.latest ? (
+          <>You are on {status.current}, which is the newest release.</>
+        ) : (
+          <>You are on {status?.current ?? '…'}.</>
+        )}
+      </p>
+    </div>
+  )
+}
+
 function QuitRatNav() {
   const [asking, setAsking] = useState(false)
   const [gone, setGone] = useState(false)

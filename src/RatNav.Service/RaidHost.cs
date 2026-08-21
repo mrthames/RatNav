@@ -320,6 +320,16 @@ public sealed record RatNavSettings
     public int HideoutLookAhead { get; set; } = 1;
 
     /// <summary>
+    /// Whether RatNav asks GitHub, once a day, whether there is a newer stable release.
+    ///
+    /// <para>On by default and refusable. Something that reaches a server on your behalf should be
+    /// something you can turn off, and a tool that reads the game's files earns nothing by being
+    /// pushy about its own updates. Off, the manual check still works — that is the point of
+    /// having one.</para>
+    /// </summary>
+    public bool CheckForUpdates { get; set; } = true;
+
+    /// <summary>
     /// Where these settings were read from, so a change made while running can be written back.
     /// Not serialised — it describes the file rather than being part of it.
     /// </summary>

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using RatNav.Core;
 using RatNav.Core.Data;
+using RatNav.Core.Updates;
 using RatNav.Core.Game;
 using RatNav.Core.Maps;
 using RatNav.Core.Model;
@@ -857,6 +858,7 @@ public static class ApiEndpoints
                 if (update.PlayerLevel is { } level) progress.SetPlayerLevel(level);
                 if (update.GameEdition is { Length: > 0 } edition) current.GameEdition = edition;
                 if (update.Owner is not null) current.Owner = Blank(update.Owner);
+                if (update.CheckForUpdates is { } check) current.CheckForUpdates = check;
 
                 if (update.ScreenshotDisposal is { Length: > 0 } disposal
                     && Enum.TryParse<ScreenshotDisposal>(disposal, ignoreCase: true, out var parsed))
@@ -1014,6 +1016,35 @@ public static class ApiEndpoints
 
                 steps,
             });
+        });
+
+        // ---- is there a newer RatNav
+
+        // What version this is, and whether GitHub has a newer stable one.
+        //
+        // Tell, never do: this reports and links, and downloading and running an installer is left
+        // to the person who decides to. A tool that reads the game's files has no business doing
+        // that on its own.
+        //
+        // `force` is the manual check — it asks whatever the age of the last answer, because
+        // somebody pressing the button has a reason to think the cached one is stale. Without it
+        // the answer is at most a day old and costs nothing.
+        api.MapGet("/update", async (
+            UpdateCheck updates, RatNavSettings settings, bool? force, CancellationToken ct) =>
+        {
+            var current = RatNavVersion.Current;
+
+            // Off means off for the automatic check only. A manual one is somebody asking.
+            if (!settings.CheckForUpdates && force is not true)
+            {
+                return Results.Ok(new UpdateStatus { Current = current });
+            }
+
+            var status = force is true
+                ? await updates.CheckAsync(current, ct)
+                : await updates.CheckIfDueAsync(current, ct);
+
+            return Results.Ok(status);
         });
 
         // ---- reaching RatNav from another device
@@ -2369,6 +2400,7 @@ public sealed record SettingsUpdate
     public HotKeyUpdate? Hotkeys { get; init; }
     public int? PlayerLevel { get; init; }
     public string? GameEdition { get; init; }
+    public bool? CheckForUpdates { get; init; }
 }
 
 public sealed record HotKeyUpdate
@@ -2409,6 +2441,9 @@ public sealed record SettingsView
     /// </summary>
     public int HideoutLookAhead { get; init; }
 
+    /// <summary>Whether the daily update check runs. The manual one ignores it.</summary>
+    public bool CheckForUpdates { get; init; }
+
     /// <summary>
     /// The lowest level consistent with the quests marked complete, offered when nothing is set.
     /// Not your real level — nothing on disk reports that — but a floor beats an empty box.
@@ -2439,6 +2474,7 @@ public sealed record SettingsView
             PlayerLevel = progress.PlayerLevel,
             GameEdition = settings.GameEdition,
         HideoutLookAhead = settings.HideoutLookAhead,
+        CheckForUpdates = settings.CheckForUpdates,
             ResolvedGameDirectory = resolved,
             ResolvedScreenshotDirectory =
                 settings.ScreenshotDirectory ?? RatNavPaths.DefaultScreenshotDirectory,

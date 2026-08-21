@@ -41,21 +41,6 @@ jobs:
       # Not single-file: WPF crashes on startup when packed that way, and the installer makes the
       # file layout invisible regardless. The zip is here for people who would rather not install
       # anything at all.
-      - name: Publish
-        run: >
-          dotnet publish src/RatNav.App
-          --configuration Release
-          --runtime win-x64
-          --self-contained true
-          --output publish
-
-      - name: Check the web app shipped
-        shell: pwsh
-        run: |
-          if (-not (Test-Path publish/wwwroot/index.html)) {
-            throw "wwwroot is missing from the publish output — every page would 404."
-          }
-
       # A tag with a suffix — v0.3.0-alpha.1 — is a prerelease. GitHub keeps prereleases out of
       # "Latest", so the download button on the repository goes on pointing at the last stable
       # build until one is deliberately promoted.
@@ -70,6 +55,27 @@ jobs:
           "version=$version" >> $env:GITHUB_OUTPUT
           "name=$tag" >> $env:GITHUB_OUTPUT
           "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+
+      # Stamped with the tag, so the app can say what it is. The update check compares this
+      # against GitHub's latest release — unstamped it reads 1.0.0, which is not any release and
+      # would have every build claiming to be newer than every release forever.
+      - name: Publish
+        run: >
+          dotnet publish src/RatNav.App
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          --output publish
+          -p:Version=${{ steps.version.outputs.version }}
+          -p:InformationalVersion=${{ steps.version.outputs.version }}
+
+      - name: Check the web app shipped
+        shell: pwsh
+        run: |
+          if (-not (Test-Path publish/wwwroot/index.html)) {
+            throw "wwwroot is missing from the publish output — every page would 404."
+          }
+
 
       - name: Build the installer
         shell: pwsh

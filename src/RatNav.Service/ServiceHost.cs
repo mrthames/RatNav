@@ -1,10 +1,11 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RatNav.Core;
 using RatNav.Core.Data;
+using RatNav.Core.Updates;
 using RatNav.Core.Progress;
 using RatNav.Core.Sharing;
 using RatNav.Core.Tracking;
@@ -163,6 +164,13 @@ public static class ServiceHost
             var tracker = new ItemTracker(profile);
             tracker.Load();
             return tracker;
+        });
+
+        // Its own client, and a short timeout: nothing waits on this, and an update check that
+        // hangs should give up rather than sit there.
+        builder.Services.AddHttpClient<UpdateCheck>(http =>
+        {
+            http.Timeout = TimeSpan.FromSeconds(10);
         });
 
         // Its own client: the wiki is a different host from tarkov.dev, and a tool that identifies

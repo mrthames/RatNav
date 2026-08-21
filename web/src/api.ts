@@ -180,6 +180,18 @@ export interface HotKeys {
   identifyItem: string
 }
 
+/** What version this is, and whether GitHub has a newer stable one. */
+export interface UpdateStatus {
+  current: string
+  latest: string | null
+  available: boolean
+  url: string | null
+  checkedAt: string | null
+
+  /** Set when the check could not be made. Never worth interrupting anybody about. */
+  problem: string | null
+}
+
 export interface Settings {
   gameDirectory: string | null
   screenshotDirectory: string | null
@@ -192,6 +204,9 @@ export interface Settings {
 
   /** How deep into the hideout build order to count. One setting, three dials. */
   hideoutLookAhead: number
+
+  /** Whether the daily update check runs. A manual check ignores it. */
+  checkForUpdates: boolean
   /** Lowest level consistent with the quests you have completed — a floor, not your real level. */
   suggestedPlayerLevel: number | null
   /** The install in use, whether set by hand or found. */
@@ -577,6 +592,15 @@ export const api = {
     post<unknown>(`/api/traders/${encodeURIComponent(name)}/level`, { level }),
 
   settings: () => get<Settings>('/api/settings'),
+
+  /**
+   * Whether there is a newer RatNav.
+   *
+   * <p>`force` is the manual check: it asks GitHub whatever the age of the cached answer, and it
+   * asks even when the daily check is turned off — somebody pressing the button is somebody
+   * asking. Without it the answer is at most a day old and costs nothing.</p>
+   */
+  update: (force = false) => get<UpdateStatus>(`/api/update${force ? '?force=true' : ''}`),
 
   /** Absent fields are left alone; an empty string clears a path back to being detected. */
   saveSettings: (update: Partial<Omit<Settings, 'resolvedGameDirectory' | 'resolvedScreenshotDirectory' | 'gameDirectoryDetected'>>) =>
