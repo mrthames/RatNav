@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 
 <#
 .SYNOPSIS
@@ -92,6 +92,51 @@ function Save-Png {
     $stream.Close()
 }
 
+<#
+    The installer's two wizard images.
+
+    Inno Setup wants BMP and nothing else, at a fixed aspect: a tall panel down the left of the
+    welcome and finish pages, and a small square in the header of every page between. Rendered
+    here rather than drawn by hand so the installer cannot drift from the mark — it is the first
+    thing anybody sees of RatNav and it should not be the one place the logo is out of date.
+
+    Sizes are the 100% ones doubled. Inno picks the nearest and scales down, which is sharper on a
+    high-DPI screen than scaling a small one up.
+#>
+function Save-Bmp {
+    param([int]$Width, [int]$Height, [double]$MarkSize, [string]$Path)
+
+    $rtb = New-Object System.Windows.Media.Imaging.RenderTargetBitmap `
+        $Width, $Height, 96, 96, ([System.Windows.Media.PixelFormats]::Pbgra32)
+
+    $visual = New-Object System.Windows.Media.DrawingVisual
+    $dc = $visual.RenderOpen()
+
+    # The app's own ground, so the installer is recognisably the same thing as what it installs.
+    $dc.DrawRectangle((New-Object System.Windows.Media.SolidColorBrush $Ground), $null,
+        (New-Object System.Windows.Rect 0, 0, $Width, $Height))
+
+    $mark = New-Mark -Badge $false -WithTail $true -Ink $Accent
+    $scale = $MarkSize / 256
+
+    $dc.PushTransform((New-Object System.Windows.Media.TranslateTransform `
+        (($Width - $MarkSize) / 2), (($Height - $MarkSize) / 2)))
+    $dc.PushTransform((New-Object System.Windows.Media.ScaleTransform $scale, $scale))
+    $dc.DrawDrawing($mark.Drawing)
+    $dc.Pop()
+    $dc.Pop()
+
+    $dc.Close()
+    $rtb.Render($visual)
+
+    $encoder = New-Object System.Windows.Media.Imaging.BmpBitmapEncoder
+    $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($rtb))
+
+    $stream = [System.IO.File]::Create($Path)
+    $encoder.Save($stream)
+    $stream.Close()
+}
+
 function Save-Ico {
     param([hashtable[]]$Entries, [string]$Path)
 
@@ -149,6 +194,11 @@ Save-Png -Visual (New-Mark -Badge $true -WithTail $true -Ink $Accent) `
 Save-Png -Visual (New-Mark -Badge $false -WithTail $true -Ink $Accent) `
     -Size 512 -Path (Join-Path $OutDir 'ratnav-mark-512.png')
 
+# The installer's wizard images, at twice the 100% size so a high-DPI machine scales down.
+Save-Bmp -Width 328 -Height 628 -MarkSize 108 -Path (Join-Path $OutDir 'installer-side.bmp')
+Save-Bmp -Width 110 -Height 110 -MarkSize 66 -Path (Join-Path $OutDir 'installer-header.bmp')
+
 Remove-Item -Recurse -Force $temp
 
-"wrote ratnav.ico ($($entries.Count) sizes), ratnav-icon-512.png and ratnav-mark-512.png to $OutDir"
+"wrote ratnav.ico ($($entries.Count) sizes), ratnav-icon-512.png, ratnav-mark-512.png, " +
+"installer-side.bmp and installer-header.bmp to $OutDir"
