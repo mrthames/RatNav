@@ -1,4 +1,4 @@
-namespace RatNav.Core;
+﻿namespace RatNav.Core;
 
 /// <summary>
 /// Which character RatNav is tracking.
@@ -15,16 +15,29 @@ namespace RatNav.Core;
 /// </summary>
 public sealed class RatNavProfile(string dataDirectory)
 {
-    /// <summary>The profiles RatNav offers. Fixed: these are the three the game has.</summary>
+    /// <summary>
+    /// The profiles RatNav offers, in the order they are offered.
+    ///
+    /// <para>Fixed: these are the three the game has. Seasonal first because it is the one most
+    /// people are playing — a season is the current wipe, and the two standing characters are
+    /// where you go between them.</para>
+    /// </summary>
     public static readonly IReadOnlyList<(string Id, string Name)> All =
     [
+        ("pvp-seasonal", "PvP Seasonal"),
         ("pvp", "PvP"),
         ("pve", "PvE"),
-        ("pvp-seasonal", "PvP Seasonal"),
     ];
 
     private readonly object _gate = new();
-    private string _current = "pvp";
+
+    /// <summary>
+    /// The seasonal character, until somebody says otherwise.
+    ///
+    /// <para>Opening on PvP meant most new installs opened on a character nobody was playing and
+    /// had to be told so on the first launch.</para>
+    /// </summary>
+    private string _current = "pvp-seasonal";
 
     /// <summary>
     /// Which character was last chosen.
@@ -61,10 +74,11 @@ public sealed class RatNavProfile(string dataDirectory)
     }
 
     /// <summary>
-    /// Reads back whichever character was last chosen, defaulting to PvP.
+    /// Reads back whichever character was last chosen.
     ///
-    /// <para>Without this the app opened on PvP every time, which for anyone whose character is
-    /// PvE means being shown an empty one and having to say so again on every launch.</para>
+    /// <para>The file sits beside the profile directories rather than inside one, and outside
+    /// everything the installer removes — so the choice survives an update, which is most of the
+    /// point of keeping it.</para>
     /// </summary>
     public void Restore()
     {
@@ -77,7 +91,7 @@ public sealed class RatNavProfile(string dataDirectory)
         }
         catch (IOException)
         {
-            // Opening on PvP is a poor outcome, not a fatal one.
+            // Opening on the default is a poor outcome, not a fatal one.
         }
     }
 

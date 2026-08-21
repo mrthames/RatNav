@@ -1,4 +1,4 @@
-namespace RatNav.Core.Tests;
+﻿namespace RatNav.Core.Tests;
 
 using RatNav.Core;
 using RatNav.Core.Model;
@@ -41,7 +41,10 @@ public sealed class ProfileTests : IDisposable
         var profile = new RatNavProfile(_dir);
 
         Assert.False(profile.Use("nonsense"));
-        Assert.Equal("pvp", profile.Current);
+
+        // And is left where it was, which on a fresh install is the seasonal character — the one
+        // most people are playing, a season being the current wipe.
+        Assert.Equal("pvp-seasonal", profile.Current);
     }
 
     /// <summary>
@@ -70,6 +73,11 @@ public sealed class ProfileTests : IDisposable
     {
         var profile = new RatNavProfile(_dir);
         var progress = new ProgressStore(profile);
+
+        // Said outright rather than leaning on whichever profile ships as the default. A test that
+        // depends on that breaks the day it changes, which is how these three found out.
+        profile.Use("pvp");
+        progress.Load();
 
         progress.SetManual("quest", QuestState.Completed);
         progress.SetPlayerLevel(42);
@@ -102,6 +110,9 @@ public sealed class ProfileTests : IDisposable
     {
         var profile = new RatNavProfile(_dir);
         var progress = new ProgressStore(profile);
+
+        profile.Use("pvp");
+        progress.Load();
 
         progress.SetManual("quest", QuestState.Completed);
 

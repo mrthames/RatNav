@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, type Profiles } from './api'
 
 /**
@@ -12,6 +12,37 @@ export function ProfileMenu({ onSwitched }: { onSwitched: () => void }) {
   const [profiles, setProfiles] = useState<Profiles | null>(null)
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+
+  /**
+   * Clicking anywhere else closes it, as a menu should.
+   *
+   * <p>Without this the only way to dismiss it is the control that opened it, which means finding
+   * your way back to a small caret to undo a click you have already decided against.</p>
+   *
+   * <p>On pointerdown rather than click, so the press that lands on a page control closes the menu
+   * on the way past rather than after it. Escape too, because a menu that traps a keyboard is
+   * worse than one that traps a mouse.</p>
+   */
+  useEffect(() => {
+    if (!open) return
+
+    function away(e: PointerEvent) {
+      if (!box.current?.contains(e.target as Node)) setOpen(false)
+    }
+
+    function key(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('pointerdown', away)
+    document.addEventListener('keydown', key)
+
+    return () => {
+      document.removeEventListener('pointerdown', away)
+      document.removeEventListener('keydown', key)
+    }
+  }, [open])
 
   useEffect(() => { api.profiles().then(setProfiles).catch(() => setProfiles(null)) }, [])
 
@@ -35,7 +66,7 @@ export function ProfileMenu({ onSwitched }: { onSwitched: () => void }) {
   const current = profiles.all.find((p) => p.id === profiles.current)
 
   return (
-    <div className="relative">
+    <div ref={box} className="relative">
       {/*
         The wordmark and the character are one control.
 
