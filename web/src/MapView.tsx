@@ -42,6 +42,14 @@ const FLOOR_ORDER = [
   'Third_Floor', 'Fourth_Floor', 'Fifth_Floor',
 ]
 
+/** How far apart two fingers are. One finger, or none, has no span and cannot pinch. */
+function spanOf(points: Map<number, { x: number; y: number }>): number {
+  const [a, b] = [...points.values()]
+  if (!a || !b) return 0
+
+  return Math.hypot(a.x - b.x, a.y - b.y) || 1
+}
+
 export function MapView({
   map,
   objectives,
@@ -188,6 +196,15 @@ export function MapView({
   const [view, setView] = useState({ zoom: 1, pan: { x: 0, y: 0 } })
   const { zoom, pan } = view
   const dragging = useRef<{ x: number; y: number } | null>(null)
+
+  /**
+   * Fingers currently on the map, and the pinch in progress.
+   *
+   * <p>Refs rather than state: these change on every pointer event and none of them belong in a
+   * render. The zoom they produce does.</p>
+   */
+  const touches = useRef(new Map<number, { x: number; y: number }>())
+  const pinch = useRef<{ span: number; zoom: number } | null>(null)
   const host = useRef<HTMLDivElement>(null)
   const frame = useRef<HTMLDivElement>(null)
 
@@ -421,7 +438,7 @@ export function MapView({
 
       <div
         ref={frame}
-        className="relative overflow-hidden border border-line bg-[#0e1317]"
+        className="relative touch-none overflow-hidden border border-line bg-[#0e1317]"
         // Zoom about the pointer, not the corner.
         //
         // The content is drawn as translate(pan) then scale(z) from the top-left, so a point c in
@@ -455,13 +472,63 @@ export function MapView({
         }}
         // Right-drag to pan, same as the overlay. The context menu would otherwise open on
         // release and swallow the gesture.
+        //
+        // A finger has no right button, so on touch one finger pans and two pinch — which is what
+        // every map on a phone does and therefore what fingers already try. The mouse is left
+        // exactly as it was: left-drag on a desktop is a selection, and turning it into a pan
+        // would break the thing people do reach for.
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
-          if (e.button !== 2) return
-          dragging.current = { x: e.clientX, y: e.clientY }
+          const touch = e.pointerType !== 'mouse'
+          if (!touch && e.button !== 2) return
+
           e.currentTarget.setPointerCapture(e.pointerId)
+          if (touch) touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+          // Two fingers down is a pinch, not two pans. The span between them at the start is what
+          // every later span is measured against.
+          if (touch && touches.current.size === 2) {
+            pinch.current = { span: spanOf(touches.current), zoom }
+            dragging.current = null
+            return
+          }
+
+          dragging.current = { x: e.clientX, y: e.clientY }
         }}
         onPointerMove={(e) => {
+          const touch = e.pointerType !== 'mouse'
+          if (touch && touches.current.has(e.pointerId)) {
+            touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+          }
+
+          // Pinch, about the point between the fingers — the same rule the wheel follows about the
+          // cursor. Zooming about the corner while two fingers hold a building is the thing that
+          // makes a map feel broken.
+          if (pinch.current && touches.current.size === 2) {
+            const box = frame.current?.getBoundingClientRect()
+            if (!box) return
+
+            const start = pinch.current
+            const points = [...touches.current.values()]
+            const midX = (points[0].x + points[1].x) / 2 - box.left
+            const midY = (points[0].y + points[1].y) / 2 - box.top
+
+            setView((v) => {
+              const next = Math.min(8, Math.max(1, start.zoom * (spanOf(touches.current) / start.span)))
+              const ratio = next / v.zoom
+
+              return {
+                zoom: next,
+                pan: {
+                  x: midX - (midX - v.pan.x) * ratio,
+                  y: midY - (midY - v.pan.y) * ratio,
+                },
+              }
+            })
+
+            return
+          }
+
           const from = dragging.current
           if (!from) return
 
@@ -472,8 +539,18 @@ export function MapView({
           dragging.current = { x: e.clientX, y: e.clientY }
         }}
         onPointerUp={(e) => {
+          touches.current.delete(e.pointerId)
+          if (touches.current.size < 2) pinch.current = null
+
           dragging.current = null
           e.currentTarget.releasePointerCapture(e.pointerId)
+        }}
+        onPointerCancel={(e) => {
+          // A gesture the browser took over — an edge swipe, a call arriving. Without this the map
+          // keeps thinking a finger is down and the next tap jumps it.
+          touches.current.delete(e.pointerId)
+          pinch.current = null
+          dragging.current = null
         }}
         onClick={place}
         style={{ cursor: placing ? 'crosshair' : dragging.current ? 'grabbing' : 'default' }}

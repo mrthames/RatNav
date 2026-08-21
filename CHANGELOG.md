@@ -16,6 +16,13 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### App
 
+- **The map works by touch.** One finger pans and two pinch to zoom, about the point between them
+  — which is what every map on a phone does and therefore what fingers already try. The mouse is
+  untouched: left-drag on a desktop is a selection, and turning that into a pan would break the
+  thing people do reach for.
+- **The navigation wraps at phone width** instead of running past the edge, and the character-level
+  steppers are finger-sized on a small screen. A navigation you have to scroll sideways to reach
+  half of is not one.
 - **Quit RatNav from the app.** Closing the browser tab stopped nothing — the tab is not the
   application, it is a page one process serves alongside the overlay and the hotkeys — and the only
   way out was the tray icon, which people do not look in. **Setup → Quit RatNav** stops the whole

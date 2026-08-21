@@ -53,8 +53,9 @@ function Level() {
           type="button"
           onClick={() => void step(-1)}
           aria-label="One level lower"
-          className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
-                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+          className="size-8 rounded-sm bg-panel-hi font-mono text-sm text-muted transition-colors
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent
+                     sm:size-6 sm:text-xs"
         >
           −
         </button>
@@ -67,8 +68,9 @@ function Level() {
           type="button"
           onClick={() => void step(1)}
           aria-label="One level higher"
-          className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
-                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+          className="size-8 rounded-sm bg-panel-hi font-mono text-sm text-muted transition-colors
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent
+                     sm:size-6 sm:text-xs"
         >
           +
         </button>
@@ -119,20 +121,28 @@ export default function App() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-5 py-6">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
+    <div className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-3 py-6 sm:px-5">
+      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-b border-line pb-4">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">RatNav</p>
-          <div className="flex items-baseline gap-4">
+          {/*
+            Six words that wrap rather than six words on one line.
+
+            At desktop width this looks exactly as it did. On a phone the six run past the edge,
+            and a navigation you have to scroll sideways to reach half of is not one. They are also
+            smaller there, because a 3xl word is most of a phone's width on its own — and the tap
+            targets stay honest through the vertical padding rather than through the font size.
+          */}
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
             {(['plan', 'items', 'hideout', 'quests', 'maps', 'setup'] as View[]).map((id) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => setView(id)}
                 aria-pressed={view === id}
-                className="font-display text-3xl font-bold tracking-tight capitalize text-muted
+                className="py-1 font-display text-2xl font-bold tracking-tight capitalize text-muted
                            transition-colors hover:text-ink aria-pressed:text-ink
-                           focus-visible:outline-2 focus-visible:outline-accent"
+                           focus-visible:outline-2 focus-visible:outline-accent sm:text-3xl"
               >
                 {id}
               </button>
