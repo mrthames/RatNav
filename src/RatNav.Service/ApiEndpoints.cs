@@ -1655,12 +1655,21 @@ public static class ApiEndpoints
             // extract sends somebody across the map to go and play somewhere else.
             var ways = rows.Where(r => r.Kind != ExtractRowKind.Transit).ToList();
 
+            // Matched against the extracts only.
+            //
+            // Transits live in the same list as extracts now, and the matcher is deliberately
+            // forgiving because its input is OCR — so an extract name read off the screen matched
+            // a transit sitting beside it, and four transits ended up in a list of "extracts the
+            // game says are open to you". They are not extracts, the game lists them separately,
+            // and they have their own control.
+            var exits = map.Extracts.Where(e => !e.IsTransit).ToList();
+
             // Everything the game listed, conditional included: a "??:??:??" row is one whose
             // condition might be met — a car paid for, a switch, an item you are carrying or could
             // still find. What is genuinely out of reach is what the game left off the list.
             var offered = ways.Count > 0
-                ? ExtractMatcher.Match(ways.Select(r => r.Name), map.Extracts)
-                : ExtractMatcher.Match(lines, map.Extracts);
+                ? ExtractMatcher.Match(ways.Select(r => r.Name), exits)
+                : ExtractMatcher.Match(lines, exits);
 
             settings.Remember(s => s.Overlay = s.Overlay with { OfferedExtracts = offered });
 
@@ -1671,12 +1680,12 @@ public static class ApiEndpoints
                 // Said back so the reading can be checked against what is on screen.
                 conditional = ExtractMatcher.Match(
                     ways.Where(r => r.Kind == ExtractRowKind.Conditional).Select(r => r.Name),
-                    map.Extracts),
+                    exits),
 
                 transits = rows.Where(r => r.Kind == ExtractRowKind.Transit).Select(r => r.Name),
 
                 readText = lines,
-                of = map.Extracts.Count,
+                of = exits.Count,
             });
         });
 

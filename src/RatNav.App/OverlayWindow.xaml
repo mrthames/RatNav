@@ -702,7 +702,7 @@
 
                             <TextBlock x:Name="QuestEmpty" Style="{StaticResource Label}"
                                        TextWrapping="Wrap" Visibility="Collapsed"
-                                       Text="No plan yet. Build one on the Plan tab and its stops appear here, numbered as on the map." />
+                                       Text="No plan yet. Build one on the Plan tab and its stops appear here, numbered as on the map. Marks of your own join them." />
 
                             <ScrollViewer x:Name="QuestScroll"
                                           VerticalScrollBarVisibility="Auto"
@@ -796,8 +796,8 @@
                             far enough left to swallow them.
                         -->
                         <Button x:Name="QuestDrawer" Style="{StaticResource Chip}"
-                                Content="quests" Margin="0,0,4,0"
-                                ToolTip="The plan's quests, numbered as on the map" />
+                                Content="waypoints" Margin="0,0,4,0"
+                                ToolTip="The plan's stops, numbered as on the map — quests and your own marks" />
                         <Button x:Name="ItemsDrawer" Style="{StaticResource Chip}"
                                 Content="items" Margin="0,0,4,0"
                                 ToolTip="What to pick up" />

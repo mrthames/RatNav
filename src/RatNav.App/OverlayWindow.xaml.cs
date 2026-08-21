@@ -2032,7 +2032,7 @@ public partial class OverlayWindow : Window
         SwapQuestsSide.Visibility = editingQuests ? Visibility.Visible : Visibility.Collapsed;
 
         ItemsDrawer.Content = _settings.Overlay.ShowItems ? "items ▾" : "items ▸";
-        QuestDrawer.Content = _settings.Overlay.ShowQuests ? "quests ▾" : "quests ▸";
+        QuestDrawer.Content = _settings.Overlay.ShowQuests ? "waypoints ▾" : "waypoints ▸";
 
         // The handles go with the rest of the furniture when interact mode is off. They are
         // buttons, and a button that cannot be clicked is clutter over the game.
@@ -2449,7 +2449,7 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        _questWindow = new ItemsWindow { Title = "RatNav — Quests", PanelName = "Quest Log" };
+        _questWindow = new ItemsWindow { Title = "RatNav — Waypoints", PanelName = "Waypoints" };
         _questWindow.Closed += (_, _) =>
         {
             _questWindow = null;
@@ -2517,7 +2517,15 @@ public partial class OverlayWindow : Window
             });
         }
 
-        return [Section("QUEST LOG", rows)];
+        // Headed WAYPOINTS rather than QUEST LOG.
+        //
+        // It stopped being only quests when marks of your own could join a plan: a stop with no
+        // quest behind it is a place you decided to go, and calling the list a quest log made the
+        // ones you added yourself look like something that had gone wrong.
+        //
+        // The *key* stays "QUEST LOG", because that is what a folded section is remembered under
+        // and renaming it would quietly unfold everybody's.
+        return [Section("QUEST LOG", rows, label: "WAYPOINTS")];
     }
 
     /// <summary>
@@ -3037,9 +3045,22 @@ public partial class OverlayWindow : Window
         QuickExtracts.Content = Titled(_settings.Overlay.Extracts);
         QuickTransits.Content = _settings.Overlay.ShowTransits ? "transit on" : "transit off";
 
-        // Says which way it will go, not which way it is: a control labelled with the state you
-        // are already in leaves you guessing what pressing it does.
-        QuickOffered.Content = _settings.Overlay.OnlyOfferedExtracts ? "all exits" : "my exits";
+        // Says which way it *is*, like everything else on this bar.
+        //
+        // It said which way pressing it would go — "all exits" while filtered to yours — on the
+        // reasoning that a control labelled with its own state leaves you guessing what the press
+        // does. That reasoning is sound in isolation and wrong here: every neighbour on this bar
+        // reads as a state ("transit off", "still", "Both"), so the one control that did not was
+        // read as one too, and it says the opposite of what it is. Reported as the filter being
+        // backwards, which from the outside is exactly what it looked like.
+        //
+        // The tooltip carries what the press does, which is where an explanation costs nothing.
+        var mine = _settings.Overlay.OnlyOfferedExtracts;
+
+        QuickOffered.Content = mine ? "my exits" : "all exits";
+        QuickOffered.ToolTip = mine
+            ? "Showing only the exits the game offered this raid. Press to show every exit."
+            : "Showing every exit on the map. Press to show only the ones offered this raid.";
         QuickOffered.Visibility = _settings.Overlay.OfferedExtracts.Count > 0
             ? Visibility.Visible
             : Visibility.Collapsed;
