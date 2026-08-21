@@ -32,17 +32,24 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const hasPlan = raid?.hasPlan ?? false
 
   /**
-   * Whether the build-a-plan half of the page is on show.
+   * Whether the list has been reopened deliberately, to add to a plan that already exists.
    *
-   * <p>A plan that exists closes it. The page is two things — building a plan, and the plan you
-   * built — and with a plan on it the second is what you came for; a map picker, "0 objectives"
-   * and a **Plan this raid** button underneath make a finished plan read as unfinished work.</p>
-   *
-   * <p>There is no way to add to a plan without clearing it, deliberately. A plan is a route, and
-   * a stop bolted on afterwards is not the route the planner worked out — the honest way to change
-   * your mind is to say what you want and have it planned again.</p>
+   * <p>Closed by default and only ever opened by pressing for it. A plan that stays quietly
+   * editable is the thing this page had wrong before — but a deliberate route back is a different
+   * matter, and there has to be one: a quest turned in, or a second look at what is on the way,
+   * should not mean building the whole plan again.</p>
    */
-  const building = planning && !hasPlan
+  const [adding, setAdding] = useState(false)
+
+  /**
+   * Whether the list you pick from is on show.
+   *
+   * <p>A plan that exists closes it, because the page is two things — building a plan and the plan
+   * you built — and with a plan on it the second is what you came for. Reopened only by asking, at
+   * the foot of the plan.</p>
+   */
+  const building = planning && (!hasPlan || adding)
+
 
   /** Whether the plan menu — sharing and importing — is open. */
   const [planMenu, setPlanMenu] = useState(false)
@@ -71,6 +78,33 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const [picks, setPicks] = useState<Record<string, string[]>>({})
 
   const chosen = useMemo(() => (mapId ? picks[mapId] ?? [] : []), [picks, mapId])
+
+  /**
+   * Seeds the ticks from the plan that is already running, once.
+   *
+   * <p>Adding to a plan rebuilds it from what is ticked, and the ticks live in this component — so
+   * a page reload, which empties them while the plan carries on existing, would turn "add one
+   * stop" into "replace the plan with one stop". Silently, and with no way back to what was
+   * dropped.</p>
+   *
+   * <p>Only when nothing is ticked for this map. Somebody mid-way through choosing has an answer
+   * of their own and it is not ours to overwrite with the last one.</p>
+   */
+  useEffect(() => {
+    if (!mapId || !raid?.hasPlan || raid.mapId !== mapId) return
+    if (picks[mapId]?.length) return
+    if (raid.stops.length === 0) return
+
+    setPicks((all) => ({ ...all, [mapId]: raid.stops.map((stop) => stop.objectiveId) }))
+  }, [mapId, raid?.hasPlan, raid?.mapId, raid?.stops, picks])
+
+  /**
+   * What the one button on the objectives bar does, which is a different thing in each state.
+   *
+   * <p>One button rather than three in a row: at any moment there is exactly one sensible next
+   * move, and the bar is the place the eye already goes for it.</p>
+   */
+  const stage = !hasPlan ? 'build' : adding && chosen.length > 0 ? 'update' : 'end'
 
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -212,9 +246,35 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         route.filter((r) => r.mark).map((r) => r.id))
       await api.activatePlan(built.id)
       setNote(`Plan active — ${built.plan.stops.length} stops.`)
+      setAdding(false)
       setPlanned((n) => n + 1)
     } catch {
       setNote('Could not build that plan.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /**
+   * Ends the raid and clears the plan, which is the way back to the planning layout.
+   *
+   * <p>Both, because either alone leaves the page in a state it cannot explain: a cleared plan
+   * inside a running raid, or a finished raid still showing the route it was run with.</p>
+   *
+   * <p>Ending first, so the completions recorded during it are written through before the plan
+   * that carried them goes.</p>
+   */
+  async function finish() {
+    setBusy(true)
+    setNote(null)
+    try {
+      await api.endRaid()
+      await api.clearPlan()
+
+      setAdding(false)
+      setPlanned((n) => n + 1)
+    } catch {
+      setNote('Could not end the raid.')
     } finally {
       setBusy(false)
     }
@@ -321,7 +381,14 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         is the fix: the counts and the warnings live in a row that stays exactly where it is, and
         the only thing below it that changes size is the checklist itself.
       */}
-      {building && (
+      {/*
+        Always here, plan or no plan.
+
+        It used to go with the rest of the building half, so a planned raid lost the one line
+        saying how much it is and what it wants carried — which is the thing you check on the way
+        to the door, not while deciding.
+      */}
+      {planning && (
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border border-line bg-panel px-3 py-2">
         <span className="font-mono text-sm tabular-nums">
           {chosen.length} objective{chosen.length === 1 ? '' : 's'}
@@ -376,16 +443,23 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
         {note && <span className="font-mono text-xs text-have">{note}</span>}
 
+        {/*
+          One button, three jobs, because at any moment there is exactly one sensible next move
+          and this is where the eye goes for it.
+        */}
         <button
           type="button"
-          onClick={build}
-          disabled={!planning || busy || chosen.length === 0}
-          title={planning ? undefined : 'End the raid or clear the plan first'}
+          onClick={() => void (stage === 'end' ? finish() : build())}
+          disabled={busy || (stage !== 'end' && chosen.length === 0)}
           className="ml-auto rounded-sm border border-accent bg-accent px-3 py-1.5 text-sm
                      font-medium text-ground transition-opacity hover:opacity-90
                      disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-accent"
         >
-          {busy ? 'Planning…' : 'Plan this raid'}
+          {busy
+            ? 'Planning…'
+            : stage === 'build' ? 'Plan this raid'
+            : stage === 'update' ? 'Update plan'
+            : 'End raid'}
         </button>
       </div>
       )}
@@ -398,6 +472,44 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
       {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
 
       {!planning && <RaidInProgress />}
+
+      {/*
+        The way back into the list, at the foot of the plan rather than the top of it.
+
+        A plan is finished when it is built, and this is the one deliberate exception: a quest
+        turned in, or a second look at what is on the way, should not mean building the whole
+        thing again. Down here because the plan is what you came for and this is what you do
+        after reading it.
+      */}
+      {planning && hasPlan && !adding && (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="self-start border border-line bg-panel px-3 py-2 font-mono text-[11px]
+                     uppercase tracking-wider text-muted transition-colors hover:text-ink
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          + Add a stop to this plan
+        </button>
+      )}
+
+      {planning && hasPlan && adding && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+            Tick what to add, then Update plan
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setAdding(false)}
+            className="font-mono text-[11px] uppercase tracking-wider text-muted
+                       transition-colors hover:text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {building && (
       <div className="flex flex-col gap-3">
