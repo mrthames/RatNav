@@ -39,7 +39,10 @@ A **panel in the corner**, out of the way: your plan's quests numbered to match 
 map, the items to look for beside it, and the real map with extracts and place names. The key
 bindings sit along the bottom so you never have to remember them.
 
-![The RatNav panel over a raid on Customs: a waypoint list numbered to match the pins on the map, the watchlist and tracked collections beneath it, the map with extracts and place names beside them, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
+*The four shots below are one raid on Streets of Tarkov, at 1080p, on the settings a new install
+gets.*
+
+![The RatNav panel over a raid on Streets of Tarkov: a waypoint list numbered to match the pins on the map, the watchlist and tracked collections beneath it, the map with extracts and street names beside them, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
 
 **Click a waypoint and the quest opens over it** — what it wants, which step this stop is, and the
 wiki's own photographs of the place. On one screen that is the only way to see which door you are
