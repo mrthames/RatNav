@@ -1160,7 +1160,7 @@
                     Background="#e60b0f13"
                     BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Style="{StaticResource Label}" Text="PANEL" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <TextBlock Style="{StaticResource Label}" Text="OPACITY" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <Button x:Name="QuickFadeDown" Style="{StaticResource Chip}" Content="−" />
                     <TextBlock x:Name="QuickFadeText" Style="{StaticResource Label}"
                                Foreground="{StaticResource Ink}" VerticalAlignment="Center"

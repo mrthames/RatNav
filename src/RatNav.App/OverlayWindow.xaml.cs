@@ -347,8 +347,8 @@ public partial class OverlayWindow : Window
         var keys = _settings.Hotkeys;
 
         Bind(keys.ToggleOverlay, "Show/hide overlay", ToggleVisible);
-        Bind(keys.ToggleInteract, "Interact with overlay", ToggleInteractive);
-        Bind(keys.ToggleMode, "Switch overlay style", ToggleMode);
+        Bind(keys.ToggleInteract, "Edit mode", ToggleInteractive);
+        Bind(keys.ToggleMode, "Centred or panel view", ToggleMode);
         Bind(keys.IdentifyItem, "Identify item under cursor", IdentifyUnderCursor);
         Bind(keys.ReadExtracts, "Read the game's extract list", ReadOfferedExtracts);
 

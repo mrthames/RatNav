@@ -1,4 +1,4 @@
-namespace RatNav.Core.Tests;
+﻿namespace RatNav.Core.Tests;
 
 using System.Text.Json;
 using RatNav.Service;
@@ -31,19 +31,22 @@ public sealed class SettingsMigrationTests : IDisposable
     {
         var settings = RatNavSettings.Load(_dir);
 
-        Assert.Equal("F6", settings.Hotkeys.ToggleMode);
-        Assert.Equal("F7", settings.Hotkeys.ToggleInteract);
+        Assert.Equal("F6", settings.Hotkeys.ToggleInteract);
+        Assert.Equal("F7", settings.Hotkeys.ToggleMode);
     }
 
     [Fact]
-    public void A_file_on_the_old_pair_is_swapped()
+    public void A_file_from_before_round_one_lands_where_it_started()
     {
         WriteHotkeys(new { toggleOverlay = "F5", toggleInteract = "F6", toggleMode = "F7" });
 
         var settings = RatNavSettings.Load(_dir);
 
-        Assert.Equal("F6", settings.Hotkeys.ToggleMode);
-        Assert.Equal("F7", settings.Hotkeys.ToggleInteract);
+        // Round 1 moved this pair one way and round 3 moved it back, so the oldest files end up
+        // on the arrangement they already had. That is the right answer rather than a coincidence:
+        // round 3 exists because round 1 was wrong, and a file that never moved was never wrong.
+        Assert.Equal("F6", settings.Hotkeys.ToggleInteract);
+        Assert.Equal("F7", settings.Hotkeys.ToggleMode);
 
         // Untouched keys stay where they were.
         Assert.Equal("F5", settings.Hotkeys.ToggleOverlay);
@@ -90,7 +93,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         // Round 2 still ran.
         Assert.False(settings.Overlay.ShowControls);
-        Assert.Equal(2, settings.Revision);
+        Assert.Equal(3, settings.Revision);
     }
 
     /// <summary>The map settings stack shipped open and should not have; files on it come along.</summary>
@@ -133,10 +136,47 @@ public sealed class SettingsMigrationTests : IDisposable
 
         var settings = RatNavSettings.Load(_dir);
 
-        Assert.Equal("F6", settings.Hotkeys.ToggleMode);
-        Assert.Equal("F7", settings.Hotkeys.ToggleInteract);
+        Assert.Equal("F6", settings.Hotkeys.ToggleInteract);
+        Assert.Equal("F7", settings.Hotkeys.ToggleMode);
         Assert.Equal("F8", settings.Hotkeys.IdentifyItem);
         Assert.Equal("F9", settings.Hotkeys.ReadExtracts);
+    }
+
+    /// <summary>
+    /// Round 3: the pair round 1 shipped is moved back, putting edit mode beside show/hide.
+    ///
+    /// <para>Four hours of watching somebody use it settled this — he reached for edit mode far
+    /// more than for the view and called it edit mode unprompted throughout.</para>
+    /// </summary>
+    [Fact]
+    public void A_file_on_the_round_two_pair_is_moved_to_edit_mode_beside_show_hide()
+    {
+        WriteSettings(new
+        {
+            revision = 2,
+            hotkeys = new { toggleMode = "F6", toggleInteract = "F7" },
+        });
+
+        var settings = RatNavSettings.Load(_dir);
+
+        Assert.Equal("F6", settings.Hotkeys.ToggleInteract);
+        Assert.Equal("F7", settings.Hotkeys.ToggleMode);
+    }
+
+    /// <summary>And having been through round 3, choosing the other way round sticks.</summary>
+    [Fact]
+    public void The_round_two_pair_chosen_deliberately_afterwards_is_kept()
+    {
+        WriteSettings(new
+        {
+            revision = 3,
+            hotkeys = new { toggleMode = "F6", toggleInteract = "F7" },
+        });
+
+        var settings = RatNavSettings.Load(_dir);
+
+        Assert.Equal("F6", settings.Hotkeys.ToggleMode);
+        Assert.Equal("F7", settings.Hotkeys.ToggleInteract);
     }
 
     private void WriteHotkeys(object hotkeys, int? revision = null) =>

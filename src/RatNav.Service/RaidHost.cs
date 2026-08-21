@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using RatNav.Core;
 using RatNav.Core.Data;
 using RatNav.Core.Sharing;
@@ -335,13 +335,13 @@ public sealed record RatNavSettings
         public string ToggleOverlay { get; set; } = "F5";
 
         /// <summary>Switch between the corner panel and the centred wireframe map.</summary>
-        public string ToggleMode { get; set; } = "F6";
+        public string ToggleMode { get; set; } = "F7";
 
         /// <summary>
         /// Let the mouse reach the overlay, so it can be moved, resized and zoomed. Off by
         /// default in raid: an overlay that swallows a click is worse than one you cannot drag.
         /// </summary>
-        public string ToggleInteract { get; set; } = "F7";
+        public string ToggleInteract { get; set; } = "F6";
 
         /// <summary>
         /// Identify whatever the mouse is hovering, by reading the tooltip off the screen.
@@ -458,10 +458,12 @@ public sealed record RatNavSettings
             (0.0065, 0.229, 0.216, 0.279);
 
         /// <summary>
-        /// The large centred map. Holds still by default: it is big enough to read as a map, and
-        /// one that re-centres on every fix puts the same building somewhere new each time you
-        /// look. Drawn as outlines, because crossing ground wants roads and structures and not
-        /// much else.
+        /// The large centred map. Follows you by default — a centred map that does not is a
+        /// centred map of somewhere you were. Drawn as outlines, because crossing ground wants
+        /// roads and structures and not much else.
+        ///
+        /// <para>It said "holds still by default" here for as long as it has actually followed,
+        /// which is the kind of thing that leaves everyone sure of a default nobody ships.</para>
         /// </summary>
         /// <para>The zoom and follow are measured from a real arrangement rather than left at
         /// their neutral values. Fully zoomed out is the whole map at once, which is not a useful
@@ -774,8 +776,9 @@ public sealed record RatNavSettings
     ///
     /// <para>1 — the hotkeys renumbered down from F9–F11, and the F6/F7 pair swapped.</para>
     /// <para>2 — the map settings stack starts folded.</para>
+    /// <para>3 — the F6/F7 pair swapped back, putting edit mode beside show/hide.</para>
     /// </summary>
-    private const int CurrentRevision = 2;
+    private const int CurrentRevision = 3;
 
     public static RatNavSettings Load(string dataDirectory)
     {
@@ -818,6 +821,7 @@ public sealed record RatNavSettings
         // revision stamp exists to prevent, arriving by the back door.
         if (settings.Revision < 1) Renumber(settings.Hotkeys);
         if (settings.Revision < 2) FoldControls(settings);
+        if (settings.Revision < 3) PairEditModeWithToggle(settings.Hotkeys);
 
         settings.Revision = CurrentRevision;
 
@@ -877,6 +881,30 @@ public sealed record RatNavSettings
 
         keys.ToggleMode = "F6";
         keys.ToggleInteract = "F7";
+    }
+
+    /// <summary>
+    /// Puts edit mode back on F6, beside show/hide, and the view switcher on F7.
+    ///
+    /// <para>Round 1 moved these the other way, on the reasoning that the view you flip between
+    /// constantly belongs next to show/hide. Four hours of watching somebody actually use it says
+    /// otherwise: he reached for edit mode far more often than for the view, called F7 "edit mode"
+    /// unprompted for the whole session, and asked for the toggle and the edit key to sit next to
+    /// each other. Reversing a shipped default is worth doing when the evidence is that direct.</para>
+    ///
+    /// <para>A file old enough to predate round 1 is swapped by <see cref="SwapModeAndInteract"/>
+    /// and swapped straight back by this, which nets out at the arrangement it already had — the
+    /// correct answer, and the reason each migration is gated on its own round rather than being
+    /// collapsed into one.</para>
+    ///
+    /// <para>Fires only on the exact pair this shipped with. One key moved by hand is a choice.</para>
+    /// </summary>
+    private static void PairEditModeWithToggle(HotKeySettings keys)
+    {
+        if (keys.ToggleMode != "F6" || keys.ToggleInteract != "F7") return;
+
+        keys.ToggleMode = "F7";
+        keys.ToggleInteract = "F6";
     }
 
     /// <summary>

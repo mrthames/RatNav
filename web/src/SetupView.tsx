@@ -681,16 +681,16 @@ function QuitRatNav() {
  */
 const DEFAULT_HOTKEYS: HotKeys = {
   toggleOverlay: 'F5',
-  toggleMode: 'F6',
-  toggleInteract: 'F7',
+  toggleMode: 'F7',
+  toggleInteract: 'F6',
   identifyItem: 'F8',
   readExtracts: 'F9',
 }
 
 const HOTKEYS: [keyof HotKeys, string][] = [
   ['toggleOverlay', 'Show / hide overlay'],
-  ['toggleMode', 'Switch overlay style'],
-  ['toggleInteract', 'Interact with overlay'],
+  ['toggleMode', 'Centred or panel view'],
+  ['toggleInteract', 'Edit mode — move, resize, zoom'],
   ['identifyItem', 'Identify item under cursor'],
   ['readExtracts', "Read the game's extract list"],
 ]
