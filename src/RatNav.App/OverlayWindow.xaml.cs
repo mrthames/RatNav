@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -380,12 +380,14 @@ public partial class OverlayWindow : Window
             if (!_clickThrough) SetInteractive(false);
 
             _itemsWindow?.Hide();
+            _questWindow?.Hide();
             Hide();
         }
         else
         {
             Show();
             _itemsWindow?.Show();
+            _questWindow?.Show();
         }
     }
 
@@ -1576,7 +1578,7 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        _itemsWindow = new ItemsWindow();
+        _itemsWindow = new ItemsWindow { PanelName = "Items" };
         _itemsWindow.Closed += (_, _) =>
         {
             _itemsWindow = null;
@@ -1589,6 +1591,7 @@ public partial class OverlayWindow : Window
         };
 
         _itemsWindow.Show();
+        _itemsWindow.SetInteractive(!_clickThrough);
 
         ApplyItemsPanel();
         RefreshItems();
@@ -2041,7 +2044,7 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        _questWindow = new ItemsWindow { Title = "RatNav — Quests" };
+        _questWindow = new ItemsWindow { Title = "RatNav — Quests", PanelName = "Quest Log" };
         _questWindow.Closed += (_, _) =>
         {
             _questWindow = null;
@@ -2052,6 +2055,7 @@ public partial class OverlayWindow : Window
         };
 
         _questWindow.Show();
+        _questWindow.SetInteractive(!_clickThrough);
 
         ApplyItemsPanel();
         RefreshItems();
@@ -2367,8 +2371,10 @@ public partial class OverlayWindow : Window
         ControlScroll.VerticalScrollBarVisibility = bars;
         QuestBriefScroll.VerticalScrollBarVisibility = bars;
 
-        _itemsWindow?.ShowScrollBar(!_clickThrough);
-        _questWindow?.ShowScrollBar(!_clickThrough);
+        // Torn-off panels follow the same mode: click-through and bare during a raid, taking
+        // the mouse and wearing their furniture while the overlay is being arranged.
+        _itemsWindow?.SetInteractive(!_clickThrough);
+        _questWindow?.SetInteractive(!_clickThrough);
 
         // The grab bar runs the width of the window across the row the drawer handles live in.
         // Interact mode pushes the content clear by a full button height rather than a hair — a

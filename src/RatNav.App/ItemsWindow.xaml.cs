@@ -49,6 +49,47 @@ public partial class ItemsWindow : Window
     {
         base.OnSourceInitialized(e);
         ResizeBorder.Attach(this);
+
+        // Torn off, but still the overlay: it starts click-through like every other part of it.
+        // Without this line the window is an ordinary top-level one and eats every click that
+        // lands on it — see SetInteractive.
+        OverlayWindowStyles.Apply(this, !_interactive);
+    }
+
+    /// <summary>What the strip calls this panel. Set once, when it is torn off.</summary>
+    public string PanelName
+    {
+        get => Heading.Text;
+        set => Heading.Text = value;
+    }
+
+    private bool _interactive;
+
+    /// <summary>
+    /// Follows the overlay's interact mode: takes the mouse, or gets out of its way.
+    ///
+    /// <para>This window never had the overlay's extended styles applied to it at all. Being
+    /// <c>Topmost</c> and borderless made it look like part of the overlay while behaving like an
+    /// ordinary window, so it sat over the game swallowing every click inside its rectangle —
+    /// whatever interact mode said, and whatever the controls toggle said. Turning the controls
+    /// off hid the furniture and changed nothing about the clicks, which is exactly the complaint
+    /// the first user test produced: the game underneath could not be reached.</para>
+    ///
+    /// <para>The furniture goes with it. A drag strip, a dock-back button and a resize corner are
+    /// all things you press, and with the mouse handed back to the game none of them can be —
+    /// so they are clutter over a raid rather than controls.</para>
+    /// </summary>
+    public void SetInteractive(bool interactive)
+    {
+        _interactive = interactive;
+        OverlayWindowStyles.Apply(this, !interactive);
+
+        var furniture = interactive ? Visibility.Visible : Visibility.Collapsed;
+        TitleStrip.Visibility = furniture;
+        DockBack.Visibility = furniture;
+        ResizeGrip.Visibility = furniture;
+
+        ShowScrollBar(interactive);
     }
 
     /// <summary>

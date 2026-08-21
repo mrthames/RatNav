@@ -192,15 +192,37 @@
         -->
         <Grid>
         <DockPanel x:Name="Root" Margin="8,6">
+            <!--
+                The strip names the panel as well as offering something to drag.
+
+                It used to read "drag to move · corner to resize" and nothing else, which told you
+                what you could do to it but never what it was. Torn off, a list is a dark rectangle
+                somewhere on a screen with no way to tell quests from items — the first user test
+                asked for a heading twice. The main overlay is titled; these are the same overlay
+                parked elsewhere, so they are titled too, and the hint keeps the right-hand end
+                where it is still findable.
+            -->
             <Border x:Name="TitleStrip" DockPanel.Dock="Top" Margin="0,0,0,5"
                     Height="22" CornerRadius="2,2,0,0"
                     Background="#cc8ec8ff" Cursor="SizeAll">
-                <TextBlock Text="  drag to move  ·  corner to resize"
-                           FontFamily="Consolas" FontSize="10"
-                           TextTrimming="CharacterEllipsis"
-                           Foreground="#0b0f13"
-                           VerticalAlignment="Center" />
+                <Grid>
+                    <TextBlock x:Name="Heading" Text="Items"
+                               Margin="7,0,0,0"
+                               FontFamily="Consolas" FontSize="11"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="#0b0f13"
+                               HorizontalAlignment="Left"
+                               VerticalAlignment="Center" />
 
+                    <!-- Clear of the dock-back button, which floats over this end of the strip. -->
+                    <TextBlock Text="drag to move"
+                               Margin="0,0,26,0"
+                               FontFamily="Consolas" FontSize="9"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="#990b0f13"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center" />
+                </Grid>
             </Border>
 
             <!-- A legend, because the colours mean something and nothing said what. -->
