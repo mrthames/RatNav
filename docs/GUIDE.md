@@ -55,7 +55,7 @@ hardcoded, and RatNav says which is which.
 | **Escape from Tarkov folder** | The folder holding `EscapeFromTarkov.exe`. RatNav looks for it and shows what it found; **Browse…** opens a folder picker when it looked in the wrong place. |
 | **Screenshot folder** | Where the game saves screenshots. Defaults to `Documents\Escape from Tarkov\Screenshots`. If OneDrive has moved your Documents folder, this is the usual reason RatNav sees nothing. |
 | **Your in-game screenshot key** | Whatever you bound in Tarkov. RatNav **never presses it**; this is so every prompt names the key *you* use. |
-| **Hotkeys** | Click a field and press the key you want. Defaults are `F5`–`F9`. Changes take effect at once, and RatNav says if another application already owns a combination. |
+| **Hotkeys** | Click a field and press the key you want. Defaults are `F5`–`F11`. Changes take effect at once, and RatNav says if another application already owns a combination. |
 | **Game edition** | Sets your starting stash level. It never lowers a stash you have already raised. |
 | **Your name on shared plans** | Only matters if you swap plans with someone. |
 | **Reach RatNav from a phone or tablet** | Off by default. On, RatNav answers on your machine's network address as well as its own, so another device on the same wifi can open it in a browser — nothing installed there, and nothing reachable from outside your network. There is no password: anyone on your wifi can open it. Setup shows the address to type, and offers to open the Windows Firewall if it is in the way. |
@@ -106,12 +106,17 @@ the first time you take a position fix. Ones you have ticked off stay put.
 |---|---|
 | *your screenshot key* | Take a position fix |
 | `F5` | Show or hide the overlay |
-| `F6` | Switch between the corner box and the centred map |
-| `F7` | Let the mouse reach it — move and resize the corner panel, and open the map controls |
-| `F8` | Say what the item under your cursor is for |
-| `F9` | Read the game's extract list |
+| `F6` | Edit mode — let the mouse reach it, to move, resize, zoom and open the settings |
+| `F7` | Switch between the corner panel and the centred map |
+| `F8` | Follow you, or hold the map still |
+| `F9` | Put the map back on you, without starting to follow |
+| `F10` | Read the game's extract list |
+| `F11` | Say what the item under your cursor is for |
 
-**Two presentations, remembered separately.** The corner panel is small and out of the way; `F6`
+They run `F5` to `F11` in the order you use them: show it, arrange it, choose the view, then the
+two that move the map, then the two that read the screen.
+
+**Two presentations, remembered separately.** The corner panel is small and out of the way; `F7`
 swaps it for the map itself, over the centre of the screen. Position, size, zoom, pan and opacity
 are kept per presentation, so setting up one does not disturb the other.
 
@@ -149,7 +154,7 @@ Every panel edge that meets the map is draggable, on both sides.
 
 ## Reading the map
 
-Press `F7` to let the mouse reach the overlay, then the **gear** for the map controls. They stay
+Press `F6` to let the mouse reach the overlay, then the **gear** for the settings. They stay
 folded until you ask: the interact key hands over the mouse and shows the handles, and a stack of
 map settings is a thing you go and get. Once opened it is remembered.
 
@@ -185,7 +190,7 @@ frame.
 ### Only the extracts you can actually use
 
 A map has every extract it has ever had — seventeen on Streets — and a raid offers a handful.
-Double-tap `O` in game to bring up the list, then press `F9`. RatNav reads the names off the
+Double-tap `O` in game to bring up the list, then press `F10`. RatNav reads the names off the
 screen and draws only those. **all exits / my exits** on the quick panel switches between the two,
 both ways, so a reading is never a one-way trip.
 
@@ -239,17 +244,29 @@ floor controls the overlay has, and every quest objective and extract for the ma
 **Items** answers "should I pick this up".
 
 - **Needed** — what active quests and the hideout still want, minus what you have. The **Look
-  ahead** dial decides how far out to count: 1 is what you could do today, higher follows the
+  ahead** dial decides how far past today to count: 0 is what you could do now, higher follows the
   hideout build order *and* the quest chain further out. A line under the tabs says which you are
   looking at.
 - **Watchlist** — anything else worth collecting, with **your own** target and count. Kept apart
   from your stash number on purpose: twenty bundles of wires with fifteen promised to the hideout
   is not twenty available for something you are tracking.
 - **Custom** — see below.
-- **Search** — every item in the game, with why it is wanted.
 
-The filter row shows only what is found-in-raid, or for quests, or for the hideout, or for a trade,
-or keys. Each filter carries its count, so the row doubles as a summary before you touch it.
+**Search is a box on the page**, not a tab. Type and the list becomes results; clear it and your
+list is where you left it. Starring a result puts it on the watchlist, which is usually why you
+looked it up.
+
+Sorted by **nearest upgrade** by default — what stands between you and finishing something. *Most
+needed* answers the other question: what to grab if you happen to see it.
+
+**Group by type** files the rows under what the handbook calls them — Electronics, Building
+materials, Mechanical keys — alphabetical inside each group, and alphabetical overall when
+grouping is off.
+
+The filter row narrows to what is for quests or for the hideout. Keys count as being for a quest,
+because they are: a key is recorded as something to *bring* rather than hand in, which is why it
+once needed a filter of its own. Each filter carries its count, so the row doubles as a summary
+before you touch it.
 
 Have-counts are typed by hand — your stash is not in any file on disk, and RatNav will not guess.
 The point of the list is what is still *needed*, so the number you touch most is the one that goes
@@ -305,9 +322,12 @@ the others are out of the way.
 Tell RatNav the level of each station and it works out what that makes reachable next, following
 the game's own prerequisites.
 
-**Look ahead** decides how far it counts: 1 is what you could build tonight, 3 is what to stop
-vendoring. On a real hideout that is about 17 items rather than the several hundred an unfiltered
-list gives you.
+**Look ahead** decides how far past today it counts: 0 is what you could build tonight, 2 is what
+to stop vendoring. On a real hideout that is about 17 items rather than the several hundred an
+unfiltered list gives you.
+
+It is one setting with three dials on it — the hideout page, the items page and the overlay all
+read and write the same number, so turning it anywhere turns it everywhere.
 
 Star the upgrades you actually want and the list narrows to those.
 
@@ -336,7 +356,7 @@ which building and which door. They are loaded from the wiki and credited to it.
 
 ## Identifying loot
 
-Hover an item in game so its tooltip is showing and press `F8`.
+Hover an item in game so its tooltip is showing and press `F11`.
 
 RatNav reads the tooltip **off the screen**, using the OCR built into Windows, and answers the
 question you are actually asking: **Keep**, **Keep — found in raid**, **Not now**, or **Leave it**,
@@ -364,6 +384,24 @@ They paste it into **Import a plan** and it merges with their own plan for that 
   hunting** (the map only spawns so many), and **keys only one of you needs to carry**.
 
 Your own plan is untouched, so an updated code from them is a re-merge rather than a rebuild.
+
+---
+
+## Updates
+
+**Setup → Updates** says which version you are running and whether there is a newer stable one.
+RatNav asks GitHub once a day.
+
+- **It tells, it does not do.** There is a link, and following it is your decision. Downloading and
+  running an installer on your behalf is a great deal more trust than a map overlay needs.
+- **Prereleases do not count.** Alphas are published deliberately; you are told about stable
+  releases only. If you *are* running an alpha, you are told when the stable it became ships.
+- **Turn it off** with the checkbox, and **Check now** still works — a switch that disabled the
+  button too would mean "never tell me" rather than "do not go looking".
+- **Failure is silence.** GitHub being unreachable is not worth interrupting a raid over.
+
+Updating is the ordinary thing: download the installer, quit RatNav, run it over the top. Your
+plans, progress and settings live outside the install and are left alone.
 
 ---
 

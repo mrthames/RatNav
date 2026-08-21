@@ -17,7 +17,7 @@
 - [Why do I have to type my quests in?](#why-do-i-have-to-type-my-quests-in)
 - [Why can't it read my stash?](#why-cant-it-read-my-stash)
 - [Why can't it read my trader loyalty or my level?](#why-cant-it-read-my-trader-loyalty-or-my-level)
-- [`F8` says it cannot read the screen](#f8-says-it-cannot-read-the-screen)
+- [`F11` says it cannot read the screen](#f11-says-it-cannot-read-the-screen)
 - [The data looks out of date](#the-data-looks-out-of-date)
 - [Does it work on Steam? On Linux? On a second PC?](#does-it-work-on-steam-on-linux-on-a-second-pc)
 - [Can my friend and I see each other on the map?](#can-my-friend-and-i-see-each-other-on-the-map)
@@ -148,7 +148,7 @@ and the file is enough to get it fixed properly rather than worked around.
 
 ## Everything is tiny on my 4K screen
 
-Press `F7`, then turn **UI scale** up in the row along the top of the overlay.
+Press `F6`, then turn **UI scale** up in the settings behind the gear.
 
 It should not usually be needed: Windows already reports sizes with its own display scaling divided
 out, so RatNav's furniture comes out at about the same physical size on a 1080p panel and a 4K one.
@@ -165,7 +165,7 @@ you are walking to.
 
 ## I pressed the interact key and there are no map controls
 
-That is deliberate. `F7` hands the overlay your mouse and shows the **handles** — the grab bar, the
+That is deliberate. `F6` hands the overlay your mouse and shows the **handles** — the grab bar, the
 drawer buttons, the gear. The map settings live behind the **gear**, because a stack of settings
 over the map every time you reach for the mouse is not what you reached for the mouse to do.
 
@@ -214,7 +214,7 @@ So have-counts are typed, and the app is built around that being true — the wa
 count separately, so what is promised to the hideout is not silently counted as available for a
 goal.
 
-`F8` over an item is the fast way to check one thing without going near the number.
+`F11` over an item is the fast way to check one thing without going near the number.
 
 RatNav did once read a container off a screenshot. It worked — the game prints each item's short
 name on its cell, so it was reading a printed label rather than guessing at a picture — but it
@@ -230,7 +230,7 @@ on loyalty, and ignoring that made "ready" a lie.
 For your level it does offer a suggestion: a quest that needs level 15 cannot have been finished
 below it, so the quests you have marked complete imply a floor.
 
-## `F8` says it cannot read the screen
+## `F11` says it cannot read the screen
 
 Windows has no OCR language pack installed. It ships with Windows 10 version 2004 and later; on
 older builds, or a stripped install, the component is missing. Everything else in RatNav works

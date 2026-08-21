@@ -32,7 +32,7 @@ release](https://github.com/mrthames/RatNav/releases/latest) is always the one t
 
 ## What it looks like
 
-**In raid, two ways.** `F6` switches between them, and each keeps its own zoom, ink and position —
+**In raid, two ways.** `F7` switches between them, and each keeps its own zoom, ink and position —
 setting up one never disturbs the other.
 
 A **panel in the corner**, out of the way: your plan's quests numbered to match the pins on the
@@ -77,7 +77,8 @@ out which keys you have to bring, and assembles the shopping list. There is a to
      Documents folder — a common cause of RatNav seeing nothing.
    - **Your in-game screenshot key** — whatever you bound in Tarkov. RatNav never presses it; this
      is so every prompt names the key *you* use. See [How position works](#how-position-works).
-   - **Hotkeys** — click a field and press the key you want. Defaults are `F5`–`F9`. Changes take
+   - **Hotkeys** — click a field and press the key you want. Defaults are `F5`–`F11`, in the
+     order you use them. Changes take
      effect immediately, and RatNav tells you if another application already owns a combination.
    - **Your name on shared plans** — only matters if you swap plans with someone.
 
@@ -169,7 +170,7 @@ building and which door.
 
 **The hideout, as a build order.** Tell RatNav where each station is and it works out what that
 makes reachable next, following the game's own prerequisites. A **Look ahead** control decides how
-far: 1 is what you could build tonight, 3 is what to stop vendoring. On a fresh hideout that is
+far past today: 0 is what you could build tonight, 2 is what to stop vendoring. On a fresh hideout that is
 about 17 items rather than the several hundred an un-filtered list would give you. Star the
 upgrades you actually want and the list narrows to those.
 
@@ -242,6 +243,11 @@ ban-safe tool in this space works the same way.
 - **Offline keeps working.** When tarkov.dev is unreachable the last good data keeps being served
   and the app says how old it is.
 - **A map marked `[WIP]` is one still being worked on.** Those are not in a stable release.
+- **It tells you about updates, and does nothing about them.** Once a day RatNav asks GitHub
+  whether there is a newer stable release and says so on **Setup**, with a link. It never
+  downloads or runs anything — a tool that reads the game's files has no business doing that on
+  its own. Turn the check off there, or press **Check now** whenever you like; the button works
+  with the daily check switched off.
 
 ## Hotkeys
 
@@ -249,17 +255,19 @@ ban-safe tool in this space works the same way.
 |---|---|
 | *your in-game screenshot key* | take a position fix |
 | `F5` | show or hide the overlay |
-| `F6` | switch between the corner box and the centred map |
-| `F7` | let the mouse reach the overlay — move and resize the corner panel, zoom, and the map controls |
-| `F8` | say what the item under your cursor is for |
-| `F9` | read the extract list the game is showing, and draw only those |
+| `F6` | edit mode — let the mouse reach the overlay to move, resize, zoom and open the settings |
+| `F7` | switch between the corner panel and the centred map |
+| `F8` | follow you, or hold the map still |
+| `F9` | put the map back on you, without starting to follow |
+| `F10` | read the extract list the game is showing, and draw only those |
+| `F11` | say what the item under your cursor is for |
 
 All rebindable. RatNav registers each combination with Windows rather than watching the keyboard,
 and tells you if another application already owns one.
 
 ### Identifying an item
 
-Hover an item so its tooltip is showing and press `F8`. RatNav reads the tooltip **off the
+Hover an item so its tooltip is showing and press `F11`. RatNav reads the tooltip **off the
 screen** — the same pixels a screenshot tool sees, using the OCR built into Windows — and tells you
 which quests want it, which hideout station and level needs it, whether it opens a door, and which
 traders will take it in trade.
@@ -272,7 +280,7 @@ OCR misreads, so RatNav says how sure it is rather than presenting a guess as fa
 
 ## The map
 
-The overlay draws the real map, and how it draws is yours to set. Press `F7` for the mouse, then
+The overlay draws the real map, and how it draws is yours to set. Press `F6` for the mouse, then
 the **gear** for the controls:
 
 | | |
@@ -282,7 +290,8 @@ the **gear** for the controls:
 | **Fade / Line** | How strongly the map is drawn over the game, and how heavy its strokes are. The controls stay solid whatever the map is set to. |
 | **Pins / Waypoints / Map labels / You** | Separate size dials for markers, the captions on stops and extracts, the map's own place names, and your own marker — with **Shrink** deciding how much they ease off as you zoom out. |
 | **Map** | `still` holds the map and lets your marker travel across it; `follows you` keeps you centred. |
-| **Exits** | `PMC`, `Scav`, `Both`, or `Off`. Shared extracts show under either. `F9` narrows it to the ones the game says are open this raid. |
+| **Exits** | `Both`, `PMC`, `Scav`, or `Off`. Shared extracts show under either. `F10` narrows it to the ones the game says are open this raid. |
+| **Transits** | On or off, separately from the above — anybody can take a transit whatever they queued as. Off by default, and drawn in their own colour with their own symbol so they are never mistaken for a way out with your loot. |
 | **Quests** | `Active` is your plan's stops; `All` adds every other started quest's objective on this map; `Off` leaves the map clean. |
 | **Coverage / Edge fade / Glow** | The centred view only — how much of the screen it takes, where the drawing dissolves, how much the lines bloom. |
 | **UI scale** | How large RatNav draws its own furniture — the controls, the drawers, the headings. Not the map, which has its own dials either side of this one. |

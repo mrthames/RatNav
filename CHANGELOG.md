@@ -2,6 +2,88 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.0 — 2026-08-21
+
+**Stable.** Everything from the 0.2.0 alpha, plus a day of sitting in front of the overlay at
+1080p and fixing what that turned up. The sizes RatNav ships with are now measured rather than
+guessed, and the two surfaces agree with each other in a lot of places they quietly did not.
+
+### The defaults are measured now
+
+The overlay was tuned on a 1920×1080 screen until it looked right, and those numbers are what
+ships. **Every size dial reads 1.0** and moves either way from there — the settings hold a
+multiplier of the tuned base rather than an absolute size, because "0.75" tells nobody anything
+and "a bit smaller than default" tells everybody.
+
+Screens taller than 1080p scale by their real height ratio, floored at 1.0 and capped well short
+of double. A dial still reads 1.0 and still means "right for this screen".
+
+An existing settings file comes along if it is still on an old shipped default, and keeps the size
+it draws at if somebody chose one.
+
+### Added
+
+- **Update checking.** Once a day RatNav asks GitHub whether there is a newer stable release and
+  says so on Setup, with a link. It never downloads or runs anything. Refusable, and **Check now**
+  works with the daily check switched off. Prereleases do not count — but a release does beat the
+  prerelease it came from, so an alpha tells you when its stable ships.
+- **An installer that looks like the app** — RatNav's ground and its mark, rather than the stock
+  grey wizard, with a welcome page that says what this is before asking anyone to agree to a
+  licence.
+- **`F8` follows or holds the map still**, and **`F9` puts the map back on you** without starting
+  to follow — for a still map, which is still on purpose, when you want to know where you are
+  once.
+- **Transits are on the map**, in their own colour with their own symbol, with their own on/off
+  control. They were missing entirely: tarkov.dev keeps them in a separate list RatNav never read,
+  so Interchange drew six of its eight ways off the map.
+- **How far each exit is**, in metres under its name.
+- **Tick a stop off from the overlay**, or drop it from the plan. Ending a raid marks a quest
+  complete when every one of its objectives is.
+- **Group the items list by type** — the handbook's categories, alphabetical inside each.
+- **Setup is a prerequisite.** With the game folder unset, every other page says what is failing
+  and offers the way there rather than showing nothing.
+- **Resize the overlay from any edge or corner**, not just the one grip.
+- **A toggle for the hotkey reminder strip.**
+
+### Fixed
+
+- **The game is found where the launcher put it.** Detection probed a fixed list of paths, so it
+  only ever found an install nobody had moved — the first tester hit exactly that and spent
+  minutes on empty pages with nothing saying why. It reads the installer's own record now.
+- **`F5` to `F11` run in the order you use them**, rather than the order the keys were added.
+- **Dragging a panel divider threw "Access to the path is denied"** and then would not move. Three
+  faults: a settings save that let a transient file-move failure out, one save per drag event
+  rather than one per drag, and a save running from a mouse handler so the exception unwound the
+  drag. The divider's limits were fixed pixel numbers, which left thirty pixels of travel on a
+  small overlay.
+- **Torn-off panels swallowed every click** in their rectangle, whatever edit mode said — the
+  overlay's click-through styles were never applied to them.
+- **The hideout look-ahead counted from one**, so the dial read 1 above the words "showing only
+  what you can finish now". Zero is now-only. Its three dials are one setting now; two of them
+  were not saving.
+- **A collection's heading counted the wrong thing** — "3 left" for six items, because it counted
+  rows.
+- **The quest brief covered the map and stopped at the lists**; it covers the whole panel now, its
+  text and picture sit together rather than at opposite ends, and clicking outside dismisses it.
+- **A popped-out quest log opened nothing** when you clicked a quest. It opens a window of its own.
+- **The overlay showed a plan built for another map.**
+- **The quest log's tick-off controls never appeared**, because rows are built with that decision
+  baked in and entering edit mode did not rebuild them.
+
+### Changed
+
+- **The settings are a centred modal** in two columns, rather than a drawer down the left edge.
+- **The quick controls carry only what changes mid-raid** — floor, follow, exits — with everything
+  else behind the gear.
+- **Search is a box on the items page**, not a tab. Type and the list becomes results; clear it and
+  your list is where you left it.
+- **The items page defaults to nearest upgrade**, which is the question it is usually open for.
+- **Keys count as being for a quest**, so the separate Keys filter is gone. A key is recorded as
+  something to bring rather than hand in, which is why it could not match the quests filter.
+- **Say "center"**, not "centre", and "press" rather than "tap".
+- Edit mode's buttons are 15% smaller, the overlay's padding is tighter, the position readout moved
+  to the header, and the "0 of 3 done" counter is gone.
+
 ## 0.2.0-alpha.1 — 2026-08-21
 
 **An alpha.** The stable release is still 0.1.0 and the download on the front page still points at
