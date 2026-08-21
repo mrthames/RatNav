@@ -503,7 +503,7 @@ public sealed record RatNavSettings
         /// the health tracker above it and the toolbars below, which is where it stays out of the
         /// way while you are playing.</para>
         /// </summary>
-        /// <para>Measured from the arrangement Justin tuned at 1920×1080: 10,272 and 519×414.</para>
+        /// <para>Measured from a real arrangement at 1920×1080: 10,272 and 519×414.</para>
         public static (double Left, double Top, double Width, double Height) BoxShare =>
             (0.0052, 0.2519, 0.2703, 0.3833);
 
