@@ -125,6 +125,22 @@ public partial class OverlayWindow : Window
         new Dictionary<string, MapStyle>(StringComparer.OrdinalIgnoreCase);
     private static readonly string[] ExtractModes = ["pmc", "scav", "both", "off"];
 
+    /// <summary>
+    /// The smallest a marker, a label or the player mark may be drawn.
+    ///
+    /// <para>It was 1.0, which was also the shipped default — so the dials bottomed out exactly
+    /// where they started, and the one direction two separate users wanted to go was the one
+    /// direction they would not. A default has to have room underneath it or it is not a default,
+    /// it is a floor.</para>
+    ///
+    /// <para>Low enough to be obviously too small at 1080p. Finding the bottom of a range is how
+    /// you find out where the middle is.</para>
+    /// </summary>
+    private const double MinScale = 0.25;
+
+    /// <summary>The same argument for the overlay's own furniture, which shipped bottomed out at 0.7.</summary>
+    private const double MinUiScale = 0.4;
+
     /// <summary>Named to match the app's Maps page, so one control set reads two places.</summary>
     private static readonly string[] QuestModes = ["active", "all", "off"];
 
@@ -304,16 +320,18 @@ public partial class OverlayWindow : Window
         HaloButton.Click += (_, _) => ToggleHalo();
         GhostButton.Click += (_, _) => ToggleGhost();
         PlacesButton.Click += (_, _) => TogglePlaces();
-        MarkerUp.Click += (_, _) => StepMarker(+0.5);
-        MarkerDown.Click += (_, _) => StepMarker(-0.5);
-        TextUp.Click += (_, _) => StepText(+0.5);
-        TextDown.Click += (_, _) => StepText(-0.5);
-        PlaceNameUp.Click += (_, _) => StepPlaceNames(+0.5);
-        PlaceNameDown.Click += (_, _) => StepPlaceNames(-0.5);
+        // A quarter rather than a half. At the small end of the range half a step is a large
+        // fraction of the value, and these are being set by eye against a running game.
+        MarkerUp.Click += (_, _) => StepMarker(+0.25);
+        MarkerDown.Click += (_, _) => StepMarker(-0.25);
+        TextUp.Click += (_, _) => StepText(+0.25);
+        TextDown.Click += (_, _) => StepText(-0.25);
+        PlaceNameUp.Click += (_, _) => StepPlaceNames(+0.25);
+        PlaceNameDown.Click += (_, _) => StepPlaceNames(-0.25);
         ShrinkUp.Click += (_, _) => StepShrink(+0.1);
         ShrinkDown.Click += (_, _) => StepShrink(-0.1);
-        YouUp.Click += (_, _) => StepPlayer(+0.5);
-        YouDown.Click += (_, _) => StepPlayer(-0.5);
+        YouUp.Click += (_, _) => StepPlayer(+0.25);
+        YouDown.Click += (_, _) => StepPlayer(-0.25);
         WeightUp.Click += (_, _) => StepWeight(+0.25);
         WeightDown.Click += (_, _) => StepWeight(-0.25);
         DetachItems.Click += (_, _) => DetachItemsPanel();
@@ -324,13 +342,14 @@ public partial class OverlayWindow : Window
         LeftStack.DragDelta += (_, e) => OnStackResize(LeftDrawers, e);
         RightStack.DragDelta += (_, e) => OnStackResize(RightDrawers, e);
 
-        QuickFadeDown.Click += (_, _) => StepWindowOpacity(-0.1);
-        QuickFadeUp.Click += (_, _) => StepWindowOpacity(+0.1);
-        QuickZoomDown.Click += (_, _) => SetZoom(Placement.Zoom / 1.25);
-        QuickZoomUp.Click += (_, _) => SetZoom(Placement.Zoom * 1.25);
-        QuickScaleDown.Click += (_, _) => StepUiScale(-0.1);
-        QuickScaleUp.Click += (_, _) => StepUiScale(+0.1);
+        WindowFadeDown.Click += (_, _) => StepWindowOpacity(-0.1);
+        WindowFadeUp.Click += (_, _) => StepWindowOpacity(+0.1);
+        ZoomDown.Click += (_, _) => SetZoom(Placement.Zoom / 1.25);
+        ZoomUp.Click += (_, _) => SetZoom(Placement.Zoom * 1.25);
+        UiScaleDown.Click += (_, _) => StepUiScale(-0.1);
+        UiScaleUp.Click += (_, _) => StepUiScale(+0.1);
         QuickFollow.Click += (_, _) => ToggleFollowing();
+        QuickExtracts.Click += (_, _) => CycleExtracts();
         CollapseItems.Click += (_, _) => ToggleItems();
         ItemsDrawer.Click += (_, _) => ToggleItems();
         QuestDrawer.Click += (_, _) => ToggleQuests();
@@ -431,6 +450,19 @@ public partial class OverlayWindow : Window
         }
         else
         {
+            // The gear panel does not survive leaving edit mode.
+            //
+            // Opening it once was remembered, so every later trip into edit mode opened onto a
+            // stack of settings sitting over the map. That is the habit migration round 2 folded
+            // the stack away to break, arriving again by the back door — the difference being
+            // that a setting you never chose is easier to forgive than one that keeps coming
+            // back after you put it away. Edit mode starts clean; the gear is one click.
+            if (_settings.Overlay.ShowControls)
+            {
+                Remember(_settings.Overlay with { ShowControls = false });
+                ApplyControlStack();
+            }
+
             // Where it ended up is where it should be next time — for this presentation only.
             // The list width saves itself as it is dragged, so there is nothing to read back here.
             //
@@ -991,11 +1023,16 @@ public partial class OverlayWindow : Window
     /// window is the same list, and a solid full-size panel beside a faded scaled one reads as two
     /// different tools. The controls stay on the overlay rather than being grown a second time on
     /// every pop-out.</para>
+    ///
+    /// <para>Called wherever those settings are applied, not only when the lists are refilled.
+    /// Hung off the refresh alone, turning the opacity dial changed the overlay and left every
+    /// torn-off panel at the old value until something happened to reload it — so the gear
+    /// appeared to work on some of the overlay and not the rest of it.</para>
     /// </summary>
     private void MatchPopOuts()
     {
         var opacity = Placement.WindowOpacity;
-        var scale = Math.Clamp(EffectiveUiScale, 0.7, 3.0);
+        var scale = Math.Clamp(EffectiveUiScale, MinUiScale, 3.0);
 
         _itemsWindow?.MatchOverlay(opacity, scale);
         _questWindow?.MatchOverlay(opacity, scale);
@@ -1635,13 +1672,16 @@ public partial class OverlayWindow : Window
 
         Opacity = centred ? 1 : fade;
         MapInk.Opacity = centred ? fade : 1;
+
+        // A torn-off panel is part of the overlay and takes the overlay's settings with it.
+        MatchPopOuts();
     }
 
     private void StepUiScale(double by)
     {
         Remember(_settings.Overlay with
         {
-            UiScale = Math.Clamp(EffectiveUiScale + by, 0.7, 3.0),
+            UiScale = Math.Clamp(EffectiveUiScale + by, MinUiScale, 3.0),
         });
 
         ApplyUiScale();
@@ -1680,7 +1720,7 @@ public partial class OverlayWindow : Window
 
     private void ApplyUiScale()
     {
-        var scale = Math.Clamp(EffectiveUiScale, 0.7, 3.0);
+        var scale = Math.Clamp(EffectiveUiScale, MinUiScale, 3.0);
 
         foreach (var element in new FrameworkElement[]
                  { Readout, StatusRow, ControlStack, QuickBar, LeftDrawers, RightDrawers, ExpandControls })
@@ -1688,7 +1728,9 @@ public partial class OverlayWindow : Window
             element.LayoutTransform = scale == 1 ? Transform.Identity : new ScaleTransform(scale, scale);
         }
 
-        QuickScaleText.Text = $"{scale:0.0}×";
+        UiScaleText.Text = $"{scale:0.0}×";
+
+        MatchPopOuts();
     }
 
     private void StepFade(double by)
@@ -2419,7 +2461,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            MarkerScale = Math.Clamp(_settings.Overlay.MarkerScale + by, 1.0, 8.0),
+            MarkerScale = Math.Clamp(_settings.Overlay.MarkerScale + by, MinScale, 8.0),
         });
 
         Draw();
@@ -2429,7 +2471,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            TextScale = Math.Clamp(_settings.Overlay.TextScale + by, 1.0, 6.0),
+            TextScale = Math.Clamp(_settings.Overlay.TextScale + by, MinScale, 6.0),
         });
 
         Draw();
@@ -2439,7 +2481,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            PlaceNameScale = Math.Clamp(_settings.Overlay.PlaceNameScale + by, 1.0, 6.0),
+            PlaceNameScale = Math.Clamp(_settings.Overlay.PlaceNameScale + by, MinScale, 6.0),
         });
 
         Draw();
@@ -2567,7 +2609,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            PlayerScale = Math.Clamp(_settings.Overlay.PlayerScale + by, 1.0, 8.0),
+            PlayerScale = Math.Clamp(_settings.Overlay.PlayerScale + by, MinScale, 8.0),
         });
 
         Draw();
@@ -2742,11 +2784,13 @@ public partial class OverlayWindow : Window
         ZoomReset.Content = $"{Placement.Zoom:0.0}×";
         FollowButton.Content = Following ? "follows you" : "still";
 
-        // The quick bar carries the three reached for constantly, so they do not need the stack
-        // opened to get at them.
-        QuickFadeText.Text = $"{Placement.WindowOpacity * 100:F0}%";
-        QuickZoomText.Text = $"{Placement.Zoom:0.0}×";
+        WindowFadeText.Text = $"{Placement.WindowOpacity * 100:F0}%";
+        ZoomText.Text = $"{Placement.Zoom:0.0}×";
+
+        // The quick bar carries only what changes while you are playing: which floor, whether the
+        // map follows you, and which exits are drawn. Everything else is in the gear.
         QuickFollow.Content = Following ? "follows" : "still";
+        QuickExtracts.Content = Titled(_settings.Overlay.Extracts);
 
         // Says which way it will go, not which way it is: a control labelled with the state you
         // are already in leaves you guessing what pressing it does.

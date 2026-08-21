@@ -1025,6 +1025,43 @@
                                 <Button x:Name="FadeUp" Style="{StaticResource Chip}" Content="+" />
                             </StackPanel>
 
+                            <!--
+                                Opacity, zoom and UI scale, moved down from the quick bar.
+
+                                They were three of the five things always on screen in edit mode,
+                                and in edit mode what you are looking at is the map — so five rows
+                                of dials across the top of it were mostly in the way. These are set
+                                once and then left alone, which is what the gear is for; floor,
+                                follow and which exits to show are the ones that change while you
+                                play, and they stayed up there.
+                            -->
+                            <TextBlock Style="{StaticResource Label}" Text="PANEL" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="WindowFadeDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="WindowFadeText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="100%" />
+                                <Button x:Name="WindowFadeUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource Label}" Text="ZOOM" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="ZoomDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="ZoomText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="1.0×" />
+                                <Button x:Name="ZoomUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource Label}" Text="UI SCALE" Margin="0,0,0,2" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Button x:Name="UiScaleDown" Style="{StaticResource Chip}" Content="−" />
+                                <TextBlock x:Name="UiScaleText" Style="{StaticResource Label}"
+                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                           MinWidth="46" TextAlignment="Center" Text="1.0×" />
+                                <Button x:Name="UiScaleUp" Style="{StaticResource Chip}" Content="+" />
+                            </StackPanel>
+
                             <TextBlock Style="{StaticResource Label}" Text="LINE" Margin="0,0,0,2" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <Button x:Name="WeightDown" Style="{StaticResource Chip}" Content="−" />
@@ -1205,24 +1242,14 @@
                     better than a control that is not there.
                 -->
                 <WrapPanel Orientation="Horizontal">
-                    <TextBlock Style="{StaticResource Label}" Text="OPACITY" VerticalAlignment="Center" Margin="0,0,4,0" />
-                    <Button x:Name="QuickFadeDown" Style="{StaticResource Chip}" Content="−" />
-                    <TextBlock x:Name="QuickFadeText" Style="{StaticResource Label}"
-                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                               MinWidth="38" TextAlignment="Center" Text="100%" />
-                    <Button x:Name="QuickFadeUp" Style="{StaticResource Chip}" Content="+" />
+                    <!--
+                        What changes while you are playing, and nothing else.
 
-                    <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
-
-                    <TextBlock Style="{StaticResource Label}" Text="ZOOM" VerticalAlignment="Center" Margin="0,0,4,0" />
-                    <Button x:Name="QuickZoomDown" Style="{StaticResource Chip}" Content="−" />
-                    <TextBlock x:Name="QuickZoomText" Style="{StaticResource Label}"
-                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                               MinWidth="38" TextAlignment="Center" Text="1.0×" />
-                    <Button x:Name="QuickZoomUp" Style="{StaticResource Chip}" Content="+" />
-
-                    <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
-
+                        This bar sits over the map whenever edit mode is on, so everything on it is
+                        costing map. Opacity, zoom and UI scale are set once and then left alone —
+                        they are in the gear now. Which floor, whether the map follows you and
+                        which exits to show are the three that genuinely change mid-raid.
+                    -->
                     <!--
                         Which floor, with "Stacked" first and default.
 
@@ -1244,12 +1271,17 @@
                         screen has four times the pixels in the same physical space, so without
                         this everything lands at a quarter of the area.
                     -->
-                    <TextBlock Style="{StaticResource Label}" Text="UI SCALE" VerticalAlignment="Center" Margin="0,0,4,0" />
-                    <Button x:Name="QuickScaleDown" Style="{StaticResource Chip}" Content="−" />
-                    <TextBlock x:Name="QuickScaleText" Style="{StaticResource Label}"
-                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                               MinWidth="38" TextAlignment="Center" Text="1.0×" />
-                    <Button x:Name="QuickScaleUp" Style="{StaticResource Chip}" Content="+" />
+
+                    <!--
+                        Which exits are drawn: your faction's, the other's, both, or none.
+
+                        In the bar rather than the drawer because it is the one the tester reached for
+                        most, and because the answer changes with what you queued as.
+                    -->
+                    <TextBlock Style="{StaticResource Label}" Text="EXITS" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <Button x:Name="QuickExtracts" Style="{StaticResource Chip}"
+                            MinWidth="52" Content="Both"
+                            ToolTip="Which exits to draw: PMC, Scav, Both or Off" />
 
                     <Rectangle Width="1" Margin="8,2" Fill="{StaticResource Line}" />
 
