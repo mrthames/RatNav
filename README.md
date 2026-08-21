@@ -223,11 +223,12 @@ of later.
 
 ![The Hideout page: modules buildable now, each listing the items and roubles it still needs, with found-in-raid requirements marked](docs/app/hideout.png)
 
-**Plan.** Tick the objectives you are pushing. One strip that does not move says how many you have
-picked and what they need you to bring — keys in red — with the map folded below it and the
-checklist under that.
+**Plan.** Pick a map, then tick the objectives you are pushing. One strip that does not move says
+how many you have picked and what they need you to bring — keys in red, because a key is the one
+thing you cannot fix once you have queued — and the checklist beneath it is grouped by where things
+are, so a street is one glance rather than six.
 
-![The Plan page: a strip showing two objectives picked and what they need you to bring, a folded map, and the Customs checklist grouped by place beneath it](docs/app/plan.png)
+![The Plan page: Streets of Tarkov selected, a strip showing six objectives picked and an MS2000 Marker to bring, then your own marks and the quest checklist grouped by street, with two quests showing the keys they need in red](docs/app/plan.png)
 
 **On a phone or tablet, if you want it.** **Setup → Reach RatNav from a phone or tablet** makes the
 service answer on your machine's network address as well as its own, so an iPad on the same wifi
