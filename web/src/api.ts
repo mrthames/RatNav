@@ -18,6 +18,19 @@ export interface LanInfo {
 /** What a new install still has to do. Every step is derived from real state, never remembered. */
 export interface FirstRun {
   done: boolean
+
+  /**
+   * Whether RatNav can see the game at all.
+   *
+   * <p>Separate from the four steps because it is a prerequisite rather than the first of them.
+   * The others are things you have not done yet; this one leaves every page empty for a reason
+   * no page explains.</p>
+   */
+  setupComplete: boolean
+
+  /** The required checks that are failing, so the way back can say what is wrong. */
+  missing: { name: string; detail: string; fix: string }[]
+
   steps: { id: string; title: string; why: string; done: boolean; view: string }[]
 }
 

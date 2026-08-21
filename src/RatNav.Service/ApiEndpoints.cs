@@ -990,7 +990,24 @@ public static class ApiEndpoints
                 },
             };
 
-            return Results.Ok(new { done = steps.All(s => s.done), steps });
+            return Results.Ok(new
+            {
+                done = steps.All(s => s.done),
+
+                // Setup on its own, because it is the only step that is a *prerequisite* rather
+                // than the first of four. The other three are things you have not done yet; this
+                // one is RatNav being unable to see the game at all, and every page behind it is
+                // empty for a reason no page explains. Somebody who lands on Quests first spends
+                // several minutes deciding the app is broken — which is exactly what happened.
+                setupComplete = configured,
+
+                // Named, so the way back can say what is actually wrong instead of "go and look".
+                missing = diagnostics.Checks
+                    .Where(c => c.Required && !c.Ok)
+                    .Select(c => new { name = c.Name, detail = c.Detail, fix = c.Fix }),
+
+                steps,
+            });
         });
 
         // ---- reaching RatNav from another device

@@ -95,6 +95,54 @@ function Level() {
  * before it is done. Someone who finds the Plan page first sees an empty page and concludes RatNav
  * does not work.</p>
  */
+/**
+ * The wall in front of every page while RatNav cannot see the game.
+ *
+ * <p>Setup is a prerequisite, not the first of four tabs. With the game folder unset the item
+ * list, the quest log, the hideout and the plan are all empty, and none of them can say why —
+ * so somebody who opens Quests first spends several minutes deciding the app is broken. That is
+ * not hypothetical: it is the first thing the first user test did.</p>
+ *
+ * <p>It names what is actually failing rather than saying "go to Setup", because the fix for a
+ * missing game folder and the fix for a missing screenshot folder are different jobs.</p>
+ */
+function SetupFirst({ missing, onGo }: { missing: FirstRun['missing']; onGo: () => void }) {
+  return (
+    <section className="flex flex-col gap-3 border border-warn/40 bg-warn/5 px-4 py-4">
+      <div>
+        <p className="font-mono text-[11px] uppercase tracking-wider text-warn">Setup first</p>
+        <p className="mt-1 text-sm text-ink">
+          RatNav cannot see the game yet, so this page has nothing to show. Finish setup and
+          everything here fills in.
+        </p>
+      </div>
+
+      {missing.length > 0 && (
+        <ul className="flex flex-col gap-1.5">
+          {missing.map((check) => (
+            <li key={check.name} className="text-sm">
+              <span className="text-ink">{check.name}</span>
+              <span className="block text-xs text-muted">{check.detail || check.fix}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div>
+        <button
+          type="button"
+          onClick={onGo}
+          className="rounded-sm border border-accent bg-accent px-3 py-1.5 text-sm font-medium
+                     text-ground transition-opacity hover:opacity-90
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Go to Setup
+        </button>
+      </div>
+    </section>
+  )
+}
+
 function GettingStarted({ view, onGo }: { view: View; onGo: (view: View) => void }) {
   const [state, setState] = useState<FirstRun | null>(null)
 
@@ -214,6 +262,24 @@ export default function App() {
 
     return () => { live = false }
   }, [routed])
+
+  /**
+   * Whether setup is finished, re-asked whenever the page changes.
+   *
+   * <p>Shared by the gate below and the getting-started checklist, and re-asked on navigation
+   * for the same reason the checklist is: the answer only changes when you act, so there is
+   * nothing to poll for. Finishing setup and clicking away is what clears the wall.</p>
+   */
+  const [firstRun, setFirstRun] = useState<FirstRun | null>(null)
+
+  useEffect(() => {
+    void api.firstRun().then(setFirstRun).catch(() => setFirstRun(null))
+  }, [view])
+
+  // Unknown is not blocked. If the service cannot be asked, a wall in front of every page would
+  // be a worse answer than letting somebody look at whatever is there.
+  const gated = view !== 'setup' && firstRun !== null && !firstRun.setupComplete
+
   const [status, setStatus] = useState<DataStatus | null>(null)
   const [maps, setMaps] = useState<MapSummary[]>([])
   const [selected, setSelected] = useState<MapSummary | null>(null)
@@ -352,21 +418,34 @@ export default function App() {
         </p>
       )}
 
-      {view === 'plan' && <PlanView maps={maps} raid={raid} />}
-      {view === 'items' && <ItemsView />}
-      {view === 'hideout' && <HideoutView />}
-      {view === 'quests' && <QuestsView />}
+      {/*
+        Setup is the one page that is always reachable — it is the way out of this state, and a
+        wall in front of the fix would be a locked door with the key behind it.
+      */}
       {view === 'setup' && <SetupView />}
 
-      {view === 'maps' && (
-        <MapPicker maps={maps} selected={selected} onSelect={setSelected} />
+      {view !== 'setup' && firstRun && !firstRun.setupComplete && (
+        <SetupFirst missing={firstRun.missing} onGo={() => setView('setup')} />
       )}
 
-      {view === 'maps' && (selected
-        ? <MapView key={selected.id} map={selected} />
-        : <p className="font-mono text-xs text-muted">no maps loaded</p>)}
+      {gated || (
+        <>
+          {view === 'plan' && <PlanView maps={maps} raid={raid} />}
+          {view === 'items' && <ItemsView />}
+          {view === 'hideout' && <HideoutView />}
+          {view === 'quests' && <QuestsView />}
 
-      {view === 'maps' && <HeldBack onSettled={reloadMaps} />}
+          {view === 'maps' && (
+            <MapPicker maps={maps} selected={selected} onSelect={setSelected} />
+          )}
+
+          {view === 'maps' && (selected
+            ? <MapView key={selected.id} map={selected} />
+            : <p className="font-mono text-xs text-muted">no maps loaded</p>)}
+
+          {view === 'maps' && <HeldBack onSettled={reloadMaps} />}
+        </>
+      )}
 
       <HotkeyBar />
     </div>
