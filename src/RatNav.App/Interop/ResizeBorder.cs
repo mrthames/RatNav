@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Interop;
 
 // WinForms is in scope for the tray icon, and it brings a Point of its own.
@@ -20,16 +20,18 @@ namespace RatNav.App.Interop;
 /// enough for it to run its own resize loop from there — the real one, with the real cursors, the
 /// snapping, and the minimum sizes already set on the window.</para>
 ///
-/// <para>Chosen over a corner grip, which is what the main overlay uses: a grip is one direction
-/// from one corner, and these panels are narrow and tall against an edge of the screen, where the
-/// side you want to pull is as often the left as the right.</para>
+/// <para>Chosen over a corner grip: a grip is one direction from one corner, and a panel parked
+/// against the left of the screen wants its right edge while one against the bottom wants its
+/// top. The main overlay had only the grip and now asks this as well — it answers
+/// <c>WM_NCHITTEST</c> itself for click-through, so it calls <see cref="HitTest"/> rather than
+/// attaching a second hook to the same message.</para>
 /// </summary>
 public static class ResizeBorder
 {
     private const int WM_NCHITTEST = 0x0084;
 
     // What Windows expects back: which part of the window the pointer is over.
-    private const int HTCLIENT = 1;
+    public const int HTCLIENT = 1;
     private const int HTLEFT = 10;
     private const int HTRIGHT = 11;
     private const int HTTOP = 12;
@@ -65,6 +67,15 @@ public static class ResizeBorder
         handled = true;
         return new IntPtr(where);
     }
+
+    /// <summary>
+    /// Which edge or corner a screen point is on, or <see cref="HTCLIENT"/> for none of them.
+    ///
+    /// <para>Public so a window that already answers <c>WM_NCHITTEST</c> for its own reasons — the
+    /// overlay does, to let clicks through — can fold this into that answer. Two hooks on one
+    /// message both setting <c>handled</c> is a race over which reply Windows actually gets.</para>
+    /// </summary>
+    public static int HitTest(Window window, IntPtr lParam) => Where(window, lParam);
 
     private static int Where(Window window, IntPtr lParam)
     {

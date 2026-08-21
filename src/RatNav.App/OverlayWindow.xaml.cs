@@ -829,7 +829,29 @@ public partial class OverlayWindow : Window
     {
         // Below full coverage this is the centred *window*, which behaves as it always has.
         // And while click-through is on, the extended style has already answered.
-        if (message != WM_NCHITTEST || !Hud || _clickThrough) return IntPtr.Zero;
+        if (message != WM_NCHITTEST) return IntPtr.Zero;
+
+        // Edges and corners first, and only while the overlay has the mouse.
+        //
+        // The corner grip resized from one corner in one direction; an overlay parked against the
+        // left of the screen wants its right edge, one against the bottom wants its top, and
+        // neither was offered. Windows will run its own resize loop — real cursors, snapping, the
+        // window's own minimum size — as soon as it is told the pointer is on a frame.
+        //
+        // Not in the centred view, which is centred and sized from the coverage dial: dragging an
+        // edge there would move it until the next thing that laid it out put it back.
+        if (!_clickThrough && _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box)
+        {
+            var edge = ResizeBorder.HitTest(this, lParam);
+
+            if (edge != ResizeBorder.HTCLIENT)
+            {
+                handled = true;
+                return new IntPtr(edge);
+            }
+        }
+
+        if (!Hud || _clickThrough) return IntPtr.Zero;
 
         var packed = (int)(lParam.ToInt64() & 0xFFFFFFFF);
         var screen = new Point((short)(packed & 0xFFFF), (short)((packed >> 16) & 0xFFFF));
@@ -2333,7 +2355,7 @@ public partial class OverlayWindow : Window
             });
         }
 
-        return [Section("QUEST LOG", rows, label: $"QUEST LOG · {view.Stops.Count}")];
+        return [Section("QUEST LOG", rows)];
     }
 
     /// <summary>Moves the list to the other side of the map. The overlay can sit against either edge.</summary>

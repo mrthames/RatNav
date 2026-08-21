@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 
@@ -51,10 +51,18 @@ public sealed class ItemSection : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// The header, carrying the count even when folded — a section you cannot see into should
-    /// still say how much is in it, or folding it hides the fact that it matters.
+    /// The header, and its count only while there is nothing else saying it.
+    ///
+    /// <para>It counted always, which put a number above a list you can see the length of — and on
+    /// sections whose own title already carries one it counted twice, so the quest log read
+    /// "QUEST LOG · 3 · 3". With the rows underneath, the number was telling you something already
+    /// on screen.</para>
+    ///
+    /// <para>Folded is the case that is different, and the reason the count was there at all: a
+    /// section you cannot see into should still say how much is in it, or folding it away hides
+    /// that it matters.</para>
     /// </summary>
-    public string Heading => $"{(Expanded ? "▾" : "▸")} {Title} · {Rows.Count}";
+    public string Heading => Expanded ? $"▾ {Title}" : $"▸ {Title} · {Rows.Count}";
 
     public Visibility Visibility => Expanded ? Visibility.Visible : Visibility.Collapsed;
 

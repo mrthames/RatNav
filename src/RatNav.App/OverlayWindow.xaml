@@ -10,6 +10,7 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         Width="360" Height="240"
+        MinWidth="220" MinHeight="160"
         Left="40" Top="40">
 
     <!--
@@ -148,12 +149,18 @@
             Controls exist only in interact mode, so they are styled for a moment of deliberate
             fiddling rather than for glanceability. Flat, square, and quiet until hovered.
         -->
+        <!--
+            Every button in edit mode is one of these, so their size is edit mode's size. They were
+            drawn at a scale that suited a large overlay and read as the loudest thing on a small
+            one — colliding with each other and with the map behind them. Eighty-five per cent all
+            round: eleven point font to nine and a half, and the padding with it.
+        -->
         <Style x:Key="Chip" TargetType="Button">
             <Setter Property="FontFamily" Value="Consolas" />
-            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontSize" Value="9.5" />
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
-            <Setter Property="Padding" Value="7,2" />
-            <Setter Property="MinWidth" Value="22" />
+            <Setter Property="Padding" Value="6,1.5" />
+            <Setter Property="MinWidth" Value="19" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
