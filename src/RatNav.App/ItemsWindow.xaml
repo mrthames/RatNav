@@ -1,6 +1,7 @@
-<Window x:Class="RatNav.App.ItemsWindow"
+﻿<Window x:Class="RatNav.App.ItemsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="clr-namespace:RatNav.App"
         Title="RatNav — Items"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -133,7 +134,44 @@
             </Setter>
         </Style>
 
+        <!-- Bool to Visibility, so a row can hide its controls without a code-behind pass. -->
+        <app:ShowWhen x:Key="Show" />
+
+        <Style x:Key="RowButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Hit" Background="{TemplateBinding Background}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hit" Property="Background" Value="#22ffffff" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
+            The same row the overlay draws, including its controls.
+
+            This was a copy that had fallen behind: no click, so a quest in a torn-off log opened
+            nothing — which left the window built for exactly that case unreachable — and none of
+            the tick-off controls the docked log had grown. A second copy of a template is a second
+            thing to remember, and this is what forgetting looks like.
+        -->
         <DataTemplate x:Key="ItemRowTemplate">
+          <Button Style="{StaticResource RowButton}" Command="{Binding Activate}">
             <Grid Margin="0,1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -152,7 +190,19 @@
                            TextTrimming="CharacterEllipsis"
                            Text="{Binding Name}"
                            ToolTip="{Binding Reason}" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Visibility="{Binding Editing, Converter={StaticResource Show}}">
+                    <Button Style="{StaticResource Chip}" Content="✓"
+                            Command="{Binding Done}"
+                            ToolTip="Mark this stop done" />
+                    <Button Style="{StaticResource Chip}" Content="✕"
+                            Command="{Binding Remove}" Margin="3,0,0,0"
+                            ToolTip="Take this stop out of the plan" />
+                </StackPanel>
             </Grid>
+          </Button>
         </DataTemplate>
 
         <DataTemplate x:Key="ItemSectionTemplate">

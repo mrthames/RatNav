@@ -72,6 +72,48 @@
             disables a button whose Command is null, so rows with nothing to open simply do not
             respond — no second flag to keep in step with the first.
         -->
+        <!--
+            Declared before anything that uses it.
+        
+            StaticResource resolves at parse time and only looks backwards, so a template
+            referencing a style defined below it throws when the template is expanded — not
+            when the window loads, but the first time a row is actually drawn. Which is a
+            crash that starts fine and dies the moment a plan has stops in it.
+        -->
+        <!--
+            Every button in edit mode is one of these, so their size is edit mode's size. They were
+            drawn at a scale that suited a large overlay and read as the loudest thing on a small
+            one — colliding with each other and with the map behind them. Eighty-five per cent all
+            round: eleven point font to nine and a half, and the padding with it.
+        -->
+        <Style x:Key="Chip" TargetType="Button">
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="9.5" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Padding" Value="6,1.5" />
+            <Setter Property="MinWidth" Value="19" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="#33ffffff"
+                                BorderBrush="{StaticResource Line}"
+                                BorderThickness="1"
+                                CornerRadius="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="#668ec8ff" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="RowButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -172,40 +214,6 @@
             Controls exist only in interact mode, so they are styled for a moment of deliberate
             fiddling rather than for glanceability. Flat, square, and quiet until hovered.
         -->
-        <!--
-            Every button in edit mode is one of these, so their size is edit mode's size. They were
-            drawn at a scale that suited a large overlay and read as the loudest thing on a small
-            one — colliding with each other and with the map behind them. Eighty-five per cent all
-            round: eleven point font to nine and a half, and the padding with it.
-        -->
-        <Style x:Key="Chip" TargetType="Button">
-            <Setter Property="FontFamily" Value="Consolas" />
-            <Setter Property="FontSize" Value="9.5" />
-            <Setter Property="Foreground" Value="{StaticResource Ink}" />
-            <Setter Property="Padding" Value="6,1.5" />
-            <Setter Property="MinWidth" Value="19" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Chrome"
-                                Background="#33ffffff"
-                                BorderBrush="{StaticResource Line}"
-                                BorderThickness="1"
-                                CornerRadius="2">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-                                              Margin="{TemplateBinding Padding}" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="#668ec8ff" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!--
             A scroll bar that is nearly not there.
 
