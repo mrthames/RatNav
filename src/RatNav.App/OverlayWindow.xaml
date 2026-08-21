@@ -97,6 +97,9 @@
             </Setter>
         </Style>
 
+        <!-- Bool to Visibility, so a row can hide its controls without a code-behind pass. -->
+        <app:ShowWhen x:Key="Show" />
+
         <DataTemplate x:Key="ItemRowTemplate">
           <Button Style="{StaticResource RowButton}" Command="{Binding Activate}">
             <Grid Margin="0,1">
@@ -118,6 +121,26 @@
                            TextTrimming="CharacterEllipsis"
                            Text="{Binding Name}"
                            ToolTip="{Binding Reason}" />
+
+                <!--
+                    Tick it off, or take it out. Quest log rows only, and only while the overlay
+                    has the mouse — these are the two you would least like to press by accident,
+                    and over a raid they would be a target the pointer cannot reach anyway.
+
+                    Inside the row button rather than beside it, so the row keeps its full width
+                    for the name; they sit over the right-hand end of it where a long name is
+                    already being ellipsised.
+                -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Visibility="{Binding Editing, Converter={StaticResource Show}}">
+                    <Button Style="{StaticResource Chip}" Content="✓"
+                            Command="{Binding Done}"
+                            ToolTip="Mark this stop done" />
+                    <Button Style="{StaticResource Chip}" Content="✕"
+                            Command="{Binding Remove}" Margin="3,0,0,0"
+                            ToolTip="Take this stop out of the plan" />
+                </StackPanel>
             </Grid>
           </Button>
         </DataTemplate>

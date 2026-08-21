@@ -174,7 +174,45 @@ public sealed class RaidSession
         foreach (var objectiveId in finished)
             _progress.CompleteObjective(objectiveId);
 
+        MarkFinishedQuests();
+
         Publish();
+    }
+
+    /// <summary>
+    /// Marks a quest complete when every one of its objectives is.
+    ///
+    /// <para>Ticking stops off records objectives, and a quest was only ever finished by going to
+    /// the Quests page and saying so — which is a trip to another screen to state something RatNav
+    /// already knows.</para>
+    ///
+    /// <para><b>Every objective, not every planned one.</b> A plan carries the stops you chose,
+    /// which is often two of a quest's five; finishing those is not finishing the quest, and
+    /// promoting on the planned set would mark quests done that are not. That distinction is the
+    /// same one the "ready to turn in" list is careful about, and it is why this asks the quest
+    /// what it consists of rather than asking the plan.</para>
+    ///
+    /// <para>An objective with no position is included in that count. It is not a waypoint and can
+    /// never be planned, but it is still part of the quest — so a quest holding one is simply
+    /// never promoted here, which is the safe answer: the Quests page still marks it by hand.</para>
+    ///
+    /// <para>Only quests that are active. One already complete needs nothing, and one never
+    /// accepted has objectives ticked off from a previous run of it.</para>
+    /// </summary>
+    private void MarkFinishedQuests()
+    {
+        if (_state.Cache.Current?.Tasks is not { Count: > 0 } tasks) return;
+
+        var done = _progress.CompletedObjectives;
+
+        foreach (var task in tasks)
+        {
+            if (task.Objectives.Count == 0) continue;
+            if (_progress.StateOf(task.Id) != QuestState.Active) continue;
+
+            if (task.Objectives.All(o => done.Contains(o.Id)))
+                _progress.SetManual(task.Id, QuestState.Completed);
+        }
     }
 
     /// <summary>The map the game currently has loaded, or null when not in a raid.</summary>

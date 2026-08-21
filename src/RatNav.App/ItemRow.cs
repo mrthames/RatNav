@@ -1,4 +1,4 @@
-using System.Windows.Input;
+﻿using System.Windows.Input;
 using System.Windows.Media;
 using RatNav.Service;
 
@@ -39,6 +39,23 @@ public sealed record ItemRow
     /// rows with nothing behind them do not light up under the cursor.</para>
     /// </summary>
     public ICommand? Activate { get; init; }
+
+    /// <summary>
+    /// Tick this stop off, or take it out of the plan — null on rows that are neither.
+    ///
+    /// <para>Only the quest log has these. An items list is a shopping list, and there is nothing
+    /// to complete about a screw.</para>
+    ///
+    /// <para>Both are offered only while the overlay has the mouse. A control you cannot press is
+    /// clutter over a raid, and these two are the ones you would least like to press by
+    /// accident.</para>
+    /// </summary>
+    public ICommand? Done { get; init; }
+
+    public ICommand? Remove { get; init; }
+
+    /// <summary>Whether the two above are shown at all, which follows edit mode.</summary>
+    public bool Editing { get; init; }
 
     public static ItemRow From(PanelRow row) => new()
     {

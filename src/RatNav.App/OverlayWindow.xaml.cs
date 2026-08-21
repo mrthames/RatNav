@@ -2405,9 +2405,14 @@ public partial class OverlayWindow : Window
         var order = 0;
         var rows = new List<ItemRow>();
 
-        foreach (var stop in view.Stops)
+        // Done stops fall off the overlay rather than sitting struck through on it.
+        //
+        // Mid-raid the list should be what is left — a finished stop is a line of map spent on
+        // something you have already walked to. The web app's plan keeps them, struck through,
+        // because that page is where you look at what happened rather than what is next.
+        foreach (var stop in view.Stops.Where(s => !s.Done))
         {
-            if (!stop.Done) order++;
+            order++;
 
             var opened = stop;
 
@@ -2427,11 +2432,52 @@ public partial class OverlayWindow : Window
                 Activate = opened.TaskId is { Length: > 0 }
                     ? new RelayCommand(() => ShowQuestBrief(opened))
                     : null,
+
+                // Offered only while the overlay has the mouse: over a raid the pointer cannot
+                // reach them anyway, and these two are the ones you would least like to hit by
+                // accident.
+                Editing = !_clickThrough,
+                Done = new RelayCommand(() => CompleteStop(opened, done: true)),
+                Remove = new RelayCommand(() => DropStop(opened)),
             });
         }
 
         return [Section("QUEST LOG", rows)];
     }
+
+    /// <summary>
+    /// Ticks a stop off, from the overlay.
+    ///
+    /// <para>The same call the web app's checkbox makes, so one is not a lesser version of the
+    /// other — and it is written through to progress immediately rather than at raid end, because
+    /// the game can close on you and a stop you walked to should not depend on RatNav seeing a
+    /// clean exit.</para>
+    /// </summary>
+    private void CompleteStop(RaidStop stop, bool done) => _ = Dispatcher.InvokeAsync(async () =>
+    {
+        try
+        {
+            var url = $"{ServiceHost.Root}/api/raid/objectives/{Uri.EscapeDataString(stop.ObjectiveId)}";
+            await _http.PostAsJsonAsync(url, new { done });
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            // The next publish is the authority on what is done; nothing to say here.
+        }
+    });
+
+    /// <summary>Takes a stop out of the plan entirely — for the one you have decided against.</summary>
+    private void DropStop(RaidStop stop) => _ = Dispatcher.InvokeAsync(async () =>
+    {
+        try
+        {
+            var url = $"{ServiceHost.Root}/api/raid/stops/{Uri.EscapeDataString(stop.ObjectiveId)}";
+            await _http.DeleteAsync(url);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+        }
+    });
 
     /// <summary>Moves the list to the other side of the map. The overlay can sit against either edge.</summary>
     private void SwapItemsSide()
