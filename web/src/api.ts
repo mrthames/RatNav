@@ -323,7 +323,12 @@ export interface CustomWaypoint {
   x: number
   y: number
   floor: string | null
-  /** "Place" for somewhere worth remembering, "Item" for something to pick up. */
+  /**
+   * Kept because older saved waypoints carry one, and no longer chosen when adding.
+   *
+   * <p>It drove which of two shapes the pin took. A waypoint is a waypoint: what separates one of
+   * yours from a quest's is where it came from, which is what its colour says.</p>
+   */
   kind: 'Place' | 'Item'
 
   /**
@@ -634,12 +639,9 @@ export const api = {
   waypoints: (mapId: string) =>
     get<CustomWaypoint[]>(`/api/maps/${encodeURIComponent(mapId)}/waypoints`),
 
-  addWaypoint: (
-    mapId: string, label: string, x: number, y: number,
-    floor?: string | null, kind: 'Place' | 'Item' = 'Place',
-  ) =>
+  addWaypoint: (mapId: string, label: string, x: number, y: number, floor?: string | null) =>
     post<CustomWaypoint>(
-      `/api/maps/${encodeURIComponent(mapId)}/waypoints`, { label, x, y, floor, kind }),
+      `/api/maps/${encodeURIComponent(mapId)}/waypoints`, { label, x, y, floor }),
 
   renameWaypoint: (id: string, label: string) =>
     post<unknown>(`/api/waypoints/${encodeURIComponent(id)}/label`, { label, x: 0, y: 0 }),

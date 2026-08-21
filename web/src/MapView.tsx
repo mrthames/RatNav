@@ -42,6 +42,129 @@ const FLOOR_ORDER = [
   'Third_Floor', 'Fourth_Floor', 'Fifth_Floor',
 ]
 
+/**
+ * A labelled checkbox that keeps its place when it has nothing to offer.
+ *
+ * <p>Disabled rather than absent. Controls that vanish on maps without floors or without extracts
+ * made the row reflow every time the map changed, so whatever you were reaching for moved.</p>
+ */
+function Toggle({ label, checked, onChange, disabled = false }: {
+  label: string
+  checked: boolean
+  onChange: (on: boolean) => void
+  disabled?: boolean
+}) {
+  return (
+    <label
+      className={`flex items-center gap-2 text-xs ${disabled
+        ? 'cursor-not-allowed text-muted/40'
+        : 'cursor-pointer text-muted hover:text-ink'}`}
+    >
+      <input
+        type="checkbox"
+        checked={checked && !disabled}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        className="accent-accent"
+      />
+      {label}
+    </label>
+  )
+}
+
+/**
+ * Naming a waypoint you have just placed, in RatNav's own dialog.
+ *
+ * <p>The browser's <code>prompt</code> did this before, and it is the operating system's box
+ * dropped into the middle of a dark application — wrong typeface, wrong colours, wrong buttons,
+ * and on a phone it is worse than that.</p>
+ *
+ * <p>One field. A note can follow from the waypoint's chip below the map, but asking for both at
+ * once turns a one-word answer into a form.</p>
+ */
+function NameWaypoint({ onCancel, onSave }: {
+  onCancel: () => void
+  onSave: (label: string) => Promise<void>
+}) {
+  const [label, setLabel] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    if (!label.trim() || saving) return
+
+    setSaving(true)
+    try {
+      await onSave(label.trim())
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Name this waypoint"
+      onClick={onCancel}
+      className="fixed inset-0 z-50 grid place-items-center bg-ground/80 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          // Enter saves and Escape closes, because a one-field dialog you have to aim at is a
+          // dialog that costs more than the thing it is asking for.
+          if (e.key === 'Escape') onCancel()
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void save() }
+        }}
+        className="flex w-full max-w-sm flex-col gap-3 border border-mark/50 bg-panel p-4"
+      >
+        <p className="font-mono text-[11px] uppercase tracking-wider text-mark">
+          New custom waypoint
+        </p>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-muted">What is here?</span>
+          <input
+            autoFocus
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="car batteries"
+            className="rounded-sm border border-line bg-ground px-2.5 py-2 text-sm text-ink
+                       placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
+          />
+        </label>
+
+        {/*
+          Name and nothing else. A note can be added afterwards from the waypoint's own chip below
+          the map — offering both here made a two-field form out of a one-word answer, and the
+          second field is the one people would have skipped anyway.
+        */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={!label.trim() || saving}
+            className="rounded-sm border border-mark bg-mark px-3 py-1.5 text-sm font-medium
+                       text-ground transition-opacity hover:opacity-90 disabled:opacity-30
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            {saving ? 'Adding...' : 'Add waypoint'}
+          </button>
+
+          <button
+            type="button"
+            onClick={onCancel}
+            className="font-mono text-xs text-muted hover:text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** How far apart two fingers are. One finger, or none, has no span and cannot pinch. */
 function spanOf(points: Map<number, { x: number; y: number }>): number {
   const [a, b] = [...points.values()]
@@ -90,16 +213,13 @@ export function MapView({
    * nothing — a map you cannot look at without marking it is a map you stop looking at.</p>
    */
   const [marks, setMarks] = useState<CustomWaypoint[]>([])
-  const [placing, setPlacing] = useState<'Place' | 'Item' | null>(null)
+  const [placing, setPlacing] = useState(false)
+  const [showMarks, setShowMarks] = useState(true)
 
-  /**
-   * Finding somewhere by name.
-   *
-   * <p>Streets knows 46 named places and nothing searched them, so the only way to find Pinewood
-   * was to already know where it was — which is the thing you came here not knowing.</p>
-   */
+  /** Where a waypoint is being placed, while its name is being asked for. */
+  const [naming, setNaming] = useState<{ x: number; y: number } | null>(null)
+
   const [places, setPlaces] = useState<PlaceLabel[]>([])
-  const [search, setSearch] = useState('')
 
   /** Names drawn on the map, the way the overlay draws them. */
   const [names, setNames] = useState(true)
@@ -118,33 +238,8 @@ export function MapView({
   const [reading, setReading] = useState<ObjectivePin | null>(null)
 
   useEffect(() => {
-    setSearch('')
-
-    // Place search is a Maps-page control; the Plan map has no box to type into.
     if (!minimal) api.places(map.id).then(setPlaces).catch(() => setPlaces([]))
   }, [map.id, minimal])
-
-  const found = useMemo(() => {
-    const needle = search.trim().toLowerCase()
-    if (!needle) return []
-
-    return places.filter((p) => p.text.toLowerCase().includes(needle)).slice(0, 8)
-  }, [places, search])
-
-  /** Puts a point in the middle of the frame at whatever zoom is set. */
-  function centreOn(x: number, y: number) {
-    const box = frame.current?.getBoundingClientRect()
-    if (!box) return
-
-    // Zoomed all the way out the whole map is already on screen, so centring would only push half
-    // of it off the edge. A closer look is what "take me there" means.
-    const next = Math.max(zoom, 2.5)
-
-    setView({
-      zoom: next,
-      pan: { x: box.width / 2 - x * box.width * next, y: box.height / 2 - y * box.height * next },
-    })
-  }
 
   const loadMarks = useCallback(
     () => api.waypoints(map.id).then(setMarks).catch(() => setMarks([])), [map.id])
@@ -161,16 +256,21 @@ export function MapView({
 
     if (x < 0 || x > 1 || y < 0 || y > 1) return
 
-    // Asked for straight away rather than placed and named later. An unnamed dot is a puzzle, and
-    // "name it afterwards" is a step people skip.
-    const label = window.prompt(
-      placing === 'Item' ? 'What is here to pick up?' : 'What is here?')
+    // Named straight away rather than placed and named later, because an unnamed dot on a map is a
+    // puzzle and "name it afterwards" is a step people skip. Asked for in RatNav's own dialog: the
+    // browser's prompt box is the operating system's, dropped into the middle of a dark
+    // application in the wrong typeface with the wrong buttons.
+    setNaming({ x, y })
+  }
 
-    if (label === null) return
+  async function nameIt(label: string) {
+    if (!naming) return
 
-    await api.addWaypoint(map.id, label, x, y, floor, placing)
+    await api.addWaypoint(map.id, label, naming.x, naming.y, floor)
+
+    setNaming(null)
+    setPlacing(false)
     await loadMarks()
-    setPlacing(null)
   }
 
   async function forget(id: string) {
@@ -282,12 +382,13 @@ export function MapView({
   return (
     <div className="flex flex-col gap-3">
       {/*
-        Two rows, so the controls stop moving when the map does.
+        One row, and always the same row.
 
-        Everything that toggles something wraps on the first row — it does not matter much where a
-        checkbox lands, because you read the label to find it. Search does matter: it is reached by
-        aiming rather than reading, so it gets a row of its own on the left, where nothing above it
-        can push it sideways.
+        Every control is present on every map. Half of them used to render only when they had
+        something to offer — the floor picker on a map with floors, exits on a map with extracts —
+        so changing map reflowed the row and whatever you were reaching for moved. A control with
+        nothing to offer here reads as unavailable instead, because absent means everything after
+        it slides sideways.
       */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         {/* Maps-page furniture. The Plan page wants the map, the pins, and nothing else. */}
@@ -304,37 +405,91 @@ export function MapView({
           onChange={(v) => setInk(v as InkLevel)}
         />
 
-        {floors.length > 1 && (
-          <>
-            <Segment
-              label="Floor"
-              options={floors.map((f) => [f, FLOOR_LABELS[f] ?? f])}
-              value={floor ?? ''}
-              onChange={setFloor}
-            />
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted hover:text-ink">
-              <input
-                type="checkbox"
-                checked={ghost}
-                onChange={(e) => setGhost(e.target.checked)}
-                className="accent-accent"
-              />
-              Ghost other floors
-            </label>
-          </>
-        )}
+        <Segment
+          label="Floor"
+          options={floors.length > 1
+            ? floors.map((f) => [f, FLOOR_LABELS[f] ?? f])
+            : [['', 'One floor']]}
+          value={floors.length > 1 ? floor ?? '' : ''}
+          onChange={setFloor}
+          disabled={floors.length <= 1}
+        />
 
+        <Toggle
+          label="Ghost other floors"
+          checked={ghost}
+          onChange={setGhost}
+          disabled={floors.length <= 1}
+        />
+
+        <Segment
+          label="Quests"
+          options={[['active', 'Active'], ['all', 'All'], ['off', 'Off']]}
+          value={showing}
+          onChange={(v) => setShowing(v as 'active' | 'all' | 'off')}
+        />
+
+        <Segment
+          label="Exits"
+          options={[['pmc', 'PMC'], ['scav', 'Scav'], ['off', 'Off']]}
+          value={faction}
+          onChange={(v) => setFaction(v as Faction)}
+          disabled={extracts.length === 0}
+        />
+
+        <Toggle
+          label="Place names"
+          checked={names}
+          onChange={setNames}
+          disabled={places.length === 0}
+        />
         </>)}
 
+        {/*
+          Custom waypoints: whether they are drawn, and a way to add one.
+
+          No place-or-item choice before the click any more. Deciding which of two shapes a spot is
+          before you have said what it is was a decision nobody wanted to make, and the shapes were
+          not worth the question.
+        */}
+        <Toggle label="Custom waypoints" checked={showMarks} onChange={setShowMarks} />
+
+        <button
+          type="button"
+          onClick={() => setPlacing((on) => !on)}
+          aria-pressed={placing}
+          title="Add a custom waypoint, then click the spot on the map"
+          className={`flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs transition-colors
+                      focus-visible:outline-2 focus-visible:outline-accent
+                      ${placing ? 'bg-mark text-ground' : 'bg-panel-hi text-muted hover:text-ink'}`}
+        >
+          <svg viewBox="-9 -9 18 18" aria-hidden className="size-3.5">
+            <path
+              d="M 0,-7 L 7,0 L 0,7 L -7,0 Z"
+              fill="none"
+              stroke={placing ? 'var(--color-ground)' : 'var(--color-mark)'}
+              strokeWidth="2.4"
+            />
+          </svg>
+          {placing ? 'Click the map...' : '+ Waypoint'}
+        </button>
+
         {!minimal && (
-          <Segment
-            label="Quests"
-            options={[['active', 'Active'], ['all', 'All'], ['off', 'Off']]}
-            value={showing}
-            onChange={(v) => setShowing(v as 'active' | 'all' | 'off')}
-          />
+          /* Straight onto the overlay, no plan required -- for a look before you queue. */
+          <button
+            type="button"
+            onClick={() => void api.showMap(map.id)}
+            className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
+                       hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Show on overlay
+          </button>
         )}
 
+        {/*
+          Last, and the only one that comes and goes -- because it is the one control that is
+          meaningless until you have done something, and it has nothing after it to push.
+        */}
         {(zoom !== 1 || pan.x !== 0 || pan.y !== 0) && (
           <button
             type="button"
@@ -342,98 +497,9 @@ export function MapView({
             className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
                        hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
           >
-            Reset view · {zoom.toFixed(1)}×
+            Reset view - {zoom.toFixed(1)}x
           </button>
         )}
-
-        {!minimal && (<>
-        {extracts.length > 0 && (
-          <Segment
-            label="Exits"
-            options={[['pmc', 'PMC'], ['scav', 'Scav'], ['off', 'Off']]}
-            value={faction}
-            onChange={(v) => setFaction(v as Faction)}
-          />
-        )}
-
-        {places.length > 0 && (
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-muted hover:text-ink">
-            <input
-              type="checkbox"
-              checked={names}
-              onChange={(e) => setNames(e.target.checked)}
-              className="accent-accent"
-            />
-            Place names
-          </label>
-        )}
-
-        {/* Straight onto the overlay, no plan required — for a look before you queue. */}
-        <button
-          type="button"
-          onClick={() => void api.showMap(map.id)}
-          className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
-                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          Show on overlay
-        </button>
-
-
-        </>)}
-      </div>
-
-      {!minimal && places.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="relative w-full max-w-xs">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Find a place… (${places.length})`}
-              className="w-full rounded-sm border border-line bg-panel px-2.5 py-1.5 text-xs text-ink
-                         placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
-            />
-
-            {found.length > 0 && (
-              <ul className="absolute left-0 top-full z-10 mt-1 w-56 border border-line bg-panel shadow-xl">
-                {found.map((place) => (
-                  <li key={`${place.text}-${place.x}`}>
-                    <button
-                      type="button"
-                      onClick={() => { centreOn(place.x, place.y); setSearch('') }}
-                      className="w-full px-2.5 py-1.5 text-left text-xs text-muted transition-colors
-                                 hover:bg-panel-hi hover:text-ink
-                                 focus-visible:outline-2 focus-visible:outline-accent"
-                    >
-                      {place.text}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-        </div>
-      )}
-
-      {/*
-        Marking a spot, on every map — the Plan page's included.
-
-        Outside the !minimal block, unlike everything else here, because this is the one control
-        the Plan page needs: it is where you build a raid, and "I want to go here as well" is part
-        of building one. Sending someone to the Maps page to place a mark and back to the Plan page
-        to add it to the plan is two navigations for one thought.
-
-        Two kinds, chosen before the click rather than corrected after it.
-      */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        <Segment
-          label="Mark"
-          options={[['off', 'Off'], ['Place', 'A place'], ['Item', 'An item']]}
-          value={placing ?? 'off'}
-          onChange={(v) => setPlacing(v === 'off' ? null : (v as 'Place' | 'Item'))}
-        />
-
-        {placing && <span className="text-xs text-mark">Click the map…</span>}
       </div>
 
       <div
@@ -669,28 +735,28 @@ export function MapView({
           Your own marks, in their own colour and their own shape — the same pairing the overlay
           uses, so a mark looks like a mark on whichever screen you are reading.
         */}
-        {marks.map((mark) => (
+        {(showMarks ? marks : []).map((mark) => (
           <div
             key={mark.id}
-            title={[
-              mark.kind === 'Item' ? `${mark.label} · pick up` : `${mark.label} · your mark`,
-              mark.note,
-            ].filter(Boolean).join(' — ')}
+            title={[`${mark.label} · your waypoint`, mark.note].filter(Boolean).join(' — ')}
             className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
             style={{ left: `${mark.x * 100}%`, top: `${mark.y * 100}%` }}
           >
             <svg
-              viewBox="-9 -9 18 18"
+              viewBox="-9 -15 18 18"
               style={{ width: `${16 / zoom}px`, height: `${16 / zoom}px`, display: 'block' }}
             >
-              {/* A diamond is a place; a box is something to pick up when you get there. */}
+              {/*
+                The same pin a quest stop draws, in its own colour. What separates a waypoint of
+                yours from a quest's is where it came from, which is what a colour is for — the
+                shape only ever said which of two kinds it was, and that is no longer a choice
+                anybody makes.
+              */}
               <path
-                d={mark.kind === 'Item'
-                  ? 'M -6,-6 L 6,-6 L 6,6 L -6,6 Z'
-                  : 'M 0,-7 L 7,0 L 0,7 L -7,0 Z'}
-                fill="var(--color-ground)"
-                stroke="var(--color-mark)"
-                strokeWidth="1.8"
+                d="M 0,0 C -3,-5 -7,-8 -7,-12 A 7,7 0 1 1 7,-12 C 7,-8 3,-5 0,0 Z"
+                fill="var(--color-mark)"
+                stroke="var(--color-ground)"
+                strokeWidth="1.5"
               />
             </svg>
 
@@ -708,6 +774,13 @@ export function MapView({
         ))}
         </div>
       </div>
+
+      {naming && (
+        <NameWaypoint
+          onCancel={() => { setNaming(null); setPlacing(false) }}
+          onSave={nameIt}
+        />
+      )}
 
       {reading && (
         <QuestBrief
@@ -785,25 +858,36 @@ function Placeholder({ children }: { children: React.ReactNode }) {
 }
 
 function Segment({
-  label, options, value, onChange,
+  label, options, value, onChange, disabled = false,
 }: {
   label: string
   options: [string, string][]
   value: string
   onChange: (value: string) => void
+
+  /**
+   * Present but not offering anything on this map.
+   *
+   * <p>Dimmed and unclickable rather than removed. A control that disappears on maps without
+   * floors or without extracts makes the whole row reflow when the map changes, so whatever you
+   * were reaching for moves out from under you.</p>
+   */
+  disabled?: boolean
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className={`flex items-center gap-2 ${disabled ? 'opacity-40' : ''}`}>
       <span className="font-mono text-[11px] uppercase tracking-wider text-muted">{label}</span>
       <div className="flex gap-px">
         {options.map(([id, text]) => (
           <button
             key={id}
             type="button"
+            disabled={disabled}
             aria-pressed={value === id}
             onClick={() => onChange(id)}
             className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
                        hover:text-ink aria-pressed:bg-accent aria-pressed:text-ground
+                       disabled:cursor-not-allowed disabled:hover:text-muted
                        focus-visible:outline-2 focus-visible:outline-accent"
           >
             {text}

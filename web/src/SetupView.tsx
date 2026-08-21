@@ -122,7 +122,7 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
           <Field
             label="Escape from Tarkov folder"
             hint={draft.gameDirectory
-              ? 'RatNav reads the Logs folder inside this one.'
+              ? 'RatNav reads the Logs folder inside this one. Clear it to go back to detecting.'
               : `Detected: ${settings.resolvedGameDirectory ?? 'nothing found — set it here'}`}
             value={draft.gameDirectory ?? ''}
             placeholder={settings.resolvedGameDirectory ?? 'C:\\Battlestate Games\\EFT'}
@@ -150,7 +150,7 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
       <Field
         label="Screenshot folder"
         hint={draft.screenshotDirectory
-          ? 'Where the game saves screenshots.'
+          ? 'Where the game saves screenshots. Clear it to go back to detecting.'
           : `Using: ${settings.resolvedScreenshotDirectory}`}
         value={draft.screenshotDirectory ?? ''}
         placeholder={settings.resolvedScreenshotDirectory}
@@ -213,8 +213,17 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
       <div className="flex flex-col gap-2">
         <p className="font-mono text-[11px] uppercase tracking-wider text-muted">Hotkeys</p>
         <p className="text-xs text-muted">
-          Click a key and press the one you want. RatNav says if another application already owns
-          it.
+          Click a field and press the key you want. <strong className="text-ink">Combinations
+          work</strong> — hold Ctrl, Alt or Shift and press the key, so <code>Ctrl+Alt+T</code> is
+          a valid binding and a Stream Deck macro can send one. RatNav says if another application
+          already owns a combination.
+        </p>
+
+        <p className="text-xs text-muted">
+          Mouse buttons cannot be used here. Catching one over another application needs a
+          system-wide mouse hook, which is the machinery RatNav refuses for the keyboard and for
+          the same reason. Your in-game screenshot key above can be a mouse button, because RatNav
+          only <em>names</em> that one — it never presses it and never watches for it.
         </p>
 
         <div className="grid gap-2 sm:grid-cols-2">
@@ -281,7 +290,6 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
           </button>
         )}
 
-        <p className="font-mono text-[11px] text-muted">Leave a folder empty to go back to detecting it.</p>
       </div>
 
       <WipeProfile />

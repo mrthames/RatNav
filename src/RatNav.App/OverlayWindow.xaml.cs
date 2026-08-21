@@ -3328,13 +3328,18 @@ public partial class OverlayWindow : Window
             MapCanvas.Children.Add(Positioned(
                 new Path
                 {
-                    Data = Geometry.Parse(mark.Kind == MarkKind.Item
-                        ? "M -6,-6 L 6,-6 L 6,6 L -6,6 Z"
-                        : "M 0,-7 L 7,0 L 0,7 L -7,0 Z"),
-                    Stroke = colour,
-                    StrokeThickness = 1.8,
-                    Fill = (Brush)FindResource("Ground"),
-                    Opacity = 0.95,
+                    // The same pin a quest stop draws, in its own colour.
+                    //
+                    // It used to be a diamond or a box depending on the mark's kind, on the
+                    // reasoning that colour alone fails for anyone who cannot separate the hues.
+                    // The kind is no longer something anybody chooses, and a waypoint is a
+                    // waypoint — what separates it from a quest's is where it came from, which is
+                    // exactly what a colour is for.
+                    Data = Geometry.Parse(
+                        "M 0,0 C -3,-5 -7,-8 -7,-12 A 7,7 0 1 1 7,-12 C 7,-8 3,-5 0,0 Z"),
+                    Fill = colour,
+                    Stroke = (Brush)FindResource("Ground"),
+                    StrokeThickness = 1.5,
                     RenderTransform = new ScaleTransform(scale, scale),
                 },
                 at.X,
@@ -3347,9 +3352,7 @@ public partial class OverlayWindow : Window
                 at, 8 * scale,
                 mark.Note is { Length: > 0 } note
                     ? $"{mark.Label} — {note}"
-                    : mark.Kind == MarkKind.Item
-                        ? $"{mark.Label} · pick up"
-                        : $"{mark.Label} · your mark");
+                    : $"{mark.Label} · your waypoint");
         }
 
         var quests = _settings.Overlay.Quests;

@@ -31,11 +31,16 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       # The web app builds into the service's wwwroot, so it goes first.
+      #
+      # `npm run build` is `tsc -b && vite build`, so the type check is in there. There used to be
+      # a separate `npx tsc --noEmit` line above it, and it checked nothing at all: the root
+      # tsconfig is solution-style — `"files": []` with project references — so plain `tsc` has no
+      # files to look at and exits happy. A step that looks like a type check and is not is worse
+      # than no step, because it is the one people run locally and trust.
       - name: Build the web app
         working-directory: web
         run: |
           npm ci
-          npx tsc --noEmit
           npm run build
 
       - name: Build

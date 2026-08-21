@@ -1178,11 +1178,13 @@ public static class ApiEndpoints
                         // against the stop in raid, and it is the half of the feature worth
                         // having: "car batteries" says where, "third shelf behind the crates"
                         // says the thing you cannot remember at the time.
-                        Description = mark.Note is { Length: > 0 } note
-                            ? note
-                            : mark.Kind == MarkKind.Item
-                                ? $"Pick up: {mark.Label}"
-                                : $"Your mark: {mark.Label}",
+                        //
+                        // With no note there is nothing more to say than the name, and the name is
+                        // already the row's title. "Pick up:" and "Your mark:" used to go here and
+                        // asserted a place-or-item choice that is no longer offered — a line under
+                        // "car batteries" reading "something to pick up" is the label again,
+                        // wearing a claim nobody made.
+                        Description = mark.Note ?? "",
                         Position = transform.ToGamePosition(
                             new MapPoint(mark.X * image.PixelWidth, mark.Y * image.PixelHeight)),
                     });

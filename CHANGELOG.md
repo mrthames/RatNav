@@ -16,6 +16,27 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### App
 
+- **The Maps page controls stop moving.** Half of them only appeared when they had something to
+  offer — the floor picker on a map with floors, exits on a map with extracts — so changing map
+  reflowed the row and whatever you were reaching for moved. A control with nothing to offer is
+  dimmed in place now.
+- **Custom waypoints, after using them for real.** *Mark* is **Custom waypoints**: a toggle for
+  whether they are drawn and a **+ Waypoint** button, instead of choosing *a place* or *an item*
+  before you have said what it is. Naming one uses RatNav's own dialog rather than the browser's
+  prompt box, and asks for a name and nothing else — a note can follow from the waypoint's chip
+  under the map. The pin is now the same shape a quest stop draws, in the waypoint colour: what
+  separates yours from a quest's is where it came from, which is what a colour is for. "something
+  to pick up" no longer appears under a waypoint's name, because nobody chooses that any more.
+- **The place search is gone** from the Maps page. The names are drawn on the map you are looking
+  at.
+- **Setup says that hotkey combinations work.** `Ctrl+Alt+T` has always been a valid binding and
+  nothing on the page said so — which is the binding a Stream Deck macro wants, so it can send
+  something the game will not fight over. It also says plainly that mouse buttons cannot be used:
+  catching one over another application needs the system-wide mouse hook RatNav refuses, and a
+  two-key combination covers the same ground. Your in-game screenshot key is unaffected — RatNav
+  only names that one.
+- **"Leave a folder empty to go back to detecting it"** moved from beside the Save button, where it
+  read as an instruction about saving, onto the two folder fields it was describing.
 - **Planning is closed while you are in a raid you already have a plan for.** The obvious next
   click on the Plan page was one that replaced the plan you were in the middle of walking. The
   quest list and **Plan this raid** are unavailable until you **End raid** or **Clear plan**, and

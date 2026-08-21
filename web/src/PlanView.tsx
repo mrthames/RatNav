@@ -476,11 +476,19 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                         </span>
                       )}
 
+                      {/*
+                        The name, and the note if there is one.
+
+                        This used to say "something to pick up" or "a place", from a kind chosen
+                        before the click. Nobody chooses that any more, and a line under "car
+                        batteries" reading "something to pick up" was the label again wearing a
+                        claim nobody made. A note is the only thing here worth a second line.
+                      */}
                       <span className="min-w-0">
                         <span className="block text-sm">{mark.label}</span>
-                        <span className="font-mono text-[11px] text-muted">
-                          {mark.kind === 'Item' ? 'something to pick up' : 'a place'}
-                        </span>
+                        {mark.note && (
+                          <span className="font-mono text-[11px] text-muted">{mark.note}</span>
+                        )}
                       </span>
                     </label>
                   </li>
