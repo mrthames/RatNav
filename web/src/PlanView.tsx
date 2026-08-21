@@ -29,24 +29,20 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const planning = !(raid?.inRaid && raid?.hasPlan)
   const [mapId, setMapId] = useState<string | null>(null)
 
-  /**
-   * Whether the picking half of the page is open.
-   *
-   * <p>A plan that exists folds it away. The page is two things — building a plan, and the plan
-   * you built — and with a plan on it the second is what you came for; leaving a map picker,
-   * "0 objectives" and a **Plan this raid** button underneath makes a finished plan read as
-   * unfinished work.</p>
-   *
-   * <p>Folded, not removed. Adding a stop to a plan you already have is an ordinary thing to want
-   * — a quest turned in, a second look at what is on the way — and this page is the only place to
-   * do it. Clearing the plan or ending the raid opens it again, because then it is all there is.</p>
-   */
-  const [picking, setPicking] = useState(false)
-
   const hasPlan = raid?.hasPlan ?? false
 
-  /** Whether the build-a-plan half of the page is on show. */
-  const building = planning && (!hasPlan || picking)
+  /**
+   * Whether the build-a-plan half of the page is on show.
+   *
+   * <p>A plan that exists closes it. The page is two things — building a plan, and the plan you
+   * built — and with a plan on it the second is what you came for; a map picker, "0 objectives"
+   * and a **Plan this raid** button underneath make a finished plan read as unfinished work.</p>
+   *
+   * <p>There is no way to add to a plan without clearing it, deliberately. A plan is a route, and
+   * a stop bolted on afterwards is not the route the planner worked out — the honest way to change
+   * your mind is to say what you want and have it planned again.</p>
+   */
+  const building = planning && !hasPlan
 
   /** Whether the plan menu — sharing and importing — is open. */
   const [planMenu, setPlanMenu] = useState(false)
@@ -139,18 +135,6 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const toggle = (id: string) =>
     edit((current) =>
       current.includes(id) ? current.filter((c) => c !== id) : [...current, id])
-
-  /** Move one stop to another position, keeping everything else in order around it. */
-  const move = (from: number, to: number) =>
-    edit((current) => {
-      if (from === to || to < 0 || to >= current.length) return current
-
-      const next = [...current]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved)
-
-      return next
-    })
 
   // Keys are the thing you cannot fix once the raid starts, so they are gathered from the
   // objectives you picked and shown before you queue rather than after.
@@ -383,15 +367,12 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
           </span>
         )}
 
-        <span
-          title={'Stops run in the order you ticked them. Drag a row, or use the arrows, to change '
-            + 'it. Once you are in raid the stops you have not reached re-order around wherever '
-            + 'you actually are, the first time you take a position fix.'}
-          className="grid size-4 cursor-help place-items-center rounded-full border border-line
-                     font-mono text-[10px] text-muted"
-        >
-          i
-        </span>
+        {/*
+          No info bubble here any more. It explained an ordering you could drag to change, and
+          dragging is gone: stops run in the order you tick them, and re-order by distance once you
+          are in the raid and have taken a fix. A hover-only explanation of a thing that no longer
+          works that way is worse than none.
+        */}
 
         {note && <span className="font-mono text-xs text-have">{note}</span>}
 
@@ -415,48 +396,11 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         the rest — which needs the plan still on screen.
       */}
       {(raid?.inRaid || raid?.hasPlan) && <RaidPanel raid={raid} />}
-      {route.length > 0 && (
-        <details className="border border-line bg-panel">
-          <summary className="cursor-pointer px-3 py-2 font-mono text-[11px] uppercase
-                              tracking-wider text-muted hover:text-ink">
-            Order · {route.length} stop{route.length === 1 ? '' : 's'}
-          </summary>
-          <div className="px-3 pb-3">
-            <Route stops={route} onMove={move} onRemove={toggle} />
-          </div>
-        </details>
-      )}
 
       {!planning && <RaidInProgress />}
 
-      {planning && hasPlan && !picking && (
-        <button
-          type="button"
-          onClick={() => setPicking(true)}
-          className="flex items-center gap-2 border border-line bg-panel px-3 py-2 text-left
-                     font-mono text-[11px] uppercase tracking-wider text-muted transition-colors
-                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          <span aria-hidden>▸</span>
-          Add more to this plan
-        </button>
-      )}
-
       {building && (
       <div className="flex flex-col gap-3">
-          {hasPlan && (
-            <button
-              type="button"
-              onClick={() => setPicking(false)}
-              className="flex items-center gap-2 self-start font-mono text-[11px] uppercase
-                         tracking-wider text-muted transition-colors hover:text-ink
-                         focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              <span aria-hidden>▾</span>
-              Done adding
-            </button>
-          )}
-
           {/*
             Your own marks, offered the same way the quest objectives are. Above them, because a
             short list you wrote yourself should not be below forty derived rows.
@@ -681,105 +625,6 @@ function RaidInProgress() {
   )
 }
 
-
-/**
- * The stops in the order they will be run, and the place to change that order.
- *
- * <p>Drag to move, and arrows to move — both, because drag is what people reach for and arrows are
- * what works with a keyboard, a trackpad someone finds fiddly, or a screen reader. The drag is
- * plain HTML5 rather than a library: reordering a list of a dozen rows is not worth a dependency,
- * and the native API already handles the pointer capture that makes hand-rolled dragging go
- * wrong.</p>
- */
-function Route({
-  stops, onMove, onRemove,
-}: {
-  stops: { id: string; title: string; subtitle: string; mark: boolean }[]
-  onMove: (from: number, to: number) => void
-  onRemove: (objectiveId: string) => void
-}) {
-  const [dragging, setDragging] = useState<number | null>(null)
-  const [over, setOver] = useState<number | null>(null)
-
-  return (
-    <ol className="flex flex-col gap-px border-t border-line pt-2">
-      {stops.map((stop, index) => (
-        <li
-          key={stop.id}
-          draggable
-          onDragStart={(e) => {
-            setDragging(index)
-
-            // Firefox refuses to start a drag unless something is on the clipboard for it, and
-            // the sentence beside this list promises dragging works.
-            e.dataTransfer.effectAllowed = 'move'
-            e.dataTransfer.setData('text/plain', stop.id)
-          }}
-          onDragEnd={() => { setDragging(null); setOver(null) }}
-          onDragOver={(e) => {
-            e.preventDefault()
-            e.dataTransfer.dropEffect = 'move'
-            setOver(index)
-          }}
-          onDrop={(e) => {
-            e.preventDefault()
-            if (dragging !== null) onMove(dragging, index)
-            setDragging(null)
-            setOver(null)
-          }}
-          className={`flex cursor-grab items-start gap-2 rounded-sm px-1 py-1 active:cursor-grabbing
-                      ${over === index && dragging !== index ? 'bg-accent/15' : ''}
-                      ${dragging === index ? 'opacity-40' : ''}`}
-        >
-          <span className={`font-mono text-[11px] tabular-nums ${stop.mark ? 'text-mark' : 'text-accent'}`}>
-            {index + 1}
-          </span>
-
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-xs" title={stop.title}>{stop.title}</span>
-            <span className={`block truncate font-mono text-[10px] ${stop.mark ? 'text-mark' : 'text-muted'}`}>
-              {stop.subtitle}
-            </span>
-          </span>
-
-          {/* The keyboard route to the same thing the drag does. */}
-          <span className="flex flex-col">
-            <button
-              type="button"
-              disabled={index === 0}
-              onClick={() => onMove(index, index - 1)}
-              aria-label={`Move ${stop.title} earlier`}
-              className="font-mono text-[9px] leading-tight text-muted hover:text-ink disabled:opacity-20
-                         focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              ▲
-            </button>
-            <button
-              type="button"
-              disabled={index === stops.length - 1}
-              onClick={() => onMove(index, index + 1)}
-              aria-label={`Move ${stop.title} later`}
-              className="font-mono text-[9px] leading-tight text-muted hover:text-ink disabled:opacity-20
-                         focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              ▼
-            </button>
-          </span>
-
-          <button
-            type="button"
-            onClick={() => onRemove(stop.id)}
-            aria-label={`Drop ${stop.title} from the plan`}
-            className="font-mono text-[11px] text-muted hover:text-need
-                       focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            ✕
-          </button>
-        </li>
-      ))}
-    </ol>
-  )
-}
 
 /**
  * Passing a plan to someone, and taking theirs.
