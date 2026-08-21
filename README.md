@@ -41,6 +41,12 @@ bindings sit along the bottom so you never have to remember them.
 
 ![The RatNav panel over a raid on Customs: a waypoint list numbered to match the pins on the map, the watchlist and tracked collections beneath it, the map with extracts and place names beside them, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
 
+**Click a waypoint and the quest opens over it** — what it wants, which step this stop is, and the
+wiki's own photographs of the place. On one screen that is the only way to see which door you are
+looking for without leaving the game.
+
+![A quest brief open over a raid on Streets of Tarkov: the quest name and its trader, the four objectives with the current one marked, and a wiki photograph of the building to find, with controls to page through eight of them](docs/screenshot-quest.jpg)
+
 **Or take the lists off the map.** Each one tears off into a window of its own, parked wherever
 suits your screen — so the map keeps its whole panel and the lists stop competing with it for room.
 They stay part of the overlay: same size, same fade, clicks passing through to the game, and gone
@@ -264,7 +270,7 @@ ban-safe tool in this space works the same way.
 |---|---|
 | *your in-game screenshot key* | take a position fix |
 | `F5` | show or hide the overlay |
-| `F6` | edit mode — let the mouse reach the overlay to move, resize, zoom and open the settings |
+| `F6` | interact mode — let the mouse reach the overlay to move, resize, zoom and open the settings |
 | `F7` | switch between the corner panel and the centred map |
 | `F8` | follow you, or hold the map still |
 | `F9` | put the map back on you, without starting to follow |

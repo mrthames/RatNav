@@ -30,7 +30,7 @@ public sealed class TrayIcon : IDisposable
         var menu = new ContextMenuStrip();
         menu.Items.Add($"Show / hide overlay\t{hotkeys.ToggleOverlay}", null, (_, _) => onToggleOverlay());
         menu.Items.Add($"Center or panel view\t{hotkeys.ToggleMode}", null, (_, _) => onToggleMode());
-        menu.Items.Add($"Edit mode — move, resize, zoom\t{hotkeys.ToggleInteract}", null, (_, _) => onToggleInteract());
+        menu.Items.Add($"Interact mode — move, resize, zoom\t{hotkeys.ToggleInteract}", null, (_, _) => onToggleInteract());
         menu.Items.Add("Open panel over the game", null, (_, _) => onOpenPanel());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Open in browser", null, (_, _) => onOpenBrowser());

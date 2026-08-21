@@ -805,7 +805,7 @@ const DEFAULT_HOTKEYS: HotKeys = {
 // overlay's own strip lists them.
 const HOTKEYS: [keyof HotKeys, string][] = [
   ['toggleOverlay', 'Show / hide overlay'],
-  ['toggleInteract', 'Edit mode — move, resize, zoom'],
+  ['toggleInteract', 'Interact mode — move, resize, zoom'],
   ['toggleMode', 'Center or panel view'],
   ['toggleFollow', 'Follow me, or hold still'],
   ['centerMap', 'Center the map on me'],

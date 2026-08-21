@@ -436,7 +436,7 @@ public partial class OverlayWindow : Window
         var keys = _settings.Hotkeys;
 
         Bind(keys.ToggleOverlay, "Show/hide overlay", ToggleVisible);
-        Bind(keys.ToggleInteract, "Edit mode", ToggleInteractive);
+        Bind(keys.ToggleInteract, "Interact mode", ToggleInteractive);
         Bind(keys.ToggleMode, "Center or panel view", ToggleMode);
         Bind(keys.IdentifyItem, "Identify item under cursor", IdentifyUnderCursor);
         Bind(keys.ReadExtracts, "Read the game's extract list", ReadOfferedExtracts);
@@ -472,6 +472,16 @@ public partial class OverlayWindow : Window
 
             _itemsWindow?.Hide();
             _questWindow?.Hide();
+
+            // The quest brief goes too. It is its own window when the waypoints list has been torn
+            // off, and a quest brief left floating over the game after the overlay was hidden is
+            // the same fault the lists had — the comment above says "everything", and this was
+            // added after it was written.
+            //
+            // The settings need no line here: leaving interact mode closes them, and SetInteractive
+            // just above is that.
+            _briefWindow?.Hide();
+
             Hide();
         }
         else
@@ -479,6 +489,7 @@ public partial class OverlayWindow : Window
             Show();
             _itemsWindow?.Show();
             _questWindow?.Show();
+            _briefWindow?.Show();
         }
     }
 

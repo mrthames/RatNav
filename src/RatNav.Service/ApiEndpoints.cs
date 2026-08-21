@@ -912,7 +912,7 @@ public static class ApiEndpoints
                 // screen. The overlay strip and Setup both read this order.
                 new { key = settings.ScreenshotKey, does = "update location" },
                 new { key = keys.ToggleOverlay, does = "show/hide" },
-                new { key = keys.ToggleInteract, does = "edit mode" },
+                new { key = keys.ToggleInteract, does = "interact mode" },
                 new { key = keys.ToggleMode, does = "center/panel" },
                 new { key = keys.ToggleFollow, does = "follow/still" },
                 new { key = keys.CenterMap, does = "center on me" },

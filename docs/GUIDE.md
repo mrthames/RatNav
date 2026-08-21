@@ -106,7 +106,7 @@ the first time you take a position fix. Ones you have ticked off stay put.
 |---|---|
 | *your screenshot key* | Take a position fix |
 | `F5` | Show or hide the overlay |
-| `F6` | Edit mode — let the mouse reach it, to move, resize, zoom and open the settings |
+| `F6` | Interact mode — let the mouse reach it, to move, resize, zoom and open the settings |
 | `F7` | Switch between the corner panel and the centred map |
 | `F8` | Follow you, or hold the map still |
 | `F9` | Put the map back on you, without starting to follow |
