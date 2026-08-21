@@ -354,6 +354,10 @@ public partial class OverlayWindow : Window
         ShrinkDown.Click += (_, _) => StepShrink(-0.1);
         YouUp.Click += (_, _) => StepPlayer(+0.1);
         YouDown.Click += (_, _) => StepPlayer(-0.1);
+        EdgeArrowUp.Click += (_, _) => StepEdgeArrow(+0.1);
+        EdgeArrowDown.Click += (_, _) => StepEdgeArrow(-0.1);
+        EdgeLabelUp.Click += (_, _) => StepEdgeLabel(+0.1);
+        EdgeLabelDown.Click += (_, _) => StepEdgeLabel(-0.1);
         WeightUp.Click += (_, _) => StepWeight(+0.25);
         WeightDown.Click += (_, _) => StepWeight(-0.25);
         DetachItems.Click += (_, _) => DetachItemsPanel();
@@ -1888,6 +1892,11 @@ public partial class OverlayWindow : Window
     private double PlaceNameSize => Sized(_settings.Overlay.PlaceNameScale, RatNavSettings.TunedFor1080p.PlaceName);
     private double PlayerSize => Sized(_settings.Overlay.PlayerScale, RatNavSettings.TunedFor1080p.Player);
 
+    /// <summary>Based on the pin, because that is the size an edge arrow was drawn at before it had a dial.</summary>
+    private double EdgeArrowSize => Sized(_settings.Overlay.EdgeArrowScale, RatNavSettings.TunedFor1080p.Marker);
+
+    private double EdgeLabelSize => Sized(_settings.Overlay.EdgeLabelScale, RatNavSettings.TunedFor1080p.Text);
+
     /// <summary>The overlay's own furniture, which is a multiplier of the tuned base like the rest.</summary>
     private double EffectiveUiScale =>
         Sized(_settings.Overlay.UiScale ?? 1.0, RatNavSettings.TunedFor1080p.Ui);
@@ -2865,6 +2874,26 @@ public partial class OverlayWindow : Window
         Draw();
     }
 
+    private void StepEdgeArrow(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            EdgeArrowScale = Snap(_settings.Overlay.EdgeArrowScale + by, MinScale, 8.0),
+        });
+
+        Draw();
+    }
+
+    private void StepEdgeLabel(double by)
+    {
+        Remember(_settings.Overlay with
+        {
+            EdgeLabelScale = Snap(_settings.Overlay.EdgeLabelScale + by, MinScale, 6.0),
+        });
+
+        Draw();
+    }
+
     private void StepShrink(double by)
     {
         Remember(_settings.Overlay with
@@ -3089,6 +3118,8 @@ public partial class OverlayWindow : Window
         GlowText.Text = $"{_settings.Overlay.Glow:0.0}×";
         ShrinkText.Text = $"{_settings.Overlay.ScaleWithZoom:0.00}";
         YouText.Text = $"{_settings.Overlay.PlayerScale:0.0}×";
+        EdgeArrowText.Text = $"{_settings.Overlay.EdgeArrowScale:0.0}×";
+        EdgeLabelText.Text = $"{_settings.Overlay.EdgeLabelScale:0.0}×";
         HaloButton.Content = _settings.Overlay.Halo ? "halo on" : "halo off";
         GhostButton.Content = _settings.Overlay.GhostOtherFloors ? "ghost on" : "ghost off";
         PlacesButton.Content = _settings.Overlay.ShowPlaceNames ? "names on" : "names off";
@@ -3681,9 +3712,15 @@ public partial class OverlayWindow : Window
     private bool ShowsEdgeMarkers => _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box;
 
     /// <summary>An arrow on the edge of the view, pointing at something you cannot currently see.</summary>
+    /// <param name="scale">
+    /// Unused for the arrow itself, which has its own dial now — kept so the callers can go on
+    /// passing the map scale they use for the label's offset below.
+    /// </param>
     private void EdgeMarker(Point at, double bearing, Brush colour, double scale, string? label)
     {
         if (!ShowsEdgeMarkers) return;
+
+        var arrowScale = EdgeArrowSize;
 
         var arrow = new Path
         {
@@ -3702,7 +3739,7 @@ public partial class OverlayWindow : Window
             {
                 Children =
                 {
-                    new ScaleTransform(scale, scale),
+                    new ScaleTransform(arrowScale, arrowScale),
                     new RotateTransform(bearing),
                 },
             },
@@ -3720,7 +3757,7 @@ public partial class OverlayWindow : Window
         {
             Text = label,
             FontFamily = new FontFamily("Consolas"),
-            FontSize = 9 * TextSize,
+            FontSize = 9 * EdgeLabelSize,
             FontWeight = FontWeights.Bold,
             Foreground = colour,
             IsHitTestVisible = false,
@@ -3730,7 +3767,7 @@ public partial class OverlayWindow : Window
 
         // Nudged back toward the middle, so the label sits inside the view rather than half off it.
         Canvas.SetLeft(text, at.X - text.DesiredSize.Width / 2);
-        Canvas.SetTop(text, at.Y + 6 * scale);
+        Canvas.SetTop(text, at.Y + 6 * arrowScale);
         MapCanvas.Children.Add(text);
     }
 

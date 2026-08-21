@@ -817,6 +817,24 @@ public sealed record RatNavSettings
         public double PlayerScale { get; init; } = 1.0;
 
         /// <summary>
+        /// The arrows around the edge, pointing at what is off the view.
+        ///
+        /// <para>Their own size rather than the waypoint pins', because they are doing a different
+        /// job: a pin marks a place you can see and an edge arrow stands in for one you cannot, so
+        /// how big each wants to be is a separate question.</para>
+        /// </summary>
+        public double EdgeArrowScale { get; init; } = 1.0;
+
+        /// <summary>
+        /// The names and numbers under those arrows.
+        ///
+        /// <para>They did not follow the waypoint label dial in any useful way — they scaled with
+        /// it but not with the zoom shrink the pins get, so the two drifted apart as you zoomed and
+        /// neither dial appeared to control them.</para>
+        /// </summary>
+        public double EdgeLabelScale { get; init; } = 1.0;
+
+        /// <summary>
         /// Draw the floor above the ground together with it, rather than ghosted.
         ///
         /// <para>On Streets the ground level holds only building footprints — the interiors are one
