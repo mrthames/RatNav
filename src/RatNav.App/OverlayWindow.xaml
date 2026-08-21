@@ -1428,8 +1428,8 @@
                     <!--
                         Which exits are drawn: your faction's, the other's, both, or none.
 
-                        In the bar rather than the drawer because it is the one the tester reached for
-                        most, and because the answer changes with what you queued as.
+                        In the bar rather than the drawer because it is the one reached for most
+                        in testing, and because the answer changes with what you queued as.
                     -->
                     <TextBlock Style="{StaticResource Label}" Text="EXITS" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <Button x:Name="QuickExtracts" Style="{StaticResource Chip}"

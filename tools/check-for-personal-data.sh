@@ -35,7 +35,15 @@ find_in_tracked() {
 
 # --- A name or a contact address.
 # Word boundaries, or "adjusting" matches "justin" and the check cries wolf until nobody reads it.
-hits=$(find_in_tracked '\bjustin\b|\bthames\b|@gmail\.com|@outlook\.com|@hotmail\.com')
+#
+# The author's name is public by design - the licence, the installer's publisher field and the
+# GitHub account carry it, and those are allowed above. What is not wanted is the *person*: a
+# comment saying "measured on my machine" is a fact about a machine, not about a project.
+#
+# Anybody outside the repository is stricter and is simply not named. They did not sign up to be
+# in a public git history, and until somebody is a contributor here under their own account there
+# is nothing to attribute and no reason to name them.
+hits=$(find_in_tracked '\bjustin\b|\bthames\b|\bgeorge\b|@gmail\.com|@outlook\.com|@hotmail\.com')
 [ -n "$hits" ] && report "a name or contact address" "$hits"
 
 # --- Paths from somebody's own machine.
@@ -59,6 +67,25 @@ hits=$(git ls-files | grep -E '(^|/)(settings|tracking|progress|waypoints)\.json
 # --- Screenshots from the game, which carry coordinates in their names and a stash in their pixels.
 hits=$(git ls-files | grep -E '[0-9]{4}-[0-9]{2}-[0-9]{2}\[[0-9]' || true)
 [ -n "$hits" ] && report "a game screenshot" "$hits"
+
+# --- And the commit messages, which are as public as the files were and were not being read.
+#
+# This is the gap that let a tester's name into eight commits: every check above reads the working
+# tree, and a message is neither a tracked file nor something anybody looks at twice. It is also
+# the expensive one to get wrong - a file is fixed with an edit, a message only by rewriting every
+# commit after it.
+#
+# Only what this push adds, so a rewrite is never demanded for history somebody has already cloned.
+# CI passes the range; run by hand it reads the last twenty.
+range="${1:-HEAD~20..HEAD}"
+
+if git rev-parse --quiet --verify "${range%%..*}" >/dev/null 2>&1; then
+  hits=$(git log --format='%H %s%n%b' "$range" 2>/dev/null \
+    | grep -inE '\bjustin\b|\bthames\b|\bgeorge\b|@gmail\.com' \
+    | grep -vE 'Co-Authored-By|mrthames/RatNav' || true)
+
+  [ -n "$hits" ] && report "a name in a commit message" "$hits"
+fi
 
 echo
 if [ "$fail" -eq 0 ]; then
