@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+
+    <!-- A build nobody released says so. The release workflow overrides both from the tag. -->
+    <Version>0.0.0</Version>
+    <InformationalVersion>0.0.0</InformationalVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

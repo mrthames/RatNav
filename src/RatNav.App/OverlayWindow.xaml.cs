@@ -1469,6 +1469,12 @@ public partial class OverlayWindow : Window
             // it came from, so docking the log again finds it there.
             _briefWindow.Closed += (_, _) =>
             {
+                // Emptied before the field is cleared, or ReturnBriefHome has nothing to detach
+                // the brief *from* and tries to add a control that is still a window's content to
+                // a panel. WPF refuses that outright, from inside WmDestroy, where the exception
+                // takes the app with it — which is exactly what closing this window did.
+                if (_briefWindow is { } window) window.Content = null;
+
                 _briefWindow = null;
                 ReturnBriefHome();
             };
@@ -1476,7 +1482,7 @@ public partial class OverlayWindow : Window
 
         if (!ReferenceEquals(QuestBrief.Parent, _briefWindow))
         {
-            if (QuestBrief.Parent is Panel current) current.Children.Remove(QuestBrief);
+            Detach(QuestBrief);
             _briefWindow.Content = QuestBrief;
         }
 
@@ -1491,13 +1497,38 @@ public partial class OverlayWindow : Window
         _briefWindow.Activate();
     }
 
+    /// <summary>
+    /// Takes an element out of whatever is currently holding it.
+    ///
+    /// <para>Two kinds of parent and only one of them was handled. A panel holds children in a
+    /// collection; a window holds one thing as its <c>Content</c>, and its <c>Parent</c> is the
+    /// window rather than a panel — so the panel case simply did not match and the element stayed
+    /// attached. Adding a still-attached element anywhere else throws.</para>
+    /// </summary>
+    private static void Detach(FrameworkElement element)
+    {
+        switch (element.Parent)
+        {
+            case Panel panel:
+                panel.Children.Remove(element);
+                break;
+
+            case ContentControl holder when ReferenceEquals(holder.Content, element):
+                holder.Content = null;
+                break;
+        }
+    }
+
     /// <summary>Moves the brief back into the overlay, hidden, however it was last shown.</summary>
     private void ReturnBriefHome()
     {
         if (_briefHome is null || ReferenceEquals(QuestBrief.Parent, _briefHome)) return;
 
-        if (_briefWindow is not null) _briefWindow.Content = null;
-        if (QuestBrief.Parent is Panel current) current.Children.Remove(QuestBrief);
+        Detach(QuestBrief);
+
+        // Belt and braces: a parent WPF still believes in makes the next line throw from inside
+        // a window's destroy handler, which is not a place an exception can be recovered from.
+        if (QuestBrief.Parent is not null) return;
 
         _briefHome.Children.Add(QuestBrief);
 

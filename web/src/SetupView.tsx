@@ -695,10 +695,26 @@ function Updates({ enabled, onToggle }: { enabled: boolean; onToggle: (on: boole
             </a>
             . Quit RatNav first — an installer cannot replace files a running program has open.
           </>
+        ) : status && !status.isRelease ? (
+          /*
+            A build somebody compiled themselves is not behind and is not up to date — it is not on
+            the ladder at all, and saying either about it is saying something false. It reported
+            "you are on 1.0.0, which is the newest release", where 1.0.0 was .NET's default for an
+            unstamped assembly and no RatNav has ever carried it.
+          */
+          <>
+            You are running a <b>local build</b>, not an installed release.
+            {status.latest && <> The newest release is {status.latest}.</>}
+          </>
         ) : status?.problem ? (
           <>You are on {status.current}. Could not reach GitHub to check for a newer one.</>
-        ) : status?.latest ? (
+        ) : status?.latest === status?.current && status?.latest ? (
           <>You are on {status.current}, which is the newest release.</>
+        ) : status?.latest ? (
+          /* Ahead of the newest release, which is what a prerelease is. */
+          <>
+            You are on {status.current}. The newest stable release is {status.latest}.
+          </>
         ) : (
           <>You are on {status?.current ?? '…'}.</>
         )}

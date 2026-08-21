@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
 namespace RatNav.Core.Updates;
@@ -8,6 +8,9 @@ public sealed record UpdateStatus
 {
     /// <summary>The version running, as the assembly reports it.</summary>
     public required string Current { get; init; }
+
+    /// <summary>False when this was built locally rather than published.</summary>
+    public bool IsRelease { get; init; }
 
     /// <summary>The newest stable release, or null when the check could not be made.</summary>
     public string? Latest { get; init; }
@@ -97,8 +100,13 @@ public sealed class UpdateCheck(HttpClient http)
             return _last = new UpdateStatus
             {
                 Current = current,
+                IsRelease = IsReleaseVersion(current),
                 Latest = latest,
-                Available = IsNewer(latest, current),
+
+                // An unreleased build is never told there is an update. It is not behind — it is
+                // not on the ladder at all, and 0.0.0 would otherwise be behind every release
+                // forever with nothing to do about it but install over your own build.
+                Available = IsReleaseVersion(current) && IsNewer(latest, current),
                 Url = release.HtmlUrl ?? ReleasesPage,
                 CheckedAt = DateTimeOffset.UtcNow,
             };
@@ -114,9 +122,24 @@ public sealed class UpdateCheck(HttpClient http)
         _last = new UpdateStatus
         {
             Current = current,
+            IsRelease = IsReleaseVersion(current),
             CheckedAt = DateTimeOffset.UtcNow,
             Problem = problem,
         };
+
+    /// <summary>
+    /// Whether a version string names a published release.
+    ///
+    /// <para><c>0.0.0</c> is what the projects carry when nobody has stamped them, and
+    /// <c>1.0.0</c> is what .NET stamps if that default is ever removed. Neither is a RatNav that
+    /// has been released, and both compare as newer than versions that have been.</para>
+    ///
+    /// <para>Decided from the version it is handed rather than from the running assembly, so the
+    /// answer is about the thing being asked about — which is the difference between a check that
+    /// can be tested and one that reports whatever process it happens to be inside.</para>
+    /// </summary>
+    public static bool IsReleaseVersion(string version) =>
+        version.Trim() is not ("0.0.0" or "1.0.0" or "");
 
     /// <summary>
     /// Whether one version string is newer than another.

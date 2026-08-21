@@ -50,6 +50,17 @@
     <!-- What people download and double-click. "RatNav.App.exe" reads like a build artefact. -->
     <AssemblyName>RatNav</AssemblyName>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+
+    <!--
+      A build nobody released says 0.0.0, and the release workflow overrides it with the tag.
+
+      Left alone, .NET stamps 1.0.0 — which is not any RatNav that has ever existed, is newer than
+      every real release by every comparison, and had the app reporting "you are on 1.0.0, which is
+      the newest release" to anybody running from source. A version that cannot be mistaken for a
+      release is the honest default.
+    -->
+    <Version>0.0.0</Version>
+    <InformationalVersion>0.0.0</InformationalVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>

@@ -1037,7 +1037,11 @@ public static class ApiEndpoints
             // Off means off for the automatic check only. A manual one is somebody asking.
             if (!settings.CheckForUpdates && force is not true)
             {
-                return Results.Ok(new UpdateStatus { Current = current });
+                return Results.Ok(new UpdateStatus
+                {
+                    Current = current,
+                    IsRelease = RatNavVersion.IsRelease,
+                });
             }
 
             var status = force is true

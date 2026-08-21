@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using RatNav.Core;
 using RatNav.Core.Data;
+using RatNav.Core.Updates;
 using RatNav.Core.Sharing;
 using RatNav.Core.Watchers;
 
@@ -17,7 +18,8 @@ public sealed class RaidHost(
     RaidSession session,
     RatNavSettings settings,
     GameDataCache cache,
-    PlanStore plans) : IHostedService, IDisposable
+    PlanStore plans,
+    UpdateCheck updates) : IHostedService, IDisposable
 {
     private ScreenshotWatcher? _screenshots;
     private LogWatcher? _logs;
@@ -68,6 +70,19 @@ public sealed class RaidHost(
         _ = RefreshAsync(ct).ContinueWith(_ => RestoreActivePlan(), TaskScheduler.Default);
         _refresh = new Timer(_ => _ = RefreshAsync(CancellationToken.None), null,
             TimeSpan.FromHours(6), TimeSpan.FromHours(6));
+
+        // Whether there is a newer RatNav, asked once at launch.
+        //
+        // It used to be asked only when somebody opened Setup, which meant the page did the
+        // waiting and anybody who never opened it was never told. Launch is the honest moment:
+        // it is when you would act on the answer, and it is once per session rather than once
+        // per visit to a page.
+        //
+        // Nothing waits on it and nothing is reported if it fails.
+        if (settings.CheckForUpdates)
+        {
+            _ = updates.CheckIfDueAsync(RatNavVersion.Current, ct);
+        }
 
         return Task.CompletedTask;
     }

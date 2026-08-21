@@ -183,6 +183,9 @@ export interface HotKeys {
 /** What version this is, and whether GitHub has a newer stable one. */
 export interface UpdateStatus {
   current: string
+
+  /** False when this was built locally rather than installed from a release. */
+  isRelease: boolean
   latest: string | null
   available: boolean
   url: string | null

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using RatNav.Core.Updates;
 
@@ -120,6 +120,46 @@ public sealed class UpdateCheckTests
         // Somebody pressing the button has a reason to think the cached answer is stale.
         Assert.Equal(2, handler.Calls);
     }
+
+    /// <summary>
+    /// A build nobody released is never told there is an update.
+    ///
+    /// <para>The tests run from a locally-built assembly, so this is the real case rather than a
+    /// contrived one: it reports 0.0.0, every release is numerically newer, and without this it
+    /// would be told to upgrade every day with nothing to do about it but install over its own
+    /// build.</para>
+    ///
+    /// <para>The version it reports is also the point. It read 1.0.0 before — .NET's default for
+    /// an unstamped assembly — which is not any RatNav that has ever existed and is *newer* than
+    /// every real release, so the page said "you are on 1.0.0, which is the newest release".</para>
+    /// </summary>
+    [Fact]
+    public async Task A_local_build_is_never_told_to_upgrade()
+    {
+        var check = new UpdateCheck(new HttpClient(new GitHub(HttpStatusCode.OK,
+            """{"tag_name":"v99.0.0","html_url":"https://example.invalid/r","prerelease":false}""")));
+
+        var status = await check.CheckAsync(RatNavVersion.Current);
+
+        Assert.False(RatNavVersion.IsRelease);
+        Assert.False(status.IsRelease);
+
+        // The newest release is still reported — it is worth knowing what it is.
+        Assert.Equal("99.0.0", status.Latest);
+
+        // But this build is not behind it. It is not on the ladder at all.
+        Assert.False(status.Available);
+    }
+
+    [Theory]
+    // Both the deliberate local default and .NET's own: either means "nobody published this".
+    [InlineData("0.0.0", false)]
+    [InlineData("1.0.0", false)]
+    [InlineData("", false)]
+    [InlineData("0.2.0", true)]
+    [InlineData("0.2.0-alpha.1", true)]
+    public void A_version_nobody_stamped_is_not_a_release(string version, bool expected) =>
+        Assert.Equal(expected, UpdateCheck.IsReleaseVersion(version));
 
     private sealed class GitHub(HttpStatusCode code, string body) : HttpMessageHandler
     {
