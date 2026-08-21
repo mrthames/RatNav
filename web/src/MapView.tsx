@@ -79,8 +79,9 @@ function Toggle({ label, checked, onChange, disabled = false }: {
  * dropped into the middle of a dark application — wrong typeface, wrong colours, wrong buttons,
  * and on a phone it is worse than that.</p>
  *
- * <p>One field. A note can follow from the waypoint's chip below the map, but asking for both at
- * once turns a one-word answer into a form.</p>
+ * <p>One field, and only ever one. A note used to be addable afterwards from the waypoint's own
+ * chip below the map; the name turned out to be the whole of what anybody wanted to say, so there
+ * is nothing else to ask for here or anywhere.</p>
  */
 function NameWaypoint({ onCancel, onSave }: {
   onCancel: () => void
@@ -135,9 +136,8 @@ function NameWaypoint({ onCancel, onSave }: {
         </label>
 
         {/*
-          Name and nothing else. A note can be added afterwards from the waypoint's own chip below
-          the map — offering both here made a two-field form out of a one-word answer, and the
-          second field is the one people would have skipped anyway.
+          Name and nothing else — which is now all there is. A second field turns a one-word
+          answer into a form, and it is the field people skip.
         */}
         <div className="flex items-center gap-3">
           <button
@@ -275,17 +275,6 @@ export function MapView({
 
   async function forget(id: string) {
     await api.removeWaypoint(id)
-    await loadMarks()
-  }
-
-  async function annotate(mark: CustomWaypoint) {
-    // Seeded with whatever is there, so editing is editing rather than retyping. Cancel leaves it
-    // alone; clearing the box and accepting removes the note, which is the only way to take one
-    // off and has to be reachable.
-    const note = window.prompt(`Note for "${mark.label}"`, mark.note ?? '')
-    if (note === null) return
-
-    await api.setWaypointNote(mark.id, note)
     await loadMarks()
   }
 
@@ -838,26 +827,13 @@ export function MapView({
             >
               <span className="text-xs">{mark.label}</span>
 
-              {mark.note && (
-                <span className="max-w-[16rem] truncate text-[11px] text-muted" title={mark.note}>
-                  {mark.note}
-                </span>
-              )}
-
               {/*
-                The sentence you cannot remember at the time — "third shelf, behind the crates".
-                It shows against the stop in the overlay's quest log once the mark joins a plan,
-                which is the moment it is worth having.
+                A note on a waypoint used to be addable here — a sentence you could not remember at
+                the time, "third shelf, behind the crates". The name turned out to be the whole of
+                what anybody wanted to say, and a second field to fill in is a second field to
+                skip. Notes already saved still show wherever they are read; there is just no
+                longer a way to add one.
               */}
-              <button
-                type="button"
-                onClick={() => void annotate(mark)}
-                aria-label={mark.note ? `Edit the note on ${mark.label}` : `Add a note to ${mark.label}`}
-                className="font-mono text-[11px] text-muted hover:text-ink
-                           focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                {mark.note ? 'note ✎' : '+ note'}
-              </button>
 
               <button
                 type="button"
