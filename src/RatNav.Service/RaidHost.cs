@@ -699,8 +699,13 @@ public sealed record RatNavSettings
         /// handles — the grab bar, the drawer chips, the gear. A stack of map settings is a thing
         /// you go and get, not a thing you are handed every time you reach for the mouse.</para>
         ///
-        /// <para>Remembered once opened, because how you like to work is worth keeping.</para>
+        /// <para><b>Not written to disk.</b> Leaving edit mode closes it, which was enough right
+        /// up until the app was closed *while* it was open — then the flag survived on disk and
+        /// the next press of the edit key opened straight onto a panel of settings nobody had
+        /// asked for. It is session state, and saying so is the fix rather than remembering to
+        /// clear it on every path out.</para>
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
         public bool ShowControls { get; init; }
 
         /// <summary>

@@ -105,13 +105,23 @@ public sealed class SettingsMigrationTests : IDisposable
         Assert.False(RatNavSettings.Load(_dir).Overlay.ShowControls);
     }
 
-    /// <summary>And having been folded once, opening it is a choice that sticks.</summary>
+    /// <summary>
+    /// The settings panel never comes back from disk, whatever a file says.
+    ///
+    /// <para>It used to be remembered, on the reasoning that how you like to work is worth keeping.
+    /// Closing edit mode clears it, which was enough until the app was closed *while* it was open —
+    /// then the flag survived and the next press of the edit key opened straight onto a panel of
+    /// settings nobody had asked for.</para>
+    ///
+    /// <para>It is session state. Saying so is the fix, rather than remembering to clear it on
+    /// every path out of the application.</para>
+    /// </summary>
     [Fact]
-    public void An_opened_controls_stack_stays_open()
+    public void The_settings_panel_never_opens_itself_from_a_saved_file()
     {
-        WriteSettings(new { revision = 2, overlay = new { showControls = true } });
+        WriteSettings(new { revision = 6, overlay = new { showControls = true } });
 
-        Assert.True(RatNavSettings.Load(_dir).Overlay.ShowControls);
+        Assert.False(RatNavSettings.Load(_dir).Overlay.ShowControls);
     }
 
     [Fact]

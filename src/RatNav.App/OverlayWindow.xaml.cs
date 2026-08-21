@@ -3837,13 +3837,48 @@ public partial class OverlayWindow : Window
             FontWeight = FontWeights.Bold,
             Foreground = colour,
             IsHitTestVisible = false,
+
+            // The same backing every other caption on the map has, and the only one that did not.
+            //
+            // Edge markers crowd: they are all pinned to the same few hundred pixels of border, so
+            // a waypoint's number lands on an extract's name far more often than two things in the
+            // middle of the map ever collide. Without something behind it, coloured text on
+            // coloured text of a similar weight is unreadable — which is exactly where a number
+            // saying which stop to walk to is least use.
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = Colors.Black,
+                ShadowDepth = 0,
+                BlurRadius = 5,
+                Opacity = 1,
+            },
         };
 
         text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 
-        // Nudged back toward the middle, so the label sits inside the view rather than half off it.
-        Canvas.SetLeft(text, at.X - text.DesiredSize.Width / 2);
-        Canvas.SetTop(text, at.Y + 6 * arrowScale);
+        var size = text.DesiredSize;
+        var width = MapCanvas.ActualWidth;
+        var height = MapCanvas.ActualHeight;
+        var gap = 6 * arrowScale;
+
+        // Always on the inside of the arrow, whichever edge it is against.
+        //
+        // It was always placed below, which is inside the view for an arrow on the top edge and
+        // off the bottom of the map for one on the bottom — where the labels were simply cut in
+        // half and unreadable. An edge marker is pinned to the edge by definition, so "below" is
+        // only ever right for one of the four.
+        var below = at.Y < height / 2;
+        var top = below ? at.Y + gap : at.Y - gap - size.Height;
+
+        var left = at.X - size.Width / 2;
+
+        // And kept inside horizontally as well, for the corners — where an arrow is against two
+        // edges at once and centring the label on it hangs half of it off the side.
+        if (width > size.Width) left = Math.Clamp(left, 2, width - size.Width - 2);
+        if (height > size.Height) top = Math.Clamp(top, 2, height - size.Height - 2);
+
+        Canvas.SetLeft(text, left);
+        Canvas.SetTop(text, top);
         MapCanvas.Children.Add(text);
     }
 

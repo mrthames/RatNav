@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using RatNav.App.Interop;
 
 // WinForms is in scope for the tray icon and brings a Brushes of its own.
@@ -33,19 +33,28 @@ public sealed class SettingsWindow : Window
         Background = Brushes.Transparent;
         Topmost = true;
         ShowInTaskbar = false;
-        SizeToContent = SizeToContent.Manual;
+        // As tall as its contents and no taller. Fixed, it opened with a hand's width of empty
+        // panel under the last control — and a window mostly made of nothing reads as one that has
+        // failed to load something.
+        SizeToContent = SizeToContent.Height;
 
         MinWidth = 280;
-        MinHeight = 220;
+        MaxHeight = SystemParameters.WorkArea.Height * 0.92;
 
         Width = 380;
-        Height = Math.Min(720, SystemParameters.WorkArea.Height * 0.8);
 
         // Beside the work area's right edge rather than centred on the screen, because the middle
         // of the screen is where the game is and where the centred overlay draws.
         var work = SystemParameters.WorkArea;
         Left = work.Right - Width - 24;
-        Top = work.Top + (work.Height - Height) / 2;
+
+        // Placed once it knows how tall it is, which with SizeToContent is not yet.
+        SizeChanged += (_, _) =>
+        {
+            if (Top <= 0) Top = Math.Max(work.Top, work.Top + (work.Height - ActualHeight) / 2);
+        };
+
+        Top = 0;
     }
 
     /// <summary>
