@@ -123,7 +123,14 @@ public partial class OverlayWindow : Window
     /// <summary>The current map's own stylesheet, for the graphical ink level.</summary>
     private IReadOnlyDictionary<string, MapStyle> _palette =
         new Dictionary<string, MapStyle>(StringComparer.OrdinalIgnoreCase);
-    private static readonly string[] ExtractModes = ["pmc", "scav", "both", "off"];
+    /// <summary>
+    /// What the exits control cycles through, in the order it offers them.
+    ///
+    /// <para>Widest first and narrowest last, so pressing it repeatedly takes things away rather
+    /// than moving between two arrangements of the same amount. "off" is last because it is the
+    /// one nobody wants to land on by accident.</para>
+    /// </summary>
+    private static readonly string[] ExtractModes = ["all", "both", "pmc", "scav", "transit", "off"];
 
     /// <summary>
     /// The smallest a marker, a label or the player mark may be drawn.
@@ -165,6 +172,8 @@ public partial class OverlayWindow : Window
     {
         "pmc" => "PMC",
         "scav" => "Scav",
+        "both" => "PMC+Scav",
+        "all" => "All",
         { Length: > 0 } => char.ToUpperInvariant(value[0]) + value[1..],
         _ => value,
     };
@@ -1274,12 +1283,15 @@ public partial class OverlayWindow : Window
             return false;
         }
 
-        if (mode == "both") return true;
+        // Transits are their own answer rather than a faction.
+        //
+        // Anybody standing at one can take it, which is why they used to be exempt from this dial
+        // and drawn whatever it said. But "who may take one" and "do I want to see them" are
+        // different questions, and only the second is what a control like this is being asked.
+        if (extract.Transit) return mode is "all" or "transit";
+        if (mode == "transit") return false;
 
-        // Whoever is standing at a transit can take it, so the PMC/Scav dial has nothing to say
-        // about one. Filtering them by faction would hide half the ways off a map from a player
-        // who had asked to see only their own.
-        if (extract.Transit) return true;
+        if (mode is "all" or "both") return true;
 
         return extract.Faction.Equals("shared", StringComparison.OrdinalIgnoreCase)
             || extract.Faction.Equals(mode, StringComparison.OrdinalIgnoreCase);
@@ -2767,6 +2779,8 @@ public partial class OverlayWindow : Window
 
     private void CycleExtracts()
     {
+        // IndexOf returns -1 for anything not on the list, and -1 + 1 is the first entry — so a
+        // value written by an older build starts the cycle rather than breaking it.
         var at = Array.IndexOf(ExtractModes, _settings.Overlay.Extracts);
         Remember(_settings.Overlay with { Extracts = ExtractModes[(at + 1 + ExtractModes.Length) % ExtractModes.Length] });
         Draw();

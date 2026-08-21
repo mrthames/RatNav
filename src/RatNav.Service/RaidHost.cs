@@ -562,7 +562,15 @@ public sealed record RatNavSettings
         /// <summary>Draw the map's named places — "Old Gas", "Dorms" — on the map itself.</summary>
         public bool ShowPlaceNames { get; init; } = true;
 
-        /// <summary>Which extracts to draw: "pmc", "scav", or "off".</summary>
+        /// <summary>
+        /// Which ways off the map to draw.
+        ///
+        /// <para>"all" is every one including transits; "both" is both extract factions without
+        /// them; "pmc" and "scav" are one faction and the shared ones; "transit" is transits
+        /// alone; "off" is none. Transits are separated from the faction choices because who may
+        /// take one and whether you want to see one are different questions — anybody can take a
+        /// transit, which is why they used to ignore this dial entirely and were always drawn.</para>
+        /// </summary>
         public string Extracts { get; init; } = "pmc";
 
         /// <summary>

@@ -15,7 +15,8 @@ public sealed record GameData
     /// until the six-hour age check happens to fire — so a new layer looks broken rather than
     /// absent, and the person who has it worst is whoever just updated.</para>
     /// </summary>
-    public const int CurrentSchema = 10;
+    /// <para>11 — transits on the map, and the handbook category on an item.</para>
+    public const int CurrentSchema = 11;
 
     /// <summary>The schema this copy was written with. Zero on anything written before schemas.</summary>
     public int Schema { get; init; }
