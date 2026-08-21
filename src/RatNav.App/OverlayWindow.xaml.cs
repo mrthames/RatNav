@@ -390,7 +390,17 @@ public partial class OverlayWindow : Window
         SwapQuestsSide.Click += (_, _) => SwapQuestsToOtherSide();
         DetachQuests.Click += (_, _) => DetachQuestPanel();
         CollapseControls.Click += (_, _) => ShowControls(false);
-        ControlScrim.MouseLeftButtonDown += (_, e) => { ShowControls(false); e.Handled = true; };
+
+        // The heading is the title bar. A borderless window has none, so without this the settings
+        // are stuck wherever they opened — which is fine until they open over the thing you wanted
+        // to look at while turning a dial.
+        SettingsHeader.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.ButtonState == MouseButtonState.Pressed && _settingsWindow is { } window)
+            {
+                window.DragMove();
+            }
+        };
         ExpandControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
         CentredControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
     }
@@ -1400,6 +1410,86 @@ public partial class OverlayWindow : Window
 
     /// <summary>One line of a quest's steps, coloured by where you are in it.</summary>
     private sealed record BriefStep(string Text, Brush Colour);
+
+    private SettingsWindow? _settingsWindow;
+    private Panel? _settingsHome;
+
+    /// <summary>
+    /// Opens the settings in a window of their own, or closes it.
+    ///
+    /// <para>Every version of this as a panel inside the overlay had the same fault: the settings
+    /// covered the map they configure. Centred, most of it; against an edge, less of it and the
+    /// quick controls floating there as well. There is no good position for a panel this size
+    /// inside a small overlay, because the overlay is the thing being configured.</para>
+    ///
+    /// <para>The panel is moved rather than rebuilt, so there is one set of controls and no copy
+    /// to keep in step — the same arrangement the quest brief uses when the log is torn off.</para>
+    /// </summary>
+    private void ShowSettingsWindow(bool show)
+    {
+        _settingsHome ??= ControlStack.Parent as Panel;
+
+        if (!show)
+        {
+            _settingsWindow?.Close();
+            return;
+        }
+
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new SettingsWindow();
+
+            // Closing by any route — the ✕, the gear, the window — puts the panel back and turns
+            // the setting off, so the gear is telling the truth next time it is looked at.
+            _settingsWindow.Closed += (_, _) =>
+            {
+                if (_settingsWindow is { } window) window.Content = null;
+                _settingsWindow = null;
+
+                ReturnSettingsHome();
+
+                if (_settings.Overlay.ShowControls)
+                {
+                    Remember(_settings.Overlay with { ShowControls = false });
+                    ApplyControlStack();
+                }
+            };
+        }
+
+        if (!ReferenceEquals(ControlStack.Parent, _settingsWindow))
+        {
+            Detach(ControlStack);
+            _settingsWindow.Content = ControlStack;
+        }
+
+        // Filling the window rather than floating in the middle of it: the window is the frame now,
+        // and the widths that kept it from swallowing a small overlay would keep it from filling
+        // this.
+        ControlStack.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+        ControlStack.VerticalAlignment = VerticalAlignment.Stretch;
+        ControlStack.Margin = new Thickness(0);
+        ControlStack.MinWidth = 0;
+        ControlStack.MaxWidth = double.PositiveInfinity;
+        ControlStack.MaxHeight = double.PositiveInfinity;
+        ControlStack.Visibility = Visibility.Visible;
+
+        _settingsWindow.Show();
+    }
+
+    /// <summary>Moves the settings panel back into the overlay, hidden.</summary>
+    private void ReturnSettingsHome()
+    {
+        if (_settingsHome is null || ReferenceEquals(ControlStack.Parent, _settingsHome)) return;
+
+        Detach(ControlStack);
+
+        // A parent WPF still believes in makes the next line throw from a window's destroy
+        // handler, which is not a place an exception can be recovered from.
+        if (ControlStack.Parent is not null) return;
+
+        _settingsHome.Children.Add(ControlStack);
+        ControlStack.Visibility = Visibility.Collapsed;
+    }
 
     /// <summary>Puts the brief and the sheet behind it away together.</summary>
     private void HideQuestBrief()
@@ -2778,21 +2868,7 @@ public partial class OverlayWindow : Window
         var editing = !_clickThrough && !Folded;
         var open = _settings.Overlay.ShowControls;
 
-        var showing = editing && open;
-
-        ControlStack.Visibility = showing ? Visibility.Visible : Visibility.Collapsed;
-        ControlScrim.Visibility = showing ? Visibility.Visible : Visibility.Collapsed;
-
-        // Tall enough to be worth opening, short enough to stay inside the overlay. Its own
-        // scroller takes whatever will not fit.
-        // Short of the panel's edges rather than up against them. Bounded by the map row it
-        // sits in, a full-height stack met the strip above and the footer below with nothing
-        // between — so it read as a panel that had run out of room rather than one laid over the
-        // overlay. Its own scroller takes whatever will not fit.
-        if (showing && Frame.ActualHeight > 0)
-        {
-            ControlStack.MaxHeight = Math.Max(120, Frame.ActualHeight * 0.78);
-        }
+        ShowSettingsWindow(editing && open);
 
         // Filled here as well as at start-up. The first attempt runs while the window is being
         // built, which can be before Kestrel is listening — and a strip that lost that race stayed

@@ -1047,12 +1047,9 @@
                 the map sits, then the list.
             -->
             <!--
-                Everything that is not the settings, while the settings are up. Same sheet the
-                quest brief uses, and clicking it puts them away.
+                No sheet behind the settings any more. They are a window of their own now, and
+                there is nothing of the overlay left underneath them to dim.
             -->
-            <Border x:Name="ControlScrim" Grid.Row="1"
-                    Visibility="Collapsed"
-                    Background="#66000000" />
 
             <!--
                 A panel in the middle rather than a drawer down the left edge.
@@ -1079,11 +1076,20 @@
                     Background="#f50b0f13"
                     BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
                 <DockPanel>
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8" LastChildFill="False">
+                    <!--
+                        The heading doubles as the title bar. This window has no frame, so without
+                        something to drag it is stuck wherever it opened — which is fine right up
+                        until it opens over the part of the map you wanted to watch.
+
+                        A background rather than none: a transparent strip is not hit-testable and
+                        this one exists to be pressed.
+                    -->
+                    <DockPanel x:Name="SettingsHeader" DockPanel.Dock="Top" Margin="0,0,0,8"
+                               LastChildFill="False" Background="#14ffffff" Cursor="SizeAll">
                         <TextBlock DockPanel.Dock="Left" Text="SETTINGS"
                                    Style="{StaticResource Label}"
                                    Foreground="{StaticResource Ink}"
-                                   VerticalAlignment="Center" />
+                                   VerticalAlignment="Center" Margin="4,3,0,3" />
 
                         <Button x:Name="CollapseControls" DockPanel.Dock="Right"
                                 Style="{StaticResource Chip}" Content="✕"
