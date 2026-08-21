@@ -342,8 +342,8 @@ public partial class OverlayWindow : Window
         LeftStack.DragDelta += (_, e) => OnStackResize(LeftDrawers, e);
         RightStack.DragDelta += (_, e) => OnStackResize(RightDrawers, e);
 
-        WindowFadeDown.Click += (_, _) => StepWindowOpacity(-0.1);
-        WindowFadeUp.Click += (_, _) => StepWindowOpacity(+0.1);
+        WindowFadeDown.Click += (_, _) => StepWindowOpacity(-0.05);
+        WindowFadeUp.Click += (_, _) => StepWindowOpacity(+0.05);
         ZoomDown.Click += (_, _) => SetZoom(Placement.Zoom / 1.25);
         ZoomUp.Click += (_, _) => SetZoom(Placement.Zoom * 1.25);
         UiScaleDown.Click += (_, _) => StepUiScale(-0.1);
@@ -1644,7 +1644,10 @@ public partial class OverlayWindow : Window
     /// </summary>
     private void StepWindowOpacity(double by)
     {
-        Place(p => p with { WindowOpacity = Math.Clamp(p.WindowOpacity + by, 0.2, 1.0) });
+        Place(p => p with
+        {
+            WindowOpacity = Math.Clamp(Math.Round((p.WindowOpacity + by) * 20) / 20, 0.2, 1.0),
+        });
 
         // Opacity only. This used to go through ApplyBounds, which re-applies the stored position
         // and size — so nudging the fade while the window was being arranged snapped it back to

@@ -1035,7 +1035,7 @@
                                 follow and which exits to show are the ones that change while you
                                 play, and they stayed up there.
                             -->
-                            <TextBlock Style="{StaticResource Label}" Text="PANEL" Margin="0,0,0,2" />
+                            <TextBlock Style="{StaticResource Label}" Text="OPACITY" Margin="0,0,0,2" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <Button x:Name="WindowFadeDown" Style="{StaticResource Chip}" Content="−" />
                                 <TextBlock x:Name="WindowFadeText" Style="{StaticResource Label}"
