@@ -943,7 +943,39 @@ public sealed record RatNavSettings
             });
 
         var path = Path.Combine(dataDirectory, "settings.json");
-        File.WriteAllText(path + ".tmp", json);
-        File.Move(path + ".tmp", path, overwrite: true);
+        var temporary = path + ".tmp";
+
+        File.WriteAllText(temporary, json);
+
+        // Write-then-move, so a settings file is never half-written — and retried, because the
+        // move is the step that fails. A virus scanner opening the brand-new .tmp is enough to
+        // make Windows refuse to move it, for a few milliseconds, with "access is denied". That
+        // is transient and invisible, and it took down whatever was saving at the time: dragging
+        // the divider between two panels raised it on a real machine.
+        //
+        // Six attempts over about a third of a second. Longer than any scanner needs and shorter
+        // than anyone notices.
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                File.Move(temporary, path, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                if (attempt >= 5)
+                {
+                    // Out of retries. Writing straight over the destination gives up the
+                    // half-written-file guarantee, which is worth less than not losing the
+                    // settings at all — and it fails differently, so it is worth trying.
+                    File.WriteAllText(path, json);
+                    File.Delete(temporary);
+                    return;
+                }
+
+                Thread.Sleep(50);
+            }
+        }
     }
 }

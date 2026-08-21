@@ -1024,7 +1024,62 @@ public partial class OverlayWindow : Window
     private void Remember(RatNavSettings.OverlayBounds bounds)
     {
         _settings = _settings with { Overlay = bounds };
-        _saveSettings(_settings);
+        QueueSave();
+    }
+
+    private DispatcherTimer? _saveTimer;
+
+    /// <summary>
+    /// Writes the arrangement out shortly after it stops changing, rather than as it changes.
+    ///
+    /// <para>Every drag of a divider or an edge raises a delta event per mouse move, and each one
+    /// used to serialise the whole settings file and move it into place — dozens of writes a
+    /// second for one gesture. Most were overwritten a frame later by the next one, so the disk
+    /// work bought nothing, and the odds of catching the file momentarily busy went up with every
+    /// extra write.</para>
+    ///
+    /// <para>The in-memory copy still updates immediately, so nothing on screen waits for this and
+    /// nothing is lost if the mouse leaves the window mid-drag — which over a game it frequently
+    /// does, and which is why this was written as it moves in the first place. Only the trip to
+    /// disk waits, for a quarter of a second after the last change.</para>
+    /// </summary>
+    private void QueueSave()
+    {
+        if (_saveTimer is null)
+        {
+            _saveTimer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(250),
+            };
+
+            _saveTimer.Tick += (_, _) => FlushSave();
+        }
+
+        _saveTimer.Stop();
+        _saveTimer.Start();
+    }
+
+    /// <summary>
+    /// Writes the arrangement now, and never throws.
+    ///
+    /// <para>This runs from a mouse handler. An exception here does not just fail the save — it
+    /// unwinds the drag that was in progress, which leaves a divider parked wherever it got to and
+    /// the mouse still captured, and puts an error dialog over the game. A layout that could not
+    /// be written is worth none of that: the arrangement is correct in memory either way, and the
+    /// next change tries again.</para>
+    /// </summary>
+    private void FlushSave()
+    {
+        _saveTimer?.Stop();
+
+        try
+        {
+            _saveSettings(_settings);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Nothing to tell anybody. The settings on screen are the settings.
+        }
     }
 
     /// <summary>How the presentation on screen is arranged — its own copy, not the other one's.</summary>
@@ -1939,8 +1994,20 @@ public partial class OverlayWindow : Window
 
         // Both sides plus something for the map. Without the second term, dragging one edge past
         // the middle of a narrow overlay leaves the other side no room and the map none at all.
-        var ceiling = Math.Max(120, ActualWidth - SideWidth(!left) - 140);
-        var width = Math.Clamp(current + delta, 90, ceiling);
+        //
+        // The room kept for the map is a share of the overlay rather than a fixed 140, and the
+        // narrowest a panel may be is a share too. Fixed numbers were sized against a large
+        // overlay and do not shrink with one: at 477 wide, 140 for the map plus 120 for the other
+        // side plus a floor of 90 left this divider about thirty pixels of travel, sitting at the
+        // top of it — which reads exactly like a control that has stopped working, and is what
+        // tuning the overlay down for 1080p produced.
+        var floor = Math.Max(48, ActualWidth * 0.12);
+        var mapRoom = Math.Max(60, ActualWidth * 0.2);
+
+        // Max, not Clamp, and in this order: Clamp throws outright when its lower bound is above
+        // its upper one, which a narrow enough overlay would otherwise arrange.
+        var ceiling = Math.Max(floor, ActualWidth - SideWidth(!left) - mapRoom);
+        var width = Math.Clamp(current + delta, floor, ceiling);
 
         // Saved as it moves rather than at the end. A drag that is only committed on release loses
         // everything if the mouse leaves the window, which over a game it frequently does.
@@ -3766,6 +3833,10 @@ public partial class OverlayWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        // Anything still waiting on the quarter-second goes out now, or quitting inside it would
+        // lose the last thing you moved.
+        FlushSave();
+
         _hotkeys?.Dispose();
         _http.Dispose();
         base.OnClosed(e);
