@@ -685,6 +685,7 @@ const DEFAULT_HOTKEYS: HotKeys = {
   toggleInteract: 'F6',
   identifyItem: 'F8',
   readExtracts: 'F9',
+  centreMap: 'F10',
 }
 
 const HOTKEYS: [keyof HotKeys, string][] = [
@@ -693,6 +694,7 @@ const HOTKEYS: [keyof HotKeys, string][] = [
   ['toggleInteract', 'Edit mode — move, resize, zoom'],
   ['identifyItem', 'Identify item under cursor'],
   ['readExtracts', "Read the game's extract list"],
+  ['centreMap', 'Centre the map on me'],
 ]
 
 /**

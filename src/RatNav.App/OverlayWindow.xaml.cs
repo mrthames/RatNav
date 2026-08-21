@@ -351,6 +351,7 @@ public partial class OverlayWindow : Window
         Bind(keys.ToggleMode, "Centred or panel view", ToggleMode);
         Bind(keys.IdentifyItem, "Identify item under cursor", IdentifyUnderCursor);
         Bind(keys.ReadExtracts, "Read the game's extract list", ReadOfferedExtracts);
+        Bind(keys.CentreMap, "Centre the map on me", CentreOnPlayer);
 
         void Bind(string text, string what, Action action)
         {
@@ -3094,6 +3095,31 @@ public partial class OverlayWindow : Window
 
     /// <summary>Whether the map has been dragged away from where it would otherwise sit.</summary>
     private bool Panned => Placement.PanX != 0 || Placement.PanY != 0;
+
+    /// <summary>
+    /// Puts the map back on you — once — without starting to follow.
+    ///
+    /// <para>A still map is still on purpose: big enough to read, and one that re-centres on every
+    /// fix moves the same building each time you look at it. The cost was that asking "where am I
+    /// now" meant turning follow on, which throws away the framing you chose and then has to be
+    /// turned off again.</para>
+    ///
+    /// <para>With follow off, <see cref="Focus"/> centres on the middle of the map plus however
+    /// far it has been dragged — so putting you in the middle is a pan to your own offset, and the
+    /// map stays exactly as still afterwards as it was before. With follow already on, the same
+    /// key clears the drag, which is the same request answered the way that mode can answer it.</para>
+    ///
+    /// <para>Nothing to do without a fix: there is no "you" to centre on until a screenshot has
+    /// said where you are, and guessing the middle of the map would look like the key failing.</para>
+    /// </summary>
+    public void CentreOnPlayer() => Dispatcher.Invoke(() =>
+    {
+        if (_view?.X is not { } x || _view.Y is not { } y) return;
+
+        Place(p => p.Follow
+            ? p with { PanX = 0, PanY = 0 }
+            : p with { PanX = x - 0.5, PanY = y - 0.5 });
+    });
 
     /// <summary>
     /// What sits at the centre of the canvas: you, or the middle of the map — plus however far it

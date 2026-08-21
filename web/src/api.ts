@@ -151,6 +151,7 @@ export interface HotKeys {
   toggleOverlay: string
   toggleInteract: string
   toggleMode: string
+  centreMap: string
   identifyItem: string
   /** Read the extract list the game is showing, while it is showing it. */
   readExtracts: string

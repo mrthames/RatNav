@@ -361,6 +361,16 @@ public sealed record RatNavSettings
         /// not do, so it asks you to tell it.</para>
         /// </summary>
         public string ReadExtracts { get; set; } = "F9";
+
+        /// <summary>
+        /// Put the map back on you, without starting to follow.
+        ///
+        /// <para>With follow off the map holds still, which is the point of it — a big map that
+        /// re-centres on every fix puts the same building somewhere new each time you look. The
+        /// cost is that there is then no quick way to ask "where am I now" without turning follow
+        /// on and losing the framing you chose. This is that question, asked once.</para>
+        /// </summary>
+        public string CentreMap { get; set; } = "F10";
     }
 
     /// <summary>How the overlay presents itself.</summary>
