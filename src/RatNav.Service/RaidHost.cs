@@ -370,7 +370,7 @@ public sealed record RatNavSettings
         /// cost is that there is then no quick way to ask "where am I now" without turning follow
         /// on and losing the framing you chose. This is that question, asked once.</para>
         /// </summary>
-        public string CentreMap { get; set; } = "F10";
+        public string CenterMap { get; set; } = "F10";
     }
 
     /// <summary>How the overlay presents itself.</summary>

@@ -685,16 +685,16 @@ const DEFAULT_HOTKEYS: HotKeys = {
   toggleInteract: 'F6',
   identifyItem: 'F8',
   readExtracts: 'F9',
-  centreMap: 'F10',
+  centerMap: 'F10',
 }
 
 const HOTKEYS: [keyof HotKeys, string][] = [
   ['toggleOverlay', 'Show / hide overlay'],
-  ['toggleMode', 'Centred or panel view'],
+  ['toggleMode', 'Center or panel view'],
   ['toggleInteract', 'Edit mode — move, resize, zoom'],
   ['identifyItem', 'Identify item under cursor'],
   ['readExtracts', "Read the game's extract list"],
-  ['centreMap', 'Centre the map on me'],
+  ['centerMap', 'Center the map on me'],
 ]
 
 /**

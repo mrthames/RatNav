@@ -1097,7 +1097,7 @@
                                         Content="still" MinWidth="62" Margin="2,0,0,0" />
                                 <Button x:Name="RecentreButton" Style="{StaticResource Chip}" Content="⌖"
                                         Margin="2,0,0,0"
-                                        ToolTip="Recentre on you and follow again"
+                                        ToolTip="Recenter on you and follow again"
                                         Visibility="Collapsed" />
                             </StackPanel>
 
@@ -1120,7 +1120,7 @@
                                         ToolTip="Turn the map so your heading points up the screen, or keep it north-up" />
 
                                 <TextBlock Style="{StaticResource Label}" Text="COVERAGE" Margin="0,0,0,2"
-                                           ToolTip="How much of the screen the centred map takes. 100% is the full-screen HUD." />
+                                           ToolTip="How much of the screen the centered map takes. 100% is the full-screen HUD." />
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                     <Button x:Name="CoverageDown" Style="{StaticResource Chip}" Content="−" />
                                     <TextBlock x:Name="CoverageText" Style="{StaticResource Label}"
@@ -1268,7 +1268,7 @@
 
                     <Button x:Name="QuickFollow" Style="{StaticResource Chip}"
                             Content="still" MinWidth="58"
-                            ToolTip="Hold the map still, or keep it centred on you" />
+                            ToolTip="Hold the map still, or keep it centered on you" />
                 </WrapPanel>
             </Border>
 

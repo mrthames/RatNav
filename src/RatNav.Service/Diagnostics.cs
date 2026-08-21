@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using RatNav.Core;
 using RatNav.Core.Data;
 using RatNav.Core.Game;
@@ -74,9 +74,11 @@ public sealed record Diagnostics
                 {
                     Name = "Screenshot folder",
                     Ok = shotCount is not null,
-                    Detail = shotCount is { } n
-                        ? $"{screenshots} ({n} waiting)"
-                        : $"{screenshots} — not created yet",
+                    // Just the folder. This check answers one question — can RatNav find the
+                    // place your screenshots land — and a count of files sitting in it answered a
+                    // different one nobody asked, in raid or out of it. Whether RatNav has ever
+                    // actually read one is the next check along, which is where that belongs.
+                    Detail = shotCount is null ? $"{screenshots} — not created yet" : screenshots,
                     Fix = "It appears the first time you take a screenshot in game. If your Documents "
                           + "folder has moved — OneDrive does this — set the folder below.",
                     Required = true,

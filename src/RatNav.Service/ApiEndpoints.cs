@@ -873,7 +873,7 @@ public static class ApiEndpoints
                         ToggleMode = keys.ToggleMode ?? current.Hotkeys.ToggleMode,
                         IdentifyItem = keys.IdentifyItem ?? current.Hotkeys.IdentifyItem,
                         ReadExtracts = keys.ReadExtracts ?? current.Hotkeys.ReadExtracts,
-                        CentreMap = keys.CentreMap ?? current.Hotkeys.CentreMap,
+                        CenterMap = keys.CenterMap ?? current.Hotkeys.CenterMap,
                     };
                 }
             });
@@ -905,11 +905,11 @@ public static class ApiEndpoints
             {
                 new { key = settings.ScreenshotKey, does = "update location" },
                 new { key = keys.ToggleOverlay, does = "show/hide" },
-                new { key = keys.ToggleMode, does = "centred/panel" },
+                new { key = keys.ToggleMode, does = "center/panel" },
                 new { key = keys.ToggleInteract, does = "edit mode" },
                 new { key = keys.IdentifyItem, does = "check item" },
                 new { key = keys.ReadExtracts, does = "update extracts" },
-                new { key = keys.CentreMap, does = "centre on me" },
+                new { key = keys.CenterMap, does = "center on me" },
             }.Where(h => h.key is { Length: > 0 }));
         });
 
@@ -2364,7 +2364,7 @@ public sealed record HotKeyUpdate
     public string? ToggleMode { get; init; }
     public string? IdentifyItem { get; init; }
     public string? ReadExtracts { get; init; }
-    public string? CentreMap { get; init; }
+    public string? CenterMap { get; init; }
 }
 
 /// <summary>

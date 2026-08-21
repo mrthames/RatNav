@@ -362,10 +362,10 @@ public partial class OverlayWindow : Window
 
         Bind(keys.ToggleOverlay, "Show/hide overlay", ToggleVisible);
         Bind(keys.ToggleInteract, "Edit mode", ToggleInteractive);
-        Bind(keys.ToggleMode, "Centred or panel view", ToggleMode);
+        Bind(keys.ToggleMode, "Center or panel view", ToggleMode);
         Bind(keys.IdentifyItem, "Identify item under cursor", IdentifyUnderCursor);
         Bind(keys.ReadExtracts, "Read the game's extract list", ReadOfferedExtracts);
-        Bind(keys.CentreMap, "Centre the map on me", CentreOnPlayer);
+        Bind(keys.CenterMap, "Center the map on me", CenterOnPlayer);
 
         void Bind(string text, string what, Action action)
         {
@@ -3180,7 +3180,7 @@ public partial class OverlayWindow : Window
     /// <para>Nothing to do without a fix: there is no "you" to centre on until a screenshot has
     /// said where you are, and guessing the middle of the map would look like the key failing.</para>
     /// </summary>
-    public void CentreOnPlayer() => Dispatcher.Invoke(() =>
+    public void CenterOnPlayer() => Dispatcher.Invoke(() =>
     {
         if (_view?.X is not { } x || _view.Y is not { } y) return;
 
