@@ -1489,6 +1489,7 @@ public static class ApiEndpoints
                 {
                     Name = extract.Name,
                     Faction = extract.Faction ?? "shared",
+                    Transit = extract.IsTransit,
                     X = point.X,
                     Y = point.Y,
                     Elevation = extract.Position.GetValueOrDefault().Y,
@@ -2577,6 +2578,9 @@ public sealed record ExtractPin
 
     /// <summary>"pmc", "scav", or "shared". Shared works whatever you queued as.</summary>
     public required string Faction { get; init; }
+
+    /// <summary>A transit to another map rather than a way out of the raid.</summary>
+    public bool Transit { get; init; }
 
     public required double X { get; init; }
     public required double Y { get; init; }

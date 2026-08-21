@@ -51,6 +51,9 @@ export interface ExtractPin {
   name: string
   /** "pmc", "scav", or "shared" — shared works whichever you queued as. */
   faction: string
+
+  /** A transit to another map rather than a way out of the raid. */
+  transit?: boolean
   x: number
   y: number
   elevation: number

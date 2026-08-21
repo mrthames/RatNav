@@ -663,12 +663,20 @@ export function MapView({
           their own, so the two are still tellable apart without relying on colour.
         */}
         {exits.map((exit) => {
-          const colour = exit.faction === 'scav' ? 'var(--color-scav)' : 'var(--color-pmc)'
+          const colour = exit.transit
+            ? 'var(--color-transit)'
+            : exit.faction === 'scav'
+              ? 'var(--color-scav)'
+              : 'var(--color-pmc)'
 
           return (
             <div
               key={`${exit.name}-${exit.x}-${exit.y}`}
-              title={`${exit.name} · ${exit.faction} extract`}
+              title={
+                exit.transit
+                  ? `${exit.name} · transit to another map`
+                  : `${exit.name} · ${exit.faction} extract`
+              }
               className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
               style={{ left: `${exit.x * 100}%`, top: `${exit.y * 100}%` }}
             >
@@ -679,8 +687,12 @@ export function MapView({
                 style={{ width: `${16 / zoom}px`, height: `${18 / zoom}px`, display: 'block' }}
               >
                 <path
-                  d="M -6,-7 L -6,7 L 6,7 L 6,-7 Z M -2,0 L 4,0 M 1,-3 L 4,0 L 1,3"
-                  fill="var(--color-ground)"
+                  d={
+                    exit.transit
+                      ? 'M -6,-6 L 0,0 L -6,6 M 0,-6 L 6,0 L 0,6'
+                      : 'M -6,-7 L -6,7 L 6,7 L 6,-7 Z M -2,0 L 4,0 M 1,-3 L 4,0 L 1,3'
+                  }
+                  fill={exit.transit ? 'none' : 'var(--color-ground)'}
                   stroke={colour}
                   strokeWidth="1.8"
                 />

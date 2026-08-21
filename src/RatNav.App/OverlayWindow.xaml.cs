@@ -1116,6 +1116,11 @@ public partial class OverlayWindow : Window
 
         if (mode == "both") return true;
 
+        // Whoever is standing at a transit can take it, so the PMC/Scav dial has nothing to say
+        // about one. Filtering them by faction would hide half the ways off a map from a player
+        // who had asked to see only their own.
+        if (extract.Transit) return true;
+
         return extract.Faction.Equals("shared", StringComparison.OrdinalIgnoreCase)
             || extract.Faction.Equals(mode, StringComparison.OrdinalIgnoreCase);
     }
@@ -3332,9 +3337,13 @@ public partial class OverlayWindow : Window
             var at = Place(extract.X, extract.Y);
             var scav = extract.Faction.Equals("scav", StringComparison.OrdinalIgnoreCase);
 
-            // Green for PMC, yellow for Scav, and the same shape for both — the colour carries
-            // the faction, the shape carries "this is a way out".
-            var colour = (Brush)FindResource(scav ? "ScavExit" : "PmcExit");
+            // Green for PMC, yellow for Scav, amber for a transit — and the transit gets a shape
+            // of its own as well, because it is a different kind of thing rather than the same
+            // thing for somebody else. Colour carries the faction; shape carries what it does.
+            var colour = (Brush)FindResource(
+                extract.Transit ? "Transit"
+                : scav ? "ScavExit"
+                : "PmcExit");
 
             // Off the view entirely — zoomed in, or panned away. Pinned to the edge pointing at
             // where it really is, so you can walk that way until it comes back into sight.
@@ -3344,13 +3353,21 @@ public partial class OverlayWindow : Window
                 continue;
             }
 
-            // A door with an arrow through it, drawn from the marker's own centre.
+            // A door with an arrow through it, drawn from the marker's own centre — and for a
+            // transit, two chevrons pointing the same way, which reads as "onward" rather than
+            // "out" without needing the label.
             var mark = new Path
             {
-                Data = Geometry.Parse("M -6,-7 L -6,7 L 6,7 L 6,-7 Z M -2,0 L 4,0 M 1,-3 L 4,0 L 1,3"),
+                Data = Geometry.Parse(extract.Transit
+                    ? "M -6,-6 L 0,0 L -6,6 M 0,-6 L 6,0 L 0,6"
+                    : "M -6,-7 L -6,7 L 6,7 L 6,-7 Z M -2,0 L 4,0 M 1,-3 L 4,0 L 1,3"),
                 Stroke = colour,
                 StrokeThickness = 1.8,
-                Fill = (Brush)FindResource("Ground"),
+
+                // The door is a closed shape and wants the ground behind it knocked out; the
+                // chevrons are two open strokes, and filling them would draw triangles nobody
+                // asked for.
+                Fill = extract.Transit ? null : (Brush)FindResource("Ground"),
                 Opacity = 0.95,
                 RenderTransform = new ScaleTransform(scale, scale),
             };
@@ -3360,7 +3377,9 @@ public partial class OverlayWindow : Window
             MapCanvas.Children.Add(mark);
 
             Label(extract.Name, at.X, at.Y + 9 * scale, colour, 9 * textScale);
-            Hoverable(at, 8 * scale, $"{extract.Name} · {extract.Faction} extract");
+            Hoverable(at, 8 * scale, extract.Transit
+                ? $"{extract.Name} · transit to another map"
+                : $"{extract.Name} · {extract.Faction} extract");
         }
 
         // Marks of your own, in their own colour.

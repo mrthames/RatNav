@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using RatNav.Core.Maps;
@@ -205,6 +205,14 @@ public sealed class TarkovDevClient(HttpClient http)
                     // "factory4_day" for Factory — so this is what turns a raid start into a map.
                     LogAliases = pair.Value.NameId is { Length: > 0 } id ? [id] : [],
 
+                    // Extracts and transits together, told apart by a flag. tarkov.dev keeps
+                    // them in separate lists and RatNav read only the first, which left every
+                    // transit off the map entirely.
+                    //
+                    // A transit is named by a localisation key rather than outright —
+                    // "INT_TRANSIT_6_DESC" resolves to "Transit to Customs" — so it goes through
+                    // the same text lookup everything else here does. One that will not resolve
+                    // is dropped: an unnamed pin is worse than no pin.
                     Extracts =
                     [
                         .. (pair.Value.Extracts ?? [])
@@ -214,6 +222,25 @@ public sealed class TarkovDevClient(HttpClient http)
                                 Name = text.Of(e.Name) ?? e.Name!,
                                 Faction = e.Faction,
                                 Position = e.Position?.ToGamePosition(),
+                            }),
+
+                        .. (pair.Value.Transits ?? [])
+                            .Select(t => new { Name = text.Of(t.Description), t.Position, t.Description })
+
+                            // Translations pass an unrecognised key straight through, which is
+                            // right for a name and wrong for a transit whose only name is a key.
+                            // A description that came back unchanged never resolved, and a pin
+                            // labelled INT_TRANSIT_9_DESC is worse than no pin at all.
+                            .Where(t => t.Name is { Length: > 0 } && t.Name != t.Description)
+                            .Select(t => new MapExtract
+                            {
+                                Name = t.Name!,
+                                IsTransit = true,
+
+                                // Transits are open to whoever is standing at one, so they are
+                                // never filtered out by the faction dial.
+                                Faction = "shared",
+                                Position = t.Position?.ToGamePosition(),
                             })
                     ],
                 })
@@ -537,7 +564,11 @@ public sealed class TarkovDevClient(HttpClient http)
         List<BarterItemDto>? RequiredItems, BarterItemDto? ProductItem);
 
     private sealed record MapDto(
-        string? Name, string? NormalizedName, string? NameId, List<ExtractDto>? Extracts);
+        string? Name, string? NormalizedName, string? NameId,
+        List<ExtractDto>? Extracts, List<TransitDto>? Transits);
 
     private sealed record ExtractDto(string? Name, string? Faction, PositionDto? Position);
+
+    /// <summary>Named by a localisation key rather than outright, unlike an extract.</summary>
+    private sealed record TransitDto(string? Description, PositionDto? Position);
 }

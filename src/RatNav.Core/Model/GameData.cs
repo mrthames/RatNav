@@ -1,4 +1,4 @@
-namespace RatNav.Core.Model;
+﻿namespace RatNav.Core.Model;
 
 /// <summary>
 /// Everything RatNav knows about the game, as of one fetch from tarkov.dev.
@@ -409,6 +409,21 @@ public sealed record MapExtract
     public GamePosition? Position { get; init; }
     /// <summary>"pmc", "scav", "shared" — kept raw.</summary>
     public string? Faction { get; init; }
+
+    /// <summary>
+    /// A transit to another map rather than a way out of the raid.
+    ///
+    /// <para>tarkov.dev keeps these in a list of their own, and RatNav read only the extracts —
+    /// so the two places a player can walk to and leave from were one list with half of it
+    /// missing. They belong on the map, because you want to find one or avoid one; they are not
+    /// extracts, because taking one continues the raid somewhere else rather than ending it with
+    /// your loot.</para>
+    ///
+    /// <para>Kept as a flag on the same record rather than a list of its own: everything that
+    /// finds, draws, labels and points an edge arrow at an extract should do the same for these,
+    /// and only the colour, the symbol and the word need to differ.</para>
+    /// </summary>
+    public bool IsTransit { get; init; }
 }
 
 /// <summary>A point in EFT's world space. Y is vertical (floor), X/Z are the ground plane.</summary>

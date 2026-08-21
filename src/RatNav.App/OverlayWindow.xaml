@@ -48,6 +48,13 @@
         <SolidColorBrush x:Key="PmcExit" Color="#5ee07a" />
         <SolidColorBrush x:Key="ScavExit" Color="#f5cf4a" />
 
+        <!--
+            A transit, which is yellow in the game like a Scav exit and needs telling apart from
+            one on the map. The symbol carries the difference; this is a shade off the Scav
+            yellow so that two yellow marks side by side are not the same mark twice.
+        -->
+        <SolidColorBrush x:Key="Transit" Color="#f0a63c" />
+
         <Style x:Key="Label" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Consolas" />
             <Setter Property="FontSize" Value="10" />
