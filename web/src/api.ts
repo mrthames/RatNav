@@ -95,6 +95,9 @@ export interface TrackedItem {
   wikiUrl: string | null
   avg24hPrice: number | null
   questNeeded: number
+
+  /** The active quests wanting it, by name. */
+  questFor: string[]
   hideoutNeeded: number
   /** The nearest hideout upgrade wanting this — "Medstation 3". */
   hideoutUpgrade: string | null

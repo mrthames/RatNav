@@ -886,7 +886,14 @@ function Row({
             </div>
             <div className="font-mono text-[11px] text-muted">
               {[
-                row.questNeeded > 0 && `${row.questNeeded} for quests`,
+                // Named, like the hideout line beside it. "30 for quests" left out the one word
+                // that decides whether to keep the thing. Past three the names stop fitting and
+                // stop helping, so it counts instead — and the row expansion lists them all.
+                row.questNeeded > 0 && (row.questFor.length > 0 && row.questFor.length <= 3
+                  ? `${row.questNeeded} for ${row.questFor.join(', ')}`
+                  : row.questFor.length > 3
+                    ? `${row.questNeeded} for ${row.questFor.length} quests`
+                    : `${row.questNeeded} for quests`),
                 // Named rather than counted. "4 for Medstation 3" tells you whether to keep the
                 // thing; "4 for hideout" does not.
                 row.hideoutNeeded > 0 && (row.hideoutUpgrade

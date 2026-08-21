@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using RatNav.Core.Data;
 using RatNav.Core.Model;
 using RatNav.Core.Planning;
@@ -217,9 +217,8 @@ public sealed class ItemTracker(RatNavProfile profile)
         IReadOnlyDictionary<string, HideoutDemand>? hideout = null,
         IReadOnlyDictionary<string, GoalNeed>? goals = null)
     {
-        var questNeeded = needs.Quests
-            .Where(q => progress.IsActive(q.TaskId))
-            .Sum(q => q.Count);
+        var active = needs.Quests.Where(q => progress.IsActive(q.TaskId)).ToList();
+        var questNeeded = active.Sum(q => q.Count);
 
         // The hideout's demand is decided by the planner, not here.
         //
@@ -243,6 +242,11 @@ public sealed class ItemTracker(RatNavProfile profile)
         {
             Item = needs.Item,
             QuestNeeded = questNeeded,
+
+            // Which quests, not just how many. The hideout half of the same row has said
+            // "4 for Medstation 3" for as long as it has existed, while the quest half said
+            // "30 for quests" — the same sentence with the useful word left out.
+            QuestFor = [.. active.Select(q => q.TaskName).Where(n => n is { Length: > 0 }).Distinct()],
             HideoutNeeded = hideoutNeeded,
             HideoutUpgrade = demand?.UpgradeName,
             HideoutWave = demand?.Wave,
@@ -327,6 +331,9 @@ public sealed record TrackedItem
 {
     public required ItemDef Item { get; init; }
     public int QuestNeeded { get; init; }
+
+    /// <summary>The active quests wanting it, by name.</summary>
+    public IReadOnlyList<string> QuestFor { get; init; } = [];
     public int HideoutNeeded { get; init; }
 
     /// <summary>The nearest hideout upgrade wanting this — "Medstation 3". Null when none does.</summary>

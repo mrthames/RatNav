@@ -2244,6 +2244,9 @@ public sealed record TrackedItemView
     public string? WikiUrl { get; init; }
     public int? Avg24hPrice { get; init; }
     public int QuestNeeded { get; init; }
+
+    /// <summary>The active quests wanting it, so the row can name them as it names the upgrade.</summary>
+    public IReadOnlyList<string> QuestFor { get; init; } = [];
     public int HideoutNeeded { get; init; }
 
     /// <summary>The nearest hideout upgrade wanting this — "Medstation 3".</summary>
@@ -2276,6 +2279,7 @@ public sealed record TrackedItemView
         WikiUrl = t.Item.WikiUrl,
         Avg24hPrice = t.Item.Avg24hPrice,
         QuestNeeded = t.QuestNeeded,
+        QuestFor = t.QuestFor,
         HideoutNeeded = t.HideoutNeeded,
         HideoutUpgrade = t.HideoutUpgrade,
         HideoutWave = t.HideoutWave,
