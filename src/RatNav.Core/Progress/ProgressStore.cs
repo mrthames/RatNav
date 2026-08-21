@@ -79,6 +79,18 @@ public sealed class ProgressStore(RatNavProfile profile) : IProgressView
 
     public bool IsActive(string taskId) => StateOf(taskId) == QuestState.Active;
 
+    /// <summary>Whether anything at all has been recorded about a quest, by hand or from the logs.</summary>
+    public bool AnyQuestRecorded
+    {
+        get { lock (_gate) return _state.Manual.Count > 0 || _state.FromLogs.Count > 0; }
+    }
+
+    /// <summary>Whether any hideout station has had its level set.</summary>
+    public bool AnyHideoutRecorded
+    {
+        get { lock (_gate) return _state.HideoutLevels.Count > 0; }
+    }
+
     /// <summary>Records a correction made by hand. Beats anything the logs say, now or later.</summary>
     public void SetManual(string taskId, QuestState state)
     {

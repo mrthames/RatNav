@@ -796,7 +796,7 @@ public static class ApiEndpoints
 
                     // Named, not counted. "needs a key" tells you there is a problem; "needs
                     // Dorm room 314 marked key" tells you whether you already have it.
-                    required = Carry(state, objective),
+                    required = Carry(state, task, objective),
                 };
 
             return Results.Ok(rows);
@@ -926,6 +926,69 @@ public static class ApiEndpoints
             });
 
             return Results.Ok(new { quitting = true });
+        });
+
+        // ---- getting started
+
+        // What a new install still has to do, and whether it has done it.
+        //
+        // Every step is *derived*, never remembered. A stored wizard position goes wrong the moment
+        // somebody does the steps out of order, switches profile, or restores from another PC —
+        // and then insists on a step that is already done. Asking the real state cannot drift.
+        //
+        // The order is not arbitrary and that is the reason for guiding it at all: each step is
+        // useless until the one before it is done. The item list is empty until quests are marked
+        // active, the hideout wave means nothing until levels are set, and a plan cannot be built
+        // until there are objectives to tick. Somebody who finds the Plan page first sees an empty
+        // page and concludes RatNav does not work.
+        api.MapGet("/first-run", (
+            RatNavState state, RatNavSettings settings, ProgressStore progress,
+            PlanStore plans, RaidHost host) =>
+        {
+            var diagnostics = Diagnostics.Build(settings, ServiceHost.Port, state.Status(host.LastRefresh));
+            var configured = diagnostics.Checks.All(c => !c.Required || c.Ok);
+
+            var steps = new[]
+            {
+                new
+                {
+                    id = "setup",
+                    title = "Point RatNav at the game",
+                    why = "It reads the game's own log files and the coordinates in your screenshot "
+                        + "names. Without the folders it can see neither.",
+                    done = configured,
+                    view = "setup",
+                },
+                new
+                {
+                    id = "quests",
+                    title = "Mark the quests you have taken",
+                    why = "RatNav cannot read your quest log — the game does not write it anywhere. "
+                        + "Everything else is built from what you say is active.",
+                    done = progress.AnyQuestRecorded,
+                    view = "quests",
+                },
+                new
+                {
+                    id = "hideout",
+                    title = "Set your hideout levels",
+                    why = "So the items list asks for what the next upgrade needs rather than for "
+                        + "everything the hideout will ever want.",
+                    done = progress.AnyHideoutRecorded,
+                    view = "hideout",
+                },
+                new
+                {
+                    id = "plan",
+                    title = "Build your first raid plan",
+                    why = "Tick the objectives you are pushing and RatNav routes them, works out "
+                        + "which keys to bring, and draws it on the overlay in game.",
+                    done = plans.All().Count > 0,
+                    view = "plan",
+                },
+            };
+
+            return Results.Ok(new { done = steps.All(s => s.done), steps });
         });
 
         // ---- reaching RatNav from another device
@@ -1148,7 +1211,17 @@ public static class ApiEndpoints
                      Position = objective.Position.GetValueOrDefault(),
                      TraderName = task.TraderName,
                      Optional = objective.Optional,
-                     NeededKeyItemIds = objective.NeededKeyItemIds,
+
+                     // The quest's keys travel with the stop, not just the objective's own. A key
+                     // recorded against a positionless objective has no waypoint to ride on, and
+                     // the plan's "bring these" list is built from waypoints — which is how 29 of
+                     // the 57 key-requiring quests came to say nothing about a key at all.
+                     NeededKeyItemIds =
+                     [
+                         .. objective.NeededKeyItemIds
+                             .Concat(task.NeededKeyItemIds)
+                             .Distinct(StringComparer.OrdinalIgnoreCase)
+                     ],
                  }).ToList();
 
             // Marks of your own, alongside the quest objectives.
@@ -1887,8 +1960,19 @@ public static class ApiEndpoints
         };
     }
 
-    /// <summary>What one objective needs carried in, keys first, with names rather than ids.</summary>
-    private static IReadOnlyList<object> Carry(RatNavState state, TaskObjective objective)
+    /// <summary>
+    /// What one objective needs carried in, keys first, with names rather than ids.
+    ///
+    /// <para>The <b>quest's</b> keys as well as the objective's own. Keys are recorded against
+    /// objectives, and only an objective with coordinates becomes a stop you can tick — so a key
+    /// belonging to a positionless objective was attached to nothing and shown nowhere. That is
+    /// 29 of the 57 quests that need a key, <i>Farming</i> among them.</para>
+    ///
+    /// <para>A quest's key shows on every row of that quest, which is right rather than
+    /// repetitive: you tick one objective and queue, and whichever one you ticked is the row that
+    /// has to tell you what to bring.</para>
+    /// </summary>
+    private static IReadOnlyList<object> Carry(RatNavState state, TaskDef task, TaskObjective objective)
     {
         var index = state.Index;
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1907,6 +1991,7 @@ public static class ApiEndpoints
         }
 
         foreach (var key in objective.NeededKeyItemIds) Add(key, isKey: true);
+        foreach (var key in task.NeededKeyItemIds) Add(key, isKey: true);
         foreach (var item in objective.Items) Add(item.ItemId, isKey: false);
 
         return carry;

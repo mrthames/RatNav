@@ -71,7 +71,20 @@ public partial class App : Application
         var settings = _service.Services.GetRequiredService<RatNavSettings>();
         var dataDirectory = RatNavPaths.EnsureDataDirectory();
 
-        _overlay = new OverlayWindow(settings, updated => updated.Save(dataDirectory));
+        // One settings instance, not two.
+        //
+        // RatNavSettings is a record, and the overlay changes its own copy — `_settings with
+        // { Overlay = ... }` — which forks it. Saving the fork left the service's singleton
+        // holding the arrangement from launch, so pressing Save on the Setup page wrote that back
+        // over the file and threw away every drag, resize, zoom and panel choice since start-up.
+        //
+        // Both writers called Save, both succeeded, and the last one won silently, which is why it
+        // looked like Setup was deleting things.
+        _overlay = new OverlayWindow(settings, updated =>
+        {
+            settings.Overlay = updated.Overlay;
+            settings.Save(dataDirectory);
+        });
         _overlay.Show();
 
         // Hotkeys need a window handle, so they are bound after the first show.

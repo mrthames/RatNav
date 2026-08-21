@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { api, type Diagnostics, type HotKeys, type LanInfo, type Profiles, type Settings } from './api'
 
 /**
@@ -57,26 +57,15 @@ export function SetupView() {
       {settings && <SettingsForm settings={settings} onSaved={(s) => { setSettings(s); load() }} />}
 
       {/*
-        Asked for once, at the bottom of the page nobody visits twice. RatNav is free and stays
-        free; this is a place to say thank you, not a thing to be nudged about.
-      */}
-      <div className="flex flex-wrap items-center gap-3 border border-line bg-panel p-4">
-        <p className="min-w-56 flex-1 text-sm text-muted">
-          RatNav is free, has no ads, no accounts, and nothing that phones home. It is built and
-          maintained by one person on his own time.
-        </p>
+        The what and why, without a second button.
 
-        <a
-          href="https://buymeacoffee.com/thames_"
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-sm bg-route px-3 py-2 font-mono text-[11px] uppercase tracking-wider
-                     text-ground transition-opacity hover:opacity-90
-                     focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          ☕ Buy me a coffee
-        </a>
-      </div>
+        The ask itself lives on the sticky bar now. Two Buy me a coffee buttons on one page is one
+        more than anybody wants to be shown, and this is the half that is worth reading.
+      */}
+      <p className="border border-line bg-panel p-4 text-sm text-muted">
+        RatNav is free, has no ads, no accounts, and nothing that phones home. It is built and
+        maintained by one person on his own time.
+      </p>
     </div>
   )
 }
@@ -117,35 +106,21 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
     <section className="flex flex-col gap-4 border border-line bg-panel p-4">
       <h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Settings</h2>
 
-      <div className="flex items-end gap-2">
-        <div className="flex-1">
-          <Field
-            label="Escape from Tarkov folder"
-            hint={draft.gameDirectory
-              ? 'RatNav reads the Logs folder inside this one. Clear it to go back to detecting.'
-              : `Detected: ${settings.resolvedGameDirectory ?? 'nothing found — set it here'}`}
-            value={draft.gameDirectory ?? ''}
-            placeholder={settings.resolvedGameDirectory ?? 'C:\\Battlestate Games\\EFT'}
-            onChange={(gameDirectory) => setDraft({ ...draft, gameDirectory })}
+      <Field
+        label="Escape from Tarkov folder"
+        hint={draft.gameDirectory
+          ? 'RatNav reads the Logs folder inside this one. Clear it to go back to detecting.'
+          : `Detected: ${settings.resolvedGameDirectory ?? 'nothing found — set it here'}`}
+        value={draft.gameDirectory ?? ''}
+        placeholder={settings.resolvedGameDirectory ?? 'C:\\Battlestate Games\\EFT'}
+        onChange={(gameDirectory) => setDraft({ ...draft, gameDirectory })}
+        action={
+          <Browse
+            start={draft.gameDirectory || settings.resolvedGameDirectory}
+            onPicked={(gameDirectory) => setDraft({ ...draft, gameDirectory })}
           />
-        </div>
-
-        {/* Detection covers the ordinary install. This is for the drive you keep games on,
-            where typing the path is where it goes subtly wrong. */}
-        <button
-          type="button"
-          onClick={async () => {
-            const chosen = await api.browseForFolder(
-              draft.gameDirectory || settings.resolvedGameDirectory)
-
-            if (chosen) setDraft({ ...draft, gameDirectory: chosen })
-          }}
-          className="mb-px rounded-sm bg-panel-hi px-3 py-1.5 text-xs text-muted transition-colors
-                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          Browse…
-        </button>
-      </div>
+        }
+      />
 
       <Field
         label="Screenshot folder"
@@ -155,6 +130,12 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
         value={draft.screenshotDirectory ?? ''}
         placeholder={settings.resolvedScreenshotDirectory}
         onChange={(screenshotDirectory) => setDraft({ ...draft, screenshotDirectory })}
+        action={
+          <Browse
+            start={draft.screenshotDirectory || settings.resolvedScreenshotDirectory}
+            onPicked={(screenshotDirectory) => setDraft({ ...draft, screenshotDirectory })}
+          />
+        }
       />
 
       {/*
@@ -219,6 +200,16 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
           already owns a combination.
         </p>
 
+        <button
+          type="button"
+          onClick={() => setDraft({ ...draft, hotkeys: DEFAULT_HOTKEYS })}
+          className="self-start font-mono text-[11px] uppercase tracking-wider text-muted
+                     underline-offset-4 hover:text-ink hover:underline
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Reset hotkeys to defaults
+        </button>
+
         <p className="text-xs text-muted">
           Mouse buttons cannot be used here. Catching one over another application needs a
           system-wide mouse hook, which is the machinery RatNav refuses for the keyboard and for
@@ -267,32 +258,67 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
 
       {error && <p className="text-xs text-need">{error}</p>}
 
-      <div className="flex items-center gap-3">
+      <WipeProfile />
+
+      {/*
+        Save, pinned where it can be seen.
+
+        This page has grown — folders, screenshot key, hotkeys, network, port, quit, wipe — and the
+        button that commits any of it used to sit under all of them. You could change three fields,
+        scroll on, and never press it.
+
+        Above the key-bind strip rather than at the very bottom, because that strip is stuck to the
+        edge of every page and two things fighting for the same edge is worse than the problem
+        being solved.
+
+        The support link is at the far end on purpose. It is an unrelated act, and something that
+        sits where a confirm button is expected gets misclicked.
+      */}
+      <div
+        className="sticky bottom-9 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t
+                   border-line bg-panel/95 px-4 py-2.5 backdrop-blur"
+      >
         <button
           type="button"
           disabled={!dirty || saving}
           onClick={() => void save()}
-          className="rounded-sm bg-accent px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider
+          className="rounded-sm bg-accent px-4 py-2 font-mono text-[11px] uppercase tracking-wider
                      text-ground transition-opacity disabled:opacity-40
                      focus-visible:outline-2 focus-visible:outline-accent"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
 
-        {dirty && (
-          <button
-            type="button"
-            onClick={() => setDraft(settings)}
-            className="font-mono text-[11px] uppercase tracking-wider text-muted
-                       underline-offset-4 hover:text-ink hover:underline"
-          >
-            Discard
-          </button>
+        {dirty ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setDraft(settings)}
+              className="font-mono text-[11px] uppercase tracking-wider text-muted
+                         underline-offset-4 hover:text-ink hover:underline
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              Discard
+            </button>
+
+            {/* Said, because a disabled Save and an unsaved change look the same from a distance. */}
+            <span className="font-mono text-[11px] text-warn">unsaved changes</span>
+          </>
+        ) : (
+          <span className="font-mono text-[11px] text-muted">everything saved</span>
         )}
 
+        <a
+          href="https://buymeacoffee.com/thames_"
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto rounded-sm bg-route px-3 py-2 font-mono text-[11px] uppercase
+                     tracking-wider text-ground transition-opacity hover:opacity-90
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          ☕ Buy me a coffee
+        </a>
       </div>
-
-      <WipeProfile />
     </section>
   )
 }
@@ -643,6 +669,24 @@ function QuitRatNav() {
   )
 }
 
+/**
+ * What the hotkeys go back to.
+ *
+ * <p>Per section rather than one button for the whole page: resetting your keys should not touch
+ * your folders, and resetting your folders should not throw away keys you chose deliberately.</p>
+ *
+ * <p>Written here rather than fetched, because a reset has to work when the thing you are resetting
+ * from is a binding RatNav could not parse — which is exactly the state that makes people reach for
+ * it.</p>
+ */
+const DEFAULT_HOTKEYS: HotKeys = {
+  toggleOverlay: 'F5',
+  toggleMode: 'F6',
+  toggleInteract: 'F7',
+  identifyItem: 'F8',
+  readExtracts: 'F9',
+}
+
 const HOTKEYS: [keyof HotKeys, string][] = [
   ['toggleOverlay', 'Show / hide overlay'],
   ['toggleMode', 'Switch overlay style'],
@@ -704,27 +748,72 @@ function KeyField({ value, onChange }: { value: string; onChange: (value: string
 }
 
 function Field({
-  label, hint, value, placeholder, onChange,
+  label, hint, value, placeholder, onChange, action,
 }: {
   label: string
   hint: string
   value: string
   placeholder?: string
   onChange: (value: string) => void
+
+  /**
+   * Something that belongs beside the input — a Browse button, in practice.
+   *
+   * <p>Here rather than at the call site, because of where it has to sit. A button placed as a
+   * sibling of the whole field aligns to the bottom of the *field*, and a field ends with a hint
+   * line under its input — so the button floated below the box it belonged to, by however tall
+   * that hint happened to be. Inside, it is level with the input and stays level whatever the
+   * hint says.</p>
+   */
+  action?: React.ReactNode
 }) {
+  // A label wrapping its input cannot also wrap a button: that is a control inside a control, and
+  // a click on the button would carry the label's click through to the input. Bound by id instead.
+  const id = useId()
+
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm">{label}</span>
-      <input
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        spellCheck={false}
-        className="border border-line bg-ground px-2 py-1.5 font-mono text-xs text-ink
-                   placeholder:text-muted/60 focus-visible:outline-2 focus-visible:outline-accent"
-      />
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-sm">{label}</label>
+
+      <div className="flex items-stretch gap-2">
+        <input
+          id={id}
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          spellCheck={false}
+          className="min-w-0 flex-1 border border-line bg-ground px-2 py-1.5 font-mono text-xs
+                     text-ink placeholder:text-muted/60
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        />
+        {action}
+      </div>
+
       <span className="text-xs text-muted">{hint}</span>
-    </label>
+    </div>
+  )
+}
+
+/**
+ * Picks a folder with Windows' own dialog and writes it into the field beside it.
+ *
+ * <p>Detection covers the ordinary install of either folder. This is for the drive somebody keeps
+ * games on, and for the Documents folder OneDrive has quietly moved — the two cases where typing a
+ * path by hand is where it goes subtly wrong, and the second is the one people hit most.</p>
+ */
+function Browse({ start, onPicked }: { start?: string | null; onPicked: (path: string) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        const chosen = await api.browseForFolder(start ?? undefined)
+        if (chosen) onPicked(chosen)
+      }}
+      className="shrink-0 rounded-sm bg-panel-hi px-3 text-xs text-muted transition-colors
+                 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+    >
+      Browse…
+    </button>
   )
 }
 

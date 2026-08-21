@@ -61,9 +61,13 @@ public sealed record PlanDocument
         {
             document = JsonSerializer.Deserialize<PlanDocument>(json, SerializerOptions);
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
-            problem = $"That does not look like a RatNav plan: {ex.Message}";
+            // The parser's own message names a byte offset and a JSON path, which is developer
+            // text: "Expected end of string, but instead reached end of data. Path: $.stops[0] |
+            // LineNumber: 9". True, and no help at all to somebody who pasted half a code out of a
+            // chat window. What they need is what to do, which is ask for it again.
+            problem = "That plan is incomplete or damaged — ask for it again, in full.";
             return null;
         }
 

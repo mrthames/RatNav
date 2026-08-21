@@ -141,4 +141,58 @@ public class PlanCodeTests
         Assert.Null(PlanCode.Decode("RATNAV9-abcdef", out var problem));
         Assert.Contains("different version", problem);
     }
+
+    /// <summary>
+    /// A code that arrived without its prefix still imports.
+    ///
+    /// <para>The old rule refused anything prefix-less containing a hyphen as "a different version
+    /// of RatNav" — and base64url uses '-' in place of '+', so most bodies contain one. A partial
+    /// copy, or a chat client eating the start of a line, was therefore reported as a version
+    /// mismatch: a wrong answer that sends somebody looking for a problem that does not exist.</para>
+    /// </summary>
+    [Fact]
+    public void A_code_that_lost_its_prefix_still_imports()
+    {
+        var code = PlanCode.Encode(Document());
+        var body = code[PlanCode.Prefix.Length..];
+
+        // The body genuinely contains the character the old rule tripped on, or this proves nothing.
+        Assert.Contains('-', body);
+
+        var decoded = PlanCode.Decode(body, out var problem);
+
+        Assert.Null(problem);
+        Assert.NotNull(decoded);
+        Assert.Equal(Document().MapId, decoded.MapId);
+    }
+
+    /// <summary>Only a RatNav code with another number on it earns the version message.</summary>
+    [Theory]
+    [InlineData("RATNAV2-abcdef")]
+    [InlineData("ratnav10-abcdef")]
+    public void Another_versions_prefix_is_recognised(string code)
+    {
+        Assert.Null(PlanCode.Decode(code, out var problem));
+        Assert.Contains("different version", problem);
+    }
+
+    /// <summary>
+    /// And a damaged code says it is damaged, in words rather than in parser output.
+    ///
+    /// <para>It used to surface the serializer's own message — "Expected end of string, but instead
+    /// reached end of data. Path: $.stops[0] | LineNumber: 9" — which is true, and no help at all
+    /// to somebody who pasted half a code out of a chat window.</para>
+    /// </summary>
+    [Fact]
+    public void A_damaged_code_does_not_leak_parser_text()
+    {
+        var code = PlanCode.Encode(Document());
+
+        Assert.Null(PlanCode.Decode(code[..(code.Length / 2)], out var problem));
+        Assert.NotNull(problem);
+
+        Assert.DoesNotContain("LineNumber", problem);
+        Assert.DoesNotContain("BytePositionInLine", problem);
+        Assert.DoesNotContain("$.", problem);
+    }
 }

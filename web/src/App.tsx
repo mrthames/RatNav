@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ago, api, type DataStatus, type MapSummary, type RaidView } from './api'
+import { ago, api, type DataStatus, type FirstRun, type MapSummary, type RaidView } from './api'
 import { HeldBack } from './HeldBack'
 import { HotkeyBar } from './HotkeyBar'
 import { MapPicker } from './MapPicker'
@@ -79,8 +79,141 @@ function Level() {
   )
 }
 
+/**
+ * What a new install still has to do, and in what order.
+ *
+ * <p>A checklist that tracks itself rather than a wizard. Every step's state is <b>derived</b> —
+ * setup is the required checks passing, quests is anything recorded, hideout is any level set, plan
+ * is any saved plan — so nothing is stored and nothing can go stale. A remembered wizard position
+ * goes wrong the moment somebody does the steps out of order, switches profile or restores from
+ * another PC, and then insists on a step already done.</p>
+ *
+ * <p>It does not trap anybody either. A modal that demands step two is infuriating for the person
+ * who wants to look at a map first; this says what is left and gets out of the way.</p>
+ *
+ * <p>The order matters and that is the reason for guiding it: each step is useless until the one
+ * before it is done. Someone who finds the Plan page first sees an empty page and concludes RatNav
+ * does not work.</p>
+ */
+function GettingStarted({ view, onGo }: { view: View; onGo: (view: View) => void }) {
+  const [state, setState] = useState<FirstRun | null>(null)
+
+  // Dismissal is remembered, because being told again on every launch is the wizard's worst habit
+  // smuggled back in. Per browser rather than per install: it is a preference about being nagged.
+  const [hidden, setHidden] = useState(
+    () => localStorage.getItem('ratnav.gettingStarted') === 'dismissed')
+
+  // Re-asked whenever the page changes, which is the cheapest possible proxy for "you may have
+  // just done one of these". No polling: the answer only changes when you act.
+  useEffect(() => {
+    void api.firstRun().then(setState).catch(() => setState(null))
+  }, [view])
+
+  if (hidden || !state || state.done) return null
+
+  const next = state.steps.find((s) => !s.done)
+
+  return (
+    <section className="flex flex-col gap-2 border border-accent/40 bg-accent/5 px-3 py-3">
+      <div className="flex flex-wrap items-baseline gap-x-3">
+        <p className="font-mono text-[11px] uppercase tracking-wider text-accent">Getting started</p>
+        <p className="text-xs text-muted">
+          {state.steps.filter((s) => s.done).length} of {state.steps.length} done
+        </p>
+
+        <button
+          type="button"
+          onClick={() => { localStorage.setItem('ratnav.gettingStarted', 'dismissed'); setHidden(true) }}
+          className="ml-auto font-mono text-[11px] text-muted underline-offset-4 hover:text-ink
+                     hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          hide this
+        </button>
+      </div>
+
+      <ol className="flex flex-col gap-1.5">
+        {state.steps.map((step, at) => (
+          <li key={step.id} className="flex items-start gap-2.5">
+            <span
+              aria-hidden
+              className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border
+                          font-mono text-[10px]
+                          ${step.done
+                            ? 'border-have bg-have text-ground'
+                            : 'border-line text-muted'}`}
+            >
+              {step.done ? '✓' : at + 1}
+            </span>
+
+            <span className="min-w-0">
+              <button
+                type="button"
+                onClick={() => onGo(step.view as View)}
+                className={`text-left text-sm underline-offset-4 hover:underline
+                            focus-visible:outline-2 focus-visible:outline-accent
+                            ${step.done ? 'text-muted line-through' : 'text-ink'}`}
+              >
+                {step.title}
+              </button>
+
+              {/* The reason, not just the instruction. "RatNav cannot read your quest log" earns
+                  the click that "Go to Quests" does not. Only where it is still needed. */}
+              {!step.done && <span className="block text-xs text-muted">{step.why}</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      {next && (
+        <div>
+          <button
+            type="button"
+            onClick={() => onGo(next.view as View)}
+            className="rounded-sm border border-accent bg-accent px-3 py-1.5 text-sm font-medium
+                       text-ground transition-opacity hover:opacity-90
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            {next.title}
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function App() {
   const [view, setView] = useState<View>('plan')
+
+  /**
+   * A first run opens on Setup, not on Plan.
+   *
+   * <p>The Plan page is the right home once RatNav knows where the game is. Before that it is an
+   * empty page with no route to the thing that would fill it — which is exactly what the first
+   * tester met: nothing ever asked for the Escape from Tarkov folder or the screenshot folder, and
+   * "open Setup" lived in the README, which is not where a first run should have to happen.</p>
+   *
+   * <p>Asked of the diagnostics, which already marks which checks are <b>required</b>, so this
+   * needs no new idea of what "set up" means. Once, on first load: a check that fails later — the
+   * game folder renamed, say — must not drag somebody off the page they are reading.</p>
+   */
+  const [routed, setRouted] = useState(false)
+
+  useEffect(() => {
+    if (routed) return
+
+    let live = true
+
+    void api.diagnostics()
+      .then((d) => {
+        if (!live) return
+        setRouted(true)
+
+        if (d.checks.some((c) => c.required && !c.ok)) setView('setup')
+      })
+      .catch(() => setRouted(true))
+
+    return () => { live = false }
+  }, [routed])
   const [status, setStatus] = useState<DataStatus | null>(null)
   const [maps, setMaps] = useState<MapSummary[]>([])
   const [selected, setSelected] = useState<MapSummary | null>(null)
@@ -210,6 +343,8 @@ export default function App() {
           <ProfileMenu onSwitched={() => window.location.reload()} />
         </div>
       </header>
+
+      <GettingStarted view={view} onGo={setView} />
 
       {status?.lastError && (
         <p className="border border-warn/30 bg-warn/5 px-3 py-2 font-mono text-xs text-warn">

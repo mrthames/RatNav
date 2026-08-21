@@ -2,6 +2,63 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.0-alpha.1 — 2026-08-21
+
+**An alpha.** The stable release is still 0.1.0 and the download on the front page still points at
+it. Everything here comes out of the first real user test — four hours of someone installing 0.1.0
+cold and playing with it — and it is a lot, so it wants using before it is promoted.
+
+### Fixed
+
+- **Rebinding to an arrow key did nothing.** The browser and WPF disagree about what keys are
+  called: the browser says `ArrowLeft` where the enum says `Left`, and `1` where it says `D1`. So
+  rebinding worked for letters and function keys and silently failed for the arrows, the whole
+  number row, Backspace, Page Up, Page Down and the space bar. Both spellings are accepted now, and
+  the keys are displayed the way a person writes them rather than the way the enum spells them.
+- **Saving on the Setup page threw away the overlay's size and position.** The settings are a
+  record, and the overlay changed its own copy — so the service's copy still held the arrangement
+  from launch, and Save wrote it back over the file. Every drag, resize, zoom and panel choice since
+  start-up went with it. There is one instance now rather than two racing to be last.
+- **Half the key-requiring quests never mentioned their key.** Reported against *Farming*; it was
+  **29 of 57**. Keys are recorded against objectives, and only an objective with coordinates becomes
+  a waypoint — so a key belonging to a positionless objective was attached to nothing and shown
+  nowhere. The quest's own key list is read instead, which is complete.
+- **The quest log stayed empty unless the items list was open.** The refresh returned early when the
+  items panel was closed, and filled the quest log after that return — so the log only ever
+  refreshed as a side effect of the list wanting to.
+- **A custom waypoint in a plan was drawn twice**, red as a quest stop and orange as a mark, at the
+  same point. It is drawn once now, as the stop, in the waypoint colour.
+- **Clearing a plan wiped the map.** The chosen map is not part of the plan — it is what makes a map
+  draw without one. It survives now, and goes only on a restart or a change of map.
+- **The overlay scaled itself to about 2.0 on a 1440p screen.** The size was derived from the
+  screen's height in device-independent pixels — which already has display scaling divided out, so
+  the multiplier applied a correction twice. The derivation is gone and the default is 1.0.
+- **Importing a plan code said "returned 400" and nothing else.** The service explains every refusal
+  and the app threw the explanation away. It shows the reason now. Two of those reasons were also
+  wrong: a code that had lost its prefix was reported as coming from a different version of RatNav,
+  and a truncated one leaked the JSON parser's own output.
+
+### Added
+
+- **A guided first launch.** A new install opens on **Setup** when a required check is failing, and
+  a checklist carries you through the four things that have to happen in order — point RatNav at the
+  game, mark your quests, set your hideout levels, build a plan. Each step ticks itself off from
+  real state rather than from a remembered position, so it is right whatever order you do them in.
+- **Browse for the screenshot folder**, as the game folder already had. It is the one OneDrive
+  moves, so it is the one people most need to go and find.
+- **Reset hotkeys to defaults**, per section, so resetting keys does not touch folders.
+- **Save sits on a sticky bar** at the bottom of Setup, with **Buy me a coffee** at the far end, and
+  says whether there is anything unsaved.
+
+### Changed
+
+- **The size dial is called "UI scale"**, which is what it is.
+- **What a raid needs you to bring is loud.** Keys are filled rather than tinted; quest items are
+  outlined in the warning colour rather than the muted grey of a disabled control. It is the one
+  thing on the page that cannot be fixed once you have queued.
+- **The Setup fields line up.** The Browse button sat below the box it belonged to, by however tall
+  the hint underneath happened to be.
+
 ## 0.1.0 — 2026-08-20
 
 The first release, and the numbering starts here. Everything below was built before it: the

@@ -285,7 +285,7 @@ the **gear** for the controls:
 | **Exits** | `PMC`, `Scav`, `Both`, or `Off`. Shared extracts show under either. `F9` narrows it to the ones the game says are open this raid. |
 | **Quests** | `Active` is your plan's stops; `All` adds every other started quest's objective on this map; `Off` leaves the map clean. |
 | **Coverage / Edge fade / Glow** | The centred view only — how much of the screen it takes, where the drawing dissolves, how much the lines bloom. |
-| **Size** | How large RatNav draws its own controls. The defaults suit 1080p; turn it up on a bigger screen. |
+| **UI scale** | How large RatNav draws its own furniture — the controls, the drawers, the headings. Not the map, which has its own dials either side of this one. |
 
 These are the same controls under the same names as the app's Maps page, so what you can turn on
 and off reads the same in both places.

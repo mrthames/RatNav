@@ -343,34 +343,38 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         </span>
 
         {/*
-          Keys in red, loudly. Turning up at the right door without one wastes the raid, and it is
-          the single thing on this page you cannot fix once you have queued.
+          What you have to be carrying when you queue, said loudly enough to be seen rather than
+          read.
+
+          This is the one thing on the page you cannot fix afterwards, and it used to sit at the
+          same visual weight as the furniture around it — small chips in a row of small chips, with
+          the non-key items in the same muted grey as a disabled control despite being just as
+          required.
+
+          Keys are filled rather than tinted, because arriving at the right door without one wastes
+          the whole raid. Quest items are outlined in the warning colour rather than grey: cheaper
+          to forget, still not optional. Both are labelled, so a row of names is never left to be
+          guessed at.
         */}
-        {carry.keys.length > 0 && (
-          <span className="flex flex-wrap items-center gap-1.5">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-need">Bring</span>
+        {(carry.keys.length > 0 || carry.items.length > 0) && (
+          <span className="flex flex-wrap items-center gap-1.5 border-l border-line pl-4">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-need">
+              Bring
+            </span>
+
             {carry.keys.map((need) => (
               <span
                 key={need.itemId}
-                className="border border-need bg-need/15 px-1.5 py-0.5 font-mono text-[11px] text-need"
+                className="rounded-sm bg-need px-2 py-0.5 text-xs font-semibold text-ground"
               >
                 {need.name}
               </span>
             ))}
-          </span>
-        )}
-
-        {/* Quest items too — forgetting one costs a trip back rather than the raid. */}
-        {carry.items.length > 0 && (
-          <span className="flex flex-wrap items-center gap-1.5">
-            {carry.keys.length === 0 && (
-              <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Bring</span>
-            )}
 
             {carry.items.map((need) => (
               <span
                 key={need.itemId}
-                className="border border-line px-1.5 py-0.5 font-mono text-[11px] text-muted"
+                className="rounded-sm border border-warn/70 bg-warn/10 px-2 py-0.5 text-xs text-warn"
               >
                 {need.name}
               </span>
@@ -557,10 +561,10 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                               {o.required.map((need) => (
                                 <span
                                   key={need.itemId}
-                                  className={`border px-1.5 py-0.5 font-mono text-[10px]
+                                  className={`rounded-sm px-1.5 py-0.5 text-[11px]
                                               ${need.isKey
-                                                ? 'border-warn/50 text-warn'
-                                                : 'border-line text-muted'}`}
+                                                ? 'bg-need font-semibold text-ground'
+                                                : 'border border-warn/70 bg-warn/10 text-warn'}`}
                                 >
                                   {need.isKey ? 'key: ' : ''}{need.name}
                                 </span>

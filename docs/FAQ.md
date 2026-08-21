@@ -148,9 +148,12 @@ and the file is enough to get it fixed properly rather than worked around.
 
 ## Everything is tiny on my 4K screen
 
-Press `F7`, then turn **Size** up in the row along the top of the overlay. RatNav's defaults are
-drawn for 1080p; a 4K screen has four times the pixels in the same physical space, so everything
-lands at a quarter of the area until you say otherwise.
+Press `F7`, then turn **UI scale** up in the row along the top of the overlay.
+
+It should not usually be needed: Windows already reports sizes with its own display scaling divided
+out, so RatNav's furniture comes out at about the same physical size on a 1080p panel and a 4K one.
+Turn it up if you would rather it were bigger than that, or down if you would rather it were
+smaller — the range runs from 0.7 to 3.0 in steps of 0.1.
 
 The map's own markers and captions have their own dials behind the gear — **Pins** for the
 markers, **Waypoints** for the captions on stops, extracts and marks, **Map labels** for the place

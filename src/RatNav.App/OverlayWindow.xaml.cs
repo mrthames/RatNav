@@ -562,13 +562,36 @@ public partial class OverlayWindow : Window
 
     public void Update(RaidView view)
     {
+        var had = _view?.HasPlan ?? false;
+
         _view = view;
         Dispatcher.Invoke(async () =>
         {
+            FollowPlan(had, view.HasPlan);
+
             await EnsureMapAsync(view);
             Draw();
             RefreshItems();
         });
+    }
+
+    /// <summary>
+    /// Opens the quest log with a new plan, and closes it when the plan goes.
+    ///
+    /// <para>The log is a list of a plan's stops. Building a plan and then having to go and turn on
+    /// the panel that shows it is a step that should not exist; clearing one and leaving an empty
+    /// panel holding a side of the overlay open is the same mistake backwards.</para>
+    ///
+    /// <para><b>On the change, never on the state.</b> Following the state would reopen the panel
+    /// on every position fix for anyone who had deliberately folded it away mid-raid — which is a
+    /// reasonable thing to do with a plan you have memorised.</para>
+    /// </summary>
+    private void FollowPlan(bool had, bool has)
+    {
+        if (had == has) return;
+
+        Remember(_settings.Overlay with { ShowQuests = has });
+        ApplyItemsPanel();
     }
 
     /// <summary>
@@ -1463,34 +1486,27 @@ public partial class OverlayWindow : Window
     /// "bigger buttons" mean "more zoomed in", which is a different control.</para>
     /// </summary>
     /// <summary>
-    /// The scale in use: whatever was chosen, or one worked out from the screen.
+    /// The scale in use: whatever was chosen, or 1.0.
     ///
-    /// <para>A fixed default is a guess about somebody else's monitor. A 4K panel has four times
-    /// the pixels of a 1080p one at much the same physical size, so chrome sized for one is either
-    /// unreadable or overbearing on the other — and the default was sized for the machine it was
-    /// written on. Taking it from the screen's height puts the overlay at roughly the same
-    /// physical size everywhere, and the quick controls are still there for anyone who wants it
-    /// bigger or smaller.</para>
+    /// <para><b>There is no longer a scale worked out from the screen, and the reasoning that
+    /// produced one was backwards.</b> The idea was sound — a 4K panel has four times the pixels
+    /// of a 1080p one at much the same physical size, so chrome sized for one is wrong on the
+    /// other — but it is a problem Windows has already solved. Every measurement here is in
+    /// <b>device-independent pixels</b>, which is display scaling divided out: two monitors of the
+    /// same physical size report the same DIP height whatever their pixel density.</para>
+    ///
+    /// <para>So the multiplier was applied to a number that had already been corrected, and sized
+    /// everything a second time. The old code worried about exactly this — "so this is not applied
+    /// twice on a laptop set to 150%" — and drew the opposite conclusion from the right
+    /// observation. DIPs are the reason no further multiplier is needed, not the reason one is
+    /// safe.</para>
+    ///
+    /// <para>What it looked like: 1.95 on any 1440p screen, which the first tester read
+    /// immediately as "scaled to 2.0" because it was. And the author of the old numbers had been
+    /// running 1.0 by hand on 4K against a derived 2.6, which is the same evidence from the other
+    /// end of the range.</para>
     /// </summary>
-    private double EffectiveUiScale =>
-        _settings.Overlay.UiScale ?? ScaleForScreen();
-
-    private double ScaleForScreen()
-    {
-        // Device-independent pixels, so Windows' own display scaling is already accounted for and
-        // this is not applied twice on a laptop set to 150%.
-        var height = SystemParameters.PrimaryScreenHeight;
-
-        // Raised by a third from the first attempt at these, which came out small enough on a real
-        // screen to be worth turning up by hand every time. The scale can still go below them —
-        // the range runs down to 0.7 — so the old sizes are a few steps away rather than gone.
-        return height switch
-        {
-            >= 2000 => 2.6,     // 4K and up
-            >= 1300 => 1.95,    // 1440p
-            _ => 1.6,           // 1080p and below, where the panel is a bigger share of the screen
-        };
-    }
+    private double EffectiveUiScale => _settings.Overlay.UiScale ?? 1.0;
 
     private void ApplyUiScale()
     {
@@ -1659,24 +1675,45 @@ public partial class OverlayWindow : Window
         Redraw();
     });
 
+    /// <summary>
+    /// Fills whichever of the two lists is on screen.
+    ///
+    /// <para>Each half asks about its own panel. They used to share one early return — <i>if the
+    /// items panel is closed, do nothing</i> — with the quest log filled after it, so the log was
+    /// only ever refreshed as a side effect of the items list wanting a refresh. With the log open
+    /// on its own it stayed empty until you opened the items list, and then stayed filled when you
+    /// closed it again, which is the shape of the bug that was reported.</para>
+    ///
+    /// <para>The items half is the one worth guarding: it is an HTTP call. The quest log is built
+    /// from the raid view already in hand and costs nothing to rebuild.</para>
+    /// </summary>
     private void RefreshItems()
     {
-        if (!_settings.Overlay.ShowItems && _itemsWindow is null) return;
+        var wantsItems = _settings.Overlay.ShowItems || _itemsWindow is not null;
+        var wantsQuests = _settings.Overlay.ShowQuests || _questWindow is not null;
+
+        if (!wantsItems && !wantsQuests) return;
 
         _ = Dispatcher.InvokeAsync(async () =>
         {
-            var sections = await LoadSectionsAsync();
+            if (wantsItems)
+            {
+                var sections = await LoadSectionsAsync();
 
-            ItemsList.ItemsSource = sections;
-            _itemsWindow?.Show(sections);
-            MatchPopOuts();
+                ItemsList.ItemsSource = sections;
+                _itemsWindow?.Show(sections);
+            }
 
-            var quests = QuestSections();
+            if (wantsQuests)
+            {
+                var quests = QuestSections();
 
-            QuestList.ItemsSource = quests;
-            QuestEmpty.Visibility = quests.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+                QuestList.ItemsSource = quests;
+                QuestEmpty.Visibility = quests.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-            _questWindow?.Show(quests);
+                _questWindow?.Show(quests);
+            }
+
             MatchPopOuts();
         });
     }
@@ -3310,8 +3347,19 @@ public partial class OverlayWindow : Window
         // A different colour from a quest waypoint on purpose: what a quest asked for and what you
         // decided to note are different kinds of thing, and telling them apart has to survive a
         // glance rather than needing the label read.
+        // A mark that has joined a plan is drawn by the stop loop below, not here.
+        //
+        // It is in both lists — a plan stop *and* a mark — and both loops drew a pin and a caption
+        // at the same point, so the name appeared twice, once red and once orange. The stop is the
+        // version worth keeping: it carries the number that ties it to the quest log.
+        var inThePlan = (view.Stops ?? [])
+            .Select(s => s.ObjectiveId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         foreach (var mark in _marks)
         {
+            if (inThePlan.Contains(mark.Id)) continue;
+
             var at = Place(mark.X, mark.Y);
             var colour = (Brush)FindResource("Mark");
 
@@ -3403,14 +3451,15 @@ public partial class OverlayWindow : Window
 
             var at = Place(stop.X, stop.Y);
 
+            // A stop with no quest behind it is one of your own waypoints, and is drawn in the
+            // waypoint colour rather than the quests'. Marks are given an empty TaskId when they
+            // join a plan, precisely because there is nothing to turn in.
+            var mine = string.IsNullOrEmpty(stop.TaskId);
+            var ink = (Brush)FindResource(stop.Done ? "Muted" : mine ? "Mark" : "Need");
+
             if (OffView(at, width, height, out var stopEdge, out var stopBearing))
             {
-                EdgeMarker(
-                    stopEdge, stopBearing,
-                    (Brush)FindResource(stop.Done ? "Muted" : "Need"),
-                    scale,
-                    stop.Done ? null : order.ToString());
-
+                EdgeMarker(stopEdge, stopBearing, ink, scale, stop.Done ? null : order.ToString());
                 continue;
             }
 
@@ -3420,7 +3469,7 @@ public partial class OverlayWindow : Window
             {
                 Data = Geometry.Parse(
                     "M 0,0 C -3,-5 -7,-8 -7,-12 A 7,7 0 1 1 7,-12 C 7,-8 3,-5 0,0 Z"),
-                Fill = (Brush)FindResource(stop.Done ? "Muted" : "Need"),
+                Fill = ink,
                 Stroke = (Brush)FindResource("Ground"),
                 StrokeThickness = 1.5,
                 Opacity = stop.Done ? 0.45 : 1,
@@ -3458,7 +3507,7 @@ public partial class OverlayWindow : Window
             // The name too, under the pin, so a plan can be read without hovering — which matters
             // because hover over a window that never takes focus is unreliable.
             if (_settings.Overlay.ShowPlaceNames)
-                Label(stop.TaskName, at.X, at.Y + 3, (Brush)FindResource("Need"), 9 * textScale);
+                Label(stop.TaskName, at.X, at.Y + 3, ink, 9 * textScale);
         }
 
         // Breadcrumbs: where fixes were taken, so the gap since the last one is visible rather

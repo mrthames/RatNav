@@ -124,6 +124,24 @@ public sealed record TaskDef
 
     public IReadOnlyList<TaskObjective> Objectives { get; init; } = [];
 
+    /// <summary>
+    /// Every key this quest needs, whatever part of it needs them.
+    ///
+    /// <para><b>The quest's own list, not the sum of its objectives'</b>, and the difference is not
+    /// academic. Keys are recorded against objectives, and only an objective with a <i>zone</i>
+    /// becomes a waypoint — a zone is what gives it a position. Aggregating keys from the planned
+    /// waypoints therefore drops every key attached to an objective that has no coordinates, which
+    /// is 29 of the 57 key-requiring quests.</para>
+    ///
+    /// <para>Farming is the clean case: the objective that names the key is a <c>findQuestItem</c>
+    /// with possible locations rather than a zone, and the objective that has a position needs no
+    /// key. RatNav drew the waypoint and said nothing about the key.</para>
+    ///
+    /// <para>Upstream lists these per map. Flattened, because "bring this" is a question about the
+    /// raid you are about to queue for and the plan already knows which map that is.</para>
+    /// </summary>
+    public IReadOnlyList<string> NeededKeyItemIds { get; init; } = [];
+
     /// <summary>Wiki page for this quest. Deep-linked rather than scraped, so guidance stays current.</summary>
     public string? WikiUrl { get; init; }
 }

@@ -15,6 +15,12 @@ export interface LanInfo {
   firewallCommand: string
 }
 
+/** What a new install still has to do. Every step is derived from real state, never remembered. */
+export interface FirstRun {
+  done: boolean
+  steps: { id: string; title: string; why: string; done: boolean; view: string }[]
+}
+
 export interface DataStatus {
   loaded: boolean
   fetchedAt: string | null
@@ -399,9 +405,33 @@ export interface Diagnostics {
 
 export type InkLevel = 'graphical' | 'full' | 'structure' | 'outline'
 
+/**
+ * Turns a failed response into the reason the service gave for it.
+ *
+ * <p>RatNav explains its refusals carefully — "That code is incomplete or damaged, ask for it
+ * again", "That plan has no stops in it" — and returns each as <code>{ error }</code> beside the
+ * status. Every one was thrown away here and replaced with a URL and a number, so the first tester
+ * to hit one saw <em>"/api/plans/import-code returned 400"</em> and nobody could tell which refusal
+ * had fired, including us.</p>
+ *
+ * <p>Falls back to the status when there is no body to read: a 500 from a crash has nothing to say,
+ * and inventing something is worse than a number.</p>
+ */
+async function failure(path: string, response: Response): Promise<Error> {
+  try {
+    const body = await response.json() as { error?: unknown }
+
+    if (typeof body?.error === 'string' && body.error.trim()) return new Error(body.error)
+  } catch {
+    // No body, or not JSON. The status is all there is.
+  }
+
+  return new Error(`${path} returned ${response.status}`)
+}
+
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(path)
-  if (!response.ok) throw new Error(`${path} returned ${response.status}`)
+  if (!response.ok) throw await failure(path, response)
   return response.json() as Promise<T>
 }
 
@@ -411,13 +441,13 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!response.ok) throw new Error(`${path} returned ${response.status}`)
+  if (!response.ok) throw await failure(path, response)
   return response.json() as Promise<T>
 }
 
 async function del<T>(path: string): Promise<T> {
   const response = await fetch(path, { method: 'DELETE' })
-  if (!response.ok) throw new Error(`${path} returned ${response.status}`)
+  if (!response.ok) throw await failure(path, response)
   return response.status === 204 ? (undefined as T) : (response.json() as Promise<T>)
 }
 
@@ -702,6 +732,9 @@ export const api = {
   /** Sets or clears a mark's note. Blank clears it. */
   setWaypointNote: (markId: string, note: string) =>
     post<{ id: string; note: string }>(`/api/waypoints/${encodeURIComponent(markId)}/note`, { note }),
+
+  /** The four things a new install has to do, and which are done. */
+  firstRun: () => get<FirstRun>('/api/first-run'),
 
   /** Whether RatNav answers on the network, and what stands between you and it. */
   lan: () => get<LanInfo>('/api/lan'),

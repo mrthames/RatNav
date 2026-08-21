@@ -425,8 +425,17 @@ public sealed class RaidSession
         lock (_gate)
         {
             _plan = null;
-            _chosenMap = null;
             _completed.Clear();
+
+            // The chosen map stays.
+            //
+            // It is not part of the plan — it is what makes a map draw *without* one, the "look it
+            // over before you queue" path. Clearing it here meant that clearing a plan in order to
+            // build a different one took the map you were building it against, which is the one
+            // thing you were still using.
+            //
+            // The map goes in two cases and they are both elsewhere: a different map is chosen,
+            // and RatNav is restarted.
         }
 
         Publish();

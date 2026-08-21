@@ -70,11 +70,21 @@ public static class PlanCode
         {
             cleaned = cleaned[Prefix.Length..];
         }
-        else if (cleaned.Contains('-', StringComparison.Ordinal))
+        else if (LooksLikeAnotherVersion(cleaned))
         {
+            // A RatNav code carrying a different format number. That is genuinely a version
+            // problem, and saying so is genuinely useful.
             problem = "That code was made by a different version of RatNav.";
             return null;
         }
+
+        // Anything else is tried as a bare body rather than refused.
+        //
+        // The old test was "no prefix and contains a hyphen", and base64url uses '-' in place of
+        // '+' — so most bodies contain one. A code that had lost its prefix to a partial copy or
+        // to a chat client was therefore reported as a version mismatch, sending somebody to look
+        // for a problem that does not exist. Being forgiving costs nothing: if it is not a code,
+        // the decode below says so, accurately.
 
         byte[] compressed;
         try
@@ -102,6 +112,25 @@ public static class PlanCode
             problem = "That code is incomplete or damaged — ask for it again.";
             return null;
         }
+    }
+
+    /// <summary>
+    /// Whether a code announces itself as RatNav's but with another format number — "RATNAV2-".
+    ///
+    /// <para>Deliberately narrow. Only something claiming to be a RatNav code of a different
+    /// version earns the version message; everything else is treated as a body that may simply
+    /// have arrived without its prefix.</para>
+    /// </summary>
+    private static bool LooksLikeAnotherVersion(string code)
+    {
+        const string mark = "RATNAV";
+
+        if (!code.StartsWith(mark, StringComparison.OrdinalIgnoreCase)) return false;
+
+        var at = mark.Length;
+        while (at < code.Length && char.IsAsciiDigit(code[at])) at++;
+
+        return at > mark.Length && at < code.Length && code[at] == '-';
     }
 
     private static string ToBase64Url(byte[] bytes) =>

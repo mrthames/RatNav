@@ -386,6 +386,23 @@ public sealed class TarkovDevClient(HttpClient http)
                 .Select(t => t!)
         ],
         Objectives = [.. (task.Objectives ?? []).Where(o => o.Id is not null).Select(o => MapObjective(o, text))],
+
+        // The quest's own key list, which is the only complete one.
+        //
+        // Keys are also recorded against individual objectives, and that is where RatNav used to
+        // read them — but only an objective with a zone becomes a waypoint, and the plan's "bring
+        // these" list is aggregated from waypoints. So every key belonging to an objective without
+        // coordinates was dropped: 29 of the 57 quests that need one.
+        //
+        // Flattened across maps. A plan is for one raid on one map, and it knows which.
+        NeededKeyItemIds =
+        [
+            .. (task.NeededKeys ?? [])
+                .SelectMany(k => k.Keys ?? [])
+                .Where(k => k is { Length: > 0 })
+                .Select(k => k!)
+                .Distinct()
+        ],
     };
 
     private static TaskObjective MapObjective(ObjectiveDto o, Translations text)
@@ -457,7 +474,10 @@ public sealed class TarkovDevClient(HttpClient http)
         string? Name, string? NormalizedName, string? WikiLink, int? MinPlayerLevel,
         bool? KappaRequired, string? Trader, List<TaskRequirementDto>? TaskRequirements,
         List<TaskTraderRequirementDto>? TraderRequirements,
-        List<ObjectiveDto>? Objectives);
+        List<ObjectiveDto>? Objectives, List<NeededKeyDto>? NeededKeys);
+
+    /// <summary>The keys a quest needs, listed per map.</summary>
+    private sealed record NeededKeyDto(string? Map, List<string?>? Keys);
 
     private sealed record TaskRequirementDto(string? Task);
 

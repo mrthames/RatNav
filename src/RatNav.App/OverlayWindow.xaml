@@ -1199,7 +1199,7 @@
                         screen has four times the pixels in the same physical space, so without
                         this everything lands at a quarter of the area.
                     -->
-                    <TextBlock Style="{StaticResource Label}" Text="SIZE" VerticalAlignment="Center" Margin="0,0,4,0" />
+                    <TextBlock Style="{StaticResource Label}" Text="UI SCALE" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <Button x:Name="QuickScaleDown" Style="{StaticResource Chip}" Content="−" />
                     <TextBlock x:Name="QuickScaleText" Style="{StaticResource Label}"
                                Foreground="{StaticResource Ink}" VerticalAlignment="Center"
