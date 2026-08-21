@@ -39,14 +39,16 @@ A **panel in the corner**, out of the way: your plan's quests numbered to match 
 map, the items to look for beside it, and the real map with extracts and place names. The key
 bindings sit along the bottom so you never have to remember them.
 
-![The RatNav panel over a raid on Customs: the quest log numbered to match the pins on the map, the items to look for beside it, the map with extracts and place names, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
+![The RatNav panel over a raid on Customs: a waypoint list numbered to match the pins on the map, the watchlist and tracked collections beneath it, the map with extracts and place names beside them, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
 
-Or the **whole screen as a HUD** — the same map drawn as glowing outlines over the game,
-dissolving toward the edges instead of stopping at a border, and turned so what is in front of you
-is up the screen. Clicks pass straight through it except on a control, so it can stay up while you
-play.
+Or the **centred view** — the same map drawn as glowing outlines over the game, dissolving toward
+the edges instead of stopping at a border, and **turned so what is in front of you is up the
+screen**. It keeps you in the middle of it: take a screenshot and the map moves and rotates around
+you rather than the other way about. Size and place it where you like, or turn the coverage dial up
+to 100% and it becomes a full-screen HUD. Clicks pass straight through it except on a control, so
+it can stay up while you play.
 
-![The same raid with RatNav's full-screen HUD: building outlines and place names drawn as glowing lines over the game, fading out toward the edges of the screen](docs/screenshot-hud.jpg)
+![RatNav's centred view over a raid on Streets of Tarkov: building outlines drawn as glowing blue lines over the game with street and shop names on them, a red quest waypoint and a green extract marked, all above the player's weapon and the game's own interface](docs/screenshot-hud.jpg)
 
 **Before you queue**, the app: tick the objectives you are pushing and it builds the route, works
 out which keys you have to bring, and assembles the shopping list. There is a tour of every page
