@@ -1,4 +1,4 @@
-using RatNav.Core.Maps;
+﻿using RatNav.Core.Maps;
 using RatNav.Core.Model;
 using RatNav.Core.Planning;
 using RatNav.Core.Progress;
@@ -40,6 +40,16 @@ public sealed record RaidView
 
     /// <summary>Set when the active plan is for a different map than the one on screen.</summary>
     public string? PlanMapName { get; init; }
+
+    /// <summary>
+    /// Where the last fix puts you in the world, on the ground plane.
+    ///
+    /// <para>Two numbers, so that anything wanting a distance can work one out for itself. This is
+    /// deliberately not the readout removed below: that computed a distance and a bearing to the
+    /// next stop on every publish, for two things on screen that have gone.</para>
+    /// </summary>
+    public double? WorldX { get; init; }
+    public double? WorldZ { get; init; }
 
     public IReadOnlyList<RaidStop> Stops { get; init; } = [];
     public IReadOnlyList<string> CompletedObjectiveIds { get; init; } = [];
@@ -382,6 +392,8 @@ public sealed class RaidSession
                 Y = here?.Y,
                 HeadingDegrees = _fix is null ? null : transform.ToImageHeading(_fix.HeadingDegrees),
                 FixedAt = _fix?.TakenAt,
+                WorldX = _fix?.Position.X,
+                WorldZ = _fix?.Position.Z,
                 Floor = _fix is null ? image.DefaultFloor : map.FloorAt(_fix.Position.Y)?.Layer ?? image.DefaultFloor,
                 Stops = stops,
                 CompletedObjectiveIds = [.. _completed],

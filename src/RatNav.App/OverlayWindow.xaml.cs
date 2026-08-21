@@ -784,6 +784,29 @@ public partial class OverlayWindow : Window
         return new IntPtr(HTTRANSPARENT);
     }
 
+    /// <summary>
+    /// How far away something is, on the ground, as a short string — or null with no fix.
+    ///
+    /// <para>Straight-line distance rather than a walked one. RatNav has no idea what is between
+    /// you and a door, and a number that pretended otherwise would be wrong in a way that matters;
+    /// this one is only ever used to compare two exits, which it does honestly.</para>
+    ///
+    /// <para>Rounded hard on purpose. Metre-precision on a figure that changes every few steps is
+    /// noise, and a readout that flickers is one you stop reading.</para>
+    /// </summary>
+    private string? Metres(ExtractPin extract)
+    {
+        if (_view?.WorldX is not { } px || _view.WorldZ is not { } pz) return null;
+
+        var dx = extract.WorldX - px;
+        var dz = extract.WorldZ - pz;
+        var away = Math.Sqrt(dx * dx + dz * dz);
+
+        return away >= 1000
+            ? $"{away / 1000:0.0} km"
+            : $"{Math.Round(away / 5) * 5:0} m";
+    }
+
     /// <summary>Whether a point in window space is over something meant to be clicked.</summary>
     private bool OverControl(Point point)
     {
@@ -3427,6 +3450,20 @@ public partial class OverlayWindow : Window
             MapCanvas.Children.Add(mark);
 
             Label(extract.Name, at.X, at.Y + 9 * scale, colour, 9 * textScale);
+
+            // How far, in metres, under the name. Straight-line across the ground — not a walk,
+            // and not claiming to be one; what it answers is "which of these two is nearer",
+            // which is the question that was actually asked. Muted and a size down, because a
+            // number under every exit competes with the names if it is given equal weight.
+            if (Metres(extract) is { } metres)
+            {
+                Label(
+                    metres,
+                    at.X,
+                    at.Y + 9 * scale + 11 * textScale,
+                    (Brush)FindResource("Muted"),
+                    8 * textScale);
+            }
             Hoverable(at, 8 * scale, extract.Transit
                 ? $"{extract.Name} · transit to another map"
                 : $"{extract.Name} · {extract.Faction} extract");

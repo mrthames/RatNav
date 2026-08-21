@@ -1492,6 +1492,8 @@ public static class ApiEndpoints
                     Name = extract.Name,
                     Faction = extract.Faction ?? "shared",
                     Transit = extract.IsTransit,
+                    WorldX = extract.Position.GetValueOrDefault().X,
+                    WorldZ = extract.Position.GetValueOrDefault().Z,
                     X = point.X,
                     Y = point.Y,
                     Elevation = extract.Position.GetValueOrDefault().Y,
@@ -2584,6 +2586,16 @@ public sealed record ExtractPin
 
     /// <summary>A transit to another map rather than a way out of the raid.</summary>
     public bool Transit { get; init; }
+
+    /// <summary>
+    /// Where it stands in the world, on the ground plane.
+    ///
+    /// <para>Carried so the overlay can work out how far away it is without the service computing
+    /// a distance to every pin on every publish — which is what the old readout did, and part of
+    /// why it went.</para>
+    /// </summary>
+    public double WorldX { get; init; }
+    public double WorldZ { get; init; }
 
     public required double X { get; init; }
     public required double Y { get; init; }
