@@ -323,7 +323,7 @@ export default function App() {
     <div className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-3 py-6 sm:px-5">
       <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-b border-line pb-4">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">RatNav</p>
+          <ProfileMenu onSwitched={() => window.location.reload()} />
           {/*
             Six words that wrap rather than six words on one line.
 
@@ -401,12 +401,6 @@ export default function App() {
           >
             <span aria-hidden className={refreshing ? 'animate-spin' : ''}>↻</span>
           </button>
-
-          {/*
-            Which character, behind a menu. It is switched occasionally — a row of three buttons
-            for it sat at the top of every page looking as important as the navigation itself.
-          */}
-          <ProfileMenu onSwitched={() => window.location.reload()} />
         </div>
       </header>
 

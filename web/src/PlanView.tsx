@@ -1067,7 +1067,14 @@ function RaidPanel({ raid }: { raid: RaidView }) {
               <span className="truncate font-mono text-[11px] text-muted">{stop.taskName}</span>
 
               <span className="ml-auto flex items-center gap-3">
-                <CompleteQuest taskId={stop.taskId} taskName={stop.taskName} />
+                <CompleteQuest
+                  taskId={stop.taskId}
+                  taskName={stop.taskName}
+                  objectiveIds={raid.stops
+                    .filter((s) => s.taskId === stop.taskId)
+                    .map((s) => s.objectiveId)}
+                  done={stop.done}
+                />
 
                 <button
                   type="button"
@@ -1088,53 +1095,56 @@ function RaidPanel({ raid }: { raid: RaidView }) {
 }
 
 /**
- * Marking a quest complete from where you are looking at it.
+ * Marks a quest done, and puts it back.
  *
- * <p>The turn-in prompt above only appears once every planned objective is ticked, which is the
- * common path and not the only one — a quest can finish on a step you never planned, or off the
- * back of one you did. This is the way out of that without a trip to the Quests view.</p>
+ * <p>No confirmation. It asked one, on the reasoning that completing a quest retires its item
+ * needs and a misclick quietly deletes part of a shopping list — which was true when the undo was
+ * on another screen. It is not: the same control reverts it, in place, one press away.</p>
  *
- * <p>It asks first. Completing a quest retires its item needs, so a misclick quietly deletes part
- * of a shopping list — and the click that would undo it is on another screen.</p>
+ * <p>It does both halves of "done". Marking the quest complete on its own left its stops sitting
+ * un-struck in the middle of the plan, because the list orders and strikes from whether a *stop*
+ * is done — so a finished quest looked exactly like an unfinished one, and the only sign anything
+ * had happened was the word changing.</p>
  */
-function CompleteQuest({ taskId, taskName }: { taskId: string; taskName: string }) {
-  const [asking, setAsking] = useState(false)
-  const [done, setDone] = useState(false)
+function CompleteQuest({ taskId, taskName, objectiveIds, done }: {
+  taskId: string
+  taskName: string
+  objectiveIds: string[]
+  done: boolean
+}) {
+  const [busy, setBusy] = useState(false)
 
-  if (done) return <span className="font-mono text-[11px] text-have">complete</span>
+  async function set(complete: boolean) {
+    if (busy) return
+    setBusy(true)
 
-  if (asking) {
-    return (
-      <span className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={async () => { await api.markTaskState(taskId, 'Completed'); setDone(true) }}
-          className="font-mono text-[11px] uppercase tracking-wider text-have underline-offset-4
-                     hover:underline focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          Yes, complete
-        </button>
-        <button
-          type="button"
-          onClick={() => setAsking(false)}
-          className="font-mono text-[11px] text-muted hover:text-ink
-                     focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          no
-        </button>
-      </span>
-    )
+    try {
+      // The stops first. They are what the list reads, so doing them first means the row strikes
+      // and moves on the same update rather than a beat later.
+      for (const id of objectiveIds) await api.completeObjective(id, complete)
+
+      await api.markTaskState(taskId, complete ? 'Completed' : 'Active')
+    } catch {
+      // The next view from the service is the authority on what is done. Saying nothing here beats
+      // an error that may already be untrue.
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
     <button
       type="button"
-      onClick={() => setAsking(true)}
-      aria-label={`Mark ${taskName} complete`}
-      className="font-mono text-[11px] uppercase tracking-wider text-muted underline-offset-4
-                 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+      disabled={busy}
+      onClick={() => void set(!done)}
+      aria-pressed={done}
+      aria-label={done ? `Mark ${taskName} not done` : `Mark ${taskName} done`}
+      className={`font-mono text-[11px] uppercase tracking-wider underline-offset-4
+                  hover:underline disabled:opacity-40
+                  focus-visible:outline-2 focus-visible:outline-accent
+                  ${done ? 'text-have' : 'text-muted hover:text-ink'}`}
     >
-      Quest done
+      {done ? 'Undo' : 'Quest done'}
     </button>
   )
 }

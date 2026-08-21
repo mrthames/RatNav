@@ -36,29 +36,38 @@ export function ProfileMenu({ onSwitched }: { onSwitched: () => void }) {
 
   return (
     <div className="relative">
+      {/*
+        The wordmark and the character are one control.
+
+        They were two things: "RatNav" printed above the navigation, and a hamburger at the far end
+        of the header that opened a list of characters. Neither said which character was in use, so
+        the answer to "whose progress am I looking at" — which changes what every page on the site
+        shows — was behind a click on an icon that gives no clue it is about that.
+
+        Said together, the header answers it without being asked, and the caret is where anybody
+        would look to change it.
+      */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-label={`Character: ${current?.name ?? profiles.current}`}
-        title={`Character: ${current?.name ?? profiles.current}`}
-        className="grid size-8 place-items-center rounded-sm border border-line bg-panel-hi
-                   font-mono text-sm text-muted transition-colors hover:border-muted
-                   hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        aria-label={`Character: ${current?.name ?? profiles.current}. Change character.`}
+        className="flex items-baseline gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em]
+                   text-muted transition-colors hover:text-ink
+                   focus-visible:outline-2 focus-visible:outline-accent"
       >
-        ☰
+        <span>RatNav</span>
+        <span aria-hidden className="text-line">—</span>
+        <span className="text-ink">{current?.name ?? profiles.current}</span>
+        <span aria-hidden className="text-[9px]">{open ? '▴' : '▾'}</span>
       </button>
 
       {open && (
         <div
           role="group"
           aria-label="Character"
-          className="absolute right-0 top-full z-30 mt-1 w-max border border-line bg-panel p-1 shadow-xl"
+          className="absolute left-0 top-full z-30 mt-1 w-max border border-line bg-panel p-1 shadow-xl"
         >
-          <p className="px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted">
-            Character
-          </p>
-
           {profiles.all.map((p) => (
             <button
               key={p.id}
