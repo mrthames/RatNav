@@ -294,6 +294,48 @@ export function MapView({
   // One piece of state rather than two, because zooming about the pointer moves both at once and
   // has to move them from the same starting values.
   const [view, setView] = useState({ zoom: 1, pan: { x: 0, y: 0 } })
+
+  /**
+   * Zoom on the wheel, attached by hand rather than with `onWheel`.
+   *
+   * <p>React registers its wheel listener passively, and a passive listener cannot cancel the
+   * event — so `preventDefault()` in an `onWheel` handler is quietly ignored and the page scrolls
+   * while the map zooms. Both happen at once, which is what it looked like: zooming in and
+   * scrolling up together.</p>
+   *
+   * <p>Nothing about it is map-specific, which is why it went unnoticed on the small maps: a page
+   * with nothing below the fold has no scrolling to do. Streets is long enough to scroll.</p>
+   */
+  useEffect(() => {
+    const box = frame.current
+    if (!box) return
+
+    function onWheel(e: WheelEvent) {
+      e.preventDefault()
+
+      const rect = box!.getBoundingClientRect()
+      const mouseX = e.clientX - rect.left
+      const mouseY = e.clientY - rect.top
+
+      setView((v) => {
+        const next = Math.min(8, Math.max(1, v.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
+        const ratio = next / v.zoom
+
+        // Zoom toward the cursor: the content point under it has to stay under it, which means
+        // moving pan by the same amount the scale moved it.
+        return {
+          zoom: next,
+          pan: {
+            x: mouseX - (mouseX - v.pan.x) * ratio,
+            y: mouseY - (mouseY - v.pan.y) * ratio,
+          },
+        }
+      })
+    }
+
+    box.addEventListener('wheel', onWheel, { passive: false })
+    return () => box.removeEventListener('wheel', onWheel)
+  }, [])
   const { zoom, pan } = view
   const dragging = useRef<{ x: number; y: number } | null>(null)
 
@@ -514,28 +556,6 @@ export function MapView({
         //
         //     c = (m - pan) / z          the content point currently under the cursor
         //     pan' = m - c * z'          where it has to be for that point to stay at m
-        onWheel={(e) => {
-          e.preventDefault()
-
-          const box = frame.current?.getBoundingClientRect()
-          if (!box) return
-
-          const mouseX = e.clientX - box.left
-          const mouseY = e.clientY - box.top
-
-          setView((v) => {
-            const next = Math.min(8, Math.max(1, v.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
-            const ratio = next / v.zoom
-
-            return {
-              zoom: next,
-              pan: {
-                x: mouseX - (mouseX - v.pan.x) * ratio,
-                y: mouseY - (mouseY - v.pan.y) * ratio,
-              },
-            }
-          })
-        }}
         // Right-drag to pan, same as the overlay. The context menu would otherwise open on
         // release and swallow the gesture.
         //

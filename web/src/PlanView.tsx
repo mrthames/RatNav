@@ -30,6 +30,25 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
   const planning = !(raid?.inRaid && raid?.hasPlan)
   const [mapId, setMapId] = useState<string | null>(null)
 
+  /**
+   * Whether the picking half of the page is open.
+   *
+   * <p>A plan that exists folds it away. The page is two things — building a plan, and the plan
+   * you built — and with a plan on it the second is what you came for; leaving a map picker,
+   * "0 objectives" and a **Plan this raid** button underneath makes a finished plan read as
+   * unfinished work.</p>
+   *
+   * <p>Folded, not removed. Adding a stop to a plan you already have is an ordinary thing to want
+   * — a quest turned in, a second look at what is on the way — and this page is the only place to
+   * do it. Clearing the plan or ending the raid opens it again, because then it is all there is.</p>
+   */
+  const [picking, setPicking] = useState(false)
+
+  const hasPlan = raid?.hasPlan ?? false
+
+  /** Whether the build-a-plan half of the page is on show. */
+  const building = planning && (!hasPlan || picking)
+
   /** Whether the plan menu — sharing and importing — is open. */
   const [planMenu, setPlanMenu] = useState(false)
 
@@ -293,7 +312,12 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         The maps stay on show — that is the choice you make first and change often enough to want
         one click. Sharing and importing go behind the menu on the right: both are occasional, and
         two buttons for them sat next to the maps looking equally important.
+
+        The whole of this — picker, counts and checklist — folds away once a plan exists. See
+        `picking` above: the page is two things, and with a plan on it the plan is the one you
+        came for.
       */}
+      {building && (
       <div className="flex flex-wrap items-start justify-between gap-3">
         <MapPicker
           maps={calibrated}
@@ -328,6 +352,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
           </div>
         )}
       </div>
+      )}
 
       {/*
         One strip that never changes height, then the map, then the list.
@@ -337,6 +362,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         is the fix: the counts and the warnings live in a row that stays exactly where it is, and
         the only thing below it that changes size is the checklist itself.
       */}
+      {building && (
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border border-line bg-panel px-3 py-2">
         <span className="font-mono text-sm tabular-nums">
           {chosen.length} objective{chosen.length === 1 ? '' : 's'}
@@ -406,12 +432,13 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
           {busy ? 'Planning…' : 'Plan this raid'}
         </button>
       </div>
+      )}
 
       {/*
         Collapsed to start with. It is worth seeing while you build a plan and it is not worth the
         height every time you open the page.
       */}
-      {mapId && chosenMap && (
+      {building && mapId && chosenMap && (
         <div className="flex flex-col gap-2">
           <button
             type="button"
@@ -451,8 +478,34 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
       {!planning && <RaidInProgress />}
 
-      {planning && (
+      {planning && hasPlan && !picking && (
+        <button
+          type="button"
+          onClick={() => setPicking(true)}
+          className="flex items-center gap-2 border border-line bg-panel px-3 py-2 text-left
+                     font-mono text-[11px] uppercase tracking-wider text-muted transition-colors
+                     hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <span aria-hidden>▸</span>
+          Add more to this plan
+        </button>
+      )}
+
+      {building && (
       <div className="flex flex-col gap-3">
+          {hasPlan && (
+            <button
+              type="button"
+              onClick={() => setPicking(false)}
+              className="flex items-center gap-2 self-start font-mono text-[11px] uppercase
+                         tracking-wider text-muted transition-colors hover:text-ink
+                         focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              <span aria-hidden>▾</span>
+              Done adding
+            </button>
+          )}
+
           {/*
             Your own marks, offered the same way the quest objectives are. Above them, because a
             short list you wrote yourself should not be below forty derived rows.
