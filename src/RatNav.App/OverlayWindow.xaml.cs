@@ -1956,18 +1956,6 @@ public partial class OverlayWindow : Window
             var url = $"{ServiceHost.Root}/api/items/panel";
             var panel = await _http.GetFromJsonAsync<ItemPanel>(url) ?? new ItemPanel();
 
-            // The heading carries what is being counted. "Quests & hideout" alone does not say
-            // whether it means tonight's upgrades or the next four, and the number changes a lot.
-            var scope = panel.LookAhead <= 1 ? "buildable now" : $"+{panel.LookAhead - 1} ahead";
-
-            // And the same for what is being looked past. The dial moves both — how far into the
-            // hideout build order, and how far along the quest chain — so both headings say where
-            // it currently sits rather than leaving the same list meaning different things on
-            // different days.
-            var ahead = panel.LookAhead <= 1
-                ? "gated upgrades, quests you could take"
-                : $"gated upgrades, quests {panel.LookAhead} deep";
-
             return
             [
                 // Yours first. The watchlist is the short list you chose by hand; quests and the
@@ -1997,18 +1985,15 @@ public partial class OverlayWindow : Window
                     group.Rows,
                     label: group.Name.ToUpperInvariant())),
 
-                Section("QUESTS & HIDEOUT", panel.Now, label: $"QUESTS & HIDEOUT · {scope}"),
+                // No scope after the heading. The depth is a setting with a dial on the items
+                // page, and repeating it over the map every time the list drew put a number there
+                // that changes for reasons nothing on the overlay explains.
+                Section("QUESTS & HIDEOUT", panel.Now),
 
-                // Gated upgrades and quests you could accept but have not. Folded by default: it
-                // is the longest of the three and the least actionable, and an overlay that opens
-                // with sixty rows on it is one people turn off.
-                Section(
-                    "LATER",
-                    panel.Later,
-                    expandedByDefault: false,
-                    label: panel.LaterHidden > 0
-                        ? $"LATER · {ahead} (+{panel.LaterHidden} more)"
-                        : $"LATER · {ahead}"),
+                // No LATER section. It held gated upgrades and quests not yet accepted, which is
+                // the same thing the look-ahead dial decides — so it was a second, fixed answer to
+                // a question that already has an adjustable one. Wanting more of it is what
+                // turning the dial up is for.
             ];
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)

@@ -46,7 +46,7 @@ export function HideoutView() {
           <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Look ahead</span>
           <button
             type="button"
-            disabled={busy || state.lookAhead <= 1}
+            disabled={busy || state.lookAhead <= 0}
             onClick={() => void changeLookAhead(state.lookAhead - 1)}
             aria-label="Look one upgrade less far ahead"
             className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
@@ -58,7 +58,7 @@ export function HideoutView() {
           <span className="w-6 text-center font-mono text-sm tabular-nums text-ink">{state.lookAhead}</span>
           <button
             type="button"
-            disabled={busy || state.lookAhead >= 6}
+            disabled={busy || state.lookAhead >= 5}
             onClick={() => void changeLookAhead(state.lookAhead + 1)}
             aria-label="Look one upgrade further ahead"
             className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors

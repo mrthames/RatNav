@@ -1,4 +1,4 @@
-using RatNav.Core.Data;
+﻿using RatNav.Core.Data;
 using RatNav.Core.Planning;
 using RatNav.Core.Progress;
 using RatNav.Core.Tracking;
@@ -51,11 +51,20 @@ public sealed class RatNavState(GameDataCache cache)
     /// have to agree about what is next, and three separate walks of the build order would
     /// eventually not.</para>
     /// </summary>
+    /// <param name="lookAhead">
+    /// How many waves to look <em>beyond</em> what can be built right now. Zero is only what you
+    /// could start today.
+    ///
+    /// <para>The planner counts waves, where one wave is what is buildable now — so "look ahead 1"
+    /// is two waves. Everyone reading a dial said the opposite: it showed 1 above the words "only
+    /// what you can finish now", which is a 1 that means none. Translated once, here, rather than
+    /// at each of the seven places that ask.</para>
+    /// </param>
     public IReadOnlyList<HideoutUpgrade> Upcoming(ProgressStore progress, int lookAhead) =>
         HideoutPlanner.Upcoming(
             cache.Current?.HideoutStations ?? [],
             progress.HideoutLevels,
-            lookAhead,
+            Math.Max(0, lookAhead) + 1,
             progress.HideoutTargets);
 
     /// <summary>

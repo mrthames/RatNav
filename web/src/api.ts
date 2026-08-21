@@ -183,6 +183,9 @@ export interface Settings {
   hotkeys: HotKeys
   playerLevel: number | null
   gameEdition: string
+
+  /** How deep into the hideout build order to count. One setting, three dials. */
+  hideoutLookAhead: number
   /** Lowest level consistent with the quests you have completed — a floor, not your real level. */
   suggestedPlayerLevel: number | null
   /** The install in use, whether set by hand or found. */

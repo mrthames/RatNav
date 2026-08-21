@@ -8,7 +8,15 @@ import {
   type ItemDetail,
 } from './api'
 
-type Tab = 'needed' | 'watchlist' | 'custom' | 'search'
+/**
+ * Which list is on the page.
+ *
+ * <p>Search is not one of them any more. It was a tab, so looking something up meant leaving
+ * whatever you were reading, and coming back meant finding your place again — for an action whose
+ * whole purpose is a quick aside. It is a box on the page now: type and the list becomes the
+ * results, clear it and your list is where you left it.</p>
+ */
+type Tab = 'needed' | 'watchlist' | 'custom'
 
 /**
  * What to show of the list.
@@ -20,10 +28,15 @@ type Tab = 'needed' | 'watchlist' | 'custom' | 'search'
  */
 const FILTERS = [
   { id: 'all', label: 'Everything', of: () => true },
-  { id: 'fir', label: 'Found in raid', of: (r: TrackedItem) => r.foundInRaid },
-  { id: 'quests', label: 'For quests', of: (r: TrackedItem) => r.questNeeded > 0 },
+
+  // Keys count as being for a quest, because they are.
+  //
+  // They had a filter of their own because they could not match this one: a key is recorded
+  // against an objective as something to *bring*, in a list apart from the things you hand in,
+  // and this tested only the hand-in count. So "For quests" hid the keys those quests need and a
+  // separate Keys button existed to put them back — two answers to one question.
+  { id: 'quests', label: 'For quests', of: (r: TrackedItem) => r.questNeeded > 0 || r.isKey },
   { id: 'hideout', label: 'For the hideout', of: (r: TrackedItem) => r.hideoutNeeded > 0 },
-  { id: 'keys', label: 'Keys', of: (r: TrackedItem) => r.isKey },
 ] as const
 
 type FilterId = (typeof FILTERS)[number]['id']
@@ -32,14 +45,33 @@ export function ItemsView() {
   const [tab, setTab] = useState<Tab>('needed')
   const [query, setQuery] = useState('')
 
-  // "next" leads with the hideout upgrades you are closest to finishing. The default leads with
-  // quantity, which answers a different question: what to grab if you happen to see it.
-  const [sort, setSort] = useState<'default' | 'next'>('default')
+  // Nearest upgrade first, because "what finishes the thing I am closest to finishing" is the
+  // question this page is usually open for. Sorting by quantity answers a different one — what to
+  // grab if you happen to see it — and it was the default for no better reason than being written
+  // first.
+  const [sort, setSort] = useState<'default' | 'next'>('next')
 
-  // How far into the hideout build order to count. The overlay has the same dial; without it this
-  // view is several hundred rows of things gated behind upgrades not yet started.
-  const [lookAhead, setLookAhead] = useState(2)
+  // How far into the hideout build order to count. The hideout page and the overlay have the same
+  // dial, and this one used to be a local number starting at 2 — so three places showed three
+  // depths and only one of them was saved. It reads the setting and writes it back now.
+  const [lookAhead, setLookAhead] = useState(1)
+
+  useEffect(() => {
+    void api.settings()
+      .then((s) => setLookAhead(s.hideoutLookAhead))
+      .catch(() => { /* the dial keeps its default; the list still loads. */ })
+  }, [])
+
+  async function changeLookAhead(levels: number) {
+    setLookAhead(levels)
+
+    // Saved, because the overlay reads it from settings rather than from this page.
+    try { await api.setLookAhead(levels) } catch { /* the list still reflects the change here. */ }
+  }
   const [rows, setRows] = useState<TrackedItem[]>([])
+
+  /** Typing in the box takes over the list, whichever tab is underneath it. */
+  const searching = query.trim().length > 0
   const [filter, setFilter] = useState<FilterId>('all')
 
   /** The quest opened from an item's reasons, if any. */
@@ -52,8 +84,9 @@ export function ItemsView() {
       if (tab === 'custom') {
         // Their own components, with their own data. Nothing to load here.
         setRows([])
-      } else if (tab === 'search') {
-        setRows(query.trim() ? await api.searchItems(query) : [])
+      } else if (searching) {
+        // The box wins over the tab. Clearing it puts the tab's own list back.
+        setRows(await api.searchItems(query))
       } else {
         setRows(tab === 'needed'
           ? await api.neededItems({ lookAhead, sort: sort === 'next' ? 'next' : undefined })
@@ -64,14 +97,15 @@ export function ItemsView() {
     } finally {
       setLoading(false)
     }
-  }, [tab, query, sort, lookAhead])
+  }, [tab, query, searching, sort, lookAhead])
 
-  // Search runs as you type, so it waits for a pause rather than firing per keystroke.
+  // Search runs as you type, so it waits for a pause rather than firing per keystroke. A tab
+  // change with the box empty has nothing to wait for.
   useEffect(() => {
-    if (tab !== 'search') { load(); return }
+    if (!searching) { load(); return }
     const timer = setTimeout(load, 200)
     return () => clearTimeout(timer)
-  }, [load, tab])
+  }, [load, searching])
 
   // Updates return the changed row, so one item changing doesn't reload the whole list and
   // throw away your scroll position.
@@ -103,7 +137,7 @@ export function ItemsView() {
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-px">
-          {(['needed', 'watchlist', 'custom', 'search'] as Tab[]).map((id) => (
+          {(['needed', 'watchlist', 'custom'] as Tab[]).map((id) => (
             <button
               key={id}
               type="button"
@@ -121,7 +155,7 @@ export function ItemsView() {
         {tab === 'needed' && (
           <div className="flex items-center gap-1">
             <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Sort</span>
-            {([['default', 'Most needed'], ['next', 'Nearest upgrade']] as const).map(([id, text]) => (
+            {([['next', 'Nearest upgrade'], ['default', 'Most needed']] as const).map(([id, text]) => (
               <button
                 key={id}
                 type="button"
@@ -142,8 +176,8 @@ export function ItemsView() {
             <span className="font-mono text-[11px] uppercase tracking-wider text-muted">Look ahead</span>
             <button
               type="button"
-              disabled={lookAhead <= 1}
-              onClick={() => setLookAhead(lookAhead - 1)}
+              disabled={lookAhead <= 0}
+              onClick={() => void changeLookAhead(lookAhead - 1)}
               aria-label="Look one upgrade less far ahead"
               className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
                          hover:text-ink disabled:opacity-30
@@ -154,8 +188,8 @@ export function ItemsView() {
             <span className="w-6 text-center font-mono text-xs tabular-nums text-ink">{lookAhead}</span>
             <button
               type="button"
-              disabled={lookAhead >= 6}
-              onClick={() => setLookAhead(lookAhead + 1)}
+              disabled={lookAhead >= 5}
+              onClick={() => void changeLookAhead(lookAhead + 1)}
               aria-label="Look one upgrade further ahead"
               className="size-6 rounded-sm bg-panel-hi font-mono text-xs text-muted transition-colors
                          hover:text-ink disabled:opacity-30
@@ -166,12 +200,15 @@ export function ItemsView() {
           </div>
         )}
 
-        {tab === 'search' && (
+        {/*
+          Always here, not behind a tab. Starring a result puts it on the watchlist and the numbers
+          follow, which is the point of looking something up in the first place.
+        */}
+        {tab !== 'custom' && (
           <input
-            autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Item name or short name…"
+            placeholder="Search all items…"
             className="min-w-56 flex-1 rounded-sm border border-line bg-panel px-3 py-1.5 text-sm
                        text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
           />
@@ -185,7 +222,7 @@ export function ItemsView() {
       </div>
 
       {/* Filters, on the lists where there is enough to filter. */}
-      {(tab === 'needed' || tab === 'search') && rows.length > 0 && (
+      {(searching || tab === 'needed') && rows.length > 0 && (
         <div className="flex flex-wrap gap-px">
           {FILTERS.map((f) => {
             const count = rows.filter(f.of).length
@@ -214,23 +251,23 @@ export function ItemsView() {
         and nothing on screen said which — so a number you set last week quietly changed what you
         were reading today.
       */}
-      {tab === 'needed' && (
+      {tab === 'needed' && !searching && (
         <p className="text-xs text-muted">
           {/*
             Two sentences, one per setting, rather than one sentence with holes punched in it. The
             spliced version read "what active quests and upgrades you could build today want", which
             makes "want" arrive far too late to attach to anything.
           */}
-          {lookAhead <= 1
+          {lookAhead <= 0
             ? <>Showing only what you can finish now: <b>active quests</b>, and{' '}
               <b>hideout upgrades you could build today</b>.</>
             : <>Looking <b>{lookAhead} deep</b>: active quests and the{' '}
-              <b>{lookAhead} quests</b> they unlock, plus the next{' '}
-              <b>{lookAhead} hideout upgrades</b>.</>}
+              <b>{lookAhead} {lookAhead === 1 ? 'quest' : 'quests'}</b> they unlock, plus the next{' '}
+              <b>{lookAhead} hideout {lookAhead === 1 ? 'upgrade' : 'upgrades'}</b>.</>}
         </p>
       )}
 
-      {tab === 'watchlist' && (
+      {tab === 'watchlist' && !searching && (
         <p className="text-xs text-muted">
           These numbers are yours. <b>Need</b> is the amount you are after, and <b>Have</b> is what
           you have set aside for it — kept apart from your stash count, so items promised to a
@@ -248,11 +285,11 @@ export function ItemsView() {
 
       {tab !== 'custom' && !loading && rows.length === 0 && (
         <Empty>
-          {tab === 'needed'
-            ? 'Nothing needed. Mark some quests active on the Quests view and they will appear here.'
-            : tab === 'watchlist'
-              ? 'Nothing on the watchlist. Search for an item and star it to keep an eye on it.'
-              : query.trim() ? 'No items match that.' : 'Type to search 5,000-odd items.'}
+          {searching
+            ? 'No items match that.'
+            : tab === 'needed'
+              ? 'Nothing needed. Mark some quests active on the Quests view and they will appear here.'
+              : 'Nothing on the watchlist. Search for an item above and star it to keep an eye on it.'}
         </Empty>
       )}
 
@@ -265,7 +302,7 @@ export function ItemsView() {
                 <Th align="right">Need</Th>
                 <Th align="center">Have</Th>
                 <Th align="right">Left</Th>
-                <Th align="center">{tab === 'watchlist' ? 'Remove' : 'Watch'}</Th>
+                <Th align="center">{tab === 'watchlist' && !searching ? 'Remove' : 'Watch'}</Th>
               </tr>
             </thead>
             <tbody>
@@ -274,7 +311,7 @@ export function ItemsView() {
                   key={row.id}
                   row={row}
                   onChange={replace}
-                  watchlist={tab === 'watchlist'}
+                  watchlist={tab === 'watchlist' && !searching}
                   onReadQuest={setReadingQuest}
                 />
               ))}

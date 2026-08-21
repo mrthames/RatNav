@@ -433,7 +433,7 @@ public static class ApiEndpoints
 
         api.MapPost("/hideout/look-ahead", (RatNavSettings settings, LookAheadRequest request) =>
         {
-            settings.Remember(s => s.HideoutLookAhead = Math.Clamp(request.Levels, 1, 10));
+            settings.Remember(s => s.HideoutLookAhead = Math.Clamp(request.Levels, 0, 9));
 
             ItemsChanged?.Invoke();
             return Results.Ok(new { lookAhead = settings.HideoutLookAhead });
@@ -2393,6 +2393,15 @@ public sealed record SettingsView
     public required string GameEdition { get; init; }
 
     /// <summary>
+    /// How deep into the hideout build order to count.
+    ///
+    /// <para>Reported here because it is one setting with three dials on it — the hideout page,
+    /// the items page and the overlay — and two of them were reading a number the third had
+    /// changed. It is saved through <c>/hideout/look-ahead</c> like the others.</para>
+    /// </summary>
+    public int HideoutLookAhead { get; init; }
+
+    /// <summary>
     /// The lowest level consistent with the quests marked complete, offered when nothing is set.
     /// Not your real level — nothing on disk reports that — but a floor beats an empty box.
     /// </summary>
@@ -2421,6 +2430,7 @@ public sealed record SettingsView
             Hotkeys = settings.Hotkeys,
             PlayerLevel = progress.PlayerLevel,
             GameEdition = settings.GameEdition,
+        HideoutLookAhead = settings.HideoutLookAhead,
             ResolvedGameDirectory = resolved,
             ResolvedScreenshotDirectory =
                 settings.ScreenshotDirectory ?? RatNavPaths.DefaultScreenshotDirectory,

@@ -93,7 +93,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         // Round 2 still ran.
         Assert.False(settings.Overlay.ShowControls);
-        Assert.Equal(4, settings.Revision);
+        Assert.Equal(5, settings.Revision);
     }
 
     /// <summary>The map settings stack shipped open and should not have; files on it come along.</summary>
@@ -197,6 +197,33 @@ public sealed class SettingsMigrationTests : IDisposable
         Assert.Equal("F9", keys.CenterMap);
         Assert.Equal("F10", keys.ReadExtracts);
         Assert.Equal("F11", keys.IdentifyItem);
+    }
+
+    /// <summary>
+    /// Round 5: the look-ahead counts from zero.
+    ///
+    /// <para>It stored a wave count where one meant "only what is buildable now", which put a 1 on
+    /// a dial above a sentence saying it was looking at nothing ahead. Every existing file is one
+    /// higher than it should be on the new scale.</para>
+    /// </summary>
+    [Theory]
+    [InlineData(1, 0)]
+    [InlineData(2, 1)]
+    [InlineData(4, 3)]
+    public void The_look_ahead_moves_onto_a_scale_that_starts_at_zero(int before, int after)
+    {
+        WriteSettings(new { revision = 4, hideoutLookAhead = before });
+
+        Assert.Equal(after, RatNavSettings.Load(_dir).HideoutLookAhead);
+    }
+
+    /// <summary>And having moved, a zero somebody chose stays zero rather than going negative.</summary>
+    [Fact]
+    public void A_look_ahead_already_on_the_new_scale_is_left_alone()
+    {
+        WriteSettings(new { revision = 5, hideoutLookAhead = 0 });
+
+        Assert.Equal(0, RatNavSettings.Load(_dir).HideoutLookAhead);
     }
 
     /// <summary>One key moved by hand makes the whole set somebody's own arrangement.</summary>

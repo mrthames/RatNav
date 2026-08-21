@@ -311,7 +311,13 @@ public sealed record RatNavSettings
     /// How many hideout upgrades deep the items list reaches. 1 is only what can be built right
     /// now; higher is what to stop vendoring. Set from the Hideout view and remembered.
     /// </summary>
-    public int HideoutLookAhead { get; set; } = Core.Planning.HideoutPlanner.DefaultLookAhead;
+    /// <summary>
+    /// How many hideout waves to count <em>beyond</em> the ones you could build today.
+    ///
+    /// <para>Zero means only what is buildable now. It read as a wave count before — where one
+    /// meant none — which put "1" on a dial above the words "only what you can finish now".</para>
+    /// </summary>
+    public int HideoutLookAhead { get; set; } = 1;
 
     /// <summary>
     /// Where these settings were read from, so a change made while running can be written back.
@@ -801,8 +807,9 @@ public sealed record RatNavSettings
     /// <para>2 — the map settings stack starts folded.</para>
     /// <para>3 — the F6/F7 pair swapped back, putting edit mode beside show/hide.</para>
     /// <para>4 — F5 to F11 run in the order the keys are actually used.</para>
+    /// <para>5 — the hideout look-ahead counts from zero rather than from one.</para>
     /// </summary>
-    private const int CurrentRevision = 4;
+    private const int CurrentRevision = 5;
 
     public static RatNavSettings Load(string dataDirectory)
     {
@@ -847,6 +854,7 @@ public sealed record RatNavSettings
         if (settings.Revision < 2) FoldControls(settings);
         if (settings.Revision < 3) PairEditModeWithToggle(settings.Hotkeys);
         if (settings.Revision < 4) RunKeysInUseOrder(settings.Hotkeys);
+        if (settings.Revision < 5) CountLookAheadFromZero(settings);
 
         settings.Revision = CurrentRevision;
 
@@ -961,6 +969,17 @@ public sealed record RatNavSettings
         keys.ReadExtracts = "F10";
         keys.IdentifyItem = "F11";
     }
+
+    /// <summary>
+    /// Moves a saved look-ahead onto the scale that counts from zero.
+    ///
+    /// <para>It stored a wave count, where one meant "only what is buildable now". It stores the
+    /// number of waves beyond that instead, so the dial and the sentence under it agree. Every
+    /// existing file is one higher than it should now be, and a file already at the old floor
+    /// lands on the new one.</para>
+    /// </summary>
+    private static void CountLookAheadFromZero(RatNavSettings settings) =>
+        settings.HideoutLookAhead = Math.Max(0, settings.HideoutLookAhead - 1);
 
     /// <summary>
     /// Closes the map settings stack on files that never chose to have it open.
