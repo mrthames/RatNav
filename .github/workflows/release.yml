@@ -84,6 +84,18 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path publish/* -DestinationPath "RatNav-${{ steps.version.outputs.name }}-win-x64.zip"
 
+      # A release published here is created with GITHUB_TOKEN, and GitHub does not raise workflow
+      # events for those — so "Latest stable" will not fire on its own and the README will go on
+      # naming the previous version. Said in the job summary rather than left to be rediscovered.
+      - name: Remind about the README
+        if: steps.version.outputs.prerelease != 'true'
+        shell: bash
+        run: |
+          echo "### One more step" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Run the **Latest stable** workflow to update the README's install line." >> "$GITHUB_STEP_SUMMARY"
+          echo "It cannot trigger itself: releases published with GITHUB_TOKEN raise no events." >> "$GITHUB_STEP_SUMMARY"
+
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:

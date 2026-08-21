@@ -7,6 +7,16 @@ name: Latest stable
 # is not there. So promoting a release to stable updates it, and nothing has to be remembered.
 #
 # Runs when a release stops being a prerelease, which is exactly the moment "latest stable" changes.
+#
+# It also has to be reachable by hand, and that is not belt-and-braces. A release published by the
+# Release workflow is created with GITHUB_TOKEN, and GitHub deliberately does not raise workflow
+# events for anything a GITHUB_TOKEN does — otherwise workflows would trigger each other forever.
+# So cutting a release the normal way, by pushing a tag, does *not* fire the trigger below.
+#
+# It happened on v0.1.0: the release published correctly and the README went on advertising the
+# previous version, which by then had been deleted, so the front page pointed at a 404.
+#
+# **After publishing a release, run this workflow.** The Release workflow's summary says so too.
 
 on:
   release:
