@@ -271,7 +271,7 @@ public partial class OverlayWindow : Window
 
         // Resizing the overlay with the brief open would otherwise leave it at the height the map
         // used to be — too tall for a smaller map, and no longer nine tenths of a bigger one.
-        MapFrame.SizeChanged += (_, _) =>
+        Frame.SizeChanged += (_, _) =>
         {
             if (QuestBrief.Visibility == Visibility.Visible) SizeQuestBrief();
             if (ControlStack.Visibility == Visibility.Visible) ApplyControlStack();
@@ -1399,7 +1399,9 @@ public partial class OverlayWindow : Window
     /// </summary>
     private void SizeQuestBrief()
     {
-        var available = MapFrame.ActualHeight;
+        // The panel, not the map: it spans the whole thing now, so the map's height is no longer
+        // what bounds it.
+        var available = Frame.ActualHeight;
         if (available <= 0) return;
 
         QuestBrief.MaxHeight = available * 0.9;
@@ -2557,7 +2559,14 @@ public partial class OverlayWindow : Window
 
         // Tall enough to be worth opening, short enough to stay inside the overlay. Its own
         // scroller takes whatever will not fit.
-        if (showing && MapFrame.ActualHeight > 0) ControlStack.MaxHeight = MapFrame.ActualHeight * 0.9;
+        // Short of the panel's edges rather than up against them. Bounded by the map row it
+        // sits in, a full-height stack met the strip above and the footer below with nothing
+        // between — so it read as a panel that had run out of room rather than one laid over the
+        // overlay. Its own scroller takes whatever will not fit.
+        if (showing && Frame.ActualHeight > 0)
+        {
+            ControlStack.MaxHeight = Math.Max(120, Frame.ActualHeight * 0.78);
+        }
 
         // Filled here as well as at start-up. The first attempt runs while the window is being
         // built, which can be before Kestrel is listening — and a strip that lost that race stayed

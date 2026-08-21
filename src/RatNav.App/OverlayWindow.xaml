@@ -512,103 +512,6 @@
                                 Over the map rather than beside it. This is read while standing
                                 still, and it is worth the whole overlay for the moment it is up.
                             -->
-                            <!--
-                                Everything that is not the brief, while the brief is up.
-
-                                Nearly transparent rather than actually transparent: a Background
-                                of Transparent is hit-testable and one of null is not, and this
-                                exists only to be clicked. Dismissing by clicking away is what a
-                                thing calling itself a modal is expected to do, and the close
-                                button is a long way from wherever the pointer happens to be.
-                            -->
-                            <Border x:Name="QuestBriefScrim"
-                                    Visibility="Collapsed"
-                                    Background="#66000000" />
-
-                            <Border x:Name="QuestBrief"
-                                    Visibility="Collapsed"
-                                    VerticalAlignment="Center"
-                                    Background="#f50b0f13"
-                                    BorderBrush="{StaticResource Line}"
-                                    BorderThickness="1"
-                                    CornerRadius="2"
-                                    Padding="10,8">
-                                <DockPanel>
-                                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                                        <Button x:Name="QuestBriefClose" DockPanel.Dock="Right"
-                                                Style="{StaticResource Chip}" Content="✕"
-                                                ToolTip="Close" />
-
-                                        <Button x:Name="QuestBriefWiki" DockPanel.Dock="Right"
-                                                Style="{StaticResource Chip}" Content="wiki ↗"
-                                                Margin="0,0,4,0"
-                                                ToolTip="Open the wiki article in your browser" />
-
-                                        <TextBlock x:Name="QuestBriefName"
-                                                   FontFamily="Segoe UI" FontSize="14" FontWeight="Bold"
-                                                   Foreground="{StaticResource Ink}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   VerticalAlignment="Center" />
-                                    </DockPanel>
-
-                                    <!-- The pictures take the space: they are the half that turns
-                                         "walk to this pin" into "find this door". -->
-                                    <!--
-                                        A fixed box, with the picture fitted inside it.
-
-                                        The box used to take its height from the picture, and wiki
-                                        screenshots are all shapes — so the back and next controls,
-                                        centred against it, moved every time one loaded. You cannot
-                                        flick through pictures whose buttons are somewhere new each
-                                        time; you have to find them again first.
-                                    -->
-                                    <ScrollViewer x:Name="QuestBriefScroll"
-                                                  DockPanel.Dock="Top"
-                                                  VerticalScrollBarVisibility="Auto"
-                                                  HorizontalScrollBarVisibility="Disabled">
-                                        <ItemsControl x:Name="QuestBriefSteps">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock FontFamily="Segoe UI" FontSize="11"
-                                                               Margin="0,1"
-                                                               TextWrapping="Wrap"
-                                                               Foreground="{Binding Colour}"
-                                                               Text="{Binding Text}" />
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </ScrollViewer>
-
-                                    <!--
-                                        The picture takes everything left over, directly under the
-                                        text rather than pinned to the floor of the panel.
-
-                                        Docked to the bottom at a fixed height, it left a gap the
-                                        height of whatever the steps did not use — text along the
-                                        top, picture along the bottom, nothing in between. The
-                                        fixed box was there so that the back and next controls did
-                                        not move as pictures of different shapes loaded, and that
-                                        still holds: the box is now sized by the panel and the
-                                        text above it, neither of which changes while you flick
-                                        through one quest's pictures.
-                                    -->
-                                    <Grid Margin="0,6,0,0">
-                                        <Image x:Name="QuestBriefImage" Stretch="Uniform" />
-
-                                        <Button x:Name="QuestBriefBack" Style="{StaticResource Chip}"
-                                                Content="‹" HorizontalAlignment="Left"
-                                                VerticalAlignment="Center" Opacity="0.85" />
-
-                                        <Button x:Name="QuestBriefNext" Style="{StaticResource Chip}"
-                                                Content="›" HorizontalAlignment="Right"
-                                                VerticalAlignment="Center" Opacity="0.85" />
-
-                                        <TextBlock x:Name="QuestBriefCaption" Style="{StaticResource Label}"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" />
-                                    </Grid>
-
-                                </DockPanel>
-                            </Border>
 
                             <!--
                                 What to press, while the map does not know where you are.
@@ -899,6 +802,112 @@
                     </ItemsControl>
 
                 </Grid>
+                <!--
+                    Over the whole panel, not over the map.
+
+                    It lived inside the map's own grid, so with the lists open it covered the
+                    map and stopped dead at their edge — a modal with two panels of something
+                    else beside it, which reads as a thing that has failed to open properly
+                    rather than as a thing laid over the overlay.
+                -->
+                <!--
+                    Everything that is not the brief, while the brief is up.
+
+                    Nearly transparent rather than actually transparent: a Background
+                    of Transparent is hit-testable and one of null is not, and this
+                    exists only to be clicked. Dismissing by clicking away is what a
+                    thing calling itself a modal is expected to do, and the close
+                    button is a long way from wherever the pointer happens to be.
+                -->
+                <Border x:Name="QuestBriefScrim" Grid.Row="0" Grid.RowSpan="4"
+                        Visibility="Collapsed"
+                        Background="#66000000" />
+
+                <Border x:Name="QuestBrief" Grid.Row="0" Grid.RowSpan="4"
+                        Visibility="Collapsed"
+                        VerticalAlignment="Center"
+                        Background="#f50b0f13"
+                        BorderBrush="{StaticResource Line}"
+                        BorderThickness="1"
+                        CornerRadius="2"
+                        Padding="10,8">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                            <Button x:Name="QuestBriefClose" DockPanel.Dock="Right"
+                                    Style="{StaticResource Chip}" Content="✕"
+                                    ToolTip="Close" />
+
+                            <Button x:Name="QuestBriefWiki" DockPanel.Dock="Right"
+                                    Style="{StaticResource Chip}" Content="wiki ↗"
+                                    Margin="0,0,4,0"
+                                    ToolTip="Open the wiki article in your browser" />
+
+                            <TextBlock x:Name="QuestBriefName"
+                                       FontFamily="Segoe UI" FontSize="14" FontWeight="Bold"
+                                       Foreground="{StaticResource Ink}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <!-- The pictures take the space: they are the half that turns
+                             "walk to this pin" into "find this door". -->
+                        <!--
+                            A fixed box, with the picture fitted inside it.
+
+                            The box used to take its height from the picture, and wiki
+                            screenshots are all shapes — so the back and next controls,
+                            centred against it, moved every time one loaded. You cannot
+                            flick through pictures whose buttons are somewhere new each
+                            time; you have to find them again first.
+                        -->
+                        <ScrollViewer x:Name="QuestBriefScroll"
+                                      DockPanel.Dock="Top"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="QuestBriefSteps">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock FontFamily="Segoe UI" FontSize="11"
+                                                   Margin="0,1"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{Binding Colour}"
+                                                   Text="{Binding Text}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!--
+                            The picture takes everything left over, directly under the
+                            text rather than pinned to the floor of the panel.
+
+                            Docked to the bottom at a fixed height, it left a gap the
+                            height of whatever the steps did not use — text along the
+                            top, picture along the bottom, nothing in between. The
+                            fixed box was there so that the back and next controls did
+                            not move as pictures of different shapes loaded, and that
+                            still holds: the box is now sized by the panel and the
+                            text above it, neither of which changes while you flick
+                            through one quest's pictures.
+                        -->
+                        <Grid Margin="0,6,0,0">
+                            <Image x:Name="QuestBriefImage" Stretch="Uniform" />
+
+                            <Button x:Name="QuestBriefBack" Style="{StaticResource Chip}"
+                                    Content="‹" HorizontalAlignment="Left"
+                                    VerticalAlignment="Center" Opacity="0.85" />
+
+                            <Button x:Name="QuestBriefNext" Style="{StaticResource Chip}"
+                                    Content="›" HorizontalAlignment="Right"
+                                    VerticalAlignment="Center" Opacity="0.85" />
+
+                            <TextBlock x:Name="QuestBriefCaption" Style="{StaticResource Label}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                        </Grid>
+
+                    </DockPanel>
+                </Border>
+
             </Grid>
         </Border>
 
@@ -1014,7 +1023,7 @@
             -->
             <Border x:Name="ControlStack" Grid.Row="1"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                    MinWidth="280" MaxWidth="380"
+                    MinWidth="360" MaxWidth="520"
                     Padding="12,10"
                     Background="#f50b0f13"
                     BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
@@ -1033,243 +1042,297 @@
                     <ScrollViewer x:Name="ControlScroll"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource Label}" Text="FLOOR" Margin="0,0,0,2" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="FloorDown" Style="{StaticResource Chip}" Content="▼" />
-                                <TextBlock x:Name="FloorText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="72" TextAlignment="Center" Text="—" />
-                                <Button x:Name="FloorUp" Style="{StaticResource Chip}" Content="▲" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="DRAW" Margin="0,0,0,2" />
-                            <StackPanel Margin="0,0,0,6">
-                                <!-- Arrows, so it is visibly one of several rather than a switch. -->
-                                <DockPanel Margin="0,0,0,2">
-                                    <Button x:Name="InkBack" DockPanel.Dock="Left"
-                                            Style="{StaticResource Chip}" Content="‹" />
-                                    <Button x:Name="InkNext" DockPanel.Dock="Right"
-                                            Style="{StaticResource Chip}" Content="›" />
-                                    <TextBlock x:Name="InkButton" Style="{StaticResource Label}"
-                                               Foreground="{StaticResource Ink}"
-                                               VerticalAlignment="Center" TextAlignment="Center"
-                                               Text="graphical" />
-                                </DockPanel>
-                                <Button x:Name="GhostButton" Style="{StaticResource Chip}"
-                                        Content="ghost on" HorizontalAlignment="Stretch" Margin="0,0,0,2" />
-                                <Button x:Name="PlacesButton" Style="{StaticResource Chip}"
-                                        Content="names on" HorizontalAlignment="Stretch" Margin="0,0,0,2" />
-                                <Button x:Name="HaloButton" Style="{StaticResource Chip}"
-                                        Content="halo on" HorizontalAlignment="Stretch" />
-                                <Button x:Name="HintsButton" Style="{StaticResource Chip}"
-                                        Content="hints on" HorizontalAlignment="Stretch" Margin="0,2,0,0"
-                                        ToolTip="The strip of key reminders under the map" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="FADE" Margin="0,0,0,2" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="FadeDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="FadeText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="55%" />
-                                <Button x:Name="FadeUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <!--
-                                Opacity, zoom and UI scale, moved down from the quick bar.
-
-                                They were three of the five things always on screen in edit mode,
-                                and in edit mode what you are looking at is the map — so five rows
-                                of dials across the top of it were mostly in the way. These are set
-                                once and then left alone, which is what the gear is for; floor,
-                                follow and which exits to show are the ones that change while you
-                                play, and they stayed up there.
-                            -->
-                            <TextBlock Style="{StaticResource Label}" Text="OPACITY" Margin="0,0,0,2" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="WindowFadeDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="WindowFadeText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="100%" />
-                                <Button x:Name="WindowFadeUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="ZOOM" Margin="0,0,0,2" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="ZoomDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="ZoomText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="1.0×" />
-                                <Button x:Name="ZoomUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="UI SCALE" Margin="0,0,0,2" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="UiScaleDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="UiScaleText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="1.0×" />
-                                <Button x:Name="UiScaleUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="LINE" Margin="0,0,0,2" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="WeightDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="WeightText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="1.00×" />
-                                <Button x:Name="WeightUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="PINS" Margin="0,0,0,2" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="MarkerDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="MarkerText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="3.0×" />
-                                <Button x:Name="MarkerUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <!--
-                                Two dials rather than one, because the two kinds of text are doing
-                                opposite jobs: the map's place names are the backdrop you read to
-                                know which end of the map you are on, and a waypoint's caption is
-                                the thing you are walking to. One control for both meant neither
-                                was ever the right size.
-                            -->
-                            <TextBlock Style="{StaticResource Label}" Text="WAYPOINTS" Margin="0,0,0,2"
-                                       ToolTip="Captions on stops, extracts, marks and edge arrows" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="TextDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="TextScaleText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="2.0×" />
-                                <Button x:Name="TextUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="MAP LABELS" Margin="0,0,0,2"
-                                       ToolTip="The place names drawn from the map itself" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="PlaceNameDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="PlaceNameText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="2.0×" />
-                                <Button x:Name="PlaceNameUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="YOU" Margin="0,0,0,2"
-                                       ToolTip="Your marker and facing cone — one size at every zoom" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="YouDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="YouText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="3.0×" />
-                                <Button x:Name="YouUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="SHRINK" Margin="0,0,0,2"
-                                       ToolTip="How much pins and text shrink as you zoom out" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="ShrinkDown" Style="{StaticResource Chip}" Content="−" />
-                                <TextBlock x:Name="ShrinkText" Style="{StaticResource Label}"
-                                           Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                           MinWidth="46" TextAlignment="Center" Text="0.55" />
-                                <Button x:Name="ShrinkUp" Style="{StaticResource Chip}" Content="+" />
-                            </StackPanel>
-
-                            <TextBlock Style="{StaticResource Label}" Text="MAP" Margin="0,0,0,2" />
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <Button x:Name="ZoomReset" Style="{StaticResource Chip}" Content="1.0×" MinWidth="44" />
-                                <Button x:Name="FollowButton" Style="{StaticResource Chip}"
-                                        Content="still" MinWidth="62" Margin="2,0,0,0" />
-                                <Button x:Name="RecentreButton" Style="{StaticResource Chip}" Content="⌖"
-                                        Margin="2,0,0,0"
-                                        ToolTip="Recenter on you and follow again"
-                                        Visibility="Collapsed" />
-                            </StackPanel>
-
-                            <!--
-                                The centred view's own three, hidden in the corner panel because
-                                none of them mean anything there. Coverage is the dial that turns
-                                the centred map into a HUD: at 100% it takes the whole screen, the
-                                drawing dissolves toward the edges, and the lines glow rather than
-                                sit in ink.
-                            -->
-                            <StackPanel x:Name="HudControls" Visibility="Collapsed">
-                                <!--
-                                    Which way is up. Turning the map means what is drawn at the top
-                                    of the screen is what is in front of you, which is the reason
-                                    to have a map in the middle of the screen at all. North-up is
-                                    still here because that is what a map normally means.
-                                -->
-                                <Button x:Name="TurnButton" Style="{StaticResource Chip}"
-                                        Content="turns with you" HorizontalAlignment="Stretch" Margin="0,0,0,6"
-                                        ToolTip="Turn the map so your heading points up the screen, or keep it north-up" />
-
-                                <TextBlock Style="{StaticResource Label}" Text="COVERAGE" Margin="0,0,0,2"
-                                           ToolTip="How much of the screen the centered map takes. 100% is the full-screen HUD." />
+                        <!--
+                            Two columns, not one long strip.
+                        
+                            Fifteen dials stacked single file made a tall, narrow modal that ran the
+                            height of the panel and still had to scroll. Each label and the control
+                            under it is one cell, so the pair can never be split across a column
+                            boundary — which is the failure mode of simply letting a stack wrap.
+                        -->
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="FLOOR" Margin="0,0,0,2" />
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <Button x:Name="CoverageDown" Style="{StaticResource Chip}" Content="−" />
-                                    <TextBlock x:Name="CoverageText" Style="{StaticResource Label}"
+                                    <Button x:Name="FloorDown" Style="{StaticResource Chip}" Content="▼" />
+                                    <TextBlock x:Name="FloorText" Style="{StaticResource Label}"
                                                Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                               MinWidth="46" TextAlignment="Center" Text="70%" />
-                                    <Button x:Name="CoverageUp" Style="{StaticResource Chip}" Content="+" />
+                                               MinWidth="72" TextAlignment="Center" Text="—" />
+                                    <Button x:Name="FloorUp" Style="{StaticResource Chip}" Content="▲" />
                                 </StackPanel>
 
-                                <StackPanel x:Name="FullScreenControls" Visibility="Collapsed">
-                                    <TextBlock Style="{StaticResource Label}" Text="EDGE FADE" Margin="0,0,0,2"
-                                               ToolTip="Where the drawing starts dissolving into the game. Lower fades sooner." />
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                        <Button x:Name="FadeEdgeDown" Style="{StaticResource Chip}" Content="−" />
-                                        <TextBlock x:Name="FadeEdgeText" Style="{StaticResource Label}"
-                                                   Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                                   MinWidth="46" TextAlignment="Center" Text="55%" />
-                                        <Button x:Name="FadeEdgeUp" Style="{StaticResource Chip}" Content="+" />
-                                    </StackPanel>
-
-                                    <TextBlock Style="{StaticResource Label}" Text="GLOW" Margin="0,0,0,2"
-                                               ToolTip="How much the map lines bloom" />
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                        <Button x:Name="GlowDown" Style="{StaticResource Chip}" Content="−" />
-                                        <TextBlock x:Name="GlowText" Style="{StaticResource Label}"
-                                                   Foreground="{StaticResource Ink}" VerticalAlignment="Center"
-                                                   MinWidth="46" TextAlignment="Center" Text="1.6×" />
-                                        <Button x:Name="GlowUp" Style="{StaticResource Chip}" Content="+" />
-                                    </StackPanel>
-                                </StackPanel>
                             </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="DRAW" Margin="0,0,0,2" />
+                                <StackPanel Margin="0,0,0,6">
+                                    <!-- Arrows, so it is visibly one of several rather than a switch. -->
+                                    <DockPanel Margin="0,0,0,2">
+                                        <Button x:Name="InkBack" DockPanel.Dock="Left"
+                                                Style="{StaticResource Chip}" Content="‹" />
+                                        <Button x:Name="InkNext" DockPanel.Dock="Right"
+                                                Style="{StaticResource Chip}" Content="›" />
+                                        <TextBlock x:Name="InkButton" Style="{StaticResource Label}"
+                                                   Foreground="{StaticResource Ink}"
+                                                   VerticalAlignment="Center" TextAlignment="Center"
+                                                   Text="graphical" />
+                                    </DockPanel>
+                                    <Button x:Name="GhostButton" Style="{StaticResource Chip}"
+                                            Content="ghost on" HorizontalAlignment="Stretch" Margin="0,0,0,2" />
+                                    <Button x:Name="PlacesButton" Style="{StaticResource Chip}"
+                                            Content="names on" HorizontalAlignment="Stretch" Margin="0,0,0,2" />
+                                    <Button x:Name="HaloButton" Style="{StaticResource Chip}"
+                                            Content="halo on" HorizontalAlignment="Stretch" />
+                                    <Button x:Name="HintsButton" Style="{StaticResource Chip}"
+                                            Content="hints on" HorizontalAlignment="Stretch" Margin="0,2,0,0"
+                                            ToolTip="The strip of key reminders under the map" />
+                                </StackPanel>
 
-                            <TextBlock Style="{StaticResource Label}" Text="EXITS" Margin="0,0,0,2" />
-                            <Button x:Name="ExtractButton" Style="{StaticResource Chip}"
-                                    Content="PMC" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="FADE" Margin="0,0,0,2" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="FadeDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="FadeText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="55%" />
+                                    <Button x:Name="FadeUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
 
-                            <!--
-                                Named to match the app's Maps page, because what you can turn on
-                                and off should read the same in both places. What the three mean is
-                                the overlay's own: the overlay has a plan and the Maps page does
-                                not.
-                            -->
-                            <TextBlock Style="{StaticResource Label}" Text="QUESTS" Margin="0,0,0,2" />
-                            <Button x:Name="QuestVisibility" Style="{StaticResource Chip}"
-                                    Content="Active" HorizontalAlignment="Stretch" Margin="0,0,0,6"
-                                    ToolTip="Active: the plan's stops · All: every started quest on this map · Off: none" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <!--
+                                    Opacity, zoom and UI scale, moved down from the quick bar.
 
-                            <Button x:Name="OpenAppButton" Style="{StaticResource Chip}"
-                                    Content="open planner" HorizontalAlignment="Stretch" Margin="0,0,0,6"
-                                    ToolTip="Open the app in your browser" />
+                                    They were three of the five things always on screen in edit mode,
+                                    and in edit mode what you are looking at is the map — so five rows
+                                    of dials across the top of it were mostly in the way. These are set
+                                    once and then left alone, which is what the gear is for; floor,
+                                    follow and which exits to show are the ones that change while you
+                                    play, and they stayed up there.
+                                -->
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="OPACITY" Margin="0,0,0,2" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="WindowFadeDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="WindowFadeText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="100%" />
+                                    <Button x:Name="WindowFadeUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
 
-                            <Button x:Name="OfferedButton" Style="{StaticResource Chip}"
-                                    Content="all extracts" HorizontalAlignment="Stretch" Margin="0,2,0,6"
-                                    ToolTip="Show every extract again, forgetting what the game listed" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="ZOOM" Margin="0,0,0,2" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="ZoomDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="ZoomText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="1.0×" />
+                                    <Button x:Name="ZoomUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
 
-                            <!--
-                                No items toggle here. The drawer handles sit at the bottom of the
-                                window whenever interact mode is on, which is exactly when this
-                                stack is open — two controls for one drawer, and the one you can
-                                always see wins.
-                            -->
-                        </StackPanel>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="UI SCALE" Margin="0,0,0,2" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="UiScaleDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="UiScaleText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="1.0×" />
+                                    <Button x:Name="UiScaleUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="LINE" Margin="0,0,0,2" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="WeightDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="WeightText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="1.00×" />
+                                    <Button x:Name="WeightUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="PINS" Margin="0,0,0,2" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="MarkerDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="MarkerText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="3.0×" />
+                                    <Button x:Name="MarkerUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <!--
+                                    Two dials rather than one, because the two kinds of text are doing
+                                    opposite jobs: the map's place names are the backdrop you read to
+                                    know which end of the map you are on, and a waypoint's caption is
+                                    the thing you are walking to. One control for both meant neither
+                                    was ever the right size.
+                                -->
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="WAYPOINTS" Margin="0,0,0,2"
+                                           ToolTip="Captions on stops, extracts, marks and edge arrows" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="TextDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="TextScaleText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="2.0×" />
+                                    <Button x:Name="TextUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="MAP LABELS" Margin="0,0,0,2"
+                                           ToolTip="The place names drawn from the map itself" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="PlaceNameDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="PlaceNameText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="2.0×" />
+                                    <Button x:Name="PlaceNameUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="YOU" Margin="0,0,0,2"
+                                           ToolTip="Your marker and facing cone — one size at every zoom" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="YouDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="YouText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="3.0×" />
+                                    <Button x:Name="YouUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="SHRINK" Margin="0,0,0,2"
+                                           ToolTip="How much pins and text shrink as you zoom out" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="ShrinkDown" Style="{StaticResource Chip}" Content="−" />
+                                    <TextBlock x:Name="ShrinkText" Style="{StaticResource Label}"
+                                               Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                               MinWidth="46" TextAlignment="Center" Text="0.55" />
+                                    <Button x:Name="ShrinkUp" Style="{StaticResource Chip}" Content="+" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="MAP" Margin="0,0,0,2" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="ZoomReset" Style="{StaticResource Chip}" Content="1.0×" MinWidth="44" />
+                                    <Button x:Name="FollowButton" Style="{StaticResource Chip}"
+                                            Content="still" MinWidth="62" Margin="2,0,0,0" />
+                                    <Button x:Name="RecentreButton" Style="{StaticResource Chip}" Content="⌖"
+                                            Margin="2,0,0,0"
+                                            ToolTip="Recenter on you and follow again"
+                                            Visibility="Collapsed" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <!--
+                                    The centred view's own three, hidden in the corner panel because
+                                    none of them mean anything there. Coverage is the dial that turns
+                                    the centred map into a HUD: at 100% it takes the whole screen, the
+                                    drawing dissolves toward the edges, and the lines glow rather than
+                                    sit in ink.
+                                -->
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <StackPanel x:Name="HudControls" Visibility="Collapsed">
+                                    <!--
+                                        Which way is up. Turning the map means what is drawn at the top
+                                        of the screen is what is in front of you, which is the reason
+                                        to have a map in the middle of the screen at all. North-up is
+                                        still here because that is what a map normally means.
+                                    -->
+                                    <Button x:Name="TurnButton" Style="{StaticResource Chip}"
+                                            Content="turns with you" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                            ToolTip="Turn the map so your heading points up the screen, or keep it north-up" />
+
+                                    <TextBlock Style="{StaticResource Label}" Text="COVERAGE" Margin="0,0,0,2"
+                                               ToolTip="How much of the screen the centered map takes. 100% is the full-screen HUD." />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <Button x:Name="CoverageDown" Style="{StaticResource Chip}" Content="−" />
+                                        <TextBlock x:Name="CoverageText" Style="{StaticResource Label}"
+                                                   Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                                   MinWidth="46" TextAlignment="Center" Text="70%" />
+                                        <Button x:Name="CoverageUp" Style="{StaticResource Chip}" Content="+" />
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="FullScreenControls" Visibility="Collapsed">
+                                        <TextBlock Style="{StaticResource Label}" Text="EDGE FADE" Margin="0,0,0,2"
+                                                   ToolTip="Where the drawing starts dissolving into the game. Lower fades sooner." />
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <Button x:Name="FadeEdgeDown" Style="{StaticResource Chip}" Content="−" />
+                                            <TextBlock x:Name="FadeEdgeText" Style="{StaticResource Label}"
+                                                       Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                                       MinWidth="46" TextAlignment="Center" Text="55%" />
+                                            <Button x:Name="FadeEdgeUp" Style="{StaticResource Chip}" Content="+" />
+                                        </StackPanel>
+
+                                        <TextBlock Style="{StaticResource Label}" Text="GLOW" Margin="0,0,0,2"
+                                                   ToolTip="How much the map lines bloom" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <Button x:Name="GlowDown" Style="{StaticResource Chip}" Content="−" />
+                                            <TextBlock x:Name="GlowText" Style="{StaticResource Label}"
+                                                       Foreground="{StaticResource Ink}" VerticalAlignment="Center"
+                                                       MinWidth="46" TextAlignment="Center" Text="1.6×" />
+                                            <Button x:Name="GlowUp" Style="{StaticResource Chip}" Content="+" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="EXITS" Margin="0,0,0,2" />
+                                <Button x:Name="ExtractButton" Style="{StaticResource Chip}"
+                                        Content="PMC" HorizontalAlignment="Stretch" Margin="0,0,0,6" />
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <!--
+                                    Named to match the app's Maps page, because what you can turn on
+                                    and off should read the same in both places. What the three mean is
+                                    the overlay's own: the overlay has a plan and the Maps page does
+                                    not.
+                                -->
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Style="{StaticResource Label}" Text="QUESTS" Margin="0,0,0,2" />
+                                <Button x:Name="QuestVisibility" Style="{StaticResource Chip}"
+                                        Content="Active" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                        ToolTip="Active: the plan's stops · All: every started quest on this map · Off: none" />
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <Button x:Name="OpenAppButton" Style="{StaticResource Chip}"
+                                        Content="open planner" HorizontalAlignment="Stretch" Margin="0,0,0,6"
+                                        ToolTip="Open the app in your browser" />
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <Button x:Name="OfferedButton" Style="{StaticResource Chip}"
+                                        Content="all extracts" HorizontalAlignment="Stretch" Margin="0,2,0,6"
+                                        ToolTip="Show every extract again, forgetting what the game listed" />
+
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,0">
+                                <!--
+                                    No items toggle here. The drawer handles sit at the bottom of the
+                                    window whenever interact mode is on, which is exactly when this
+                                    stack is open — two controls for one drawer, and the one you can
+                                    always see wins.
+                                -->
+                            </StackPanel>
+                        </UniformGrid>
                     </ScrollViewer>
                 </DockPanel>
             </Border>
