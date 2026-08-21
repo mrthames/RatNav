@@ -565,16 +565,40 @@ public partial class OverlayWindow : Window
     public void Update(RaidView view)
     {
         var had = PlanApplies(_view);
+        var lastFix = _view?.FixedAt;
 
         _view = view;
         Dispatcher.Invoke(async () =>
         {
             FollowPlan(had, PlanApplies(view));
+            RevealOnFix(lastFix, view.FixedAt);
 
             await EnsureMapAsync(view);
             Draw();
             RefreshItems();
         });
+    }
+
+    /// <summary>
+    /// Brings the overlay back when a screenshot puts a new fix on the map.
+    ///
+    /// <para>Taking a screenshot is how you tell RatNav where you are — the game writes the
+    /// coordinates into the filename and the watcher reads them. So a screenshot taken with the
+    /// overlay hidden produced a better map that nobody could see, and getting to it meant a
+    /// second key on the other side of the keyboard. You press the shot because you want to know
+    /// where you are; this is that.</para>
+    ///
+    /// <para>On a <em>new</em> fix, never on the state. Every publish carries the last fix's
+    /// timestamp, and reopening whenever one exists would make the overlay impossible to put away
+    /// mid-raid — it would come back on the next quest ticked off.</para>
+    /// </summary>
+    private void RevealOnFix(DateTimeOffset? before, DateTimeOffset? now)
+    {
+        if (now is null || now == before || IsVisible) return;
+
+        Show();
+        _itemsWindow?.Show();
+        _questWindow?.Show();
     }
 
     /// <summary>
