@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace RatNav.Core.Game;
 
@@ -55,12 +55,8 @@ public static partial class GameInstallFinder
 
         foreach (var root in DriveRoots())
         {
-            foreach (var sub in CommonSubPaths)
-            {
-                var candidate = Path.Combine(root, sub);
-                if (Describe(candidate) is { } install)
-                    found.TryAdd(install.Directory, install);
-            }
+            foreach (var install in FindUnder(root))
+                found.TryAdd(install.Directory, install);
         }
 
         return
@@ -73,6 +69,75 @@ public static partial class GameInstallFinder
 
     /// <summary>The install RatNav should watch, or null if none was found.</summary>
     public static GameInstall? Find() => FindAll().FirstOrDefault();
+
+    /// <summary>
+    /// Folders a games library commonly lives in, looked inside one level deep.
+    ///
+    /// <para>The empty entry is the drive root itself, which is where a folder called
+    /// <c>Tarkov</c> or <c>EFT-live</c> most often ends up.</para>
+    /// </summary>
+    private static readonly string[] LibraryFolders =
+    [
+        "",
+        "Games",
+        "Program Files",
+        "Program Files (x86)",
+        "Battlestate Games",
+        @"Games\Battlestate Games",
+        "SteamLibrary",
+    ];
+
+    /// <summary>
+    /// Every install under one root: the exact places an installer puts it, then one level inside
+    /// the usual library folders for anything named like Tarkov.
+    ///
+    /// <para>The fixed list of paths above only ever finds an install somebody left where the
+    /// installer put it. The first user test hit exactly that: the game was found by hand with
+    /// Browse — so the folder was ordinary enough — while RatNav reported "game not found" and
+    /// left every page empty with nothing saying why.</para>
+    ///
+    /// <para>Deliberately one level and no further. A full disk walk is the version of this that
+    /// finds everything and takes a minute doing it, on a path that runs at start-up; a single
+    /// directory listing per candidate folder costs nothing and covers where people actually put
+    /// a games library. Anything stranger than this is what Browse is for.</para>
+    /// </summary>
+    public static IReadOnlyList<GameInstall> FindUnder(string root)
+    {
+        // The two halves overlap on purpose — "Games\EFT" is both a place the installer uses and
+        // a name the sweep would match — so an install found twice is reported once.
+        var found = new Dictionary<string, GameInstall>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var sub in CommonSubPaths)
+        {
+            if (Describe(Path.Combine(root, sub)) is { } exact)
+                found.TryAdd(exact.Directory, exact);
+        }
+
+        foreach (var folder in LibraryFolders)
+        {
+            var directory = folder.Length == 0 ? root : Path.Combine(root, folder);
+
+            string[] children;
+            try
+            {
+                if (!Directory.Exists(directory)) continue;
+                children = Directory.GetDirectories(directory);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            foreach (var child in children)
+            {
+                if (!LooksLikeTarkov().IsMatch(Path.GetFileName(child))) continue;
+
+                if (Describe(child) is { } install) found.TryAdd(install.Directory, install);
+            }
+        }
+
+        return [.. found.Values];
+    }
 
     /// <summary>
     /// Describes a directory as an install, or returns null if it isn't one.
@@ -202,4 +267,15 @@ public static partial class GameInstallFinder
 
     [GeneratedRegex(@"^log_(?<date>\d{4}\.\d{2}\.\d{2})_")]
     private static partial Regex SessionDate();
+
+    /// <summary>
+    /// A directory name worth looking at during the sweep.
+    ///
+    /// <para>"EFT" is matched as a whole word so that <c>Left 4 Dead</c> and <c>Drefting</c> are
+    /// not candidates; "tarkov" can appear anywhere, which catches <c>Escape From Tarkov</c>,
+    /// <c>Tarkov-live</c> and <c>EscapeFromTarkov</c> alike. A name that matches still has to
+    /// hold the executable or a Logs folder before it counts as an install.</para>
+    /// </summary>
+    [GeneratedRegex(@"tarkov|(^|[^a-z])eft([^a-z]|$)", RegexOptions.IgnoreCase)]
+    private static partial Regex LooksLikeTarkov();
 }
