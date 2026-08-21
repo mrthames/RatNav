@@ -4,6 +4,13 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
+### Verified before release
+
+- **A first install was actually run**, against an empty data directory, rather than read: the game
+  folder is found, the logs are read, the screenshot folder is located, the screenshot key is
+  recognised, and the game data downloads. The port fallback proved itself in the same run — 8722
+  was already taken, so it took 8723 and said so.
+
 ### Plan
 
 - **No checkbox on an in-raid stop, and Quest done clears the plan instead.** Ticking a stop meant

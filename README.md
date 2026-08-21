@@ -48,10 +48,9 @@ play.
 
 ![The same raid with RatNav's full-screen HUD: building outlines and place names drawn as glowing lines over the game, fading out toward the edges of the screen](docs/screenshot-hud.jpg)
 
-**Before you queue**, the app. Tick the objectives you are pushing and it builds the route, works
-out which keys you have to bring, and assembles the shopping list.
-
-![The Plan page: a strip showing the objectives picked and what they need you to bring, a folded map, and the Customs checklist grouped by place beneath it](docs/app/plan.png)
+**Before you queue**, the app: tick the objectives you are pushing and it builds the route, works
+out which keys you have to bring, and assembles the shopping list. There is a tour of every page
+[further down](#the-app).
 
 ## Install
 
@@ -196,7 +195,7 @@ of later.
 picked and what they need you to bring — keys in red — with the map folded below it and the
 checklist under that.
 
-*(Pictured at the top of this page.)*
+![The Plan page: a strip showing two objectives picked and what they need you to bring, a folded map, and the Customs checklist grouped by place beneath it](docs/app/plan.png)
 
 **On a phone or tablet, if you want it.** **Setup → Reach RatNav from a phone or tablet** makes the
 service answer on your machine's network address as well as its own, so an iPad on the same wifi
