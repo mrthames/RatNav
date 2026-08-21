@@ -2468,7 +2468,16 @@ public partial class OverlayWindow : Window
         var lost = view.InRaid && view.X is null;
 
         NoFixPrompt.Visibility = lost ? Visibility.Visible : Visibility.Collapsed;
-        if (lost) NoFixKey.Text = $"press {_settings.ScreenshotKey}";
+
+        // Named when there is a name, and plain words when there is not. Naming the key you bound
+        // is the better answer — it is the one you will actually press — but an empty setting must
+        // not produce "press " with nothing after it.
+        if (lost)
+        {
+            NoFixKey.Text = _settings.ScreenshotKey is { Length: > 0 } key
+                ? $"press {key}"
+                : "take a screenshot";
+        }
 
         DrawMap(view);
         DrawRoute(view);

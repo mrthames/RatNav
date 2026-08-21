@@ -16,6 +16,16 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### App
 
+- **Planning is closed while you are in a raid you already have a plan for.** The obvious next
+  click on the Plan page was one that replaced the plan you were in the middle of walking. The
+  quest list and **Plan this raid** are unavailable until you **End raid** or **Clear plan**, and
+  the page says so where the controls were rather than just removing them. A plan with no raid is
+  the ordinary between-raids case and stays fully editable.
+- **"updated 2 hours ago" says what was updated.** It is when the quest, item and map catalogue was
+  last fetched from tarkov.dev — which only changes when the game does, so hours or days old is
+  normal. With no subject it read as the whole app being stale, which sent people looking for a
+  fault that was not there. It reads **game data** now, and both it and the refresh button explain
+  themselves.
 - **The map works by touch.** One finger pans and two pinch to zoom, about the point between them
   — which is what every map on a phone does and therefore what fingers already try. The mouse is
   untouched: left-drag on a desktop is a selection, and turning that into a pan would break the
@@ -149,6 +159,10 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
   is drawn over the other unless you say otherwise; isolating one is now one click away instead of
   buried in the controls drawer, and a position fix never changes it underneath you. The drawer's
   floor stepper can reach Stacked too — it could get into a single floor and not back out.
+- **Folding the map no longer hides the handle that brings it back.** At the narrow width a folded
+  map leaves, "position 24 minutes ago" ran over the **map** chip — the one control that unfolds
+  it, which made folding very nearly a one-way trip. The footer chips wrap now instead of
+  overflowing, which settles the same collision at large UI scales.
 - **Fold the map away and keep the lists.** A **map** handle next to **quests** and **items**, in
   the panel view. Folding it leaves a narrow strip of exactly the two lists — for the part of a
   raid spent standing still reading what you still need, where the map is the biggest thing on

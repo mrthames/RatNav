@@ -30,6 +30,29 @@ release](https://github.com/mrthames/RatNav/releases/latest) is always the one t
 
 📖 **[Full guide](docs/GUIDE.md)** · ❓ **[FAQ and troubleshooting](docs/FAQ.md)**
 
+## What it looks like
+
+**In raid, two ways.** `F6` switches between them, and each keeps its own zoom, ink and position —
+setting up one never disturbs the other.
+
+A **panel in the corner**, out of the way: your plan's quests numbered to match the pins on the
+map, the items to look for beside it, and the real map with extracts and place names. The key
+bindings sit along the bottom so you never have to remember them.
+
+![The RatNav panel over a raid on Customs: the quest log numbered to match the pins on the map, the items to look for beside it, the map with extracts and place names, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
+
+Or the **whole screen as a HUD** — the same map drawn as glowing outlines over the game,
+dissolving toward the edges instead of stopping at a border, and turned so what is in front of you
+is up the screen. Clicks pass straight through it except on a control, so it can stay up while you
+play.
+
+![The same raid with RatNav's full-screen HUD: building outlines and place names drawn as glowing lines over the game, fading out toward the edges of the screen](docs/screenshot-hud.jpg)
+
+**Before you queue**, the app. Tick the objectives you are pushing and it builds the route, works
+out which keys you have to bring, and assembles the shopping list.
+
+![The Plan page: a strip showing the objectives picked and what they need you to bring, a folded map, and the Customs checklist grouped by place beneath it](docs/app/plan.png)
+
 ## Install
 
 <!-- latest-stable --> Latest stable release: **[v0.4.0](https://github.com/mrthames/RatNav/releases/latest)** — download `RatNav-0.4.0-setup.exe`.
@@ -173,7 +196,7 @@ of later.
 picked and what they need you to bring — keys in red — with the map folded below it and the
 checklist under that.
 
-![The Plan page: a strip showing two objectives picked and what they need you to bring, a folded map, and the Customs checklist grouped by place beneath it](docs/app/plan.png)
+*(Pictured at the top of this page.)*
 
 **On a phone or tablet, if you want it.** **Setup → Reach RatNav from a phone or tablet** makes the
 service answer on your machine's network address as well as its own, so an iPad on the same wifi
@@ -207,14 +230,6 @@ ban-safe tool in this space works the same way.
 - **Offline keeps working.** When tarkov.dev is unreachable the last good data keeps being served
   and the app says how old it is.
 - **A map marked `[WIP]` is one still being worked on.** Those are not in a stable release.
-
-![The RatNav panel over a raid on Customs: the quest log numbered to match the pins on the map, the items to look for beside it, the map with extracts and place names, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
-
-The same map, the same raid, as a full-screen HUD — outlines glowing over the game, dissolving
-toward the edges, turned so what is in front of you is up the screen. `F6` switches between the
-two.
-
-![The same raid with RatNav's full-screen HUD: building outlines and place names drawn as glowing lines over the game, fading out toward the edges of the screen](docs/screenshot-hud.jpg)
 
 ## Hotkeys
 

@@ -752,8 +752,19 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Row="0" Grid.Column="0"
-                                Orientation="Horizontal" HorizontalAlignment="Left">
+                    <!--
+                        A WrapPanel, because a horizontal StackPanel does not run out of room — it
+                        overflows, and what it overflowed onto was the timestamp in the column
+                        beside it. Folding the map away makes the overlay narrow enough for that to
+                        happen, and the chip it ran under was **map**, which is the one control that
+                        unfolds it again. Turning a fold into a one-way trip.
+
+                        Wrapping, the row grows a line instead. That also settles the same
+                        collision at large UI scales, where the chips get wider rather than the
+                        window narrower.
+                    -->
+                    <WrapPanel Grid.Row="0" Grid.Column="0"
+                               Orientation="Horizontal" HorizontalAlignment="Left">
                         <!--
                             Down here rather than in the header. Up there it sat on top of the
                             drawer handles, and it is the control you reach for least of the three.
@@ -787,7 +798,7 @@
 
                         <TextBlock x:Name="ProgressText" Style="{StaticResource Label}"
                                    VerticalAlignment="Center" />
-                    </StackPanel>
+                    </WrapPanel>
 
                     <!--
                         The key-bind reminder, in the middle of the footer.
@@ -818,9 +829,15 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
+                    <!--
+                        Trimmed rather than allowed to claim the width it wants. Its column is Auto,
+                        so an untrimmed line takes whatever it needs and the chips lose it — and the
+                        chips are controls where this is only ever information.
+                    -->
                     <TextBlock x:Name="FixAgeText" Grid.Row="0" Grid.Column="1"
                                Style="{StaticResource Label}" HorizontalAlignment="Right"
-                               VerticalAlignment="Center" Margin="8,0,0,0" />
+                               VerticalAlignment="Center" Margin="8,0,0,0"
+                               TextTrimming="CharacterEllipsis" />
                 </Grid>
             </Grid>
         </Border>

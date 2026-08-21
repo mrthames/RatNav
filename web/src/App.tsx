@@ -167,10 +167,24 @@ export default function App() {
             navigation. Text that changes on a timer has no business resizing the furniture around
             it.
           */}
-          <div className="w-[8.5rem] text-right font-mono text-xs leading-relaxed text-muted">
+          {/*
+            Named, because a timestamp with no subject reads as the whole app being stale.
+
+            It is when the quest, item and map catalogue was last fetched from tarkov.dev, and that
+            only changes when the game does — so hours or days is the normal and correct state, and
+            an unexplained old number sends people looking for a fault that is not there. Nothing
+            else waits on it: raids, position fixes, plans and progress are all live.
+          */}
+          <div
+            title={'When RatNav last fetched quests, items and maps from tarkov.dev. That data only '
+              + 'changes when the game does, so this being hours or days old is normal. Everything '
+              + 'else — your raid, your position, your plan — is live.'}
+            className="w-[8.5rem] cursor-help text-right font-mono text-xs leading-relaxed text-muted"
+          >
             <div className={status?.servingStale ? 'text-warn' : ''}>
-              updated {ago(status?.fetchedAt ?? null)}
-              {status?.servingStale && ' · serving cached data'}
+              game data
+              <span className="block">{ago(status?.fetchedAt ?? null)}</span>
+              {status?.servingStale && <span className="block">serving cached copy</span>}
             </div>
           </div>
 
@@ -179,8 +193,9 @@ export default function App() {
             type="button"
             onClick={refresh}
             disabled={refreshing}
-            aria-label={refreshing ? 'Refreshing' : 'Refresh game data'}
-            title="Refresh game data"
+            aria-label={refreshing ? 'Refreshing' : 'Refresh game data from tarkov.dev'}
+            title={'Fetch quests, items and maps from tarkov.dev again. Only worth pressing after a '
+              + 'game patch — nothing else in RatNav waits on it.'}
             className="grid size-8 place-items-center rounded-sm border border-line bg-panel-hi
                        text-sm text-muted transition-colors hover:border-muted hover:text-ink
                        disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent"

@@ -16,6 +16,18 @@ import { MapView } from './MapView'
  * pushing, and get a route with the keys you need to bring.
  */
 export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | null }) {
+  /*
+    Planning is closed while you are in a raid with a plan already running.
+
+    The obvious next click on this page is one that replaces the plan you are in the middle of
+    walking, which is not a thing anybody means to do mid-raid.
+
+    Both halves are needed and only the pair. A plan with no raid is the ordinary between-raids
+    case and stays fully editable — that is where planning happens, and striking off what is no
+    longer worth doing is the usual move after extracting. A raid with no plan is somebody who
+    queued without one, and offering to build one then is useful rather than dangerous.
+  */
+  const planning = !(raid?.inRaid && raid?.hasPlan)
   const [mapId, setMapId] = useState<string | null>(null)
 
   /** Whether the plan menu — sharing and importing — is open. */
@@ -381,7 +393,8 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         <button
           type="button"
           onClick={build}
-          disabled={busy || chosen.length === 0}
+          disabled={!planning || busy || chosen.length === 0}
+          title={planning ? undefined : 'End the raid or clear the plan first'}
           className="ml-auto rounded-sm border border-accent bg-accent px-3 py-1.5 text-sm
                      font-medium text-ground transition-opacity hover:opacity-90
                      disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-accent"
@@ -432,6 +445,9 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
         </details>
       )}
 
+      {!planning && <RaidInProgress />}
+
+      {planning && (
       <div className="flex flex-col gap-3">
           {/*
             Your own marks, offered the same way the quest objectives are. Above them, because a
@@ -592,6 +608,59 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
             ))
           )}
       </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Why the planning controls are not here, and the two ways to get them back.
+ *
+ * <p>Said rather than implied. Controls that are simply absent read as a page that has broken, and
+ * controls that are present but disabled read as a page that is being unhelpful — both send people
+ * looking for a fault instead of for the button.</p>
+ *
+ * <p>Neither of these is new. They are the same two controls the in-raid strip at the top of the
+ * page already carries; this is about making the state legible from where the missing controls
+ * were, not about adding a way out.</p>
+ */
+function RaidInProgress() {
+  return (
+    <div className="flex flex-col gap-2 border border-accent/40 bg-accent/5 px-3 py-3">
+      <p className="font-mono text-[11px] uppercase tracking-wider text-accent">
+        Planning is closed while this raid runs
+      </p>
+
+      <p className="text-sm text-muted">
+        You are in a raid with a plan already active. Building another one now would replace the
+        plan you are walking, so the quest list and <strong className="text-ink">Plan this
+        raid</strong> are unavailable until this raid is done with.
+      </p>
+
+      <div className="flex flex-wrap gap-4">
+        <button
+          type="button"
+          onClick={() => void api.endRaid()}
+          className="font-mono text-[11px] uppercase tracking-wider text-muted underline-offset-4
+                     hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          End raid
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void api.clearPlan()}
+          className="font-mono text-[11px] uppercase tracking-wider text-muted underline-offset-4
+                     hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Clear plan
+        </button>
+      </div>
+
+      <p className="font-mono text-xs text-muted">
+        Ending the raid keeps the plan, so you can strike off what is no longer worth doing and
+        queue again with the rest. Clearing it starts from nothing.
+      </p>
     </div>
   )
 }
