@@ -16,6 +16,10 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ### App
 
+- **Quit RatNav from the app.** Closing the browser tab stopped nothing — the tab is not the
+  application, it is a page one process serves alongside the overlay and the hotkeys — and the only
+  way out was the tray icon, which people do not look in. **Setup → Quit RatNav** stops the whole
+  thing. It asks first, because there is no undo.
 - **A mark can carry a note.** The label is drawn on a map over a game and has to be short — "car
   batteries". The note is read standing still and can be a sentence — "third shelf, behind the
   crates" — which is the part nobody remembers at the time. Add one from the mark's chip under the

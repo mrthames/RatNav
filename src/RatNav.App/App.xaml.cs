@@ -87,6 +87,11 @@ public partial class App : Application
         ApiEndpoints.WaypointsChanged += () => _overlay?.RefreshWaypointsNow();
         ApiEndpoints.OverlayResetRequested += () => _overlay?.ReturnToDefaultPlace();
 
+        // Quitting from the app, which until now could only be done from the tray icon. Marshalled
+        // onto the UI thread: the request arrives on a Kestrel thread, and Shutdown is the
+        // Application's to call.
+        ApiEndpoints.QuitRequested += () => Dispatcher.Invoke(Shutdown);
+
         // A folder picker, for the drive somebody keeps their games on. Marshalled onto the UI
         // thread because it puts a window on screen, and the request that asked for it arrives on
         // a Kestrel thread that has no business doing that.

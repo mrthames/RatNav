@@ -254,6 +254,8 @@ function SettingsForm({ settings, onSaved }: { settings: Settings; onSaved: (s: 
         </span>
       </div>
 
+      <QuitRatNav />
+
       {error && <p className="text-xs text-need">{error}</p>}
 
       <div className="flex items-center gap-3">
@@ -560,6 +562,75 @@ function LanPanel() {
       </label>
 
       {note && <p className="font-mono text-xs text-have">{note}</p>}
+    </div>
+  )
+}
+
+/**
+ * Stopping RatNav from the page it is serving.
+ *
+ * <p>Closing this tab stops nothing — the tab is not the application, it is a page one process is
+ * serving alongside the overlay and the hotkeys. Until now the only way out was the tray icon,
+ * which people do not look in, and something running with no visible way to stop it is a thing
+ * they uninstall instead.</p>
+ *
+ * <p>It asks first. This is not a control anybody wants to hit while reading the page above it,
+ * and there is no undo — coming back means launching RatNav again.</p>
+ */
+function QuitRatNav() {
+  const [asking, setAsking] = useState(false)
+  const [gone, setGone] = useState(false)
+
+  if (gone) {
+    return (
+      <p className="border-t border-line pt-3 text-xs text-muted">
+        RatNav has stopped. This page is no longer connected to anything — launch RatNav again to
+        come back.
+      </p>
+    )
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
+      {asking ? (
+        <>
+          <button
+            type="button"
+            onClick={async () => { await api.quit().catch(() => {}); setGone(true) }}
+            className="rounded-sm bg-panel-hi px-3 py-1.5 font-mono text-[11px] uppercase
+                       tracking-wider text-need transition-colors hover:text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Yes, quit RatNav
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAsking(false)}
+            className="font-mono text-xs text-muted hover:text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            no
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={() => setAsking(true)}
+            className="rounded-sm bg-panel-hi px-3 py-1.5 font-mono text-[11px] uppercase
+                       tracking-wider text-muted transition-colors hover:text-ink
+                       focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Quit RatNav
+          </button>
+
+          <span className="text-xs text-muted">
+            Stops the overlay, the hotkeys and this page — the whole thing, not just the tab.
+            Nothing you have recorded is lost.
+          </span>
+        </>
+      )}
     </div>
   )
 }

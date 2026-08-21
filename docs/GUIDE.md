@@ -59,6 +59,7 @@ hardcoded, and RatNav says which is which.
 | **Game edition** | Sets your starting stash level. It never lowers a stash you have already raised. |
 | **Your name on shared plans** | Only matters if you swap plans with someone. |
 | **Reach RatNav from a phone or tablet** | Off by default. On, RatNav answers on your machine's network address as well as its own, so another device on the same wifi can open it in a browser — nothing installed there, and nothing reachable from outside your network. There is no password: anyone on your wifi can open it. Setup shows the address to type, and offers to open the Windows Firewall if it is in the way. |
+| **Quit RatNav** | Stops the overlay, the hotkeys and the app — the whole thing, not just the browser tab. Closing the tab stops nothing, because the tab is not the application. Nothing you have recorded is lost. |
 | **Port** | Which port RatNav listens on. Leave it alone unless something else on the machine already wants 8722 — and if something does, RatNav takes the next free one and says so rather than refusing to start. |
 
 Setup re-checks itself every few seconds, so you can leave it open, launch the game, and watch the

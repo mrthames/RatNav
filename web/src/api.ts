@@ -694,6 +694,9 @@ export const api = {
     }
   },
 
+  /** Stops RatNav itself, not just this page. The overlay and the service go with it. */
+  quit: () => post<{ quitting: boolean }>('/api/quit', {}),
+
   /** Sets or clears a mark's note. Blank clears it. */
   setWaypointNote: (markId: string, note: string) =>
     post<{ id: string; note: string }>(`/api/waypoints/${encodeURIComponent(markId)}/note`, { note }),

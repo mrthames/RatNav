@@ -43,6 +43,15 @@ public static class ApiEndpoints
     public static event Action? OverlayResetRequested;
 
     /// <summary>
+    /// Stopping RatNav from the page it is serving.
+    ///
+    /// <para>Raised here and handled in the app, because the service has no business shutting the
+    /// process down — it is one of three things living in it, and the one that would be killing
+    /// the other two.</para>
+    /// </summary>
+    public static event Action? QuitRequested;
+
+    /// <summary>
     /// Opens a folder picker and returns what was chosen, or null if it was cancelled.
     ///
     /// <para>A hook rather than an event, because this one has an answer. Set by the desktop app,
@@ -900,6 +909,23 @@ public static class ApiEndpoints
                 new { key = keys.IdentifyItem, does = "check item" },
                 new { key = keys.ReadExtracts, does = "update extracts" },
             }.Where(h => h.key is { Length: > 0 }));
+        });
+
+        // Quitting from the page, because closing the browser tab stops nothing — the tab is not
+        // the application, and until now the only way out was the tray icon. Something running
+        // with no visible way to stop it is a thing people uninstall.
+        //
+        // The answer goes out before the process goes down, so the page can say what happened
+        // rather than showing a failed request.
+        api.MapPost("/quit", () =>
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(250);
+                QuitRequested?.Invoke();
+            });
+
+            return Results.Ok(new { quitting = true });
         });
 
         // ---- reaching RatNav from another device
