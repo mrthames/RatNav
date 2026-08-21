@@ -1964,10 +1964,16 @@ public partial class OverlayWindow : Window
                 //
                 // Titled by id rather than by name so renaming a collection does not lose which
                 // sections you had folded.
+                //
+                // No count after the name. It read "3 left" for a collection wanting six items —
+                // four of one and one each of two others — because it counted rows rather than
+                // items, which is a different question from the one the heading looked like it
+                // was answering. The number against each row is the one that means something:
+                // how many of that item are still to find.
                 .. panel.Goalsets.Select(group => Section(
                     $"GOAL:{group.Id}",
                     group.Rows,
-                    label: $"{group.Name.ToUpperInvariant()} · {group.Rows.Count} left")),
+                    label: group.Name.ToUpperInvariant())),
 
                 Section("QUESTS & HIDEOUT", panel.Now, label: $"QUESTS & HIDEOUT · {scope}"),
 

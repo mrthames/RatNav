@@ -345,8 +345,6 @@ function Custom() {
       )}
 
       {goals.map((goal) => {
-        const short = goal.items.filter((i) => i.found < i.count * goal.times).length
-
         return (
           <div key={goal.id} className="flex flex-col gap-2 border border-line bg-panel px-3 py-2">
             <div className="flex flex-wrap items-baseline gap-x-3">
@@ -356,9 +354,12 @@ function Custom() {
                 <span className="font-mono text-[11px] text-muted">×{goal.times}</span>
               )}
 
-              <span className={`font-mono text-[11px] ${short === 0 ? 'text-have' : 'text-muted'}`}>
-                {short === 0 ? 'everything found' : `${short} still short`}
-              </span>
+              {/*
+                No "N still short" beside the name. It counted how many *kinds* of item were not
+                yet complete, which for a collection wanting four of one thing and one each of two
+                others read "3" — a number that looks like it is about items and is not. Each row
+                below carries how many of that item are left, which is the question being asked.
+              */}
 
               <span className="ml-auto flex gap-3">
                 <button
