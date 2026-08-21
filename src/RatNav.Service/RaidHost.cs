@@ -371,6 +371,9 @@ public sealed record RatNavSettings
         /// on and losing the framing you chose. This is that question, asked once.</para>
         /// </summary>
         public string CenterMap { get; set; } = "F10";
+
+        /// <summary>Hold the map still, or have it keep you centred.</summary>
+        public string ToggleFollow { get; set; } = "F11";
     }
 
     /// <summary>How the overlay presents itself.</summary>
@@ -628,6 +631,16 @@ public sealed record RatNavSettings
         /// <para>Remembered once opened, because how you like to work is worth keeping.</para>
         /// </summary>
         public bool ShowControls { get; init; }
+
+        /// <summary>
+        /// The strip of key reminders under the map.
+        ///
+        /// <para>On by default, because the moment you need reminding which key does what is the
+        /// moment you are looking at the plain overlay. Off is for anyone who has learned them —
+        /// at which point it is a row of text over a raid, and on a 1080p overlay it is a row the
+        /// map could have had.</para>
+        /// </summary>
+        public bool ShowHotkeyHints { get; init; } = true;
 
         /// <summary>Which side of the map the items list sits on — "left" or "right".</summary>
         public string ItemsSide { get; init; } = "left";

@@ -874,6 +874,7 @@ public static class ApiEndpoints
                         IdentifyItem = keys.IdentifyItem ?? current.Hotkeys.IdentifyItem,
                         ReadExtracts = keys.ReadExtracts ?? current.Hotkeys.ReadExtracts,
                         CenterMap = keys.CenterMap ?? current.Hotkeys.CenterMap,
+                        ToggleFollow = keys.ToggleFollow ?? current.Hotkeys.ToggleFollow,
                     };
                 }
             });
@@ -910,6 +911,7 @@ public static class ApiEndpoints
                 new { key = keys.IdentifyItem, does = "check item" },
                 new { key = keys.ReadExtracts, does = "update extracts" },
                 new { key = keys.CenterMap, does = "center on me" },
+                new { key = keys.ToggleFollow, does = "follow/still" },
             }.Where(h => h.key is { Length: > 0 }));
         });
 
@@ -2365,6 +2367,7 @@ public sealed record HotKeyUpdate
     public string? IdentifyItem { get; init; }
     public string? ReadExtracts { get; init; }
     public string? CenterMap { get; init; }
+    public string? ToggleFollow { get; init; }
 }
 
 /// <summary>

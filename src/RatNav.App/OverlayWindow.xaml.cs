@@ -141,6 +141,17 @@ public partial class OverlayWindow : Window
     /// <summary>The same argument for the overlay's own furniture, which shipped bottomed out at 0.7.</summary>
     private const double MinUiScale = 0.4;
 
+    /// <summary>
+    /// Clamps a dial to its range and onto the tenth it is stepping along.
+    ///
+    /// <para>Stepping alone drifts: a value that started at 0.8 and steps by a tenth should read
+    /// 0.7, not 0.7000000000000001, and a value that arrived from an older build stepping by a
+    /// quarter should land back on the grid rather than carrying 0.05 with it for ever. Rounding
+    /// on the way in is what makes the dial land on the number you were aiming at.</para>
+    /// </summary>
+    private static double Snap(double value, double least, double most) =>
+        Math.Clamp(Math.Round(value * 10) / 10, least, most);
+
     /// <summary>Named to match the app's Maps page, so one control set reads two places.</summary>
     private static readonly string[] QuestModes = ["active", "all", "off"];
 
@@ -266,8 +277,6 @@ public partial class OverlayWindow : Window
         {
             if (QuestBrief.Visibility == Visibility.Visible) SizeQuestBrief();
 
-            // Wrapping only helps if something tells it where the edge is.
-            QuickBar.MaxWidth = Math.Max(80, MapFrame.ActualWidth - 32);
         };
         QuestBriefBack.Click += (_, _) => StepQuestImage(-1);
         QuestBriefNext.Click += (_, _) => StepQuestImage(+1);
@@ -288,6 +297,12 @@ public partial class OverlayWindow : Window
         FollowButton.Click += (_, _) => ToggleFollowing();
         RecentreButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
+
+        HintsButton.Click += (_, _) =>
+        {
+            Remember(_settings.Overlay with { ShowHotkeyHints = !_settings.Overlay.ShowHotkeyHints });
+            ApplyHotkeyHints();
+        };
 
         TurnButton.Click += (_, _) =>
         {
@@ -322,16 +337,16 @@ public partial class OverlayWindow : Window
         PlacesButton.Click += (_, _) => TogglePlaces();
         // A quarter rather than a half. At the small end of the range half a step is a large
         // fraction of the value, and these are being set by eye against a running game.
-        MarkerUp.Click += (_, _) => StepMarker(+0.25);
-        MarkerDown.Click += (_, _) => StepMarker(-0.25);
-        TextUp.Click += (_, _) => StepText(+0.25);
-        TextDown.Click += (_, _) => StepText(-0.25);
-        PlaceNameUp.Click += (_, _) => StepPlaceNames(+0.25);
-        PlaceNameDown.Click += (_, _) => StepPlaceNames(-0.25);
+        MarkerUp.Click += (_, _) => StepMarker(+0.1);
+        MarkerDown.Click += (_, _) => StepMarker(-0.1);
+        TextUp.Click += (_, _) => StepText(+0.1);
+        TextDown.Click += (_, _) => StepText(-0.1);
+        PlaceNameUp.Click += (_, _) => StepPlaceNames(+0.1);
+        PlaceNameDown.Click += (_, _) => StepPlaceNames(-0.1);
         ShrinkUp.Click += (_, _) => StepShrink(+0.1);
         ShrinkDown.Click += (_, _) => StepShrink(-0.1);
-        YouUp.Click += (_, _) => StepPlayer(+0.25);
-        YouDown.Click += (_, _) => StepPlayer(-0.25);
+        YouUp.Click += (_, _) => StepPlayer(+0.1);
+        YouDown.Click += (_, _) => StepPlayer(-0.1);
         WeightUp.Click += (_, _) => StepWeight(+0.25);
         WeightDown.Click += (_, _) => StepWeight(-0.25);
         DetachItems.Click += (_, _) => DetachItemsPanel();
@@ -385,6 +400,7 @@ public partial class OverlayWindow : Window
         Bind(keys.IdentifyItem, "Identify item under cursor", IdentifyUnderCursor);
         Bind(keys.ReadExtracts, "Read the game's extract list", ReadOfferedExtracts);
         Bind(keys.CenterMap, "Center the map on me", CenterOnPlayer);
+        Bind(keys.ToggleFollow, "Follow me, or hold still", ToggleFollowing);
 
         void Bind(string text, string what, Action action)
         {
@@ -758,6 +774,7 @@ public partial class OverlayWindow : Window
         // The window itself, not the map inside it.
         ApplyWindowOpacity();
         ApplyUiScale();
+        ApplyHotkeyHints();
 
         if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe)
         {
@@ -1736,6 +1753,15 @@ public partial class OverlayWindow : Window
         MatchPopOuts();
     }
 
+    /// <summary>Shows or hides the key-reminder strip, and says which the button will do next.</summary>
+    private void ApplyHotkeyHints()
+    {
+        var on = _settings.Overlay.ShowHotkeyHints;
+
+        HotkeyHints.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        HintsButton.Content = on ? "hints on" : "hints off";
+    }
+
     private void StepFade(double by)
     {
         Remember(_settings.Overlay with { MapOpacity = Math.Clamp(_settings.Overlay.MapOpacity + by, 0.1, 1.0) });
@@ -2464,7 +2490,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            MarkerScale = Math.Clamp(_settings.Overlay.MarkerScale + by, MinScale, 8.0),
+            MarkerScale = Snap(_settings.Overlay.MarkerScale + by, MinScale, 8.0),
         });
 
         Draw();
@@ -2474,7 +2500,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            TextScale = Math.Clamp(_settings.Overlay.TextScale + by, MinScale, 6.0),
+            TextScale = Snap(_settings.Overlay.TextScale + by, MinScale, 6.0),
         });
 
         Draw();
@@ -2484,7 +2510,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            PlaceNameScale = Math.Clamp(_settings.Overlay.PlaceNameScale + by, MinScale, 6.0),
+            PlaceNameScale = Snap(_settings.Overlay.PlaceNameScale + by, MinScale, 6.0),
         });
 
         Draw();
@@ -2612,7 +2638,7 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            PlayerScale = Math.Clamp(_settings.Overlay.PlayerScale + by, MinScale, 8.0),
+            PlayerScale = Snap(_settings.Overlay.PlayerScale + by, MinScale, 8.0),
         });
 
         Draw();
@@ -2622,7 +2648,10 @@ public partial class OverlayWindow : Window
     {
         Remember(_settings.Overlay with
         {
-            ScaleWithZoom = Math.Clamp(_settings.Overlay.ScaleWithZoom + by, 0, 1),
+            // Above 1 the furniture shrinks faster than the map does as you zoom out, which is
+            // past what this was defined to mean — and finding out whether that is what a 1080p
+            // overlay wants is exactly why the ceiling is not 1 any more.
+            ScaleWithZoom = Snap(_settings.Overlay.ScaleWithZoom + by, 0, 2.0),
         });
 
         Draw();
@@ -2702,18 +2731,15 @@ public partial class OverlayWindow : Window
         // want to see one.
         if (view is null || !view.HasMap)
         {
-            ProgressText.Text = "";
             FixAgeText.Text = "";
             UpdateControls(null);
             return;
         }
 
-        // Only stops in *this* plan count. Completed objectives outlive the plan they were
-        // finished under, so counting all of them against the current plan's stops produced
-        // "1/0 done" — a figure that cannot be read whichever way round you take it.
-        var done = view.Stops.Count(s => view.CompletedObjectiveIds.Contains(s.ObjectiveId));
-
-        ProgressText.Text = view.Stops.Count > 0 ? $"{done}/{view.Stops.Count} done" : "";
+        // No "0 of 3 done" any more. It sat in the footer beside the drawer chips saying
+        // something the quest log says better — that list has a tick against each finished stop
+        // and the numbers to go with them — and on a 1080p overlay a line of text that repeats a
+        // panel you already have open is a line of map.
 
         // How old the marker is, in words rather than jargon. It used to read "FIX 58S AGO" — a
         // fix is what RatNav calls a position reading internally and not something anyone else
@@ -3301,6 +3327,10 @@ public partial class OverlayWindow : Window
         Place(p => p.Follow
             ? p with { PanX = 0, PanY = 0 }
             : p with { PanX = x - 0.5, PanY = y - 0.5 });
+
+        // Place only remembers. Without this the map moved in the settings and not on screen,
+        // which from the outside is a hotkey that does nothing.
+        Draw();
     });
 
     /// <summary>

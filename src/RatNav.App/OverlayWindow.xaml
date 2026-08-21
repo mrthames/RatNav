@@ -1,6 +1,7 @@
 ﻿<Window x:Class="RatNav.App.OverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:app="clr-namespace:RatNav.App"
         Title="RatNav"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -402,7 +403,7 @@
                 BorderBrush="{StaticResource Line}"
                 BorderThickness="1"
                 CornerRadius="2">
-            <Grid Margin="10,8">
+            <Grid Margin="5,3">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -434,13 +435,22 @@
                                Foreground="{StaticResource Muted}" />
 
                     <!--
-                        No distance and bearing to the next stop here any more.
+                        How old the position fix is, opposite the name.
 
-                        It read as useful and was not: a straight line to a pin through whatever
-                        walls are between you and it, on a bearing relative to a heading that was
-                        current at your last position fix. Precise about something nobody can walk,
-                        and stale the moment you turn. The map answers the same question honestly.
+                        It used to sit in the footer beside the drawer chips, in a column that took
+                        whatever width it wanted from controls that needed it more. Up here it is
+                        alone on its row, it is the other thing this line is for, and the footer
+                        gets its width back.
+
+                        No distance and bearing to the next stop, though. That read as useful and
+                        was not: a straight line to a pin through whatever walls are between you and
+                        it, on a bearing relative to a heading that was current at your last fix.
                     -->
+                    <TextBlock x:Name="FixAgeText" DockPanel.Dock="Right"
+                               Style="{StaticResource Label}"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                               Margin="8,0,0,0"
+                               TextTrimming="CharacterEllipsis" />
                 </DockPanel>
 
                 <!--
@@ -449,7 +459,7 @@
                     which side it sits on is the player's call, since the overlay could be against
                     either edge of the screen.
                 -->
-                <Grid Grid.Row="1" Margin="0,4">
+                <Grid Grid.Row="1" Margin="0,2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition x:Name="LeftSlot" Width="0" />
                         <ColumnDefinition x:Name="MapSlot" Width="*" MinWidth="80" />
@@ -832,8 +842,6 @@
                                 Content="map" Margin="0,0,8,0"
                                 ToolTip="Fold the map away, leaving the lists" />
 
-                        <TextBlock x:Name="ProgressText" Style="{StaticResource Label}"
-                                   VerticalAlignment="Center" />
                     </WrapPanel>
 
                     <!--
@@ -845,10 +853,10 @@
                         already found the controls.
                     -->
                     <ItemsControl x:Name="HotkeyHints" Grid.Row="1" Grid.ColumnSpan="2"
-                                  Margin="0,3,0,0" HorizontalAlignment="Center">
+                                  Margin="0,2,0,0" HorizontalAlignment="Stretch">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" />
+                                <app:CenteredWrapPanel />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
 
@@ -865,15 +873,6 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!--
-                        Trimmed rather than allowed to claim the width it wants. Its column is Auto,
-                        so an untrimmed line takes whatever it needs and the chips lose it — and the
-                        chips are controls where this is only ever information.
-                    -->
-                    <TextBlock x:Name="FixAgeText" Grid.Row="0" Grid.Column="1"
-                               Style="{StaticResource Label}" HorizontalAlignment="Right"
-                               VerticalAlignment="Center" Margin="8,0,0,0"
-                               TextTrimming="CharacterEllipsis" />
                 </Grid>
             </Grid>
         </Border>
@@ -1014,6 +1013,9 @@
                                         Content="names on" HorizontalAlignment="Stretch" Margin="0,0,0,2" />
                                 <Button x:Name="HaloButton" Style="{StaticResource Chip}"
                                         Content="halo on" HorizontalAlignment="Stretch" />
+                                <Button x:Name="HintsButton" Style="{StaticResource Chip}"
+                                        Content="hints on" HorizontalAlignment="Stretch" Margin="0,2,0,0"
+                                        ToolTip="The strip of key reminders under the map" />
                             </StackPanel>
 
                             <TextBlock Style="{StaticResource Label}" Text="FADE" Margin="0,0,0,2" />
@@ -1233,15 +1235,12 @@
                     Background="#e60b0f13"
                     BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
                 <!--
-                    Wrapping, not a single row.
-
-                    Right-aligned in a grid, a row that does not fit grows leftwards past the
-                    edge of the map and off the window — so shrinking the overlay took the
-                    controls away one at a time, starting with the exits toggle, which is the
-                    one reached for most. A second line is worse than a single row, and far
-                    better than a control that is not there.
+                    One row. Wrapping was the answer while this bar carried five groups and could
+                    genuinely outgrow a narrow overlay; with three it fits, and a control bar that
+                    stacks itself into a block over the map is worse than the overflow it was
+                    avoiding.
                 -->
-                <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal">
                     <!--
                         What changes while you are playing, and nothing else.
 
@@ -1301,7 +1300,7 @@
                     <Button x:Name="QuickFollow" Style="{StaticResource Chip}"
                             Content="still" MinWidth="58"
                             ToolTip="Hold the map still, or keep it centered on you" />
-                </WrapPanel>
+                </StackPanel>
             </Border>
 
             <Thumb x:Name="ResizeGrip" Grid.Row="1"
