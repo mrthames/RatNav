@@ -1951,7 +1951,10 @@ public partial class OverlayWindow : Window
                 // Yours first. The watchlist is the short list you chose by hand; quests and the
                 // hideout are worked out and far longer, and putting them above meant scrolling
                 // past forty derived rows to reach three deliberate ones.
-                Section("WATCHLIST", panel.Watchlist, label: "WATCHLIST · your targets"),
+                // No "· your targets" after the heading. Whose targets they are is the one thing
+                // a watchlist does not need explaining, and on a 1080p overlay the words cost a
+                // row of the list they are describing.
+                Section("WATCHLIST", panel.Watchlist),
 
                 // The things you are tracking yourself, one section each, directly under it.
                 // They are the
