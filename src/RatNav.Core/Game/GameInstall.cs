@@ -1,4 +1,6 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
+using Microsoft.Win32;
 
 namespace RatNav.Core.Game;
 
@@ -53,6 +55,12 @@ public static partial class GameInstallFinder
     {
         var found = new Dictionary<string, GameInstall>(StringComparer.OrdinalIgnoreCase);
 
+        // What the installer recorded, before any amount of guessing at paths.
+        foreach (var recorded in RecordedByInstaller())
+        {
+            if (Describe(recorded) is { } install) found.TryAdd(install.Directory, install);
+        }
+
         foreach (var root in DriveRoots())
         {
             foreach (var install in FindUnder(root))
@@ -69,6 +77,66 @@ public static partial class GameInstallFinder
 
     /// <summary>The install RatNav should watch, or null if none was found.</summary>
     public static GameInstall? Find() => FindAll().FirstOrDefault();
+
+    /// <summary>
+    /// Where the Battlestate installer says it put the game.
+    ///
+    /// <para>This answers the question the fixed path list and the sweep can only guess at. Escape
+    /// from Tarkov is installed by one launcher — it is not on Steam, and there is no other route
+    /// — and that installer writes an ordinary uninstall entry carrying an
+    /// <c>InstallLocation</c>. Wherever the player chose to put it, this names it.</para>
+    ///
+    /// <para>It also names the <em>live</em> install rather than a stale copy left on another
+    /// drive, which is the failure the ranking in <see cref="FindAll"/> exists to avoid.</para>
+    ///
+    /// <para><b>The launcher's own settings file is deliberately not read.</b> The file under
+    /// <c>%APPDATA%</c> carries the games root and the per-game paths, so it would work — and it
+    /// carries live session tokens beside them. RatNav has no business opening a file like that
+    /// when a registry key answers the same question.</para>
+    ///
+    /// <para>Both registry views are checked. The launcher is a 32-bit installer, so its entry
+    /// lands under <c>WOW6432Node</c> on a 64-bit machine.</para>
+    /// </summary>
+    private static IEnumerable<string> RecordedByInstaller()
+    {
+        // Core is net8.0 so that it builds on a Mac. Nothing below runs there.
+        if (!OperatingSystem.IsWindows()) yield break;
+
+        foreach (var location in InstallLocations())
+        {
+            // The installer writes a trailing separator on some entries and not others.
+            if (!string.IsNullOrWhiteSpace(location))
+                yield return location.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static IEnumerable<string> InstallLocations()
+    {
+        const string uninstall =
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\EscapeFromTarkov";
+
+        foreach (var view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
+        {
+            string? location = null;
+
+            try
+            {
+                using var machine = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
+                using var key = machine.OpenSubKey(uninstall);
+
+                location = key?.GetValue("InstallLocation") as string;
+            }
+            catch (Exception ex) when (ex is System.Security.SecurityException
+                                       or UnauthorizedAccessException
+                                       or IOException)
+            {
+                // A registry RatNav cannot read is not a reason to fail; the sweep still runs.
+            }
+
+            if (location is not null) yield return location;
+        }
+    }
 
     /// <summary>
     /// Folders a games library commonly lives in, looked inside one level deep.

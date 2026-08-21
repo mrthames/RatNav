@@ -11,4 +11,14 @@
     <InternalsVisibleTo Include="RatNav.Core.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      The Battlestate installer records where it put the game, and asking it is worth more than
+      any amount of guessing at paths. This project stays net8.0 so it builds on a Mac; the
+      package restores there and the one call site is guarded by OperatingSystem.IsWindows(),
+      so nothing here is Windows-only to compile, only to answer.
+    -->
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+  </ItemGroup>
+
 </Project>
