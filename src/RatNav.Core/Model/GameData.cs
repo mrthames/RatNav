@@ -192,6 +192,18 @@ public sealed record ItemDef
     public int? Avg24hPrice { get; init; }
     public int Width { get; init; } = 1;
     public int Height { get; init; } = 1;
+
+    /// <summary>
+    /// What the handbook files it under — "Food", "Building materials", "Mechanical keys".
+    ///
+    /// <para>The handbook's category rather than the item's own <c>categories</c>, which are the
+    /// engine's class ids and have no names to give: only the handbook ones resolve through the
+    /// translation table. The first is the specific one; the rest are the branches above it.</para>
+    ///
+    /// <para>Null for the few hundred items filed nowhere, which group under their own heading
+    /// rather than vanishing.</para>
+    /// </summary>
+    public string? Category { get; init; }
 }
 
 public sealed record HideoutStation

@@ -94,6 +94,9 @@ export interface TrackedItem {
   iconUrl: string | null
   wikiUrl: string | null
   avg24hPrice: number | null
+
+  /** What the handbook files it under — "Food", "Mechanical keys". Null where it files it nowhere. */
+  category: string | null
   questNeeded: number
 
   /** The active quests wanting it, by name. */

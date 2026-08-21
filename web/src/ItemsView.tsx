@@ -18,6 +18,9 @@ import {
  */
 type Tab = 'needed' | 'watchlist' | 'custom'
 
+/** Where the few hundred items the handbook files nowhere end up. */
+const UNFILED = 'Everything else'
+
 /**
  * What to show of the list.
  *
@@ -72,6 +75,16 @@ export function ItemsView() {
 
   /** Typing in the box takes over the list, whichever tab is underneath it. */
   const searching = query.trim().length > 0
+
+  // Grouped by what the handbook calls the item, or one flat alphabetical list. A preference
+  // about reading rather than about the data, so it lives in the browser and not in settings.
+  const [grouped, setGrouped] = useState(
+    () => localStorage.getItem('ratnav.items.grouped') === 'yes')
+
+  function setGrouping(on: boolean) {
+    setGrouped(on)
+    localStorage.setItem('ratnav.items.grouped', on ? 'yes' : 'no')
+  }
   const [filter, setFilter] = useState<FilterId>('all')
 
   /** The quest opened from an item's reasons, if any. */
@@ -123,6 +136,35 @@ export function ItemsView() {
     () => rows.filter(FILTERS.find((f) => f.id === filter)?.of ?? (() => true)),
     [rows, filter])
 
+  /**
+   * The rows in reading order: grouped under their handbook category, or one flat list.
+   *
+   * <p>Alphabetical inside a group and alphabetical without one, because the sort control above
+   * answers "what first" for the whole list and this answers "where is the thing I am looking
+   * for" — which only a name can answer.</p>
+   *
+   * <p>Groups themselves are alphabetical too, except the few hundred items the handbook files
+   * nowhere, which go last under their own heading rather than at the front under a blank one.</p>
+   */
+  const groups = useMemo(() => {
+    const byName = (a: TrackedItem, b: TrackedItem) => a.name.localeCompare(b.name)
+
+    if (!grouped) return [{ name: null, rows: [...shown].sort(byName) }]
+
+    const buckets = new Map<string, TrackedItem[]>()
+    for (const row of shown) {
+      const key = row.category ?? UNFILED
+      const bucket = buckets.get(key)
+      if (bucket) bucket.push(row)
+      else buckets.set(key, [row])
+    }
+
+    return [...buckets.entries()]
+      .sort(([a], [b]) =>
+        a === UNFILED ? 1 : b === UNFILED ? -1 : a.localeCompare(b))
+      .map(([name, rows]) => ({ name, rows: rows.sort(byName) }))
+  }, [shown, grouped])
+
   const totals = useMemo(() => ({
     items: shown.length,
     remaining: shown.reduce((sum, r) => sum + r.remaining, 0),
@@ -151,6 +193,17 @@ export function ItemsView() {
             </button>
           ))}
         </div>
+
+        <button
+          type="button"
+          aria-pressed={grouped}
+          onClick={() => setGrouping(!grouped)}
+          className="rounded-sm bg-panel-hi px-2.5 py-1.5 text-xs text-muted transition-colors
+                     hover:text-ink aria-pressed:bg-accent aria-pressed:text-ground
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Group by type
+        </button>
 
         {tab === 'needed' && (
           <div className="flex items-center gap-1">
@@ -305,17 +358,32 @@ export function ItemsView() {
                 <Th align="center">{tab === 'watchlist' && !searching ? 'Remove' : 'Watch'}</Th>
               </tr>
             </thead>
-            <tbody>
-              {shown.map((row) => (
-                <Row
-                  key={row.id}
-                  row={row}
-                  onChange={replace}
-                  watchlist={tab === 'watchlist' && !searching}
-                  onReadQuest={setReadingQuest}
-                />
-              ))}
-            </tbody>
+            {groups.map((group) => (
+              <tbody key={group.name ?? 'all'}>
+                {group.name && (
+                  <tr className="border-y border-line bg-panel/60">
+                    <th
+                      colSpan={5}
+                      scope="colgroup"
+                      className="px-3 py-1 text-left font-mono text-[11px] uppercase
+                                 tracking-wider text-muted"
+                    >
+                      {group.name} · {group.rows.length}
+                    </th>
+                  </tr>
+                )}
+
+                {group.rows.map((row) => (
+                  <Row
+                    key={row.id}
+                    row={row}
+                    onChange={replace}
+                    watchlist={tab === 'watchlist' && !searching}
+                    onReadQuest={setReadingQuest}
+                  />
+                ))}
+              </tbody>
+            ))}
           </table>
         </div>
       )}

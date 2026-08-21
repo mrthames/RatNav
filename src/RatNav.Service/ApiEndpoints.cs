@@ -2243,6 +2243,9 @@ public sealed record TrackedItemView
     public string? IconUrl { get; init; }
     public string? WikiUrl { get; init; }
     public int? Avg24hPrice { get; init; }
+    /// <summary>What the handbook files it under, for grouping. Null where it files it nowhere.</summary>
+    public string? Category { get; init; }
+
     public int QuestNeeded { get; init; }
 
     /// <summary>The active quests wanting it, so the row can name them as it names the upgrade.</summary>
@@ -2278,6 +2281,7 @@ public sealed record TrackedItemView
         IconUrl = t.Item.IconUrl,
         WikiUrl = t.Item.WikiUrl,
         Avg24hPrice = t.Item.Avg24hPrice,
+        Category = t.Item.Category,
         QuestNeeded = t.QuestNeeded,
         QuestFor = t.QuestFor,
         HideoutNeeded = t.HideoutNeeded,

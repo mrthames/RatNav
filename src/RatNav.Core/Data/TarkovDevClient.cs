@@ -73,6 +73,13 @@ public sealed class TarkovDevClient(HttpClient http)
                     Height = pair.Value.Height ?? 1,
                     IconUrl = pair.Value.IconLink,
                     WikiUrl = pair.Value.WikiLink,
+
+                    // The first handbook category is the specific one — "Food" rather than
+                    // "Provisions" above it. Resolved through the same table as the name; an id
+                    // that will not resolve is left null rather than shown as an id.
+                    Category = pair.Value.HandbookCategories is [{ Length: > 0 } first, ..]
+                        ? Named(text, first)
+                        : null,
                 })
         ];
     }
@@ -478,6 +485,16 @@ public sealed class TarkovDevClient(HttpClient http)
         };
     }
 
+    /// <summary>
+    /// A translated name, or null where the key does not resolve.
+    ///
+    /// <para><see cref="Translations.Of"/> passes an unrecognised key straight through, which is
+    /// right for a name and wrong for an id: a category shown as
+    /// <c>5b47574386f77428ca22b336</c> is worse than no category at all.</para>
+    /// </summary>
+    private static string? Named(Translations text, string key) =>
+        text.Of(key) is { Length: > 0 } name && name != key ? name : null;
+
     /// <summary>Resolves translation keys, passing anything unrecognised straight through.</summary>
     private readonly record struct Translations(Dictionary<string, string>? Table)
     {
@@ -522,7 +539,8 @@ public sealed class TarkovDevClient(HttpClient http)
 
     private sealed record ItemDto(
         string? Name, string? ShortName, string? NormalizedName,
-        int? BasePrice, int? Avg24hPrice, int? Width, int? Height, string? IconLink, string? WikiLink);
+        int? BasePrice, int? Avg24hPrice, int? Width, int? Height, string? IconLink, string? WikiLink,
+        List<string>? HandbookCategories);
 
     private sealed record StationDto(
         string? Name, string? NormalizedName, string? ImageLink, List<StationLevelDto>? Levels);
