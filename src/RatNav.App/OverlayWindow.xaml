@@ -1195,7 +1195,16 @@
                     Margin="0,6,26,0" Padding="4,3"
                     Background="#e60b0f13"
                     BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="2">
-                <StackPanel Orientation="Horizontal">
+                <!--
+                    Wrapping, not a single row.
+
+                    Right-aligned in a grid, a row that does not fit grows leftwards past the
+                    edge of the map and off the window — so shrinking the overlay took the
+                    controls away one at a time, starting with the exits toggle, which is the
+                    one reached for most. A second line is worse than a single row, and far
+                    better than a control that is not there.
+                -->
+                <WrapPanel Orientation="Horizontal">
                     <TextBlock Style="{StaticResource Label}" Text="OPACITY" VerticalAlignment="Center" Margin="0,0,4,0" />
                     <Button x:Name="QuickFadeDown" Style="{StaticResource Chip}" Content="−" />
                     <TextBlock x:Name="QuickFadeText" Style="{StaticResource Label}"
@@ -1260,7 +1269,7 @@
                     <Button x:Name="QuickFollow" Style="{StaticResource Chip}"
                             Content="still" MinWidth="58"
                             ToolTip="Hold the map still, or keep it centred on you" />
-                </StackPanel>
+                </WrapPanel>
             </Border>
 
             <Thumb x:Name="ResizeGrip" Grid.Row="1"

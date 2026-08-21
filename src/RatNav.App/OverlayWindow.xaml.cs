@@ -249,6 +249,9 @@ public partial class OverlayWindow : Window
         MapFrame.SizeChanged += (_, _) =>
         {
             if (QuestBrief.Visibility == Visibility.Visible) SizeQuestBrief();
+
+            // Wrapping only helps if something tells it where the edge is.
+            QuickBar.MaxWidth = Math.Max(80, MapFrame.ActualWidth - 32);
         };
         QuestBriefBack.Click += (_, _) => StepQuestImage(-1);
         QuestBriefNext.Click += (_, _) => StepQuestImage(+1);
