@@ -564,12 +564,12 @@ public partial class OverlayWindow : Window
 
     public void Update(RaidView view)
     {
-        var had = _view?.HasPlan ?? false;
+        var had = PlanApplies(_view);
 
         _view = view;
         Dispatcher.Invoke(async () =>
         {
-            FollowPlan(had, view.HasPlan);
+            FollowPlan(had, PlanApplies(view));
 
             await EnsureMapAsync(view);
             Draw();
@@ -595,6 +595,21 @@ public partial class OverlayWindow : Window
         Remember(_settings.Overlay with { ShowQuests = has });
         ApplyItemsPanel();
     }
+
+    /// <summary>
+    /// Whether there is a plan <em>for the map on screen</em>.
+    ///
+    /// <para>Not the same question as <see cref="RaidView.HasPlan"/>, which is true for a plan
+    /// built for anywhere. Queue into Interchange carrying a plan for Customs and the overlay
+    /// opened the quest log for it — a log belonging to a map you are not on, over a raid you have
+    /// not planned. The session already declines to draw those stops; this is the panel that
+    /// announces them agreeing with it.</para>
+    ///
+    /// <para>The session says so by naming the other map: <see cref="RaidView.PlanMapName"/> is
+    /// set only when a plan is loaded and is for somewhere else, so its absence is the signal.</para>
+    /// </summary>
+    private static bool PlanApplies(RaidView? view) =>
+        view is { HasPlan: true, PlanMapName: null };
 
     /// <summary>
     /// Puts the overlay back where it starts, and makes sure it is visible.
