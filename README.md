@@ -90,6 +90,19 @@ checks go green.
 
 Nothing is hardcoded. Every path is either detected or set by you, and RatNav says which.
 
+### Updating
+
+Download the new setup executable and run it. It installs over the top — same place, same Start
+Menu entry — and **everything you have recorded is left alone**: progress, item counts, plans,
+waypoints, hotkeys and settings all live in `%LOCALAPPDATA%\RatNav`, which the installer does not
+touch.
+
+**Quit RatNav first**, from the tray icon or **Setup → Quit RatNav**. An installer cannot replace
+files that a running program has open.
+
+There is no automatic update check yet. Watch the repository, or check the
+[releases page](https://github.com/mrthames/RatNav/releases).
+
 ## Is this safe to use?
 
 *(The short version. The long one, with everything checkable against the source, is in

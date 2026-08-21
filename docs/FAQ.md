@@ -23,6 +23,7 @@
 - [Can my friend and I see each other on the map?](#can-my-friend-and-i-see-each-other-on-the-map)
 - [Can I see it on my phone or tablet?](#can-i-see-it-on-my-phone-or-tablet)
 - [I switched character and everything is empty](#i-switched-character-and-everything-is-empty)
+- [How do I update to a new version?](#how-do-i-update-to-a-new-version)
 - [How do I move to a new PC?](#how-do-i-move-to-a-new-pc)
 - [How do I uninstall it completely?](#how-do-i-uninstall-it-completely)
 - [Something is broken. Where do I report it?](#something-is-broken-where-do-i-report-it)
@@ -291,6 +292,27 @@ the right of the top navigation and your progress is where you left it.
 If you upgraded from a version before characters existed, everything you had was adopted into
 **PvP**. If what you were actually playing was PvE or seasonal, switch to that one and set it up
 there — the old profile can be cleared from **Setup → Start a character over** once you have.
+
+## How do I update to a new version?
+
+Download the new setup executable from the
+[releases page](https://github.com/mrthames/RatNav/releases/latest) and run it. It installs over the
+top, in the same place, and replaces what is there.
+
+**Quit RatNav first** — the tray icon, or **Setup → Quit RatNav**. An installer cannot replace files
+that a running program has open, and Windows will either ask you to close it or leave you with a
+half-updated install.
+
+**Nothing you have recorded is lost.** Progress, item counts, plans, waypoints, hotkeys and settings
+live in `%LOCALAPPDATA%\RatNav`, which is a different folder from the program itself and is not
+touched by installing or uninstalling. Only the downloaded map images and the cached copy of
+tarkov.dev's data are cleared, and both come back on their own.
+
+If you use the portable `.zip` instead: quit RatNav, unzip the new one over the old folder, and
+start it again. Same data, same place.
+
+**There is no automatic update check yet.** Watch the repository on GitHub to be told about new
+releases, or look at the releases page when you think of it.
 
 ## How do I move to a new PC?
 
