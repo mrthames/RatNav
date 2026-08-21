@@ -2050,7 +2050,10 @@ public static class ApiEndpoints
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var carry = new List<object>();
 
-        void Add(string itemId, bool isKey)
+        // How many, not just what. An objective wanting four of something and one wanting one
+        // are different amounts to carry, and the count was thrown away here — so a plan needing
+        // three markers asked for "MS2000 Marker" exactly as loudly as one needing a single one.
+        void Add(string itemId, bool isKey, int count)
         {
             if (itemId is not { Length: > 0 } || !seen.Add(itemId)) return;
 
@@ -2059,12 +2062,14 @@ public static class ApiEndpoints
                 itemId,
                 name = index?.GetItem(itemId)?.Name ?? itemId,
                 isKey,
+                count,
             });
         }
 
-        foreach (var key in objective.NeededKeyItemIds) Add(key, isKey: true);
-        foreach (var key in task.NeededKeyItemIds) Add(key, isKey: true);
-        foreach (var item in objective.Items) Add(item.ItemId, isKey: false);
+        // A key is one key however many locks it opens, so it has no count worth showing.
+        foreach (var key in objective.NeededKeyItemIds) Add(key, isKey: true, count: 1);
+        foreach (var key in task.NeededKeyItemIds) Add(key, isKey: true, count: 1);
+        foreach (var item in objective.Items) Add(item.ItemId, isKey: false, count: item.Count);
 
         return carry;
     }
@@ -2077,40 +2082,51 @@ public static class ApiEndpoints
     /// container when you queue, so both are listed — but keys lead, because forgetting one costs
     /// the raid and forgetting the other costs a trip back to the stash.</para>
     ///
-    /// <para>Deduplicated across objectives: a quest with four steps behind the same door asks for
-    /// that key four times, and a list saying so four times is a worse list.</para>
+    /// <para>Deduplicated across objectives for keys, because a quest with four steps behind the
+    /// same door needs one key and a list saying so four times is a worse list — and <em>summed</em>
+    /// for items, because four steps each wanting a marker want four markers.</para>
     /// </summary>
-    private static IReadOnlyList<object> Required(RatNavState state, TaskDef task)
+    private static IReadOnlyList<Need> Required(RatNavState state, TaskDef task)
     {
         var index = state.Index;
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var required = new List<object>();
 
-        void Add(string itemId, bool isKey)
+        // Ordered, so keys stay ahead of items; counted, so an item seen again adds rather than
+        // being ignored. A dictionary alone would lose the order and a list alone would need
+        // searching on every hit.
+        var order = new List<string>();
+        var found = new Dictionary<string, Need>(StringComparer.OrdinalIgnoreCase);
+
+        void Add(string itemId, bool isKey, int count)
         {
-            if (itemId is not { Length: > 0 } || !seen.Add(itemId)) return;
+            if (itemId is not { Length: > 0 }) return;
+
+            if (found.TryGetValue(itemId, out var already))
+            {
+                // A key is one key however many doors it opens. An item is however many the quest
+                // asks for, added up across its steps.
+                if (!isKey) found[itemId] = already with { Count = already.Count + count };
+                return;
+            }
 
             var item = index?.GetItem(itemId);
 
-            required.Add(new
-            {
-                itemId,
-                name = item?.Name ?? itemId,
-                iconUrl = item?.IconUrl,
-                isKey,
-            });
+            order.Add(itemId);
+            found[itemId] = new Need(itemId, item?.Name ?? itemId, item?.IconUrl, isKey, count);
         }
 
         foreach (var objective in task.Objectives)
             foreach (var key in objective.NeededKeyItemIds)
-                Add(key, isKey: true);
+                Add(key, isKey: true, count: 1);
 
         foreach (var objective in task.Objectives)
             foreach (var item in objective.Items)
-                Add(item.ItemId, isKey: false);
+                Add(item.ItemId, isKey: false, count: item.Count);
 
-        return required;
+        return [.. order.Select(id => found[id])];
     }
+
+    /// <summary>One thing to carry in, and how many of it.</summary>
+    private sealed record Need(string ItemId, string Name, string? IconUrl, bool IsKey, int Count);
 
     private static MapDef? FindMap(RatNavState state, string id)
     {

@@ -286,8 +286,8 @@ export interface PlannableObjective {
   place: string | null
   neededKeyItemIds: string[]
   itemIds: string[]
-  /** What to carry in for this step, keys first and named rather than counted. */
-  required: { itemId: string; name: string; isKey: boolean }[]
+  /** What to carry in for this step, keys first. */
+  required: { itemId: string; name: string; isKey: boolean; count: number }[]
 }
 
 export interface ItemDetail {
@@ -330,6 +330,7 @@ export interface QuestBriefing {
     name: string
     iconUrl: string | null
     isKey: boolean
+    count: number
   }[]
   images: WikiImage[]
 }

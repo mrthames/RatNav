@@ -166,6 +166,10 @@ export function QuestBrief({
                                 ? 'border-warn/50 bg-warn/10 text-warn'
                                 : 'border-line bg-ground text-ink'}`}
                 >
+                  {!need.isKey && need.count > 1 && (
+                    <b className="font-mono tabular-nums">{need.count}×</b>
+                  )}
+
                   {need.iconUrl && (
                     <img src={need.iconUrl} alt="" className="size-5 flex-none object-contain" />
                   )}

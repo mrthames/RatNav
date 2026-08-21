@@ -179,19 +179,28 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
    * costs a trip back to the stash. The strip colours them differently for that reason.</p>
    */
   const carry = useMemo(() => {
-    const keys = new Map<string, string>()
-    const items = new Map<string, string>()
+    const keys = new Map<string, { name: string; count: number }>()
+    const items = new Map<string, { name: string; count: number }>()
 
     for (const o of objectives) {
       if (!chosen.includes(o.objectiveId)) continue
 
       for (const need of o.required) {
-        (need.isKey ? keys : items).set(need.itemId, need.name)
+        const into = need.isKey ? keys : items
+        const already = into.get(need.itemId)
+
+        // Summed across objectives rather than deduped to one. Two stops each wanting a marker is
+        // two markers to carry, and the old list said "MS2000 Marker" either way — which is the
+        // one thing on this page you cannot fix once you have queued.
+        into.set(need.itemId, {
+          name: need.name,
+          count: (already?.count ?? 0) + Math.max(1, need.count),
+        })
       }
     }
 
-    const listed = (m: Map<string, string>) =>
-      [...m].map(([itemId, name]) => ({ itemId, name }))
+    const listed = (m: Map<string, { name: string; count: number }>) =>
+      [...m].map(([itemId, need]) => ({ itemId, ...need }))
 
     return { keys: listed(keys), items: listed(items) }
   }, [objectives, chosen])
@@ -428,6 +437,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                 key={need.itemId}
                 className="rounded-sm border border-warn/70 bg-warn/10 px-2 py-0.5 text-xs text-warn"
               >
+                {need.count > 1 && <b className="tabular-nums">{need.count}× </b>}
                 {need.name}
               </span>
             ))}
@@ -626,7 +636,11 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
                                                 ? 'bg-need font-semibold text-ground'
                                                 : 'border border-warn/70 bg-warn/10 text-warn'}`}
                                 >
-                                  {need.isKey ? 'key: ' : ''}{need.name}
+                                  {need.isKey ? 'key: ' : ''}
+                                  {!need.isKey && need.count > 1 && (
+                                    <b className="tabular-nums">{need.count}× </b>
+                                  )}
+                                  {need.name}
                                 </span>
                               ))}
                             </span>
