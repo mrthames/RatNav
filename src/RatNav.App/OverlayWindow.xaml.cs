@@ -2594,7 +2594,12 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        _questWindow = new ItemsWindow { Title = "RatNav — Waypoints", PanelName = "Waypoints" };
+        _questWindow = new ItemsWindow
+        {
+            Title = "RatNav — Waypoints",
+            PanelName = "Waypoints",
+            ShowsFoundInRaid = false,
+        };
         _questWindow.Closed += (_, _) =>
         {
             _questWindow = null;

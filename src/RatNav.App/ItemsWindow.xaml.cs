@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -61,6 +61,19 @@ public partial class ItemsWindow : Window
     {
         get => Heading.Text;
         set => Heading.Text = value;
+    }
+
+    /// <summary>
+    /// Whether the found-in-raid legend belongs at the bottom of this one.
+    ///
+    /// <para>One window class serves both pop-outs, and only the items list uses that colour. The
+    /// waypoints list carries places to walk to, and was explaining a red square that never
+    /// appears in it.</para>
+    /// </summary>
+    public bool ShowsFoundInRaid
+    {
+        get => FoundInRaidLegend.Visibility == Visibility.Visible;
+        set => FoundInRaidLegend.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private bool _interactive;

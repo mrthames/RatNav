@@ -41,6 +41,13 @@ bindings sit along the bottom so you never have to remember them.
 
 ![The RatNav panel over a raid on Customs: a waypoint list numbered to match the pins on the map, the watchlist and tracked collections beneath it, the map with extracts and place names beside them, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
 
+**Or take the lists off the map.** Each one tears off into a window of its own, parked wherever
+suits your screen — so the map keeps its whole panel and the lists stop competing with it for room.
+They stay part of the overlay: same size, same fade, clicks passing through to the game, and gone
+with it when you press hide.
+
+![The same raid with the waypoints list torn off into its own window below the RatNav panel, showing eleven numbered stops, while the panel keeps the map and the items list](docs/screenshot-popped.jpg)
+
 Or the **centred view** — the same map drawn as glowing outlines over the game, dissolving toward
 the edges instead of stopping at a border, and **turned so what is in front of you is up the
 screen**. It keeps you in the middle of it: take a screenshot and the map moves and rotates around

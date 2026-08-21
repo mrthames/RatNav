@@ -278,8 +278,14 @@
                 </Grid>
             </Border>
 
-            <!-- A legend, because the colours mean something and nothing said what. -->
-            <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0"
+            <!--
+                A legend, because the colours mean something and nothing said what.
+
+                Only where a colour is actually being used. This window is both pop-outs, and the
+                waypoints one carries places to walk to rather than things to carry — so it was
+                explaining a red square that never appears in it.
+            -->
+            <TextBlock x:Name="FoundInRaidLegend" DockPanel.Dock="Bottom" Margin="0,5,0,0"
                        FontFamily="Consolas" FontSize="9"
                        Foreground="{StaticResource Muted}"
                        TextWrapping="Wrap">
