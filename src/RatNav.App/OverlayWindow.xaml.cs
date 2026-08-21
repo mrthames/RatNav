@@ -238,7 +238,18 @@ public partial class OverlayWindow : Window
         MapCanvas.MouseMove += OnHoverMove;
         MapCanvas.MouseLeftButtonUp += OnMapClick;
 
-        QuestBriefClose.Click += (_, _) => QuestBrief.Visibility = Visibility.Collapsed;
+        QuestBriefClose.Click += (_, _) => HideQuestBrief();
+
+        // Clicking away puts it down. Handled rather than left to bubble, so the click that
+        // dismisses the brief does not also land on the map underneath it and open another one.
+        QuestBriefScrim.MouseLeftButtonDown += (_, e) => { HideQuestBrief(); e.Handled = true; };
+
+        // Resizing the overlay with the brief open would otherwise leave it at the height the map
+        // used to be — too tall for a smaller map, and no longer nine tenths of a bigger one.
+        MapFrame.SizeChanged += (_, _) =>
+        {
+            if (QuestBrief.Visibility == Visibility.Visible) SizeQuestBrief();
+        };
         QuestBriefBack.Click += (_, _) => StepQuestImage(-1);
         QuestBriefNext.Click += (_, _) => StepQuestImage(+1);
         QuestBriefWiki.Click += (_, _) => OpenWiki();
@@ -1266,12 +1277,43 @@ public partial class OverlayWindow : Window
     /// <summary>One line of a quest's steps, coloured by where you are in it.</summary>
     private sealed record BriefStep(string Text, Brush Colour);
 
+    /// <summary>Puts the brief and the sheet behind it away together.</summary>
+    private void HideQuestBrief()
+    {
+        QuestBrief.Visibility = Visibility.Collapsed;
+        QuestBriefScrim.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Sizes the brief to sit over the map rather than replace it.
+    ///
+    /// <para>It filled the map area edge to edge, which reads as the map having been swapped for
+    /// something else rather than as something laid on top of it. Nine tenths of the height,
+    /// centred, leaves a margin of map showing above and below — enough to say "this is in front
+    /// of that". The width stays whatever the player made the map, because a modal narrower than
+    /// its container gains nothing here and the pictures want the room.</para>
+    ///
+    /// <para>The steps are capped so a long quest cannot squeeze the pictures out. They are the
+    /// half that turns "walk to this pin" into "find this door".</para>
+    /// </summary>
+    private void SizeQuestBrief()
+    {
+        var available = MapFrame.ActualHeight;
+        if (available <= 0) return;
+
+        QuestBrief.MaxHeight = available * 0.9;
+        QuestBriefScroll.MaxHeight = Math.Max(48, available * 0.3);
+    }
+
     private void ShowQuestBrief(RaidStop stop)
     {
         QuestBriefName.Text = stop.TaskName;
         QuestBriefSteps.ItemsSource = new[] { new BriefStep("Reading…", (Brush)FindResource("Muted")) };
         QuestBriefImage.Source = null;
         QuestBriefCaption.Text = "";
+
+        SizeQuestBrief();
+        QuestBriefScrim.Visibility = Visibility.Visible;
         QuestBrief.Visibility = Visibility.Visible;
 
         _briefImages = [];

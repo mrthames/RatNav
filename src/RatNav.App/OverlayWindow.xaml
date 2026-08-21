@@ -495,8 +495,22 @@
                                 Over the map rather than beside it. This is read while standing
                                 still, and it is worth the whole overlay for the moment it is up.
                             -->
+                            <!--
+                                Everything that is not the brief, while the brief is up.
+
+                                Nearly transparent rather than actually transparent: a Background
+                                of Transparent is hit-testable and one of null is not, and this
+                                exists only to be clicked. Dismissing by clicking away is what a
+                                thing calling itself a modal is expected to do, and the close
+                                button is a long way from wherever the pointer happens to be.
+                            -->
+                            <Border x:Name="QuestBriefScrim"
+                                    Visibility="Collapsed"
+                                    Background="#66000000" />
+
                             <Border x:Name="QuestBrief"
                                     Visibility="Collapsed"
+                                    VerticalAlignment="Center"
                                     Background="#f50b0f13"
                                     BorderBrush="{StaticResource Line}"
                                     BorderThickness="1"
@@ -531,22 +545,8 @@
                                         flick through pictures whose buttons are somewhere new each
                                         time; you have to find them again first.
                                     -->
-                                    <Grid DockPanel.Dock="Bottom" Margin="0,6,0,0" Height="210">
-                                        <Image x:Name="QuestBriefImage" Stretch="Uniform" />
-
-                                        <Button x:Name="QuestBriefBack" Style="{StaticResource Chip}"
-                                                Content="‹" HorizontalAlignment="Left"
-                                                VerticalAlignment="Center" Opacity="0.85" />
-
-                                        <Button x:Name="QuestBriefNext" Style="{StaticResource Chip}"
-                                                Content="›" HorizontalAlignment="Right"
-                                                VerticalAlignment="Center" Opacity="0.85" />
-
-                                        <TextBlock x:Name="QuestBriefCaption" Style="{StaticResource Label}"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" />
-                                    </Grid>
-
                                     <ScrollViewer x:Name="QuestBriefScroll"
+                                                  DockPanel.Dock="Top"
                                                   VerticalScrollBarVisibility="Auto"
                                                   HorizontalScrollBarVisibility="Disabled">
                                         <ItemsControl x:Name="QuestBriefSteps">
@@ -561,6 +561,35 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </ScrollViewer>
+
+                                    <!--
+                                        The picture takes everything left over, directly under the
+                                        text rather than pinned to the floor of the panel.
+
+                                        Docked to the bottom at a fixed height, it left a gap the
+                                        height of whatever the steps did not use — text along the
+                                        top, picture along the bottom, nothing in between. The
+                                        fixed box was there so that the back and next controls did
+                                        not move as pictures of different shapes loaded, and that
+                                        still holds: the box is now sized by the panel and the
+                                        text above it, neither of which changes while you flick
+                                        through one quest's pictures.
+                                    -->
+                                    <Grid Margin="0,6,0,0">
+                                        <Image x:Name="QuestBriefImage" Stretch="Uniform" />
+
+                                        <Button x:Name="QuestBriefBack" Style="{StaticResource Chip}"
+                                                Content="‹" HorizontalAlignment="Left"
+                                                VerticalAlignment="Center" Opacity="0.85" />
+
+                                        <Button x:Name="QuestBriefNext" Style="{StaticResource Chip}"
+                                                Content="›" HorizontalAlignment="Right"
+                                                VerticalAlignment="Center" Opacity="0.85" />
+
+                                        <TextBlock x:Name="QuestBriefCaption" Style="{StaticResource Label}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                                    </Grid>
+
                                 </DockPanel>
                             </Border>
 
