@@ -1,0 +1,54 @@
+# Every change that reaches next has to say what it changed.
+#
+# next is what testers run. An alpha built from it is only useful if somebody picking it up can
+# see what is different from the last one and knows what to go and look at — otherwise they are
+# testing a build blind, and "it seems fine" is the report you get back.
+#
+# So this is a required check rather than a line in CONTRIBUTING that everybody means to follow.
+# It checks that CHANGELOG.md was touched, not what was written in it: a machine cannot tell a
+# good entry from a bad one, and pretending otherwise would just teach people to add a blank line.
+name: Changelog
+
+on:
+  pull_request:
+    branches: [next, main]
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The merge base is needed to diff against the target branch, and a shallow clone has no
+          # history to find it in.
+          fetch-depth: 0
+
+      - name: Check CHANGELOG.md was updated
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          # An escape hatch, because some changes genuinely have nothing to tell a tester: a typo
+          # in a comment, a CI tweak, a dependency bump. Label the PR "no changelog" and say why in
+          # the description. It is deliberately a label, so skipping is visible rather than silent.
+          if [[ ",$LABELS," == *",no changelog,"* ]]; then
+            echo "Skipped: labelled 'no changelog'."
+            exit 0
+          fi
+
+          if git diff --name-only "$BASE" "$HEAD" | grep -qx 'CHANGELOG.md'; then
+            echo "CHANGELOG.md updated."
+            exit 0
+          fi
+
+          echo "::error::This PR does not touch CHANGELOG.md."
+          echo ""
+          echo "Add an entry under the unreleased heading saying what changed and what a tester"
+          echo "should look at. If this change has nothing to tell a tester, label the PR"
+          echo "'no changelog' and say why in the description."
+          exit 1

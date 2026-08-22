@@ -2,6 +2,13 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
+## Unreleased
+
+What has landed on `next` and has not been released yet. Anything merged here adds a line, so that
+somebody running an alpha can see what changed and knows what to go and look at.
+
+<!-- Add yours here. Say what changed, and what a tester should try. -->
+
 ## 0.3.0 — 2026-08-21
 
 **Stable.** A day of using RatNav in live raids at 1080p rather than looking at it on a desktop,

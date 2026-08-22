@@ -14,13 +14,60 @@ RatNav is one person's side project, kept free under [PolyForm Noncommercial](LI
 incorrectly — those are worth knowing about, and an issue is the way to say so. A reply is not
 guaranteed and a fix is not promised, which is the honest position for a project of one.
 
-**There is no review queue.** Pull requests are not the way in, and feature requests are not being
-gathered. A PR opened here is **closed automatically**, with a note saying why — which is a worse
-welcome than a reply, and a better one than silence for six months. If you want RatNav to do
-something it does not, the [license](LICENSE) lets you fork it for anything noncommercial — give
-your version its own name.
+**Pull requests come from invited collaborators only.** There is no open review queue, and a PR
+from anyone else is **closed automatically** with a note saying why — a worse welcome than a
+reply, and a better one than silence for six months. If you want RatNav to do something it does
+not, the [license](LICENSE) lets you fork it for anything noncommercial — give your version its
+own name.
 
-The rest of this file is for anyone building it themselves.
+If you have been invited, the section below is yours. The rest of the file is for anyone building
+it themselves.
+
+## If you have commit access
+
+Two branches, and the difference between them is who decides.
+
+| | |
+|---|---|
+| **`next`** | Where work lands. Open a PR into it, and merge your own once the checks are green. |
+| **`main`** | What the world downloads. Only the maintainer merges here, and that is the whole point of the split. |
+
+**Nothing goes to `main` directly.** It reaches `main` when `next` is promoted, which is a
+deliberate act rather than a consequence of merging.
+
+### Getting a change in
+
+1. **Branch off `next`.**
+2. **Test it.** `dotnet test` has to pass, and `npm run build` in `web/` if you touched the app.
+   Run it against a real map or a real raid if that is what it touches — the tests cover the
+   parsing and the maths, not whether a pin lands on the right building.
+3. **Add a changelog entry** under **Unreleased** in [CHANGELOG.md](CHANGELOG.md). This is a
+   required check, and it is required for a reason: an alpha is only worth installing if the
+   person installing it can see what changed and knows what to go and look at. Say what a tester
+   should try, not just what you did.
+4. **Open the PR into `next`.** CI runs, the changelog check runs.
+5. **Merge it yourself** once both are green. No approval needed — the gate is on `main`, not
+   here.
+
+If a change genuinely has nothing to tell a tester — a typo in a comment, a CI tweak — label the
+PR `no changelog` and say why in the description. It is a label rather than a silent exception so
+that skipping it is visible.
+
+### How a change reaches people
+
+```
+your PR ──▶ next ──▶ alpha (v0.4.0-alpha.1, a prerelease)
+                       │
+                       └──▶ main ──▶ stable (v0.4.0)
+```
+
+Alphas are cut from `next` whenever there is something worth trying, and are marked prerelease on
+GitHub — the front page keeps pointing at the last stable one, so nobody gets an alpha by
+accident. A stable release happens when the maintainer decides `next` is ready, which is the one
+step that is not automatic and is not meant to be.
+
+So a merge to `next` is not a small thing: people install alphas. But it is also not the last
+word, which is why you can merge your own.
 
 ## Getting it running
 
@@ -68,8 +115,10 @@ evidence was wrong.
 
 Work is grouped into a **version**, not shipped a commit at a time.
 
-- **Alphas are tagged with a suffix** — `v0.3.0-alpha.1` — and GitHub marks them prerelease. They do
-  not become "Latest", so the download on the front page keeps pointing at the last stable build.
+- **Alphas are cut from `next` and tagged with a suffix** — `v0.3.0-alpha.1` — and GitHub marks them
+  prerelease. They do not become "Latest", so the download on the front page keeps pointing at the
+  last stable build. Releases are driven by the tag, not the branch, so an alpha can come off
+  `next` at any point without disturbing `main`.
 - **Promotion to stable is a decision, not a step.** When a version has been tried properly, it is
   promoted deliberately, because that changes what everybody downloads.
 - **The README names the latest stable release**, updated by a workflow when one is promoted. A

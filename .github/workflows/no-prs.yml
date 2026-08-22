@@ -1,12 +1,12 @@
-# Closes pull requests, because RatNav does not take them.
+# Closes pull requests from the public.
 #
-# The policy is in CONTRIBUTING.md and has been for a while; this is the part that enforces it.
-# Without it a stranger writes a patch, waits, and hears nothing — which is a worse answer than
-# being told no straight away.
+# RatNav takes contributions from invited collaborators and from nobody else. Without this a
+# stranger writes a patch, waits, and hears nothing — which is a worse answer than being told no
+# straight away.
 #
 # Forking stays allowed on purpose: the license invites it, and the README says so out loud. The
-# way in is a fork with its own name, not a patch to this one.
-name: No pull requests
+# way in for anybody else is a fork with its own name, not a patch to this one.
+name: No public pull requests
 
 # pull_request_target, not pull_request: a fork's own GITHUB_TOKEN is read-only, so a workflow
 # triggered by pull_request cannot comment or close. This never checks out the PR's code, which is
@@ -20,8 +20,15 @@ permissions:
 
 jobs:
   close:
-    # The owner can still open one — sometimes a PR is a useful place to watch CI run.
-    if: github.event.pull_request.user.login != github.repository_owner
+    # author_association is GitHub's own answer to "who is this to the repository": OWNER for the
+    # owner, COLLABORATOR for anybody invited. Everything else — CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR,
+    # NONE — is a stranger, and is what this exists for.
+    #
+    # Checked rather than a hardcoded list of names, so adding a collaborator is one click and not
+    # a commit here that somebody will forget.
+    if: >-
+      github.event.pull_request.author_association != 'OWNER' &&
+      github.event.pull_request.author_association != 'COLLABORATOR'
     runs-on: ubuntu-latest
     steps:
       - name: Say why, then close
@@ -31,7 +38,7 @@ jobs:
         run: |
           gh pr comment "$PR" --body "Thanks for taking the time to write this.
 
-          **RatNav does not take pull requests**, so this is closed automatically. It is not a judgment on the change — there is no review queue here, and leaving a patch open for months would be a worse answer than saying no now.
+          **RatNav only takes pull requests from invited collaborators**, so this is closed automatically. It is not a judgment on the change — there is no open review queue here, and leaving a patch sitting for months would be a worse answer than saying no now.
 
           - **Found a bug?** An [issue](https://github.com/mrthames/RatNav/issues) is the way, and those are read.
           - **Want RatNav to do something it does not?** The [license](https://github.com/mrthames/RatNav/blob/main/LICENSE) lets you fork it for anything noncommercial. Give your version its own name and it is yours.
