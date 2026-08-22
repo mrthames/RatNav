@@ -42,6 +42,16 @@ dotnet test
 work out why with them — a broken baseline makes every later result meaningless, and they will not
 know whether their first change caused it.
 
+On Windows, offer them a shortcut so launching it is not a command they have to remember:
+
+```
+pwsh tools/make-dev-shortcut.ps1
+```
+
+It puts **RatNav (dev)** on the Desktop and in the Start Menu, pointed at the build they just made.
+It warns if that build is older than the source, which is the mistake worth catching early: once a
+release is also installed there are two RatNavs on the machine and they look identical.
+
 **On a Mac or Linux**, `RatNav.App` will not build: it is WPF and targets `net8.0-windows`. Core,
 Service, the tests and the web app build anywhere. Say so plainly rather than letting them think
 something is wrong, and scope their work to the service, the web app, the tests and the docs.
