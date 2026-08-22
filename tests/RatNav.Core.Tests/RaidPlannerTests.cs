@@ -57,7 +57,7 @@ public class RaidPlannerTests
     [Fact]
     public void Two_opt_removes_a_crossing_that_nearest_neighbour_leaves_behind()
     {
-        // A square. Greedy nearest-neighbour from a corner produces a bow-tie across the
+        // A square. Greedy nearest-neighbor from a corner produces a bow-tie across the
         // diagonal; the perimeter is shorter and is what a player would actually walk.
         var square = new[] { At("nw", 0, 100), At("ne", 100, 100), At("se", 100, 0), At("sw", 0, 0) };
 
@@ -74,7 +74,7 @@ public class RaidPlannerTests
         var start = new GamePosition(0, 0, 0);
         var plan = RaidPlanner.Plan(Customs, [At("a", 0, 30), At("b", 40, 30)], start, StopOrdering.Shortest);
 
-        Assert.Equal(70, plan.DistanceMetres, 3);
+        Assert.Equal(70, plan.DistanceMeters, 3);
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class RaidPlannerTests
         var done = RaidPlanner.Reroute(plan, new GamePosition(100, 0, 0), new HashSet<string> { "a", "b" });
 
         Assert.Empty(done.Waypoints);
-        Assert.Equal(0, done.DistanceMetres);
+        Assert.Equal(0, done.DistanceMeters);
     }
 
     [Theory]
@@ -171,7 +171,7 @@ public class RaidPlannerTests
 
         // And the route costs one crossing, not several.
         Assert.Equal(CoordinateTransform.GroundDistance(
-            new GamePosition(20.3, 0, 42.3), new GamePosition(200, 0, 200)), plan.DistanceMetres, 3);
+            new GamePosition(20.3, 0, 42.3), new GamePosition(200, 0, 200)), plan.DistanceMeters, 3);
     }
 
     [Fact]
@@ -208,8 +208,8 @@ public class RaidPlannerTests
             previous = s.Position;
         }
 
-        Assert.True(plan.DistanceMetres < asGiven,
-            $"planned {plan.DistanceMetres:F0}m was not better than the given order's {asGiven:F0}m");
-        Assert.Equal(500, plan.DistanceMetres, 3);
+        Assert.True(plan.DistanceMeters < asGiven,
+            $"planned {plan.DistanceMeters:F0}m was not better than the given order's {asGiven:F0}m");
+        Assert.Equal(500, plan.DistanceMeters, 3);
     }
 }

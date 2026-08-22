@@ -7,7 +7,7 @@ namespace RatNav.Core.Maps;
 public enum MapInkLevel
 {
     /// <summary>
-    /// The map in its author's own colours, untouched. What a map looks like when you are reading
+    /// The map in its author's own colors, untouched. What a map looks like when you are reading
     /// it rather than glancing at it.
     /// </summary>
     Graphical,
@@ -22,7 +22,7 @@ public enum MapInkLevel
     /// <summary>Terrain drops back to a whisper; buildings, roads and fences carry the map.</summary>
     Structure,
 
-    /// <summary>Outlines only — building edges, roads, and the map border in a single colour.</summary>
+    /// <summary>Outlines only — building edges, roads, and the map border in a single color.</summary>
     Outline,
 }
 
@@ -33,10 +33,10 @@ public sealed record MapInkOptions
     /// <summary>Opacity of the whole map, 0–1. The Diablo-style dial.</summary>
     public double Opacity { get; init; } = 0.55;
 
-    /// <summary>Colour for structure — buildings, walls, fences.</summary>
+    /// <summary>Color for structure — buildings, walls, fences.</summary>
     public string Accent { get; init; } = "#8ec8ff";
 
-    /// <summary>Colour for the things you navigate by — roads, rail.</summary>
+    /// <summary>Color for the things you navigate by — roads, rail.</summary>
     public string RouteColor { get; init; } = "#e0c98a";
 
     /// <summary>Faint wash left behind terrain in <see cref="MapInkLevel.Structure"/>.</summary>
@@ -49,8 +49,8 @@ public sealed record MapInkOptions
 
     /// <summary>
     /// Draw a dark halo behind every line. Tarkov's backgrounds run from snow to unlit
-    /// basement, and no single colour is readable against both — a contrasting edge is what
-    /// makes one colour work everywhere.
+    /// basement, and no single color is readable against both — a contrasting edge is what
+    /// makes one color work everywhere.
     /// </summary>
     public bool Halo { get; init; } = true;
 }
@@ -87,7 +87,7 @@ public static partial class MapInk
 
     /// <summary>
     /// Applies an ink level to a map SVG and returns the rewritten markup.
-    /// Unrecognised markup is left alone, so a map drawn with classes we don't know about
+    /// Unrecognized markup is left alone, so a map drawn with classes we don't know about
     /// still renders — it just won't thin out as much.
     /// </summary>
     public static string Apply(string svgMarkup, MapInkOptions options)

@@ -11,8 +11,8 @@ namespace RatNav.Core.Tracking;
 ///
 /// <para><c>FoundInRaid</c> is yours to set, because RatNav cannot know: a barter may demand it
 /// where a kit you are building for yourself does not, and the same item can be either depending
-/// on what you are collecting it for. It colours the number on the overlay the same red the quest
-/// and hideout lists use, which is the one colour there meaning "you cannot buy your way out of
+/// on what you are collecting it for. It colors the number on the overlay the same red the quest
+/// and hideout lists use, which is the one color there meaning "you cannot buy your way out of
 /// this later".</para>
 /// </summary>
 public readonly record struct GoalItem(
@@ -21,7 +21,7 @@ public readonly record struct GoalItem(
 /// <summary>
 /// Something you have decided to collect for, named by you.
 ///
-/// <para>This replaced a searchable catalogue of every barter and craft in the game. Picking one
+/// <para>This replaced a searchable catalog of every barter and craft in the game. Picking one
 /// out of 789 meant knowing which of Therapist's four Dorm 303 trades you meant, and the answer to
 /// "what am I collecting for" was never "the one tarkov.dev calls 6a70c20e". It was "the document
 /// case". So you name it and list what it takes.</para>

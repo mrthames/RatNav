@@ -394,7 +394,7 @@ export function ItemsView() {
 /**
  * Things you are tracking yourself: a name, and the items under it.
  *
- * <p>This replaced a searchable catalogue of all 789 barters and 214 crafts. Finding the one you
+ * <p>This replaced a searchable catalog of all 789 barters and 214 crafts. Finding the one you
  * meant needed you to already know which of Therapist's four Dorm 303 trades it was, and what you
  * actually think is "the document case".</p>
  *
@@ -589,7 +589,7 @@ function GoalForm({
 
 
   // Searching the item list is still how you name an item — RatNav needs its id to count what you
-  // have. What is gone is having to search a catalogue of trades to find the one you meant.
+  // have. What is gone is having to search a catalog of trades to find the one you meant.
   useEffect(() => {
     if (query.trim().length < 2) { setFound([]); return }
 
@@ -673,7 +673,7 @@ function GoalForm({
                 {/*
                   Yours to say, because RatNav cannot know: a barter may demand found-in-raid
                   where a kit you are building for yourself does not, and the same item is either
-                  depending on what you are collecting it for. It colours the number on the
+                  depending on what you are collecting it for. It colors the number on the
                   overlay the red the quest and hideout lists already use for the same meaning.
                 */}
                 <label className="flex flex-none items-center gap-1 font-mono text-[10px] text-muted">
@@ -946,8 +946,8 @@ function Row({
               ) : (
                 <span className="truncate">{row.name}</span>
               )}
-              {/* Shape as well as colour: found-in-raid changes what you do with an item, and
-                  it has to survive colour-blindness. */}
+              {/* Shape as well as color: found-in-raid changes what you do with an item, and
+                  it has to survive color-blindness. */}
               {row.foundInRaid && <Tag className="border-need/50 text-need">◆ FIR</Tag>}
               {row.isKey && <Tag className="border-route/50 text-route">▲ key</Tag>}
               {row.hideoutWave === 1 && <Tag className="border-accent/50 text-accent">● now</Tag>}

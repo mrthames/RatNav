@@ -39,7 +39,7 @@ namespace RatNav.App;
 /// The overlay that sits over the game.
 ///
 /// <para>Two presentations of one state. <b>Box</b> is a small panel in a corner, out of the way.
-/// <b>Wireframe</b> draws the map itself, large and translucent over the centre — terrain dropped
+/// <b>Wireframe</b> draws the map itself, large and translucent over the center — terrain dropped
 /// away so buildings and roads carry it and the game still shows through.</para>
 ///
 /// <para><b>Nothing animates or polls.</b> The scene is redrawn when the raid state changes — a
@@ -112,9 +112,9 @@ public partial class OverlayWindow : Window
     private DateTimeOffset? _overrodeAt;
 
     /// <summary>
-    /// How much of the map to draw, and in whose colours.
+    /// How much of the map to draw, and in whose colors.
     ///
-    /// <para><c>graphical</c> uses the map's own palette — the fifteen colours it was drawn with,
+    /// <para><c>graphical</c> uses the map's own palette — the fifteen colors it was drawn with,
     /// saying what is forest, water, rock and road. The others recolour by role, which reads
     /// better over a firefight but throws away everything that makes a map look like a place.</para>
     /// </summary>
@@ -233,10 +233,10 @@ public partial class OverlayWindow : Window
 
         // And when the canvas changes size without the window doing so.
         //
-        // Draw centres the map on MapCanvas.ActualWidth, and switching to the centred view
+        // Draw centers the map on MapCanvas.ActualWidth, and switching to the centered view
         // collapses the list columns beside it — a layout pass that happens after the code asking
         // for it returns. So the redraw fired while the canvas still had its old width, and the
-        // map was centred on a rectangle that no longer existed: with both lists on the left, the
+        // map was centered on a rectangle that no longer existed: with both lists on the left, the
         // player sat about a hundred pixels right of the middle of the screen until something
         // else happened to redraw.
         //
@@ -249,7 +249,7 @@ public partial class OverlayWindow : Window
         LeftDrawers.SizeChanged += (_, _) => ApplyQuestCeiling();
         RightDrawers.SizeChanged += (_, _) => ApplyQuestCeiling();
 
-        // The stack is placed from the measured height of its neighbours, and both of them change
+        // The stack is placed from the measured height of its neighbors, and both of them change
         // size — the footer wraps, the quick bar grows with the size dial.
 
         DragHandle.MouseLeftButtonDown += (_, _) => DragMove();
@@ -263,7 +263,7 @@ public partial class OverlayWindow : Window
         // ScrollViewer for free.
         //
         // Both sit inside a window that is click-through most of the time and never takes focus,
-        // and the free behaviour was not surviving that — a wheel over a full items list did
+        // and the free behavior was not surviving that — a wheel over a full items list did
         // nothing at all. Handling it here works regardless, and marking it handled stops it
         // bubbling on to anything that would rather zoom the map with it.
         ScrollOnWheel(QuestScroll);
@@ -315,7 +315,7 @@ public partial class OverlayWindow : Window
         FadeDown.Click += (_, _) => StepFade(-0.1);
         ZoomReset.Click += (_, _) => SetZoom(1);
         FollowButton.Click += (_, _) => ToggleFollowing();
-        RecentreButton.Click += (_, _) => Recentre();
+        RecenterButton.Click += (_, _) => Recentre();
         ExtractButton.Click += (_, _) => CycleExtracts();
 
         HintsButton.Click += (_, _) =>
@@ -415,7 +415,7 @@ public partial class OverlayWindow : Window
             }
         };
         ExpandControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
-        CentredControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
+        CenteredControls.Click += (_, _) => ShowControls(!_settings.Overlay.ShowControls);
     }
 
     public event EventHandler? ExpandRequested;
@@ -544,7 +544,7 @@ public partial class OverlayWindow : Window
             // a window the size of two lists.
             if (Folded) Remember(_settings.Overlay with { FoldedWidth = Width });
 
-            // Both views keep where they were left. The centred one used to be excluded, because
+            // Both views keep where they were left. The centered one used to be excluded, because
             // its rectangle came from the dial and anything written here was a value nothing read.
             Place(p => p with
             {
@@ -573,7 +573,7 @@ public partial class OverlayWindow : Window
     /// </summary>
     private void ToggleMapDrawer()
     {
-        // The centred view *is* the map. There would be nothing left of it to fold into.
+        // The centered view *is* the map. There would be nothing left of it to fold into.
         if (_settings.Overlay.Mode != RatNavSettings.OverlayMode.Box) return;
 
         var folding = _settings.Overlay.ShowMap;
@@ -646,7 +646,7 @@ public partial class OverlayWindow : Window
         return Math.Clamp(sides + 32, 160, Math.Max(160, SystemParameters.WorkArea.Width));
     }
 
-    /// <summary>Switches between the corner panel and the centred wireframe map.</summary>
+    /// <summary>Switches between the corner panel and the centered wireframe map.</summary>
     public void ToggleMode()
     {
         var mode = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box
@@ -828,17 +828,17 @@ public partial class OverlayWindow : Window
         var bounds = _settings.Overlay;
         var placement = bounds.Current;
 
-        // The centred view takes the rectangle it was given, and the coverage dial when it has
+        // The centered view takes the rectangle it was given, and the coverage dial when it has
         // not been given one.
         //
         // It used to be placed from the dial every time, on the reasoning that a view whose whole
         // idea is that you are in the middle of it has nothing to decide but its size. That is true
-        // of where the *map* is centred and not of where the window sits: a screen-shaped rectangle
+        // of where the *map* is centered and not of where the window sits: a screen-shaped rectangle
         // at 70% is not the shape everybody wants, and the dial cannot express "wide and short" or
         // "over to the left of my ultrawide".
         //
         // Turning the dial still overrides it, which is what makes the dial worth keeping — it is
-        // the way back to a centred rectangle after dragging one somewhere.
+        // the way back to a centered rectangle after dragging one somewhere.
         if (bounds.Mode == RatNavSettings.OverlayMode.Wireframe && !placement.Unplaced)
         {
             Left = placement.Left;
@@ -908,7 +908,7 @@ public partial class OverlayWindow : Window
         else
         {
             // A scrim, not bare text on the game: Tarkov's backgrounds run from snow to unlit
-            // basement, and no single text colour survives both.
+            // basement, and no single text color survives both.
             Frame.Background = new SolidColorBrush(Color.FromArgb(0xe6, 0x0b, 0x0f, 0x13));
             Frame.BorderThickness = new Thickness(1);
             MapFrame.Background = new SolidColorBrush(Color.FromArgb(0x33, 0x14, 0x1b, 0x21));
@@ -939,11 +939,11 @@ public partial class OverlayWindow : Window
     ///
     /// <para>So at full coverage the window answers per point instead: the controls take their
     /// clicks and everywhere else says it is not there. Panning by right-drag goes with it, which
-    /// is the right trade — a HUD is centred on you and there is nothing to drag it to.</para>
+    /// is the right trade — a HUD is centered on you and there is nothing to drag it to.</para>
     /// </summary>
     private IntPtr OnHitTest(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        // Below full coverage this is the centred *window*, which behaves as it always has.
+        // Below full coverage this is the centered *window*, which behaves as it always has.
         // And while click-through is on, the extended style has already answered.
         if (message != WM_NCHITTEST) return IntPtr.Zero;
 
@@ -954,7 +954,7 @@ public partial class OverlayWindow : Window
         // neither was offered. Windows will run its own resize loop — real cursors, snapping, the
         // window's own minimum size — as soon as it is told the pointer is on a frame.
         //
-        // Both views, now that the centred one keeps a rectangle of its own rather than deriving
+        // Both views, now that the centered one keeps a rectangle of its own rather than deriving
         // one from the dial on every layout — an edge dragged there used to spring straight back.
         if (!_clickThrough)
         {
@@ -992,10 +992,10 @@ public partial class OverlayWindow : Window
     /// you and a door, and a number that pretended otherwise would be wrong in a way that matters;
     /// this one is only ever used to compare two exits, which it does honestly.</para>
     ///
-    /// <para>Rounded hard on purpose. Metre-precision on a figure that changes every few steps is
+    /// <para>Rounded hard on purpose. Meter-precision on a figure that changes every few steps is
     /// noise, and a readout that flickers is one you stop reading.</para>
     /// </summary>
-    private string? Metres(ExtractPin extract)
+    private string? Meters(ExtractPin extract)
     {
         if (_view?.WorldX is not { } px || _view.WorldZ is not { } pz) return null;
 
@@ -1011,7 +1011,7 @@ public partial class OverlayWindow : Window
     /// <summary>Whether a point in window space is over something meant to be clicked.</summary>
     private bool OverControl(Point point)
     {
-        foreach (var element in new FrameworkElement[] { ControlStack, CentredControls, QuickBar })
+        foreach (var element in new FrameworkElement[] { ControlStack, CenteredControls, QuickBar })
         {
             if (!element.IsVisible) continue;
 
@@ -1022,12 +1022,12 @@ public partial class OverlayWindow : Window
         return false;
     }
 
-    // No ClearNeighbours any more.
+    // No ClearNeighbors any more.
     //
     // It measured the quick bar and the footer on every layout pass and set the controls stack's
-    // margins so a drawer pinned to the left edge would clear both. The stack is a centred panel
+    // margins so a drawer pinned to the left edge would clear both. The stack is a centered panel
     // now, bounded by a share of the map's height, so it has no edges to keep clear of — and a
-    // margin computed from its neighbours would be the one thing able to push it off centre.
+    // margin computed from its neighbors would be the one thing able to push it off center.
 
     /// <summary>Where a piece of chrome sits in the window, transforms and all, or null if it is not showing.</summary>
     private Rect? Bounds(FrameworkElement element)
@@ -1044,13 +1044,13 @@ public partial class OverlayWindow : Window
         }
     }
 
-    /// <summary>How much of the screen the centred view takes, clamped to something usable.</summary>
+    /// <summary>How much of the screen the centered view takes, clamped to something usable.</summary>
     private double Coverage => Math.Clamp(_settings.Overlay.WireframeScale, 0.3, 1.0);
 
     /// <summary>
-    /// True when the centred view has been turned up to cover the whole screen.
+    /// True when the centered view has been turned up to cover the whole screen.
     ///
-    /// <para>The HUD and the windowed centred map are the same view at two ends of one dial, so
+    /// <para>The HUD and the windowed centered map are the same view at two ends of one dial, so
     /// this is what everything that only applies to the HUD — the edge fade, the glow, and letting
     /// clicks through where there is no control — asks.</para>
     /// </summary>
@@ -1058,7 +1058,7 @@ public partial class OverlayWindow : Window
         _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe && Coverage >= 1;
 
     /// <summary>
-    /// A centred rectangle covering that share of the screen.
+    /// A centered rectangle covering that share of the screen.
     ///
     /// <para>What the coverage dial writes. It used to clear the rectangle instead and let the
     /// layout derive one — which stopped working the moment an unset rectangle came to mean "the
@@ -1146,9 +1146,9 @@ public partial class OverlayWindow : Window
         // Looking somewhere else is a decision. Leaving following on would snap the map back on
         // the next fix and undo the drag a second after it was made.
         //
-        // But switching it off has to leave the view exactly where it is. Following centres on
-        // you; not following centres on the middle of the map — so flipping it mid-drag threw the
-        // map to the centre and you carried on dragging from somewhere you had not chosen. The
+        // But switching it off has to leave the view exactly where it is. Following centers on
+        // you; not following centers on the middle of the map — so flipping it mid-drag threw the
+        // map to the center and you carried on dragging from somewhere you had not chosen. The
         // offset you were already at is folded into the pan, which makes the change invisible.
         if (Following && _view is { X: { } atX, Y: { } atY })
             Place(p => p with { Follow = false, PanX = p.PanX + atX - 0.5, PanY = p.PanY + atY - 0.5 });
@@ -1223,7 +1223,7 @@ public partial class OverlayWindow : Window
     /// Writes the arrangement out shortly after it stops changing, rather than as it changes.
     ///
     /// <para>Every drag of a divider or an edge raises a delta event per mouse move, and each one
-    /// used to serialise the whole settings file and move it into place — dozens of writes a
+    /// used to serialize the whole settings file and move it into place — dozens of writes a
     /// second for one gesture. Most were overwritten a frame later by the next one, so the disk
     /// work bought nothing, and the odds of catching the file momentarily busy went up with every
     /// extra write.</para>
@@ -1300,8 +1300,8 @@ public partial class OverlayWindow : Window
             //
             // This asked for ink=full, which is a *restyled* map: the service replaces the
             // author's stylesheet with RatNav's own flat one. Reading a palette back out of that
-            // returned RatNav's wireframe colours, so the graphical level — whose whole job is to
-            // use the map's own fifteen colours — drew the skeleton instead. Graphical is the one
+            // returned RatNav's wireframe colors, so the graphical level — whose whole job is to
+            // use the map's own fifteen colors — drew the skeleton instead. Graphical is the one
             // level the service leaves untouched, which makes it the right thing to fetch.
             var url = $"{ServiceHost.Root}/api/maps/{Uri.EscapeDataString(mapId)}/image?ink=graphical";
 
@@ -1336,9 +1336,9 @@ public partial class OverlayWindow : Window
             // which has nothing indoors on it, so the floor above is worth showing alongside.
             //
             // Kept in the ghost layer rather than merged into the floor you are on. Drawn at full
-            // strength it reads as your floor, so a stairwell one storey up looks like a room
+            // strength it reads as your floor, so a stairwell one story up looks like a room
             // beside you — and it ignored the ghost toggle, which is not something a toggle
-            // labelled "ghost" should be able to do.
+            // labeled "ghost" should be able to do.
             // Only meaningful when one floor is showing. Stacked, the floor above is already there.
             _aboveShapes = floor is { Length: > 0 }
                 && _settings.Overlay.MergeGroundFloor && Merged(floor) is { } partner
@@ -1522,7 +1522,7 @@ public partial class OverlayWindow : Window
     private int _briefImageAt;
     private string? _briefWikiUrl;
 
-    /// <summary>One line of a quest's steps, coloured by where you are in it.</summary>
+    /// <summary>One line of a quest's steps, colored by where you are in it.</summary>
     private sealed record BriefStep(string Text, Brush Colour);
 
     /// <summary>Whether a view has arrived yet, so the first one can settle the opening state.</summary>
@@ -1535,7 +1535,7 @@ public partial class OverlayWindow : Window
     /// Opens the settings in a window of their own, or closes it.
     ///
     /// <para>Every version of this as a panel inside the overlay had the same fault: the settings
-    /// covered the map they configure. Centred, most of it; against an edge, less of it and the
+    /// covered the map they configure. Centered, most of it; against an edge, less of it and the
     /// quick controls floating there as well. There is no good position for a panel this size
     /// inside a small overlay, because the overlay is the thing being configured.</para>
     ///
@@ -1624,7 +1624,7 @@ public partial class OverlayWindow : Window
     ///
     /// <para>It filled the map area edge to edge, which reads as the map having been swapped for
     /// something else rather than as something laid on top of it. Nine tenths of the height,
-    /// centred, leaves a margin of map showing above and below — enough to say "this is in front
+    /// centered, leaves a margin of map showing above and below — enough to say "this is in front
     /// of that". The width stays whatever the player made the map, because a modal narrower than
     /// its container gains nothing here and the pictures want the room.</para>
     ///
@@ -1697,7 +1697,7 @@ public partial class OverlayWindow : Window
             _briefWindow.Content = QuestBrief;
         }
 
-        // Filling the window rather than centred in it, and no ceiling: the window is the size
+        // Filling the window rather than centered in it, and no ceiling: the window is the size
         // limit now.
         QuestBrief.VerticalAlignment = VerticalAlignment.Stretch;
         QuestBrief.MaxHeight = double.PositiveInfinity;
@@ -2008,7 +2008,7 @@ public partial class OverlayWindow : Window
     /// <para>Applied to the window in the corner panel, where the thing being faded is the panel:
     /// its scrim, its lists and its map are one object and dimming them together is the point.</para>
     ///
-    /// <para>The centred view has no panel. It is a map over the game with controls floating on
+    /// <para>The centered view has no panel. It is a map over the game with controls floating on
     /// top, and fading the window took the controls down with it — so the setting people actually
     /// want, a barely-there map, was the one that made the controls hardest to work. The map layer
     /// carries it there and the controls stay solid.</para>
@@ -2016,10 +2016,10 @@ public partial class OverlayWindow : Window
     private void ApplyWindowOpacity()
     {
         var fade = Math.Clamp(Placement.WindowOpacity, 0.2, 1.0);
-        var centred = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe;
+        var centered = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe;
 
-        Opacity = centred ? 1 : fade;
-        MapInk.Opacity = centred ? fade : 1;
+        Opacity = centered ? 1 : fade;
+        MapInk.Opacity = centered ? fade : 1;
 
         // A torn-off panel is part of the overlay and takes the overlay's settings with it.
         MatchPopOuts();
@@ -2138,13 +2138,13 @@ public partial class OverlayWindow : Window
     }
 
     /// <summary>
-    /// Switches between a map that holds still and one that keeps you centred. Persisted, because
+    /// Switches between a map that holds still and one that keeps you centered. Persisted, because
     /// which of the two is right is a matter of how you read a map, not of what raid you are in.
     /// </summary>
     /// <summary>
     /// Opens or closes the items list.
     ///
-    /// <para>In the centred map view there is nothing to open it <i>into</i> — that view exists to
+    /// <para>In the centered map view there is nothing to open it <i>into</i> — that view exists to
     /// be a map and nothing else — so the button pops the list out instead. Attaching it there
     /// would put a panel back over the middle of the screen, which is the one thing the view is
     /// for avoiding.</para>
@@ -2208,7 +2208,7 @@ public partial class OverlayWindow : Window
     private void ApplyItemsPanel()
     {
         // Hidden while torn off, so the same list is never in two places at once — and never
-        // attached in the centred map view, which exists to be a map. A list popped out from the
+        // attached in the centered map view, which exists to be a map. A list popped out from the
         // corner panel stays popped out across the switch, because it is its own window and the
         // mode has nothing to do with it.
         var inline = _settings.Overlay.ShowItems
@@ -2256,7 +2256,7 @@ public partial class OverlayWindow : Window
         ItemsDrawer.Visibility = handles;
         QuestDrawer.Visibility = handles;
 
-        // Nothing to fold in the centred view, which is the map and little else.
+        // Nothing to fold in the centered view, which is the map and little else.
         MapDrawer.Visibility = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Box
             ? handles
             : Visibility.Collapsed;
@@ -2487,13 +2487,13 @@ public partial class OverlayWindow : Window
     /// Gives the items column its width, or takes it away.
     ///
     /// <para>The column kept its width whether or not anything was in it, so folding the list away
-    /// left a stripe of empty space down one side and the map sitting off-centre in the window.
+    /// left a stripe of empty space down one side and the map sitting off-center in the window.
     /// A collapsed drawer should cost nothing.</para>
     /// </summary>
     private void ApplyItemsWidth()
     {
         // A column earns its width when a drawer is actually in it and showing. Reserved
-        // regardless, it left a stripe of nothing down one side with the map pushed off-centre.
+        // regardless, it left a stripe of nothing down one side with the map pushed off-center.
         var none = new GridLength(0);
 
         LeftSlot.Width = Occupied(LeftDrawers) ? new GridLength(SideWidth(left: true)) : none;
@@ -2999,38 +2999,38 @@ public partial class OverlayWindow : Window
         // The gear stays wherever interact mode is on, open or closed. Hiding it when the stack
         // opened made the row reflow and the quests and items buttons slide across underneath the
         // cursor — and left no way back except the collapse arrow, which is somewhere else.
-        var centred = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe;
+        var centered = _settings.Overlay.Mode == RatNavSettings.OverlayMode.Wireframe;
 
-        // The centred view is centred, and its size comes from the coverage dial. Dragging it or
+        // The centered view is centered, and its size comes from the coverage dial. Dragging it or
         // pulling its corner would move it until the next thing that laid it out put it back,
         // which is worse than not offering either.
-        // Both views get handles now. The centred one had none, because its rectangle came from
+        // Both views get handles now. The centered one had none, because its rectangle came from
         // the coverage dial and there was nothing to drag it to; it has a rectangle of its own to
         // arrange, so it needs the same grab bar and corner as the panel.
         DragHandle.Visibility = Visibility.Visible;
         ResizeGrip.Visibility = Visibility.Visible;
 
-        HudControls.Visibility = centred ? Visibility.Visible : Visibility.Collapsed;
+        HudControls.Visibility = centered ? Visibility.Visible : Visibility.Collapsed;
         FullScreenControls.Visibility = Hud ? Visibility.Visible : Visibility.Collapsed;
 
         // One gear each, because they live in different places for good reasons. The corner view's
-        // is in the footer with the drawer handles; the centred view has no footer, so its own
+        // is in the footer with the drawer handles; the centered view has no footer, so its own
         // floats over the map.
-        ExpandControls.Visibility = editing && !centred ? Visibility.Visible : Visibility.Collapsed;
-        CentredControls.Visibility = editing && centred ? Visibility.Visible : Visibility.Collapsed;
+        ExpandControls.Visibility = editing && !centered ? Visibility.Visible : Visibility.Collapsed;
+        CenteredControls.Visibility = editing && centered ? Visibility.Visible : Visibility.Collapsed;
 
         var says = open ? "Hide the map controls" : "Show the map controls";
         ExpandControls.ToolTip = says;
-        CentredControls.ToolTip = says;
+        CenteredControls.ToolTip = says;
 
         // A panel over the map rather than a column down the side of it. Stretched, it runs the
         // whole height of a screen-filling view, which is most of the game covered by controls
         // nobody is reading.
-        ControlStack.VerticalAlignment = centred
+        ControlStack.VerticalAlignment = centered
             ? System.Windows.VerticalAlignment.Top
             : System.Windows.VerticalAlignment.Stretch;
 
-        ControlStack.MaxHeight = centred
+        ControlStack.MaxHeight = centered
             ? Math.Max(200, ActualHeight * 0.75)
             : double.PositiveInfinity;
 
@@ -3277,8 +3277,8 @@ public partial class OverlayWindow : Window
         // Says which way it *is*, like everything else on this bar.
         //
         // It said which way pressing it would go — "all exits" while filtered to yours — on the
-        // reasoning that a control labelled with its own state leaves you guessing what the press
-        // does. That reasoning is sound in isolation and wrong here: every neighbour on this bar
+        // reasoning that a control labeled with its own state leaves you guessing what the press
+        // does. That reasoning is sound in isolation and wrong here: every neighbor on this bar
         // reads as a state ("transit off", "still", "Both"), so the one control that did not was
         // read as one too, and it says the opposite of what it is. Reported as the filter being
         // backwards, which from the outside is exactly what it looked like.
@@ -3296,7 +3296,7 @@ public partial class OverlayWindow : Window
 
         // Only worth offering when it would do something. A crosshair that is always lit teaches
         // people to ignore it.
-        RecentreButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
+        RecenterButton.Visibility = Panned || !Following ? Visibility.Visible : Visibility.Collapsed;
         // Title case, matching the app's Maps page rather than the raw setting value.
         ExtractButton.Content = Titled(_settings.Overlay.Extracts);
         QuestVisibility.Content = Titled(_settings.Overlay.Quests);
@@ -3328,7 +3328,7 @@ public partial class OverlayWindow : Window
 
     /// <summary>
     /// Draws the map itself: terrain as a whisper, structure and roads carrying it. Whether zoom
-    /// holds the map still or keeps you centred is <see cref="RatNavSettings.OverlayBounds.FollowPlayer"/>.
+    /// holds the map still or keeps you centered is <see cref="RatNavSettings.OverlayBounds.FollowPlayer"/>.
     /// </summary>
     /// <summary>
     /// Dissolves the map into the game toward the edges of the full-screen HUD.
@@ -3338,7 +3338,7 @@ public partial class OverlayWindow : Window
     /// paths. Relative units, so it stays an ellipse matching the screen and reaches every edge at
     /// the same point rather than fading the sides sooner than the top.</para>
     ///
-    /// <para>Only in the HUD. A windowed centred map has a border of its own, and something
+    /// <para>Only in the HUD. A windowed centered map has a border of its own, and something
     /// fading out just inside a visible border reads as a rendering fault.</para>
     /// </summary>
     private void ApplyEdgeFade()
@@ -3387,7 +3387,7 @@ public partial class OverlayWindow : Window
         {
             // Floors conflict only where they overlap. A stairwell drawn directly above a
             // corridor is ambiguous; a warehouse at the other end of the map is not — and fading
-            // that too turned the whole map to frosted glass for the sake of a few square metres.
+            // that too turned the whole map to frosted glass for the sake of a few square meters.
             //
             // So anything with nothing above or below it is drawn in full, and only the parts that
             // actually clash are held back.
@@ -3401,7 +3401,7 @@ public partial class OverlayWindow : Window
             if (shape.Role == MapShapeRole.Decoration) continue;
             if (!ShownAt(ink, shape.Role)) continue;
 
-            // The map as it was drawn: its own colours, its own line weights. Everything below
+            // The map as it was drawn: its own colors, its own line weights. Everything below
             // recolours by role, which is right over a dark scene and wrong when you want to read
             // the map as a place rather than as a diagram.
             if (ink == "graphical" && MapPalette.For(_palette, shape.Classes) is { } styled)
@@ -3448,7 +3448,7 @@ public partial class OverlayWindow : Window
                 MapShapeRole.Hazard => ((Brush?)FindResource("Need"), (Brush?)FindResource("Need"), 0.8),
 
                 // Something the vocabulary does not name yet. Drawn thin rather than dropped: a map
-                // RatNav has not learnt should look sparse, never blank.
+                // RatNav has not learned should look sparse, never blank.
                 _ => ((Brush?)FindResource("Terrain"), null, 0.6),
             };
 
@@ -3468,13 +3468,13 @@ public partial class OverlayWindow : Window
             // A dark stroke underneath, drawn first and wider.
             //
             // This is the one thing that makes a translucent map readable over Tarkov, whose
-            // backgrounds run from snowfield to unlit basement. No single line colour survives
+            // backgrounds run from snowfield to unlit basement. No single line color survives
             // both, and turning the opacity up until it does buries the game instead. A halo
             // separates the line from whatever is behind it, so the line itself can stay thin.
             //
             // In the HUD the same pass does the opposite job. There the map is meant to read as
             // light rather than as ink — outlines glowing over the game — so the wide stroke
-            // underneath takes the line's own colour at low opacity instead of the dark ground.
+            // underneath takes the line's own color at low opacity instead of the dark ground.
             // A blur would be the obvious way to glow and the wrong one: several hundred paths
             // each carrying a DropShadowEffect is a frame budget spent on decoration.
             if ((_settings.Overlay.Halo || Hud) && stroke is not null && weight > 0)
@@ -3514,7 +3514,7 @@ public partial class OverlayWindow : Window
         //
         // The map's own palette draws buildings at #1a2632 against #1f5054 terrain — near-black on
         // dark teal, which at any sensible opacity over a game is invisible. Woods has 111
-        // buildings and Sawmill read as roads through empty ground. The colours below are the
+        // buildings and Sawmill read as roads through empty ground. The colors below are the
         // map's, and correct; what they are not is legible over something else.
         if (ink == "graphical")
         {
@@ -3567,7 +3567,7 @@ public partial class OverlayWindow : Window
 
     /// <summary>
     /// The ink dial, in one place. It drops whole categories rather than fading everything, which
-    /// is the difference between a map you can read over a firefight and a grey wash. Hazards and
+    /// is the difference between a map you can read over a firefight and a gray wash. Hazards and
     /// boundaries survive every level: a minefield is not detail.
     /// </summary>
     private static bool ShownAt(string ink, MapShapeRole role) => ink switch
@@ -3575,16 +3575,16 @@ public partial class OverlayWindow : Window
         "outline" => role is MapShapeRole.Structure or MapShapeRole.Boundary or MapShapeRole.Hazard,
         "structure" => role is not MapShapeRole.Terrain and not MapShapeRole.Other,
 
-        // Graphical and full both draw everything; the difference is whose colours.
+        // Graphical and full both draw everything; the difference is whose colors.
         _ => true,
     };
 
     /// <summary>
     /// Where the map sits inside the canvas.
     ///
-    /// <para>Two behaviours, and the choice is the player's. <b>Still</b> anchors the map's centre
+    /// <para>Two behaviors, and the choice is the player's. <b>Still</b> anchors the map's center
     /// to the canvas and lets the marker travel across it, so a building stays where you last saw
-    /// it. <b>Follow</b> keeps you centred and slides the map underneath, which is what you want
+    /// it. <b>Follow</b> keeps you centered and slides the map underneath, which is what you want
     /// once zoomed in far enough to walk off the edge.</para>
     ///
     /// <para>Built once per draw and shared by every layer, so the map, the route, and the marker
@@ -3615,7 +3615,7 @@ public partial class OverlayWindow : Window
     /// <summary>
     /// How far to turn the map so your heading points up the screen, or null to leave it north-up.
     ///
-    /// <para><b>The centred view only.</b> That view is in front of you and is read while moving,
+    /// <para><b>The centered view only.</b> That view is in front of you and is read while moving,
     /// so a route behind you being drawn above you means doing the rotation in your head every
     /// time you glance at it. Turning the map instead makes what is at the top of the screen the
     /// thing that is in front of you, which is the reason to have a map in the middle of the
@@ -3760,11 +3760,11 @@ public partial class OverlayWindow : Window
         Math.Min(width / _mapViewBox.Width, height / _mapViewBox.Height) * Placement.Zoom;
 
     /// <summary>
-    /// Whether the map keeps you centred, for whichever presentation is on screen.
+    /// Whether the map keeps you centered, for whichever presentation is on screen.
     ///
     /// <para>Two settings rather than one, because the right answer differs. The corner box is too
-    /// small to hold a map usefully, so it follows; the centred map is big enough to read as a
-    /// map, and one that re-centres on every fix puts the same building somewhere new each time
+    /// small to hold a map usefully, so it follows; the centered map is big enough to read as a
+    /// map, and one that re-centers on every fix puts the same building somewhere new each time
     /// you look.</para>
     /// </summary>
     private bool Following => Placement.Follow;
@@ -3775,17 +3775,17 @@ public partial class OverlayWindow : Window
     /// <summary>
     /// Puts the map back on you — once — without starting to follow.
     ///
-    /// <para>A still map is still on purpose: big enough to read, and one that re-centres on every
+    /// <para>A still map is still on purpose: big enough to read, and one that re-centers on every
     /// fix moves the same building each time you look at it. The cost was that asking "where am I
     /// now" meant turning follow on, which throws away the framing you chose and then has to be
     /// turned off again.</para>
     ///
-    /// <para>With follow off, <see cref="Focus"/> centres on the middle of the map plus however
+    /// <para>With follow off, <see cref="Focus"/> centers on the middle of the map plus however
     /// far it has been dragged — so putting you in the middle is a pan to your own offset, and the
     /// map stays exactly as still afterwards as it was before. With follow already on, the same
     /// key clears the drag, which is the same request answered the way that mode can answer it.</para>
     ///
-    /// <para>Nothing to do without a fix: there is no "you" to centre on until a screenshot has
+    /// <para>Nothing to do without a fix: there is no "you" to center on until a screenshot has
     /// said where you are, and guessing the middle of the map would look like the key failing.</para>
     /// </summary>
     public void CenterOnPlayer() => Dispatcher.Invoke(() =>
@@ -3802,7 +3802,7 @@ public partial class OverlayWindow : Window
     });
 
     /// <summary>
-    /// What sits at the centre of the canvas: you, or the middle of the map — plus however far it
+    /// What sits at the center of the canvas: you, or the middle of the map — plus however far it
     /// has been dragged.
     /// </summary>
     private (double X, double Y) Focus(RaidView view)
@@ -3878,19 +3878,19 @@ public partial class OverlayWindow : Window
         if (at.X >= inset && at.X <= width - inset && at.Y >= inset && at.Y <= height - inset)
             return false;
 
-        var centre = new Point(width / 2, height / 2);
-        var dx = at.X - centre.X;
-        var dy = at.Y - centre.Y;
+        var center = new Point(width / 2, height / 2);
+        var dx = at.X - center.X;
+        var dy = at.Y - center.Y;
 
         if (Math.Abs(dx) < 0.01 && Math.Abs(dy) < 0.01) return false;
 
-        // How far along the line from the centre the view's edge sits. The smaller of the two
+        // How far along the line from the center the view's edge sits. The smaller of the two
         // axis limits is the one actually hit first.
         var limitX = dx == 0 ? double.PositiveInfinity : (width / 2 - inset) / Math.Abs(dx);
         var limitY = dy == 0 ? double.PositiveInfinity : (height / 2 - inset) / Math.Abs(dy);
         var scale = Math.Min(limitX, limitY);
 
-        edge = new Point(centre.X + dx * scale, centre.Y + dy * scale);
+        edge = new Point(center.X + dx * scale, center.Y + dy * scale);
 
         // Screen degrees, clockwise from up, matching how the facing cone is drawn.
         bearing = Math.Atan2(dx, -dy) * 180 / Math.PI;
@@ -3901,7 +3901,7 @@ public partial class OverlayWindow : Window
     /// Whether waypoints off the edge of the view get an arrow pointing at them.
     ///
     /// <para><b>The corner panel only.</b> That map is small enough that something just outside it
-    /// is genuinely lost, which is what an arrow is for. The centred view is large and already
+    /// is genuinely lost, which is what an arrow is for. The centered view is large and already
     /// shows the ground you are crossing, so the same arrows became a ring of clutter around the
     /// edge of exactly the thing you were trying to see through — and the edges of that view are
     /// where the drawing is deliberately fading out.</para>
@@ -3966,8 +3966,8 @@ public partial class OverlayWindow : Window
             //
             // Edge markers crowd: they are all pinned to the same few hundred pixels of border, so
             // a waypoint's number lands on an extract's name far more often than two things in the
-            // middle of the map ever collide. Without something behind it, coloured text on
-            // coloured text of a similar weight is unreadable — which is exactly where a number
+            // middle of the map ever collide. Without something behind it, colored text on
+            // colored text of a similar weight is unreadable — which is exactly where a number
             // saying which stop to walk to is least use.
             Effect = new System.Windows.Media.Effects.DropShadowEffect
             {
@@ -3997,7 +3997,7 @@ public partial class OverlayWindow : Window
         var left = at.X - size.Width / 2;
 
         // And kept inside horizontally as well, for the corners — where an arrow is against two
-        // edges at once and centring the label on it hangs half of it off the side.
+        // edges at once and centering the label on it hangs half of it off the side.
         if (width > size.Width) left = Math.Clamp(left, 2, width - size.Width - 2);
         if (height > size.Height) top = Math.Clamp(top, 2, height - size.Height - 2);
 
@@ -4027,7 +4027,7 @@ public partial class OverlayWindow : Window
             IsHitTestVisible = false,
 
             // Cheaper than drawing the text twice, and the only way a caption stays legible over
-            // a snowfield and a basement without picking a different colour for each.
+            // a snowfield and a basement without picking a different color for each.
             Effect = new System.Windows.Media.Effects.DropShadowEffect
             {
                 Color = Colors.Black,
@@ -4098,7 +4098,7 @@ public partial class OverlayWindow : Window
                 var at = Place(place.X, place.Y);
 
                 // White. At full ink the map's own roads and rock are pale enough that a muted
-                // grey caption disappears into them.
+                // gray caption disappears into them.
                 Label(place.Text, at.X, at.Y, Brushes.White, 9 * placeScale);
             }
         }
@@ -4110,7 +4110,7 @@ public partial class OverlayWindow : Window
 
             // Green for PMC, yellow for Scav, amber for a transit — and the transit gets a shape
             // of its own as well, because it is a different kind of thing rather than the same
-            // thing for somebody else. Colour carries the faction; shape carries what it does.
+            // thing for somebody else. Color carries the faction; shape carries what it does.
             var colour = (Brush)FindResource(
                 extract.Transit ? "Transit"
                 : scav ? "ScavExit"
@@ -4124,7 +4124,7 @@ public partial class OverlayWindow : Window
                 continue;
             }
 
-            // A door with an arrow through it, drawn from the marker's own centre — and for a
+            // A door with an arrow through it, drawn from the marker's own center — and for a
             // transit, two chevrons pointing the same way, which reads as "onward" rather than
             // "out" without needing the label.
             var mark = new Path
@@ -4149,14 +4149,14 @@ public partial class OverlayWindow : Window
 
             Label(extract.Name, at.X, at.Y + 9 * scale, colour, 9 * textScale);
 
-            // How far, in metres, under the name. Straight-line across the ground — not a walk,
+            // How far, in meters, under the name. Straight-line across the ground — not a walk,
             // and not claiming to be one; what it answers is "which of these two is nearer",
             // which is the question that was actually asked. Muted and a size down, because a
             // number under every exit competes with the names if it is given equal weight.
-            if (Metres(extract) is { } metres)
+            if (Meters(extract) is { } meters)
             {
                 Label(
-                    metres,
+                    meters,
                     at.X,
                     at.Y + 9 * scale + 11 * textScale,
                     (Brush)FindResource("Muted"),
@@ -4167,9 +4167,9 @@ public partial class OverlayWindow : Window
                 : $"{extract.Name} · {extract.Faction} extract");
         }
 
-        // Marks of your own, in their own colour.
+        // Marks of your own, in their own color.
         //
-        // A different colour from a quest waypoint on purpose: what a quest asked for and what you
+        // A different color from a quest waypoint on purpose: what a quest asked for and what you
         // decided to note are different kinds of thing, and telling them apart has to survive a
         // glance rather than needing the label read.
         // A mark that has joined a plan is drawn by the stop loop below, not here.
@@ -4195,19 +4195,19 @@ public partial class OverlayWindow : Window
             }
 
             // Shape carries two things at once. Against a quest's pin it says this is yours —
-            // colour alone fails for anyone who cannot separate the hues, and a navigation overlay
+            // color alone fails for anyone who cannot separate the hues, and a navigation overlay
             // is a bad place to learn that. Between marks it says which kind: a diamond is a
             // place, a box is something to pick up when you get there.
             MapCanvas.Children.Add(Positioned(
                 new Path
                 {
-                    // The same pin a quest stop draws, in its own colour.
+                    // The same pin a quest stop draws, in its own color.
                     //
                     // It used to be a diamond or a box depending on the mark's kind, on the
-                    // reasoning that colour alone fails for anyone who cannot separate the hues.
+                    // reasoning that color alone fails for anyone who cannot separate the hues.
                     // The kind is no longer something anybody chooses, and a waypoint is a
                     // waypoint — what separates it from a quest's is where it came from, which is
-                    // exactly what a colour is for.
+                    // exactly what a color is for.
                     Data = Geometry.Parse(
                         "M 0,0 C -3,-5 -7,-8 -7,-12 A 7,7 0 1 1 7,-12 C 7,-8 3,-5 0,0 Z"),
                     Fill = colour,
@@ -4277,7 +4277,7 @@ public partial class OverlayWindow : Window
             var at = Place(stop.X, stop.Y);
 
             // A stop with no quest behind it is one of your own waypoints, and is drawn in the
-            // waypoint colour rather than the quests'. Marks are given an empty TaskId when they
+            // waypoint color rather than the quests'. Marks are given an empty TaskId when they
             // join a plan, precisely because there is nothing to turn in.
             var mine = string.IsNullOrEmpty(stop.TaskId);
             var ink = (Brush)FindResource(stop.Done ? "Muted" : mine ? "Mark" : "Need");
@@ -4355,9 +4355,9 @@ public partial class OverlayWindow : Window
 
         if (view.X is null || view.Y is null) return;
 
-        // Placed like everything else. Pinning this to the canvas centre is what made a still map
+        // Placed like everything else. Pinning this to the canvas center is what made a still map
         // impossible: the marker could not move, so the map had to.
-        var centre = Place(view.X.Value, view.Y.Value);
+        var center = Place(view.X.Value, view.Y.Value);
 
         // Your marker and your facing keep one size at every zoom.
         //
@@ -4387,8 +4387,8 @@ public partial class OverlayWindow : Window
                 IsHitTestVisible = false,
             };
 
-            Canvas.SetLeft(cone, centre.X);
-            Canvas.SetTop(cone, centre.Y);
+            Canvas.SetLeft(cone, center.X);
+            Canvas.SetTop(cone, center.Y);
             MapCanvas.Children.Add(cone);
         }
 
@@ -4400,8 +4400,8 @@ public partial class OverlayWindow : Window
             StrokeThickness = 2,
         };
 
-        Canvas.SetLeft(marker, centre.X - marker.Width / 2);
-        Canvas.SetTop(marker, centre.Y - marker.Height / 2);
+        Canvas.SetLeft(marker, center.X - marker.Width / 2);
+        Canvas.SetTop(marker, center.Y - marker.Height / 2);
         MapCanvas.Children.Add(marker);
     }
 

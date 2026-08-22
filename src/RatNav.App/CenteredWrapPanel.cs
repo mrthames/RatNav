@@ -9,12 +9,12 @@ using Size = System.Windows.Size;
 namespace RatNav.App;
 
 /// <summary>
-/// A wrap panel whose rows are each centred, rather than each starting at the left edge.
+/// A wrap panel whose rows are each centered, rather than each starting at the left edge.
 ///
-/// <para>WPF's own <see cref="WrapPanel"/> centres nothing: setting <c>HorizontalAlignment</c> on
-/// it centres the panel inside its parent and leaves every row inside the panel hard against the
-/// left. With one row that is indistinguishable from centred, which is why it looks right until
-/// the day it wraps — and then the first row is centred and the second is not, which reads as a
+/// <para>WPF's own <see cref="WrapPanel"/> centers nothing: setting <c>HorizontalAlignment</c> on
+/// it centers the panel inside its parent and leaves every row inside the panel hard against the
+/// left. With one row that is indistinguishable from centered, which is why it looks right until
+/// the day it wraps — and then the first row is centered and the second is not, which reads as a
 /// layout that has come apart.</para>
 ///
 /// <para>The hotkey strip is the case that wants this. It sits under the map, it is the width of
@@ -88,7 +88,7 @@ public sealed class CenteredWrapPanel : Panel
         return final;
     }
 
-    /// <summary>Lays one finished row out, starting at whatever offset centres it.</summary>
+    /// <summary>Lays one finished row out, starting at whatever offset centers it.</summary>
     private static void PlaceRow(List<UIElement> row, double width, double height, double y, double available)
     {
         var x = Math.Max(0, (available - width) / 2);

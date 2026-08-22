@@ -49,7 +49,7 @@ public class CoordinateTransformTests
     public void Bounds_given_back_to_front_flip_the_axis()
     {
         // Customs is stored as [[698, -307], [-371, 237]] — the first x is larger than the second.
-        // That is deliberate upstream, and the normalization has to honour it rather than
+        // That is deliberate upstream, and the normalization has to honor it rather than
         // sorting the bounds into min/max, which would mirror the map.
         var image = new MapImage
         {

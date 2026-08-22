@@ -7,7 +7,7 @@ using RatNav.Core.Model;
 namespace RatNav.Core.Tests;
 
 /// <summary>
-/// The behaviour under test here is the one that matters most in the field: what happens when
+/// The behavior under test here is the one that matters most in the field: what happens when
 /// tarkov.dev is unreachable. It was, in fact, down while this was being written — which is
 /// exactly why "keep serving the last good data" is a tested guarantee rather than a good intention.
 /// </summary>

@@ -16,7 +16,7 @@ public enum MarkKind
 /// <summary>
 /// A spot someone marked on a map, with a short name for it.
 ///
-/// <para>Coordinates are normalised — 0 to 1 across the map image — rather than game world units,
+/// <para>Coordinates are normalized — 0 to 1 across the map image — rather than game world units,
 /// because these are placed by clicking a map rather than by standing somewhere. That also means
 /// they survive a change to a map's calibration, which world coordinates would not.</para>
 /// </summary>
@@ -37,7 +37,7 @@ public sealed record CustomWaypoint
     /// <summary>
     /// Whether this is a place or a thing to pick up.
     ///
-    /// <para>Drawn as a different shape rather than a different colour. Colour already carries
+    /// <para>Drawn as a different shape rather than a different color. Color already carries
     /// something — that this is yours rather than a quest's — and a second meaning stacked onto it
     /// would need both to be read at once.</para>
     /// </summary>

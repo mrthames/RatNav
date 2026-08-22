@@ -437,7 +437,7 @@ public sealed class GameDataCache(TarkovDevClient client, MapAssets mapAssets, s
                         AlsoKnownAs = [.. variants.Select(v => v.Id).Distinct(StringComparer.OrdinalIgnoreCase)],
 
                         // The log names come along too, or a raid started on the variant stops
-                        // being recognised the moment the variant stops being a map.
+                        // being recognized the moment the variant stops being a map.
                         LogAliases =
                         [
                             .. m.LogAliases

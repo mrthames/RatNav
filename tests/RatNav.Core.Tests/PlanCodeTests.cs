@@ -68,7 +68,7 @@ public class PlanCodeTests
     public void Positions_survive_exactly()
     {
         // The whole point of sharing is that a pin lands in the same place for both of you. A
-        // rounding loss here would put a friend's waypoint metres from yours with nothing to
+        // rounding loss here would put a friend's waypoint meters from yours with nothing to
         // explain why.
         var restored = PlanCode.Decode(PlanCode.Encode(Document()), out _)!;
         var stop = restored.Stops.Single(s => s.ObjectiveId == "o1");

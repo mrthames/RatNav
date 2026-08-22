@@ -39,7 +39,7 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 
-; RatNav's own mark, so the installer and the Add/Remove entry are recognisable rather than
+; RatNav's own mark, so the installer and the Add/Remove entry are recognizable rather than
 ; generic. Built from brand/ratnav-mark.svg by brand/render.ps1.
 SetupIconFile=..\brand\ratnav.ico
 ArchitecturesAllowed=x64compatible

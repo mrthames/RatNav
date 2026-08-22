@@ -43,7 +43,7 @@ const FLOOR_ORDER = [
 ]
 
 /**
- * A labelled checkbox that keeps its place when it has nothing to offer.
+ * A labeled checkbox that keeps its place when it has nothing to offer.
  *
  * <p>Disabled rather than absent. Controls that vanish on maps without floors or without extracts
  * made the row reflow every time the map changed, so whatever you were reaching for moved.</p>
@@ -76,7 +76,7 @@ function Toggle({ label, checked, onChange, disabled = false }: {
  * Naming a waypoint you have just placed, in RatNav's own dialog.
  *
  * <p>The browser's <code>prompt</code> did this before, and it is the operating system's box
- * dropped into the middle of a dark application — wrong typeface, wrong colours, wrong buttons,
+ * dropped into the middle of a dark application — wrong typeface, wrong colors, wrong buttons,
  * and on a phone it is worse than that.</p>
  *
  * <p>One field, and only ever one. A note used to be addable afterwards from the waypoint's own
@@ -340,13 +340,13 @@ export function MapView({
   const frame = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    let cancelled = false
+    let canceled = false
     setMarkup(null)
 
     fetch(api.imageUrl(map.id, ink))
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`image ${r.status}`))))
       .then((text) => {
-        if (cancelled) return
+        if (canceled) return
         setMarkup(text)
 
         // Floors are read from the drawing, never from maps.json — the manifest disagrees with
@@ -360,9 +360,9 @@ export function MapView({
         setFloors(ordered)
         setFloor(ordered.find((f) => f.startsWith('Ground')) ?? ordered[0] ?? null)
       })
-      .catch(() => !cancelled && setMarkup(''))
+      .catch(() => !canceled && setMarkup(''))
 
-    return () => { cancelled = true }
+    return () => { canceled = true }
   }, [map.id, ink])
 
   useEffect(() => {
@@ -664,7 +664,7 @@ export function MapView({
 
         {/*
           Extracts are diamonds and objectives are circles. The shapes carry the difference on
-          their own, so the two are still tellable apart without relying on colour.
+          their own, so the two are still tellable apart without relying on color.
         */}
         {exits.map((exit) => {
           const colour = exit.transit
@@ -748,7 +748,7 @@ export function MapView({
         ))}
 
         {/*
-          Your own marks, in their own colour and their own shape — the same pairing the overlay
+          Your own marks, in their own color and their own shape — the same pairing the overlay
           uses, so a mark looks like a mark on whichever screen you are reading.
         */}
         {(showMarks ? marks : []).map((mark) => (
@@ -763,8 +763,8 @@ export function MapView({
               style={{ width: `${16 / zoom}px`, height: `${16 / zoom}px`, display: 'block' }}
             >
               {/*
-                The same pin a quest stop draws, in its own colour. What separates a waypoint of
-                yours from a quest's is where it came from, which is what a colour is for — the
+                The same pin a quest stop draws, in its own color. What separates a waypoint of
+                yours from a quest's is where it came from, which is what a color is for — the
                 shape only ever said which of two kinds it was, and that is no longer a choice
                 anybody makes.
               */}

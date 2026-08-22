@@ -346,7 +346,7 @@ public sealed record RatNavSettings
 
     /// <summary>
     /// Where these settings were read from, so a change made while running can be written back.
-    /// Not serialised — it describes the file rather than being part of it.
+    /// Not serialized — it describes the file rather than being part of it.
     /// </summary>
     [System.Text.Json.Serialization.JsonIgnore]
     public string? Origin { get; set; }
@@ -400,7 +400,7 @@ public sealed record RatNavSettings
         /// <summary>Show or hide the overlay.</summary>
         public string ToggleOverlay { get; set; } = "F5";
 
-        /// <summary>Switch between the corner panel and the centred wireframe map.</summary>
+        /// <summary>Switch between the corner panel and the centered wireframe map.</summary>
         public string ToggleMode { get; set; } = "F7";
 
         /// <summary>
@@ -432,13 +432,13 @@ public sealed record RatNavSettings
         /// Put the map back on you, without starting to follow.
         ///
         /// <para>With follow off the map holds still, which is the point of it — a big map that
-        /// re-centres on every fix puts the same building somewhere new each time you look. The
+        /// re-centers on every fix puts the same building somewhere new each time you look. The
         /// cost is that there is then no quick way to ask "where am I now" without turning follow
         /// on and losing the framing you chose. This is that question, asked once.</para>
         /// </summary>
         public string CenterMap { get; set; } = "F9";
 
-        /// <summary>Hold the map still, or have it keep you centred.</summary>
+        /// <summary>Hold the map still, or have it keep you centered.</summary>
         public string ToggleFollow { get; set; } = "F8";
     }
 
@@ -452,7 +452,7 @@ public sealed record RatNavSettings
         Box,
 
         /// <summary>
-        /// The map itself, drawn large and translucent over the centre of the screen — the
+        /// The map itself, drawn large and translucent over the center of the screen — the
         /// dungeon map from Diablo. Terrain drops away and buildings and roads carry it, so you
         /// can still see through it. Best on a hotkey you tap rather than leave on.
         /// </summary>
@@ -464,7 +464,7 @@ public sealed record RatNavSettings
     /// How one presentation of the overlay is arranged: where it sits, how big it is, and where
     /// the map is inside it.
     ///
-    /// <para>Kept per presentation rather than shared. The corner box and the centred map are
+    /// <para>Kept per presentation rather than shared. The corner box and the centered map are
     /// used for different things at different sizes, and arranging one then switching to the
     /// other used to overwrite the first — so setting up the big map cost you the small one.</para>
     /// </summary>
@@ -482,14 +482,14 @@ public sealed record RatNavSettings
         public double PanX { get; init; }
         public double PanY { get; init; }
 
-        /// <summary>Whether the map keeps you centred.</summary>
+        /// <summary>Whether the map keeps you centered.</summary>
         public bool Follow { get; init; }
 
         /// <summary>
-        /// How much of the map to draw, and in whose colours: "graphical", "full", "structure",
+        /// How much of the map to draw, and in whose colors: "graphical", "full", "structure",
         /// or "outline".
         ///
-        /// <para>Per presentation, because the two are used for different things. The centred map
+        /// <para>Per presentation, because the two are used for different things. The centered map
         /// is for crossing ground — roads and structures, nothing else competing. The corner map
         /// is for when you have arrived somewhere and want to read the place.</para>
         /// </summary>
@@ -538,8 +538,8 @@ public sealed record RatNavSettings
             (0.0052, 0.2519, 0.2703, 0.3833);
 
         /// <summary>
-        /// The large centred map. Follows you by default — a centred map that does not is a
-        /// centred map of somewhere you were. Drawn as outlines, because crossing ground wants
+        /// The large centered map. Follows you by default — a centered map that does not is a
+        /// centered map of somewhere you were. Drawn as outlines, because crossing ground wants
         /// roads and structures and not much else.
         ///
         /// <para>It said "holds still by default" here for as long as it has actually followed,
@@ -547,8 +547,8 @@ public sealed record RatNavSettings
         /// </summary>
         /// <para>The zoom and follow are measured from a real arrangement rather than left at
         /// their neutral values. Fully zoomed out is the whole map at once, which is not a useful
-        /// place to open a view whose job is showing the ground around you; and a centred map that
-        /// does not follow you is a centred map of somewhere you were.</para>
+        /// place to open a view whose job is showing the ground around you; and a centered map that
+        /// does not follow you is a centered map of somewhere you were.</para>
         public OverlayPlacement Wireframe { get; init; } = new()
         {
             Ink = "outline",
@@ -560,9 +560,9 @@ public sealed record RatNavSettings
         };
 
         /// <summary>
-        /// Where the centred view sits, as a share of the screen.
+        /// Where the centered view sits, as a share of the screen.
         ///
-        /// <para>Measured from a real arrangement at 1920×1032: a little right of centre and above
+        /// <para>Measured from a real arrangement at 1920×1032: a little right of center and above
         /// the middle, about two fifths of the width and just under half the height. Smaller than
         /// it sounds and deliberately so — it is read at a glance while moving, and a map that
         /// fills the screen is one you have to look *around* rather than at.</para>
@@ -574,35 +574,35 @@ public sealed record RatNavSettings
             (0.3323, 0.2926, 0.3953, 0.4506);
 
         /// <summary>
-        /// How much of the screen the centred view covers, as a fraction.
+        /// How much of the screen the centered view covers, as a fraction.
         ///
-        /// <para>This is the dial that turns the centred map into a HUD. At 1.0 it takes the whole
+        /// <para>This is the dial that turns the centered map into a HUD. At 1.0 it takes the whole
         /// screen, the drawing fades out toward the edges, and everything off-view is an arrow
         /// pointing at it. Below 1.0 it is a window in the middle of the screen with a border,
         /// which is what it has always been. One continuum rather than two modes, because
         /// <c>Box</c> and <c>Wireframe</c> already carry separate settings and a third would be a
         /// third of everything.</para>
         ///
-        /// <para>Unlike the corner panel, this is not overridden by dragging: the centred view is
-        /// centred, so the only thing to decide about its rectangle is how big it is.</para>
+        /// <para>Unlike the corner panel, this is not overridden by dragging: the centered view is
+        /// centered, so the only thing to decide about its rectangle is how big it is.</para>
         /// </summary>
         public double WireframeScale { get; init; } = 0.7;
 
         /// <summary>
         /// Where the drawing starts fading toward the edges of the full-screen HUD, as a fraction
-        /// of the way out from the centre.
+        /// of the way out from the center.
         ///
         /// <para>At 1.0 nothing fades and the map ends at a hard edge, which is the thing the HUD
         /// is trying not to look like. Lower starts the fade sooner, so the map dissolves into the
         /// game instead of stopping at a border.</para>
         ///
-        /// <para>Only used at full coverage. A windowed centred map has a border already, and
+        /// <para>Only used at full coverage. A windowed centered map has a border already, and
         /// fading out inside one would just look like a fault.</para>
         /// </summary>
         public double EdgeFade { get; init; } = 0.55;
 
         /// <summary>
-        /// Whether the centred map turns so your heading points up the screen.
+        /// Whether the centered map turns so your heading points up the screen.
         ///
         /// <para>On, because it is the reason to have a map in the middle of the screen: what is
         /// drawn at the top is what is in front of you. A setting rather than a rule because
@@ -802,7 +802,7 @@ public sealed record RatNavSettings
 
         /// <summary>
         /// Draw a dark halo behind map lines. Outline ink over a bright snowfield is otherwise
-        /// close to invisible, and the halo is what makes one set of colours work on every map.
+        /// close to invisible, and the halo is what makes one set of colors work on every map.
         /// </summary>
         public bool Halo { get; init; } = true;
 
@@ -1082,11 +1082,11 @@ public sealed record RatNavSettings
     /// Lays F5 to F11 out in the order the keys are used rather than the order they were added.
     ///
     /// <para>They accumulated: show/hide, edit mode and the view switcher took F5 to F7, then
-    /// identify and extracts took F8 and F9 because those were next, and centre-on-me and
+    /// identify and extracts took F8 and F9 because those were next, and center-on-me and
     /// follow arrived after that and took what was left. So the two that read the screen sat in
     /// the middle of the run and the two that move the map sat at the end of it.</para>
     ///
-    /// <para>The order now is: show/hide, edit mode, centre or panel, follow or still, centre on
+    /// <para>The order now is: show/hide, edit mode, center or panel, follow or still, center on
     /// me, update extracts, check item. Arrange the overlay, then move the map, then read the
     /// screen.</para>
     ///

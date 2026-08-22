@@ -20,7 +20,7 @@ public enum ExtractRowKind
     /// <summary>
     /// A transit to another map, not a way out of the raid.
     ///
-    /// <para>The game lists these alongside the extracts and colours them differently. Offering
+    /// <para>The game lists these alongside the extracts and colors them differently. Offering
     /// one as an extract would send somebody to the wrong side of the map to go and play somewhere
     /// else rather than to leave with their loot.</para>
     /// </summary>

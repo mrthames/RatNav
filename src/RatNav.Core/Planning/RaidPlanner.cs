@@ -47,8 +47,8 @@ public sealed record RaidPlan
     /// <summary>Every key any stop needs, so it can be checked against your stash before queueing.</summary>
     public IReadOnlyList<string> RequiredKeyItemIds { get; init; } = [];
 
-    /// <summary>Total ground distance of the route in metres — the honest cost of the plan.</summary>
-    public double DistanceMetres { get; init; }
+    /// <summary>Total ground distance of the route in meters — the honest cost of the plan.</summary>
+    public double DistanceMeters { get; init; }
 
     public string? Notes { get; init; }
 }
@@ -56,8 +56,8 @@ public sealed record RaidPlan
 /// <summary>
 /// Orders the objectives you picked into a route worth walking.
 ///
-/// <para>This is the travelling salesman problem, and a raid plan is small — a dozen stops at
-/// most — so it is solved by nearest-neighbour followed by 2-opt. Nearest-neighbour alone
+/// <para>This is the traveling salesman problem, and a raid plan is small — a dozen stops at
+/// most — so it is solved by nearest-neighbor followed by 2-opt. Nearest-neighbor alone
 /// produces routes with an obvious crossing in them, which reads as broken even when the total
 /// distance is respectable; 2-opt removes exactly those crossings, which is why it earns its
 /// place here rather than being over-engineering.</para>
@@ -104,7 +104,7 @@ public static class RaidPlanner
             [
                 .. ordered.SelectMany(w => w.NeededKeyItemIds).Distinct(StringComparer.OrdinalIgnoreCase)
             ],
-            DistanceMetres = Length(ordered, start),
+            DistanceMeters = Length(ordered, start),
         };
     }
 
@@ -130,7 +130,7 @@ public static class RaidPlanner
         return plan with
         {
             Waypoints = ordered,
-            DistanceMetres = Length(ordered, from),
+            DistanceMeters = Length(ordered, from),
         };
     }
 
@@ -141,19 +141,19 @@ public static class RaidPlanner
         // exists to prevent.
         if (waypoints.Count <= 1) return [.. waypoints];
 
-        var route = NearestNeighbour(waypoints, start);
+        var route = NearestNeighbor(waypoints, start);
         return TwoOpt(route, start);
     }
 
     /// <summary>Greedy: from wherever you are, walk to the closest stop you have not made.</summary>
-    private static List<Waypoint> NearestNeighbour(IReadOnlyList<Waypoint> waypoints, GamePosition? start)
+    private static List<Waypoint> NearestNeighbor(IReadOnlyList<Waypoint> waypoints, GamePosition? start)
     {
         var remaining = waypoints.ToList();
         var route = new List<Waypoint>(remaining.Count);
 
-        // With no known start, begin at the stop furthest from the centre of the cluster. Starting
+        // With no known start, begin at the stop furthest from the center of the cluster. Starting
         // in the middle strands an outlier at the end and drags the route back across itself.
-        var current = start ?? FurthestFromCentre(remaining);
+        var current = start ?? FurthestFromCenter(remaining);
 
         while (remaining.Count > 0)
         {
@@ -229,13 +229,13 @@ public static class RaidPlanner
         return total;
     }
 
-    private static GamePosition FurthestFromCentre(IReadOnlyList<Waypoint> waypoints)
+    private static GamePosition FurthestFromCenter(IReadOnlyList<Waypoint> waypoints)
     {
-        var centre = new GamePosition(
+        var center = new GamePosition(
             waypoints.Average(w => w.Position.X), 0, waypoints.Average(w => w.Position.Z));
 
         return waypoints
-            .OrderByDescending(w => CoordinateTransform.GroundDistance(centre, w.Position))
+            .OrderByDescending(w => CoordinateTransform.GroundDistance(center, w.Position))
             .First().Position;
     }
 

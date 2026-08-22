@@ -18,7 +18,7 @@ public sealed record PointCalibration
     ///
     /// <para>A wrong mapping mirrors the map, so it misses by a large fraction of it — nothing
     /// like a slightly imprecise click. Both halves are needed: the ratio catches a click that
-    /// landed nowhere near anything, and the absolute floor catches a position so near the centre
+    /// landed nowhere near anything, and the absolute floor catches a position so near the center
     /// that mirroring barely moves it, where every answer is close and none of them is confirmed.</para>
     /// </summary>
     public bool Decisive => Miss <= 0.12 && RunnerUpMiss >= 0.25 && RunnerUpMiss >= Miss * 3;

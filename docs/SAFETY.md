@@ -72,7 +72,7 @@ Nobody outside that company can tell you what they will decide in future about a
 and anyone who says otherwise is guessing.
 
 So: **RatNav is used at your own risk, and its author is not liable for anything that follows from
-using it, including action taken against a game account.** That is in the [licence](../LICENSE) too.
+using it, including action taken against a game account.** That is in the [license](../LICENSE) too.
 
 What can be said is what RatNav actually does, which is above, and that all of it is in the source
 in front of you. If you want to check any single claim on this page, the code is there —

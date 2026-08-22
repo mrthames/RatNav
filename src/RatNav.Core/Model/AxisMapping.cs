@@ -12,14 +12,14 @@ namespace RatNav.Core.Model;
 /// False: the horizontal axis of the image follows world X, the vertical follows world Z.
 /// True: they are exchanged, which is the case on Factory and Reserve.
 /// </param>
-/// <param name="SignU">+1 or −1, applied to the source axis before normalising through bounds.</param>
+/// <param name="SignU">+1 or −1, applied to the source axis before normalizing through bounds.</param>
 /// <param name="SignV">+1 or −1, likewise for the vertical axis.</param>
 public readonly record struct AxisMapping(bool Swapped, int SignU, int SignV)
 {
     /// <summary>World X across, world Z down, unmodified. The most common arrangement.</summary>
     public static AxisMapping Direct { get; } = new(false, 1, 1);
 
-    /// <summary>Applies the mapping to a ground-plane position, before bounds normalisation.</summary>
+    /// <summary>Applies the mapping to a ground-plane position, before bounds normalization.</summary>
     public (double U, double V) Apply(double x, double z) =>
         Swapped ? (SignU * z, SignV * x) : (SignU * x, SignV * z);
 

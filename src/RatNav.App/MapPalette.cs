@@ -23,13 +23,13 @@ public sealed record MapStyle(
     IReadOnlyList<double>? Dash = null);
 
 /// <summary>
-/// Reads the colours a map was drawn in.
+/// Reads the colors a map was drawn in.
 ///
 /// <para>These maps carry a stylesheet — <c>.trees { fill:#144043 }</c>, <c>.water {
-/// fill:#4a6b96 }</c> — around fifteen colours that say what everything is. RatNav was discarding
+/// fill:#4a6b96 }</c> — around fifteen colors that say what everything is. RatNav was discarding
 /// all of it and recolouring every shape by role, which works over a dark game scene but reduces a
 /// map like Woods, drawn with 481 shapes across forest, water, rock and road, to a few dozen
-/// accent-coloured outlines. It looked minimal because most of it had been thrown away, not
+/// accent-colored outlines. It looked minimal because most of it had been thrown away, not
 /// because it was not there.</para>
 ///
 /// <para>So the palette is kept, and offered as an ink level of its own. The role-based treatment

@@ -369,7 +369,7 @@ export default function App() {
           {/*
             Named, because a timestamp with no subject reads as the whole app being stale.
 
-            It is when the quest, item and map catalogue was last fetched from tarkov.dev, and that
+            It is when the quest, item and map catalog was last fetched from tarkov.dev, and that
             only changes when the game does — so hours or days is the normal and correct state, and
             an unexplained old number sends people looking for a fault that is not there. Nothing
             else waits on it: raids, position fixes, plans and progress are all live.

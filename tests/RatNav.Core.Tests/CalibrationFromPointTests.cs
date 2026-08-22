@@ -114,8 +114,8 @@ public class CalibrationFromPointTests
     [Fact]
     public void A_position_near_the_centre_cannot_settle_anything()
     {
-        var centre = new GamePosition((646 - 761) / 2.0, 0, (-914 + 442) / 2.0);
+        var center = new GamePosition((646 - 761) / 2.0, 0, (-914 + 442) / 2.0);
 
-        Assert.False(CalibrationFromPoint.Solve(Woods(), centre, Landed(centre)).Decisive);
+        Assert.False(CalibrationFromPoint.Solve(Woods(), center, Landed(center)).Decisive);
     }
 }

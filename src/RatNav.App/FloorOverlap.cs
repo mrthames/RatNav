@@ -42,7 +42,7 @@ public sealed class FloorOverlap
         foreach (var shape in floor)
         {
             // Terrain is the ground everything sits on, so counting it would mark the entire map
-            // as occupied and fade every other floor — which is the behaviour being removed.
+            // as occupied and fade every other floor — which is the behavior being removed.
             if (shape.Role is MapShapeRole.Terrain or MapShapeRole.Decoration) continue;
 
             overlap.Mark(shape.Geometry.Bounds);

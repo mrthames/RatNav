@@ -15,7 +15,7 @@ incorrectly — those are worth knowing about, and an issue is the way to say so
 guaranteed and a fix is not promised, which is the honest position for a project of one.
 
 **There is no review queue.** Pull requests are not the way in, and feature requests are not being
-gathered. If you want RatNav to do something it does not, the [licence](LICENSE) lets you fork it
+gathered. If you want RatNav to do something it does not, the [license](LICENSE) lets you fork it
 for anything noncommercial — give your version its own name.
 
 The rest of this file is for anyone building it themselves.
@@ -53,7 +53,7 @@ evidence was wrong.
 
 ## The other documents
 
-- **`docs/GUIDE.md`** and **`docs/FAQ.md`** are what users read. If you change behaviour someone
+- **`docs/GUIDE.md`** and **`docs/FAQ.md`** are what users read. If you change behavior someone
   would notice, change these in the same commit — a guide that describes an older product than the
   one people download is worse than no guide.
 - **`CHANGELOG.md`** is what changed and why, version by version. Findings that shaped a decision
@@ -76,7 +76,7 @@ Work is grouped into a **version**, not shipped a commit at a time.
 
 ## House style
 
-**Tests describe behaviour, not methods.** `Replaying_the_logs_cannot_undo_a_correction` says what
+**Tests describe behavior, not methods.** `Replaying_the_logs_cannot_undo_a_correction` says what
 must remain true. `TestProgressStore3` does not.
 
 **Test against reality where reality is available.** The log parser is tested with a notification

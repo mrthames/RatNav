@@ -10,7 +10,7 @@ namespace RatNav.App;
 /// The map settings, in a window of their own.
 ///
 /// <para>They were a panel inside the overlay, and every version of that had the same fault: the
-/// settings covered the map. Centred they covered most of it; moved to one edge they covered less
+/// settings covered the map. Centered they covered most of it; moved to one edge they covered less
 /// of it and started colliding with the quick controls floating there instead. There is no
 /// position inside a small overlay for a panel this size, because the overlay is the thing being
 /// configured.</para>
@@ -43,8 +43,8 @@ public sealed class SettingsWindow : Window
 
         Width = 380;
 
-        // Beside the work area's right edge rather than centred on the screen, because the middle
-        // of the screen is where the game is and where the centred overlay draws.
+        // Beside the work area's right edge rather than centered on the screen, because the middle
+        // of the screen is where the game is and where the centered overlay draws.
         var work = SystemParameters.WorkArea;
         Left = work.Right - Width - 24;
 

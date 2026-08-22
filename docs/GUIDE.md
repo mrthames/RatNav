@@ -111,7 +111,7 @@ rest in the order you gave them.
 | *your screenshot key* | Take a position fix |
 | `F5` | Show or hide the overlay |
 | `F6` | Interact mode — let the mouse reach it, to move, resize, zoom and open the settings |
-| `F7` | Switch between the corner panel and the centred map |
+| `F7` | Switch between the corner panel and the centered map |
 | `F8` | Follow you, or hold the map still |
 | `F9` | Put the map back on you, without starting to follow |
 | `F10` | Read the game's extract list |
@@ -121,10 +121,10 @@ They run `F5` to `F11` in the order you use them: show it, arrange it, choose th
 two that move the map, then the two that read the screen.
 
 **Two presentations, remembered separately.** The corner panel is small and out of the way; `F7`
-swaps it for the map itself, over the centre of the screen. Position, size, zoom, pan and opacity
+swaps it for the map itself, over the center of the screen. Position, size, zoom, pan and opacity
 are kept per presentation, so setting up one does not disturb the other.
 
-The centred view has a **Coverage** dial. Turn it to 100% and it becomes a full-screen HUD: the
+The centered view has a **Coverage** dial. Turn it to 100% and it becomes a full-screen HUD: the
 map drawn as glowing outlines over the game, dissolving toward the edges rather than stopping at a
 border, and **turned so what is in front of you is up the screen**. Below 100% it is a window in
 the middle of the screen, which is what it has always been. Clicks pass straight through the HUD
@@ -182,19 +182,19 @@ not a default, it is a limit.
 | **Waypoint pins / Waypoint labels / Map labels / You** | Separate size dials for the markers, the captions on stops and extracts, the map's own place names, and your own marker. |
 | **Edge arrows / Edge labels** | The arrows around the edge pointing at what is off the view, and their captions. Their own sizes: an edge arrow stands in for a place you cannot see, where a pin marks one you can. |
 | **Shrink** | How much all of those ease off as you zoom out. At zero they stay the size you set; at one they scale with the map. |
-| **Map** | `still` holds the map and lets your marker travel across it. `follows you` keeps you centred — and in the centred view it is also what lets the map turn, since the turn pivots on the middle of the view and that is only *you* while it follows. |
+| **Map** | `still` holds the map and lets your marker travel across it. `follows you` keeps you centered — and in the centered view it is also what lets the map turn, since the turn pivots on the middle of the view and that is only *you* while it follows. |
 | **Exits** | `Both`, `PMC`, `Scav`, or `Off`. Shared extracts show under either faction. Beside it, **transits** are their own on/off — anybody can take a transit whatever they queued as, so whose extracts you want has nothing to say about them. |
 | **Quests** | `Active` is your plan's stops. `All` adds every other started quest's objective on this map, drawn hollow and unnumbered. `Off` leaves the map clean. |
-| **Coverage / Edge fade / Glow** | The centred view only. How much of the screen it takes, where the drawing starts dissolving, and how much the lines bloom. |
+| **Coverage / Edge fade / Glow** | The centered view only. How much of the screen it takes, where the drawing starts dissolving, and how much the lines bloom. |
 
 These are the same controls under the same names as the app's **Maps** page, so what you can turn
 on and off reads the same in both places.
 
-Right-drag pans and the wheel zooms — in the corner panel and in the windowed centred view. In the
+Right-drag pans and the wheel zooms — in the corner panel and in the windowed centered view. In the
 full-screen HUD the map passes clicks through to the game, so zoom from the quick panel instead.
 
 **In the corner panel**, anything off the visible area gets an arrow at the edge pointing at where
-it really is, with the name abbreviated. The centred view does not draw them: it is large enough to
+it really is, with the name abbreviated. The centered view does not draw them: it is large enough to
 show the ground you are crossing already, and a ring of arrows around the edge sits exactly where
 the drawing is meant to be fading out.
 
@@ -231,8 +231,8 @@ Choose **A place** or **An item** under *Mark*, click the spot, and name it. The
 **Maps** page and on the **Plan** page's map, because "I want to go here as well" is part of
 building a raid and should not need two navigations.
 
-A place draws as a diamond and an item as a box, both **orange** — its own colour, so a mark never
-reads as a quest objective, and its own shape, because colour alone fails for anyone who cannot
+A place draws as a diamond and an item as a box, both **orange** — its own color, so a mark never
+reads as a quest objective, and its own shape, because color alone fails for anyone who cannot
 separate the hues and a navigation overlay is a bad place to learn that. It appears on the overlay
 from then on.
 

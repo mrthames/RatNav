@@ -11,14 +11,14 @@ namespace RatNav.App;
 
 /// <summary>
 /// One drawn shape from a map: its outline, the role its class gives it, and the classes
-/// themselves — kept so the map's own stylesheet can be applied when drawing it in full colour.
+/// themselves — kept so the map's own stylesheet can be applied when drawing it in full color.
 /// </summary>
 public sealed record MapShape(Geometry Geometry, MapShapeRole Role, string Classes = "");
 
 /// <summary>
 /// What a shape is, taken from the semantic classes the map SVGs carry — <c>.building</c>,
 /// <c>.trees</c>, <c>.road_tarmac</c>. This is what lets the overlay draw a map by meaning rather
-/// than by copying its colours.
+/// than by copying its colors.
 /// </summary>
 public enum MapShapeRole
 {
@@ -203,7 +203,7 @@ public static partial class MapGeometry
 
     /// <summary>
     /// The role a class name carries. The vocabulary is taken from the maps themselves rather than
-    /// invented, and unrecognised names fall through to <see cref="MapShapeRole.Other"/>, which is
+    /// invented, and unrecognized names fall through to <see cref="MapShapeRole.Other"/>, which is
     /// drawn faintly rather than dropped — a new map should look thin, never blank.
     /// </summary>
     internal static MapShapeRole RoleOf(string classes)

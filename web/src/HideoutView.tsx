@@ -122,7 +122,7 @@ export function HideoutView() {
                             ${built > 0 ? 'border-line' : 'border-line-soft opacity-60'}`}
               >
                 {/* The game's own icon for the station. Bold initials when there is none — the
-                    point is recognising it at a glance rather than reading a list. */}
+                    point is recognizing it at a glance rather than reading a list. */}
                 {station.imageUrl ? (
                   <img src={station.imageUrl} alt="" className="size-12 object-contain" />
                 ) : (

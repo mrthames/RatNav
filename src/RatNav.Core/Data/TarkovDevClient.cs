@@ -216,7 +216,7 @@ public sealed class TarkovDevClient(HttpClient http)
                     // them in separate lists and RatNav read only the first, which left every
                     // transit off the map entirely.
                     //
-                    // A transit is named by a localisation key rather than outright —
+                    // A transit is named by a localization key rather than outright —
                     // "INT_TRANSIT_6_DESC" resolves to "Transit to Customs" — so it goes through
                     // the same text lookup everything else here does. One that will not resolve
                     // is dropped: an unnamed pin is worse than no pin.
@@ -234,10 +234,10 @@ public sealed class TarkovDevClient(HttpClient http)
                         .. (pair.Value.Transits ?? [])
                             .Select(t => new { Name = text.Of(t.Description), t.Position, t.Description })
 
-                            // Translations pass an unrecognised key straight through, which is
+                            // Translations pass an unrecognized key straight through, which is
                             // right for a name and wrong for a transit whose only name is a key.
                             // A description that came back unchanged never resolved, and a pin
-                            // labelled INT_TRANSIT_9_DESC is worse than no pin at all.
+                            // labeled INT_TRANSIT_9_DESC is worse than no pin at all.
                             .Where(t => t.Name is { Length: > 0 } && t.Name != t.Description)
                             .Select(t => new MapExtract
                             {
@@ -488,14 +488,14 @@ public sealed class TarkovDevClient(HttpClient http)
     /// <summary>
     /// A translated name, or null where the key does not resolve.
     ///
-    /// <para><see cref="Translations.Of"/> passes an unrecognised key straight through, which is
+    /// <para><see cref="Translations.Of"/> passes an unrecognized key straight through, which is
     /// right for a name and wrong for an id: a category shown as
     /// <c>5b47574386f77428ca22b336</c> is worse than no category at all.</para>
     /// </summary>
     private static string? Named(Translations text, string key) =>
         text.Of(key) is { Length: > 0 } name && name != key ? name : null;
 
-    /// <summary>Resolves translation keys, passing anything unrecognised straight through.</summary>
+    /// <summary>Resolves translation keys, passing anything unrecognized straight through.</summary>
     private readonly record struct Translations(Dictionary<string, string>? Table)
     {
         public string? Of(string? key) =>
@@ -587,6 +587,6 @@ public sealed class TarkovDevClient(HttpClient http)
 
     private sealed record ExtractDto(string? Name, string? Faction, PositionDto? Position);
 
-    /// <summary>Named by a localisation key rather than outright, unlike an extract.</summary>
+    /// <summary>Named by a localization key rather than outright, unlike an extract.</summary>
     private sealed record TransitDto(string? Description, PositionDto? Position);
 }

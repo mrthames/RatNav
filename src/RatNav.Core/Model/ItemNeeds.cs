@@ -9,7 +9,7 @@ namespace RatNav.Core.Model;
 /// so listing "2,857,000 Roubles" beside three bolts and a screwdriver tells you nothing you can
 /// act on and buries the things that do.</para>
 ///
-/// <para>Ids rather than names, because names are localised and RatNav is not only used in
+/// <para>Ids rather than names, because names are localized and RatNav is not only used in
 /// English.</para>
 /// </summary>
 public static class Currency

@@ -40,7 +40,7 @@ public sealed class TrayIcon : IDisposable
         _icon = new NotifyIcon
         {
             // RatNav's own mark rather than the generic application icon. A tray full of
-            // identical grey squares is a tray nobody can use, and this is the only place many
+            // identical gray squares is a tray nobody can use, and this is the only place many
             // people will see the app while it is running.
             Icon = Mark(),
             Text = "RatNav",

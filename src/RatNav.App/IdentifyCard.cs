@@ -20,7 +20,7 @@ public sealed record IdentifyReason
 ///
 /// <para>The service works out <i>what</i> to say — which of the reasons are things you are
 /// actually working on, and which are background — because that is domain logic and all three
-/// surfaces have to agree about it. This decides what colour each line is and nothing else.</para>
+/// surfaces have to agree about it. This decides what color each line is and nothing else.</para>
 ///
 /// <para>The card used to list every quest that has ever wanted the item, every hideout level, and
 /// every barter it appears in. All of that is true and almost none of it is the question: you are

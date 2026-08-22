@@ -118,7 +118,7 @@ export function QuestsView() {
       {/*
         Traders, with their loyalty. Set by hand: nothing the game writes to disk reports it, and
         the endpoint that would needs your account password. Clicking a name filters to their
-        quests, which is how the game organises them.
+        quests, which is how the game organizes them.
       */}
       <div className="flex flex-wrap gap-3">
         {traders.map((t) => {
@@ -395,7 +395,7 @@ function Photos({ task, onClose }: { task: TaskSummary; onClose: () => void }) {
           </div>
         )}
 
-        {/* Credit where it is due, and where the licence requires it. */}
+        {/* Credit where it is due, and where the license requires it. */}
         <p className="text-xs text-muted">
           {image && <span className="font-mono">{image.title} · </span>}
           From the{' '}

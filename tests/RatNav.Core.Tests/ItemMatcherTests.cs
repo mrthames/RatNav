@@ -143,7 +143,7 @@ public class SearchTextTests
     /// <summary>
     /// The reported case, verbatim: a compass in a backpack read as a golden neck chain.
     ///
-    /// <para>Six cells beside it were labelled "GoldChain" and its own cell was truncated to
+    /// <para>Six cells beside it were labeled "GoldChain" and its own cell was truncated to
     /// "Compa". The one thing in the picture naming what the cursor was on was the game's
     /// tooltip.</para>
     /// </summary>

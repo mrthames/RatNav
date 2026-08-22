@@ -12,12 +12,12 @@ namespace RatNav.App;
 /// One line of the overlay's items list: how many more, what it is, and why.
 ///
 /// <para>Deliberately thin. This is read at a glance while something is shooting at you, so it
-/// carries a count, a name, and a colour — the reason lives in the tooltip, where it costs
+/// carries a count, a name, and a color — the reason lives in the tooltip, where it costs
 /// nothing until asked for.</para>
 /// </summary>
 public sealed record ItemRow
 {
-    /// <summary>The item's full name, ellipsised by the column and whole again in the tooltip.</summary>
+    /// <summary>The item's full name, ellipsized by the column and whole again in the tooltip.</summary>
     public required string Name { get; init; }
 
     /// <summary>How many more to find.</summary>
@@ -35,7 +35,7 @@ public sealed record ItemRow
     /// where clicking a stop opens the quest: what it wants, which step this one is, and the wiki's
     /// pictures of the place. In raid on one screen that is the only way to reach any of it.</para>
     ///
-    /// <para>A null command leaves the button disabled, which is exactly the behaviour wanted:
+    /// <para>A null command leaves the button disabled, which is exactly the behavior wanted:
     /// rows with nothing behind them do not light up under the cursor.</para>
     /// </summary>
     public ICommand? Activate { get; init; }
@@ -68,7 +68,7 @@ public sealed record ItemRow
             : row.FullName,
 
         // Found-in-raid items are the ones you cannot buy your way out of later, so they carry
-        // the one colour that means "this is why you are here".
+        // the one color that means "this is why you are here".
         Colour = row.Count <= 0 ? Muted : row.FoundInRaid ? Need : Route,
     };
 

@@ -12,7 +12,7 @@ namespace RatNav.Core.Sharing;
 /// reported as such rather than half-parsed into something that looks fine and is wrong.</para>
 ///
 /// <para>Everything is stored by id: task ids, objective ids, item ids. Those are stable across
-/// game patches and identical for everyone, whereas names are localised and change with reworks.
+/// game patches and identical for everyone, whereas names are localized and change with reworks.
 /// The importing copy resolves them against its own game data, which also means a plan naturally
 /// picks up renamed quests instead of preserving whatever they were called when it was made.</para>
 /// </summary>

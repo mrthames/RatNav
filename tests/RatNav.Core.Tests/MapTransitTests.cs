@@ -12,7 +12,7 @@ namespace RatNav.Core.Tests;
 /// before anyone noticed the pins were absent.</para>
 ///
 /// <para>They are also named differently: an extract carries its name outright, a transit carries
-/// a localisation key that has to be looked up. A transit whose key does not resolve would be an
+/// a localization key that has to be looked up. A transit whose key does not resolve would be an
 /// unnamed pin, which is worse than no pin, so it is dropped.</para>
 /// </summary>
 public sealed class MapTransitTests

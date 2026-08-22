@@ -53,7 +53,7 @@ public static class ApiEndpoints
     public static event Action? QuitRequested;
 
     /// <summary>
-    /// Opens a folder picker and returns what was chosen, or null if it was cancelled.
+    /// Opens a folder picker and returns what was chosen, or null if it was canceled.
     ///
     /// <para>A hook rather than an event, because this one has an answer. Set by the desktop app,
     /// which is the only part of RatNav that can put a window on screen — a browser cannot ask
@@ -199,7 +199,7 @@ public static class ApiEndpoints
 
         // Named by you, with what they take.
         //
-        // This replaced a searchable catalogue of all 789 barters and 214 crafts. Finding the one
+        // This replaced a searchable catalog of all 789 barters and 214 crafts. Finding the one
         // you meant needed you to already know which of Therapist's four Dorm 303 trades it was,
         // and what you actually think is "the document case".
         api.MapGet("/goals", (ItemTracker tracker, RatNavState state) =>
@@ -306,7 +306,7 @@ public static class ApiEndpoints
 
         // ---- traders
 
-        // Traders were missing entirely, and they are half of how quests are organised — you go
+        // Traders were missing entirely, and they are half of how quests are organized — you go
         // to a trader, not to a quest list.
         //
         // Loyalty is set by hand. Nothing the game writes to disk reports it, and the endpoint
@@ -605,7 +605,7 @@ public static class ApiEndpoints
                         Tracked = true,
                         Reason = $"{want.Found} of {want.Count * Math.Max(1, goal.Times)} for {goal.Name}",
 
-                        // Yours to say, and it colours the number the same red the quest and
+                        // Yours to say, and it colors the number the same red the quest and
                         // hideout lists use for the same meaning.
                         FoundInRaid = want.FoundInRaid,
                     });
@@ -1805,7 +1805,7 @@ public static class ApiEndpoints
         // The margin here is enormous, which is what makes clicking a safe way to do it: a wrong
         // layout is a mirror image and misses by something like half the map, while a hurried
         // click misses by a few percent. Where the answers do come out close — a position near the
-        // centre, where mirroring barely moves anything — it says so rather than choosing.
+        // center, where mirroring barely moves anything — it says so rather than choosing.
         api.MapPost("/maps/{id}/calibrate", (
             RatNavState state, RatNavSettings settings, string id, CalibrateRequest request) =>
         {
@@ -2177,7 +2177,7 @@ public static class ApiEndpoints
     /// Alphabetical, and only that.
     ///
     /// <para>This used to lift found-in-raid items to the top, which sorted the list into two
-    /// alphabets and meant finding a name you already had in mind took two passes. The colour
+    /// alphabets and meant finding a name you already had in mind took two passes. The color
     /// already says which are found-in-raid, and it says so wherever the item happens to sit.</para>
     /// </summary>
     private static int ByName(PanelRow a, PanelRow b) =>
@@ -2215,7 +2215,7 @@ public static class ApiEndpoints
     /// Where a trader sits in the game's own list.
     ///
     /// <para>Hardcoded because the order is a fact about the game's interface rather than
-    /// something the data carries, and it has been stable for years. Anything unrecognised sorts
+    /// something the data carries, and it has been stable for years. Anything unrecognized sorts
     /// last rather than throwing the rest out of order.</para>
     /// </summary>
     private static int TraderOrder(string name) => name.ToLowerInvariant() switch
@@ -2908,7 +2908,7 @@ public sealed record MapSummary
     };
 }
 
-/// <summary>One level of a multi-storey map, named the way a player would say it.</summary>
+/// <summary>One level of a multi-story map, named the way a player would say it.</summary>
 public sealed record MapFloorSummary
 {
     public required string Name { get; init; }

@@ -171,7 +171,7 @@ export interface HotKeys {
   toggleOverlay: string
   toggleInteract: string
   toggleMode: string
-  /** Hold the map still, or have it keep you centred. */
+  /** Hold the map still, or have it keep you centered. */
   toggleFollow: string
   /** Put the map back on you, once, without starting to follow. */
   centerMap: string
@@ -382,7 +382,7 @@ export interface CustomWaypoint {
    * Kept because older saved waypoints carry one, and no longer chosen when adding.
    *
    * <p>It drove which of two shapes the pin took. A waypoint is a waypoint: what separates one of
-   * yours from a quest's is where it came from, which is what its colour says.</p>
+   * yours from a quest's is where it came from, which is what its color says.</p>
    */
   kind: 'Place' | 'Item'
 
@@ -635,7 +635,7 @@ export const api = {
   /**
    * The goals you are collecting for, named by you.
    *
-   * This replaced a searchable catalogue of every barter and craft in the game: picking one out of
+   * This replaced a searchable catalog of every barter and craft in the game: picking one out of
    * 789 needed you to already know which of Therapist's four Dorm 303 trades you meant.
    */
   goals: () => get<GoalView[]>('/api/goals'),
@@ -691,7 +691,7 @@ export const api = {
   /**
    * Asks the desktop app to open a folder picker, and returns what was chosen.
    *
-   * Null when it was cancelled, or when nothing can put a window on screen.
+   * Null when it was canceled, or when nothing can put a window on screen.
    */
   browseForFolder: async (start?: string | null) => {
     const answer = await post<{ path: string } | null>('/api/settings/browse', { start })

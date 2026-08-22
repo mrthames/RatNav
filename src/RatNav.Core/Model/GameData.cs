@@ -294,10 +294,10 @@ public sealed record MapDef
         Image?.Floors.LastOrDefault(f => f.Covers(height));
 
     /// <summary>The nearest named place to a position, for describing a stop in words.</summary>
-    public MapLabel? NearestLabel(GamePosition position, double withinMetres = 120)
+    public MapLabel? NearestLabel(GamePosition position, double withinMeters = 120)
     {
         MapLabel? best = null;
-        var bestDistance = withinMetres;
+        var bestDistance = withinMeters;
 
         foreach (var label in Labels)
         {
@@ -368,7 +368,7 @@ public sealed record MapImage
     public string? DefaultFloor { get; init; }
 
     /// <summary>
-    /// Levels of a multi-storey map, bottom to top, each with the world height band it covers.
+    /// Levels of a multi-story map, bottom to top, each with the world height band it covers.
     /// Seven of ten maps have more than one, and Streets has seven.
     /// </summary>
     public IReadOnlyList<MapFloor> Floors { get; init; } = [];
@@ -385,7 +385,7 @@ public sealed record MapImage
         Confidence is CalibrationConfidence.Verified or CalibrationConfidence.Derived;
 }
 
-/// <summary>One level of a multi-storey map.</summary>
+/// <summary>One level of a multi-story map.</summary>
 public sealed record MapFloor
 {
     public required string Name { get; init; }
@@ -434,7 +434,7 @@ public sealed record MapExtract
     ///
     /// <para>Kept as a flag on the same record rather than a list of its own: everything that
     /// finds, draws, labels and points an edge arrow at an extract should do the same for these,
-    /// and only the colour, the symbol and the word need to differ.</para>
+    /// and only the color, the symbol and the word need to differ.</para>
     /// </summary>
     public bool IsTransit { get; init; }
 }

@@ -66,7 +66,7 @@ public partial class ItemsWindow : Window
     /// <summary>
     /// Whether the found-in-raid legend belongs at the bottom of this one.
     ///
-    /// <para>One window class serves both pop-outs, and only the items list uses that colour. The
+    /// <para>One window class serves both pop-outs, and only the items list uses that color. The
     /// waypoints list carries places to walk to, and was explaining a red square that never
     /// appears in it.</para>
     /// </summary>

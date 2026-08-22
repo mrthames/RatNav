@@ -39,7 +39,7 @@ public static class ScreenTextReader
     public static bool Available => Engine is not null;
 
     /// <summary>
-    /// Text lines from a region centred on a point, best-effort. An empty list means nothing
+    /// Text lines from a region centered on a point, best-effort. An empty list means nothing
     /// legible was there, which is a normal outcome, not an error.
     /// </summary>
     public static async Task<IReadOnlyList<string>> ReadAroundAsync(int screenX, int screenY)

@@ -46,7 +46,7 @@ for their own game and can change them whenever they like. What can be told to y
 RatNav does, and every one of those claims is checkable in the source.
 
 **RatNav is used at your own risk, and its author is not liable for what follows** — including
-action taken against a game account. That is in the [licence](../LICENSE) too.
+action taken against a game account. That is in the [license](../LICENSE) too.
 
 The full account, including why this is the established way to build a tool like this, is in
 [how it works](SAFETY.md).
@@ -81,7 +81,7 @@ to catch. Every tool in this space that is safe to use works the same way — in
 ones.
 
 So the design leans into it: one thumb button, and every press does as much as possible. Your
-marker snaps, the stops you have marked done drop off, and — in the centred view — the map turns to
+marker snaps, the stops you have marked done drop off, and — in the centered view — the map turns to
 face the way you were looking. Between presses nothing moves, and the overlay says how old the
 reading is rather than pretending.
 

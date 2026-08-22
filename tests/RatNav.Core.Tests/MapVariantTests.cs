@@ -45,7 +45,7 @@ public class MapVariantTests
         Assert.False(groundZero.Covers("customs"));
     }
 
-    /// <summary>A raid started on the variant has to keep being recognised.</summary>
+    /// <summary>A raid started on the variant has to keep being recognized.</summary>
     [Fact]
     public void Log_names_come_along_with_the_fold()
     {

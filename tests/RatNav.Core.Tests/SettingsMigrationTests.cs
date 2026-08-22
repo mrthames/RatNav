@@ -59,7 +59,7 @@ public sealed class SettingsMigrationTests : IDisposable
 
         RatNavSettings.Load(_dir);
 
-        // Having been through it, the file says so — and now honours a deliberate move back.
+        // Having been through it, the file says so — and now honors a deliberate move back.
         WriteHotkeys(new { toggleInteract = "F6", toggleMode = "F7" }, revision: 1);
 
         var again = RatNavSettings.Load(_dir);

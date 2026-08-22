@@ -22,7 +22,7 @@ namespace RatNav.Core.Sharing;
 public static class PlanCode
 {
     /// <summary>
-    /// Prefix so a pasted code is recognisable as one, and so a future format change can be told
+    /// Prefix so a pasted code is recognizable as one, and so a future format change can be told
     /// apart from this one rather than failing as corrupt.
     /// </summary>
     public const string Prefix = "RATNAV1-";

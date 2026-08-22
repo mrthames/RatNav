@@ -178,7 +178,7 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
    * What the ticked objectives need carried in, named and split.
    *
    * <p>Keys apart from items on purpose: forgetting a key wastes the raid, forgetting a quest item
-   * costs a trip back to the stash. The strip colours them differently for that reason.</p>
+   * costs a trip back to the stash. The strip colors them differently for that reason.</p>
    */
   const carry = useMemo(() => {
     const keys = new Map<string, { name: string; count: number }>()
@@ -411,12 +411,12 @@ export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | 
 
           This is the one thing on the page you cannot fix afterwards, and it used to sit at the
           same visual weight as the furniture around it — small chips in a row of small chips, with
-          the non-key items in the same muted grey as a disabled control despite being just as
+          the non-key items in the same muted gray as a disabled control despite being just as
           required.
 
           Keys are filled rather than tinted, because arriving at the right door without one wastes
-          the whole raid. Quest items are outlined in the warning colour rather than grey: cheaper
-          to forget, still not optional. Both are labelled, so a row of names is never left to be
+          the whole raid. Quest items are outlined in the warning color rather than gray: cheaper
+          to forget, still not optional. Both are labeled, so a row of names is never left to be
           guessed at.
         */}
         {(carry.keys.length > 0 || carry.items.length > 0) && (

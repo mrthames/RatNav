@@ -41,10 +41,10 @@ keeps the size it draws at if you had chosen one.
 ### Added
 
 - **The settings are a window of their own**, grouped into sizes, the map, what to draw, and the
-  window. There is no room inside a small overlay for a panel that configures it: centred it
+  window. There is no room inside a small overlay for a panel that configures it: centered it
   covered the map, and against an edge it collided with the quick controls.
-- **The centred view keeps a rectangle.** Size and place it where you like; the coverage dial still
-  puts a centred one back. Its default was measured rather than derived from the dial.
+- **The centered view keeps a rectangle.** Size and place it where you like; the coverage dial still
+  puts a centered one back. Its default was measured rather than derived from the dial.
 - **Transits have their own on/off**, separate from whose extracts to show — anybody can take a
   transit whatever they queued as.
 - **Bring lists say how many.** `3× MS2000 Marker` rather than a bare name, summed across the
@@ -73,7 +73,7 @@ keeps the size it draws at if you had chosen one.
   assembly, which is the test runner under a test runner.
 - **The map zoomed and scrolled the page at once.** React registers its wheel listener passively
   and a passive listener cannot cancel the event, so `preventDefault` was quietly ignored.
-- **The exits filter read backwards.** It said what pressing it would do while every neighbouring
+- **The exits filter read backwards.** It said what pressing it would do while every neighboring
   control said what it *was*.
 - **Transits leaked into the list of extracts the game offered**, because the reader matched
   OCR'd names against a list that now includes them.
@@ -83,8 +83,8 @@ keeps the size it draws at if you had chosen one.
 - **The settings opened themselves** whenever you pressed the interact key, because the panel's
   open state was being saved to disk.
 - **Closing a popped-out quest window took the app with it.**
-- **The centred view did not centre on you** after switching to it — the redraw ran before the
-  layout had settled, so the map was centred on a rectangle that no longer existed.
+- **The centered view did not center on you** after switching to it — the redraw ran before the
+  layout had settled, so the map was centered on a rectangle that no longer existed.
 - **Custom waypoints no longer ask for a note.** The name was all anybody wanted to say. Notes
   already saved are untouched.
 
@@ -114,15 +114,15 @@ it draws at if somebody chose one.
   works with the daily check switched off. Prereleases do not count — but a release does beat the
   prerelease it came from, so an alpha tells you when its stable ships.
 - **An installer that looks like the app** — RatNav's ground and its mark, rather than the stock
-  grey wizard, with a welcome page that says what this is before asking anyone to agree to a
-  licence.
+  gray wizard, with a welcome page that says what this is before asking anyone to agree to a
+  license.
 - **`F8` follows or holds the map still**, and **`F9` puts the map back on you** without starting
   to follow — for a still map, which is still on purpose, when you want to know where you are
   once.
-- **Transits are on the map**, in their own colour with their own symbol, with their own on/off
+- **Transits are on the map**, in their own color with their own symbol, with their own on/off
   control. They were missing entirely: tarkov.dev keeps them in a separate list RatNav never read,
   so Interchange drew six of its eight ways off the map.
-- **How far each exit is**, in metres under its name.
+- **How far each exit is**, in meters under its name.
 - **Tick a stop off from the overlay**, or drop it from the plan. Ending a raid marks a quest
   complete when every one of its objectives is.
 - **Group the items list by type** — the handbook's categories, alphabetical inside each.
@@ -158,7 +158,7 @@ it draws at if somebody chose one.
 
 ### Changed
 
-- **The settings are a centred modal** in two columns, rather than a drawer down the left edge.
+- **The settings are a centered modal** in two columns, rather than a drawer down the left edge.
 - **The quick controls carry only what changes mid-raid** — floor, follow, exits — with everything
   else behind the gear.
 - **Search is a box on the items page**, not a tab. Type and the list becomes results; clear it and
@@ -166,7 +166,7 @@ it draws at if somebody chose one.
 - **The items page defaults to nearest upgrade**, which is the question it is usually open for.
 - **Keys count as being for a quest**, so the separate Keys filter is gone. A key is recorded as
   something to bring rather than hand in, which is why it could not match the quests filter.
-- **Say "center"**, not "centre", and "press" rather than "tap".
+- **Say "center"**, not "center", and "press" rather than "tap".
 - Edit mode's buttons are 15% smaller, the overlay's padding is tighter, the position readout moved
   to the header, and the "0 of 3 done" counter is gone.
 
@@ -195,7 +195,7 @@ cold and playing with it — and it is a lot, so it wants using before it is pro
   items panel was closed, and filled the quest log after that return — so the log only ever
   refreshed as a side effect of the list wanting to.
 - **A custom waypoint in a plan was drawn twice**, red as a quest stop and orange as a mark, at the
-  same point. It is drawn once now, as the stop, in the waypoint colour.
+  same point. It is drawn once now, as the stop, in the waypoint color.
 - **Clearing a plan wiped the map.** The chosen map is not part of the plan — it is what makes a map
   draw without one. It survives now, and goes only on a restart or a change of map.
 - **The overlay scaled itself to about 2.0 on a 1440p screen.** The size was derived from the
@@ -222,7 +222,7 @@ cold and playing with it — and it is a lot, so it wants using before it is pro
 
 - **The size dial is called "UI scale"**, which is what it is.
 - **What a raid needs you to bring is loud.** Keys are filled rather than tinted; quest items are
-  outlined in the warning colour rather than the muted grey of a disabled control. It is the one
+  outlined in the warning color rather than the muted gray of a disabled control. It is the one
   thing on the page that cannot be fixed once you have queued.
 - **The Setup fields line up.** The Browse button sat below the box it belonged to, by however tall
   the hint underneath happened to be.
@@ -239,7 +239,7 @@ settled.
 
 - **A first install was actually run**, against an empty data directory, rather than read: the game
   folder is found, the logs are read, the screenshot folder is located, the screenshot key is
-  recognised, and the game data downloads. The port fallback proved itself in the same run — 8722
+  recognized, and the game data downloads. The port fallback proved itself in the same run — 8722
   was already taken, so it took 8723 and said so.
 
 ### Plan
@@ -262,8 +262,8 @@ settled.
   whether they are drawn and a **+ Waypoint** button, instead of choosing *a place* or *an item*
   before you have said what it is. Naming one uses RatNav's own dialog rather than the browser's
   prompt box, and asks for a name and nothing else — a note can follow from the waypoint's chip
-  under the map. The pin is now the same shape a quest stop draws, in the waypoint colour: what
-  separates yours from a quest's is where it came from, which is what a colour is for. "something
+  under the map. The pin is now the same shape a quest stop draws, in the waypoint color: what
+  separates yours from a quest's is where it came from, which is what a color is for. "something
   to pick up" no longer appears under a waypoint's name, because nobody chooses that any more.
 - **The place search is gone** from the Maps page. The names are drawn on the map you are looking
   at.
@@ -280,7 +280,7 @@ settled.
   quest list and **Plan this raid** are unavailable until you **End raid** or **Clear plan**, and
   the page says so where the controls were rather than just removing them. A plan with no raid is
   the ordinary between-raids case and stays fully editable.
-- **"updated 2 hours ago" says what was updated.** It is when the quest, item and map catalogue was
+- **"updated 2 hours ago" says what was updated.** It is when the quest, item and map catalog was
   last fetched from tarkov.dev — which only changes when the game does, so hours or days old is
   normal. With no subject it read as the whole app being stale, which sent people looking for a
   fault that was not there. It reads **game data** now, and both it and the refresh button explain
@@ -335,12 +335,12 @@ settled.
   the handles — the grab bar, the drawer chips, the gear. The stack of map settings behind the gear
   is a thing you go and get, not a thing you are handed every time you reach for the mouse. It is
   remembered once you open it. Existing settings still on the shipped value come along.
-- **The controls stack stops colliding with its neighbours.** It ran from the top of the window to
+- **The controls stack stops colliding with its neighbors.** It ran from the top of the window to
   a few pixels off the bottom, overlapping the quick bar above it and the footer below. Its margins
   were fixed numbers that were right once — the footer has grown a second row since, and everything
-  scales with the size dial. It measures the neighbours now.
+  scales with the size dial. It measures the neighbors now.
 - **Say what to press when RatNav does not know where you are.** Load into a raid and the map draws
-  centred on the middle of itself, which looks like a map that has decided something when what it
+  centered on the middle of itself, which looks like a map that has decided something when what it
   has done is wait. It now says so over the map, naming your own screenshot key, until the first
   position lands.
 - **No more "455 m · 43° right".** Gone from the overlay's header and from the Plan page's in-raid
@@ -362,26 +362,26 @@ settled.
 - **Popped-out panels carry the main overlay's handles** — the same solid light-blue bar to drag
   and the same light-blue corner to pull, instead of a faint strip and an invisible edge. The
   edges still resize; what was missing was something to see.
-- **The centred map turns with you.** Your heading points up the screen, so what is drawn at the
+- **The centered map turns with you.** Your heading points up the screen, so what is drawn at the
   top is what is in front of you — no more reading a route that runs behind you off the top of a
   monitor that is in front of you. Your cone points straight up, because up is now where you are
   looking, and the captions and place names stay upright while their positions turn. **north up**
-  in the controls keeps the old behaviour. The corner panel never turns: it is a small still map
+  in the controls keeps the old behavior. The corner panel never turns: it is a small still map
   you glance at to orient against buildings, and one that spun every time you turned would be
   unreadable.
-- **The fade stops dimming the controls.** In the centred view, turning the map down to a faint
+- **The fade stops dimming the controls.** In the centered view, turning the map down to a faint
   wash took the control panel with it — so the setting you most want was the one that made the
   controls hardest to use. The map carries the fade there; the controls stay solid.
-- **No edge arrows in the centred view.** They stay in the corner panel, which is small enough
-  that something just outside it is genuinely lost. The centred view is large and already shows the
+- **No edge arrows in the centered view.** They stay in the corner panel, which is small enough
+  that something just outside it is genuinely lost. The centered view is large and already shows the
   ground you are crossing, so the same arrows ringed the edge of the thing you were looking
   through — at exactly the point where the drawing is deliberately fading out.
-- **The centred view opens where it is useful** — zoomed in and following you, rather than fully
+- **The centered view opens where it is useful** — zoomed in and following you, rather than fully
   zoomed out and still. `outline` stays its default.
-- **The centred map turns into a full-screen HUD.** A **Coverage** dial in the controls: at 100%
-  the centred view takes the whole screen, the drawing **dissolves toward the edges** instead of
+- **The centered map turns into a full-screen HUD.** A **Coverage** dial in the controls: at 100%
+  the centered view takes the whole screen, the drawing **dissolves toward the edges** instead of
   stopping at a border, and the map lines **glow** rather than sit in ink. Below 100% it is the
-  centred window it has always been — one dial rather than a third view to configure, since `Box`
+  centered window it has always been — one dial rather than a third view to configure, since `Box`
   and `Wireframe` already carry separate settings. **Edge fade** and **Glow** are their own dials
   and appear only at full coverage.
 
@@ -390,7 +390,7 @@ settled.
   stops passing clicks, so you cannot shoot, and an interact key hit by accident mid-raid leaves
   you unable to click at anything. At full coverage the window answers per point instead.
 
-  The centred view is also now genuinely centred: its position and size come from the dial, so it
+  The centered view is also now genuinely centered: its position and size come from the dial, so it
   no longer offers a drag handle and a resize corner that the next layout would undo.
 - **The overlay's map controls read like the app's Maps page.** A **Quests** control — *Active*,
   *All*, *Off* — under the same name as the app's: active is the plan's stops, all adds every other
@@ -398,9 +398,9 @@ settled.
   levels, exits and quests are all written the way the app writes them — *Graphical*, *PMC*,
   *Active* — rather than as the raw lowercase setting, because two spellings of the same four
   choices read as two different sets of choices.
-- **The map controls are reachable in the centred view.** The gear that unfolds them lived in the
-  footer, which the centred view deliberately does not draw — so folding the controls away there
-  left nothing on screen to bring them back. The centred view has its own gear now, floating over
+- **The map controls are reachable in the centered view.** The gear that unfolds them lived in the
+  footer, which the centered view deliberately does not draw — so folding the controls away there
+  left nothing on screen to bring them back. The centered view has its own gear now, floating over
   the map, and the controls open as a panel at the top rather than a column down the full height
   of the screen.
 - **Edge arrows are drawn at full size.** The arrows that point at waypoints off the edge of the
@@ -447,7 +447,7 @@ settled.
 
 ### Hotkeys
 
-- **`F6` and `F7` swapped.** `F6` now switches between the corner panel and the centred map, and
+- **`F6` and `F7` swapped.** `F6` now switches between the corner panel and the centered map, and
   `F7` is the one that hands the overlay your mouse. The view you flip between constantly belongs
   next to show/hide; the key you press to go and adjust something belongs further out. `F5`, `F8`
   and `F9` have not moved.
@@ -521,7 +521,7 @@ the buddy app. Several things found while testing are fixed.
 
 
 - **Items → Custom → Add tracking.** Name it, search for the items, say how many. This replaces the
-  searchable catalogue of 789 barters and 214 crafts: finding the one you meant needed you to
+  searchable catalog of 789 barters and 214 crafts: finding the one you meant needed you to
   already know which of Therapist's four Dorm 303 trades it was.
 
 ### The items list
@@ -532,7 +532,7 @@ the buddy app. Several things found while testing are fixed.
   stash cell, where they are exactly right and where RatNav still reads them; in a list you are
   scanning for a name you have in mind, they are not.
 - **One alphabetical list**, on the overlay and in the app. Found-in-raid items are no longer
-  lifted into their own block — the colour says which they are wherever they sit, and two alphabets
+  lifted into their own block — the color says which they are wherever they sit, and two alphabets
   meant looking twice.
 
 ### Quests and maps
@@ -547,7 +547,7 @@ the buddy app. Several things found while testing are fixed.
   the Plan page says it on the row you tick, before you queue rather than after. It used to read
   "needs a key", which told you there was a problem; "Dorm room 314 marked key" tells you whether
   you already have it.
-- **The steps in a quest modal are clickable**, so reading a neighbouring step no longer means
+- **The steps in a quest modal are clickable**, so reading a neighboring step no longer means
   closing it, going back to the map and hunting for that waypoint.
 
 - **The Quests list says less, on purpose.** The "available" tag and the "needs Prapor LL2" gate
@@ -635,11 +635,11 @@ the buddy app. Several things found while testing are fixed.
 - **The Maps controls stay where you left them.** They shared one wrapping row with the map's own
   size deciding how it broke, so changing map moved everything. Search now has a row of its own —
   it is the one control you reach for by aiming rather than by reading.
-- **Custom tracking can mark an item found-in-raid**, which colours its number on the overlay the
+- **Custom tracking can mark an item found-in-raid**, which colors its number on the overlay the
   same red the quest and hideout lists use. RatNav cannot know: a barter may demand it where a kit
   you are building for yourself does not.
 
-- **The overlay draws Customs in its own colours again.** The **Graphical** level is meant to use
+- **The overlay draws Customs in its own colors again.** The **Graphical** level is meant to use
   the map's own palette, and it was drawing the flat wireframe one instead — the overlay was
   fetching a map the service had already restyled, so the palette it read back was RatNav's, not
   the map author's.
@@ -648,7 +648,7 @@ the buddy app. Several things found while testing are fixed.
   too, where taking it would record a level you do not have.
 
 - **F8 reads the tooltip, not the cell.** Hovering a compass in a backpack reported a golden neck
-  chain: six cells beside it were labelled "GoldChain" and its own cell was truncated to "Compa".
+  chain: six cells beside it were labeled "GoldChain" and its own cell was truncated to "Compa".
   Only the game's tooltip names what the cursor is on, so that is the only thing matched now.
 - **"needs Ragman LL0" is gone.** Loyalty starts at 1, so a requirement of 0 is the source saying
   "no trader gate" in a field that has to hold a number. It read as a gate you could not be below.
@@ -687,7 +687,7 @@ the buddy app. Several things found while testing are fixed.
   outlive every plan.
 - **Only the extracts you can use.** Double-tap `O` in game and press `F11`: RatNav reads the list
   off the screen and draws only those.
-- **Hazard zones read as hazards.** The stylesheet reader took a map's colours and dropped their
+- **Hazard zones read as hazards.** The stylesheet reader took a map's colors and dropped their
   opacity, so Streets' sniper zones drew as solid red blocks over the streets underneath.
 - **Hover labels are drawn into the map** rather than popped. A tooltip belonging to a window that
   never takes focus opened and vanished in the same frame, which is exactly what hovering a
@@ -742,10 +742,10 @@ the buddy app. Several things found while testing are fixed.
   Panning needs interact mode (`F6`): right-click is aim-down-sights, and an overlay that
   swallowed it mid-raid would be worse than one that cannot pan.
 - **Following is per presentation.** The corner box follows you by default — it is too small to
-  hold a map usefully. The centred map holds still by default — it is big enough to read as a map,
-  and one that re-centres on every fix puts the same building somewhere new each time you look.
+  hold a map usefully. The centered map holds still by default — it is big enough to read as a map,
+  and one that re-centers on every fix puts the same building somewhere new each time you look.
 - **A halo behind every line.** This is what makes a translucent map readable over Tarkov, whose
-  backgrounds run from snowfield to unlit basement — no single line colour survives both, and
+  backgrounds run from snowfield to unlit basement — no single line color survives both, and
   turning the opacity up until it does buries the game instead. With a **Line** weight control
   beside it.
 
@@ -816,7 +816,7 @@ the buddy app. Several things found while testing are fixed.
 
 ### The overlay
 
-- The centred map view is now only the map. The title and the fix age were text over the game in
+- The centered map view is now only the map. The title and the fix age were text over the game in
   the one mode that exists to keep the screen clear.
 
 ## 0.1.1 — 2026-08-19
@@ -873,9 +873,9 @@ First release.
 
 - Extracts, with a **PMC / Scav** switch. Shared extracts show under either, because they work
   whichever you queued as. Drawn as diamonds against the objectives' circles, so the two are
-  tellable apart without relying on colour.
+  tellable apart without relying on color.
 - The map can **hold still** while your marker travels across it, or follow you and slide
-  underneath. Still is the default: a map that re-centres on every fix puts the same building
+  underneath. Still is the default: a map that re-centers on every fix puts the same building
   somewhere new each time you look.
 - No line drawn between stops. It implied a route through walls that does not exist; the order is
   carried by numbered pins instead, and hovering one says which quest it is for.
@@ -887,7 +887,7 @@ First release.
 - Bindable hotkeys — `F5` shows and hides the overlay, `F6` lets you drag, resize, and zoom it,
   `F7` opens the full panel, `F8` ticks the current stop off, `F9` switches presentation.
 - Two presentations of the same state: a **box** in a corner for staying out of the way, or a
-  **wireframe** map drawn large and translucent over the centre, with terrain faded back so the
+  **wireframe** map drawn large and translucent over the center, with terrain faded back so the
   game still reads through it. Opacity and scale are yours to set.
 - Your screenshot key is a setting — middle mouse by default — so every prompt names the key you
   actually press instead of a key someone else chose.
@@ -909,7 +909,7 @@ First release.
 ### Honest about what it does not know
 
 - Maps whose calibration could not be established say so instead of showing a pin that might be
-  75 metres out.
+  75 meters out.
 - Quest progress read from the game's logs sits *under* anything you correct by hand, so a later
   replay can never undo a correction.
 - When tarkov.dev is unavailable, the last good data keeps being served and the app says it is

@@ -17,7 +17,7 @@
         Two presentations of the same state.
 
         Box is a small panel in a corner: out of the way, never over the middle of the screen.
-        Wireframe draws the map itself, large and translucent over the centre — terrain dropped
+        Wireframe draws the map itself, large and translucent over the center — terrain dropped
         away so the game still shows through it.
 
         Nothing animates in either. The scene is redrawn when the raid state changes and at no
@@ -36,17 +36,17 @@
         <SolidColorBrush x:Key="Terrain" Color="#9fb3c8" />
 
         <!--
-            Marks of your own. Its own colour and its own shape, because "a quest asked for this"
+            Marks of your own. Its own color and its own shape, because "a quest asked for this"
             and "I decided to note this" are different kinds of thing and the difference has to
             survive a glance.
 
             Orange rather than the yellow it reads as: yellow is already what a scav extract is,
-            and two things on one map sharing a colour is what this hue exists to avoid. Far enough
+            and two things on one map sharing a color is what this hue exists to avoid. Far enough
             from the quests' red-orange to separate at a glance, which is the pair that matters.
         -->
         <SolidColorBrush x:Key="Mark" Color="#ffa033" />
 
-        <!-- Extracts. The colour carries the faction; the shape is the same for both. -->
+        <!-- Extracts. The color carries the faction; the shape is the same for both. -->
         <SolidColorBrush x:Key="PmcExit" Color="#5ee07a" />
         <SolidColorBrush x:Key="ScavExit" Color="#f5cf4a" />
 
@@ -174,12 +174,12 @@
 
                     Inside the row button rather than beside it, so the row keeps its full width
                     for the name; they sit over the right-hand end of it where a long name is
-                    already being ellipsised.
+                    already being ellipsized.
                 -->
                 <!--
                     Before the number, not after the name.
 
-                    On the right they sat past a name that is ellipsised when it is long — so the
+                    On the right they sat past a name that is ellipsized when it is long — so the
                     rows where you would most want to press one were the rows where it had been
                     pushed off the edge. Here they are in the same place on every row whatever the
                     name does, and the number moves aside for them rather than the name.
@@ -228,7 +228,7 @@
         <!--
             A scroll bar that is nearly not there.
 
-            WPF's own is a chunky light-grey column with an arrow button at each end, which over a
+            WPF's own is a chunky light-gray column with an arrow button at each end, which over a
             dark translucent overlay reads as a control from another application dropped into it.
             Removing it entirely was the first instinct and is one thing short of right: without
             any mark at all a list that continues below the fold looks like a list that ends, and
@@ -272,7 +272,7 @@
                             <!--
                                 Clicking the empty part of the track still pages, as it always
                                 did. The buttons that do it are transparent and have no size of
-                                their own, so the behaviour survives without the furniture.
+                                their own, so the behavior survives without the furniture.
                             -->
                             <Track.IncreaseRepeatButton>
                                 <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0">
@@ -558,7 +558,7 @@
                             <!--
                                 What to press, while the map does not know where you are.
 
-                                A raid loads and the map draws immediately, centred on the middle
+                                A raid loads and the map draws immediately, centered on the middle
                                 of itself, which looks like a map that has decided something when
                                 what it has done is wait. The footer says the same thing in small
                                 text at the bottom; this is the moment it is worth saying loudly,
@@ -731,7 +731,7 @@
                                         Visibility="Collapsed" />
                             </DockPanel>
 
-                            <!-- The colours mean something and nothing said what. -->
+                            <!-- The colors mean something and nothing said what. -->
                             <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0"
                                        FontFamily="Consolas" FontSize="9"
                                        Foreground="{StaticResource Muted}"
@@ -898,7 +898,7 @@
 
                             The box used to take its height from the picture, and wiki
                             screenshots are all shapes — so the back and next controls,
-                            centred against it, moved every time one loaded. You cannot
+                            centered against it, moved every time one loaded. You cannot
                             flick through pictures whose buttons are somewhere new each
                             time; you have to find them again first.
                         -->
@@ -1001,7 +1001,7 @@
             </Grid.RowDefinitions>
 
             <!--
-                A visible edge and something to grab, in both presentations. The centred map draws
+                A visible edge and something to grab, in both presentations. The centered map draws
                 no frame of its own, so without this there was nothing on screen to take hold of.
             -->
             <Border Grid.RowSpan="2"
@@ -1020,17 +1020,17 @@
             </Border>
 
             <!--
-                The centred view's own gear.
+                The centered view's own gear.
 
                 The corner view's lives in the footer, next to the drawer handles — and the footer
-                is one of the things the centred view deliberately does not draw, which left the
+                is one of the things the centered view deliberately does not draw, which left the
                 controls foldable with nothing on screen to unfold them. A second button rather
                 than moving the first: in the corner view the footer is exactly where it belongs.
 
-                Floating over the map, because the centred view fills the screen and has no margin
+                Floating over the map, because the centered view fills the screen and has no margin
                 to give up.
             -->
-            <Button x:Name="CentredControls" Grid.Row="1" Style="{StaticResource Chip}"
+            <Button x:Name="CenteredControls" Grid.Row="1" Style="{StaticResource Chip}"
                     Content="⚙" Visibility="Collapsed"
                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6,6,0,0"
                     ToolTip="Show the map controls" />
@@ -1055,7 +1055,7 @@
                 A panel in the middle rather than a drawer down the left edge.
 
                 Down the side it was as narrow as the overlay was, which at 1080p is not very, and
-                every row of it was a cramped little column of chips over the map. Centred it can
+                every row of it was a cramped little column of chips over the map. Centered it can
                 be a comfortable width and scroll for its height, and what it covers while it is
                 open does not matter — nobody is reading the map while changing how the map is
                 drawn.
@@ -1063,7 +1063,7 @@
             <!--
                 Down one side rather than across the middle.
 
-                Centred, it covered the thing every dial in it changes — so setting a pin size meant
+                Centered, it covered the thing every dial in it changes — so setting a pin size meant
                 setting it, closing the panel, looking, and opening it again. Against the right edge
                 it takes about half the width and the map stays a live preview of what the numbers
                 are doing.
@@ -1318,7 +1318,7 @@
                                     <Button x:Name="ZoomReset" Style="{StaticResource Chip}" Content="1.0×" MinWidth="44" />
                                     <Button x:Name="FollowButton" Style="{StaticResource Chip}"
                                             Content="still" MinWidth="62" Margin="2,0,0,0" />
-                                    <Button x:Name="RecentreButton" Style="{StaticResource Chip}" Content="⌖"
+                                    <Button x:Name="RecenterButton" Style="{StaticResource Chip}" Content="⌖"
                                             Margin="2,0,0,0"
                                             ToolTip="Recenter on you and follow again"
                                             Visibility="Collapsed" />

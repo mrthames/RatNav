@@ -17,7 +17,7 @@ namespace RatNav.App;
 /// window and moved back when it closes. A second set would be a second thing to keep in step,
 /// and the carousel, the wiki link and the step list all already work.</para>
 ///
-/// <para>Centred and a share of the screen rather than sized to its content — a window that
+/// <para>Centered and a share of the screen rather than sized to its content — a window that
 /// changes size as you page through pictures of different shapes is one you have to find again
 /// after every press.</para>
 /// </summary>

@@ -48,7 +48,7 @@ icon. **If you change one, change the other**; they are three path strings and t
 - It is meant to be reused: the repo, the executable, the installer, the favicon, and the site all
   draw from these files rather than keeping their own copy.
 
-## Licence
+## License
 
-The mark is part of RatNav and carries the same licence as the rest of the repository. It is
+The mark is part of RatNav and carries the same license as the rest of the repository. It is
 RatNav's identity rather than a free asset — please do not use it for anything else.

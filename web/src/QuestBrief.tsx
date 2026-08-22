@@ -102,7 +102,7 @@ export function QuestBrief({
 
         {/* Every step, with the one this waypoint serves marked. A pin out of context is a pin. */}
         {/*
-          The steps are clickable, so reading a neighbouring step does not mean closing this,
+          The steps are clickable, so reading a neighboring step does not mean closing this,
           going back to the map and hunting for its waypoint.
 
           It moves the mark and nothing else, on purpose. The wiki pictures belong to the quest
@@ -217,7 +217,7 @@ export function QuestBrief({
               </button>
             </div>
 
-            {/* Credit where the licence requires it. */}
+            {/* Credit where the license requires it. */}
             <p className="text-xs text-muted">
               <span className="font-mono">{image.title}</span> · {index + 1} of {count} · from the{' '}
               <a

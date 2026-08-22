@@ -18,7 +18,7 @@ public sealed record SolvedCalibration
 /// Two independent signals, because neither is sufficient alone:
 ///
 /// <para><b>Aspect ratio</b> decides whether the axes are swapped. The world span mapped to the
-/// image's width and the span mapped to its height must share a metres-per-pixel scale, so the
+/// image's width and the span mapped to its height must share a meters-per-pixel scale, so the
 /// arrangement that makes those agree is the right one. This is decisive on most maps and
 /// useless on a square image, where both arrangements fit equally.</para>
 ///

@@ -13,30 +13,23 @@ Free, and deliberately small. It keeps the notes and draws the map; working the 
 your job, and that is the point.
 
 [![Latest release](https://img.shields.io/github/v/release/mrthames/RatNav?display_name=tag&label=latest&color=8ec8ff)](https://github.com/mrthames/RatNav/releases/latest)
-[![Licence](https://img.shields.io/badge/licence-PolyForm%20Noncommercial-8ec8ff)](LICENSE)
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-8ec8ff)](LICENSE)
 
 ## Deliberately small
 
-RatNav is a notepad and a map, not a system you have to live inside. It is free — no account, no
-ads, no telemetry, no paid tier, nothing to sign up for.
+A notepad and a map, not a system to live inside. Free — no account, no ads, no telemetry, no paid
+tier.
 
-There are things it does not do, on purpose:
+Four things it does not do, on purpose:
 
-- **It does not work out your route.** You tick objectives in the order you mean to walk them, and
-  that is the order it draws. A solver knows distances and nothing else: not which end of the map
-  is quiet, not what you want done before a raid heats up, not that two of them are on the way to
-  a third. You know that. It does not.
-- **It does not follow you around.** Your position updates when you tap your screenshot key, and
-  only then. Anything continuous would mean reading the game's memory, which is what anti-cheat
-  exists to catch.
-- **It does not read your stash, your level, or your trader loyalty.** You tell it once and
-  correct it when it drifts. Nothing here wants your account password.
-- **It does not play for you.** No automation, no input sent to the game, nothing clicked on your
-  behalf.
+- **Work out your route.** You tick objectives in the order you mean to walk them; that is the
+  order it draws.
+- **Follow you around.** Position updates when you tap your screenshot key, and only then.
+- **Read your stash, level or trader loyalty.** You tell it once and correct it when it drifts.
+- **Play for you.** No automation, no input sent to the game.
 
-Learning the maps, finding the door, judging what a raid is worth — that is the game, and the game
-is what you came for. RatNav takes the bookkeeping: which quest wanted this, which key opens that,
-how many you still need, and where on the map the stop you picked actually is.
+Learning the maps and finding the door is the game. RatNav takes the bookkeeping: which quest
+wanted this, which key opens that, how many you still need.
 
 ## Alpha
 
@@ -58,12 +51,11 @@ release](https://github.com/mrthames/RatNav/releases/latest) is always the one t
 
 ## What it looks like
 
-**In raid, two ways.** `F7` switches between them, and each keeps its own zoom, ink and position —
-setting up one never disturbs the other.
+**In raid, two ways.** `F7` switches between them, and each keeps its own zoom, ink and position.
 
-A **panel in the corner**, out of the way: your plan's quests numbered to match the pins on the
-map, the items to look for beside it, and the real map with extracts and place names. The key
-bindings sit along the bottom so you never have to remember them.
+A **panel in the corner**: your plan's stops numbered to match the pins on the map, the items to
+look for beside it, and the real map with extracts and place names. The key bindings sit along the
+bottom.
 
 *The four shots below are one raid on Streets of Tarkov, at 1080p, on the settings a new install
 gets.*
@@ -71,29 +63,25 @@ gets.*
 ![The RatNav panel over a raid on Streets of Tarkov: a waypoint list numbered to match the pins on the map, the watchlist and tracked collections beneath it, the map with extracts and street names beside them, and the key bindings along the bottom](docs/screenshot-overlay.jpg)
 
 **Click a waypoint and the quest opens over it** — what it wants, which step this stop is, and the
-wiki's own photographs of the place. On one screen that is the only way to see which door you are
-looking for without leaving the game.
+wiki's own photographs of the place, without leaving the game.
 
 ![A quest brief open over a raid on Streets of Tarkov: the quest name and its trader, the four objectives with the current one marked, and a wiki photograph of the building to find, with controls to page through eight of them](docs/screenshot-quest.jpg)
 
-**Or take the lists off the map.** Each one tears off into a window of its own, parked wherever
-suits your screen — so the map keeps its whole panel and the lists stop competing with it for room.
-They stay part of the overlay: same size, same fade, clicks passing through to the game, and gone
+**Or take the lists off the map.** Each tears off into a window of its own, parked wherever suits
+your screen. They stay part of the overlay: same size, same fade, clicks passing through, and gone
 with it when you press hide.
 
 ![The same raid with the waypoints list torn off into its own window below the RatNav panel, showing eleven numbered stops, while the panel keeps the map and the items list](docs/screenshot-popped.jpg)
 
-Or the **centred view** — the same map drawn as glowing outlines over the game, dissolving toward
-the edges instead of stopping at a border, and **turned so what is in front of you is up the
-screen**. It keeps you in the middle of it: take a screenshot and the map moves and rotates around
-you rather than the other way about. Size and place it where you like, or turn the coverage dial up
-to 100% and it becomes a full-screen HUD. Clicks pass straight through it except on a control, so
-it can stay up while you play.
+Or the **centered view** — the same map drawn as glowing outlines over the game, **turned so what is
+in front of you is up the screen**, with you in the middle of it. Size and place it where you like,
+or turn **Coverage** to 100% for a full-screen HUD. Clicks pass straight through except on a
+control, so it can stay up while you play.
 
-![RatNav's centred view over a raid on Streets of Tarkov: building outlines drawn as glowing blue lines over the game with street and shop names on them, a red quest waypoint and a green extract marked, all above the player's weapon and the game's own interface](docs/screenshot-hud.jpg)
+![RatNav's centered view over a raid on Streets of Tarkov: building outlines drawn as glowing blue lines over the game with street and shop names on them, a red quest waypoint and a green extract marked, all above the player's weapon and the game's own interface](docs/screenshot-hud.jpg)
 
 **Before you queue**, the app: tick the objectives you are pushing and it numbers them in that
-order, works out which keys you have to bring, and assembles the shopping list. There is a tour of every page
+order, collects the keys to bring, and assembles the shopping list. There is a tour of every page
 [further down](#the-app).
 
 ## Install
@@ -183,35 +171,30 @@ community map image hosts.
 
 ## What it does
 
-**Before the raid.** Pick a map. RatNav lists the objectives of your active quests, grouped by the
-place players actually call it — Depot, Dorms, Old Construction — with the quest and trader for
-each. Tick what you are pushing, in the order you mean to walk it, and it numbers the stops that
-way, aggregates the keys you need to bring, and assembles the shopping list.
+**Before the raid.** Pick a map and RatNav lists your active quests' objectives, grouped by the
+place players actually call it — Depot, Dorms, Old Construction. Tick what you are pushing, in the
+order you mean to walk it. It numbers the stops that way, collects the keys to bring, and
+assembles the shopping list.
 
-**During the raid.** A hotkey-toggled overlay shows your stops and your position on the real map —
-either as a small panel in a corner or as a full-screen HUD turned to face the way you are. Tap
-your screenshot key and the marker snaps, the centred view turns to face the way you were looking,
-and the screenshot is archived so the folder never fills up.
+**During the raid.** A hotkey-toggled overlay shows your stops and your position on the real map,
+either as a corner panel or as a full-screen HUD turned to face the way you are. Tap your
+screenshot key: the marker snaps, the centered view turns, and the screenshot is archived.
 
-**Between raids.** What every active quest needs, minus what you have, with a watchlist for
-anything else worth remembering — filtered to found-in-raid, or keys, or whatever a trade is
-waiting on.
+**Between raids.** What every active quest needs, minus what you have, plus a watchlist. Filter to
+found-in-raid, keys, or the hideout.
 
-**Three characters, kept apart.** PvE, PvP and PvP Seasonal each get their own quests, hideout,
-loyalty and level — because the game does too. Switch from the menu in the navigation; start one
-over from Setup.
+**Three characters, kept apart.** PvE, PvP and PvP Seasonal each keep their own quests, hideout,
+loyalty and level. Switch from the menu in the navigation; start one over from Setup.
 
-**Track something of your own.** "Document case", and the seven plugs it takes. Each item has a
-`+`/`−` and the number shown is what is **left** — found four of six and it asks for two. Counted
-*apart* from quests and the hideout, because an item wanted three times for a quest and seven for
-a barter is two reasons, not a single ten.
+**Track something of your own.** "Document case", and the seven plugs it takes. `+`/`−` on each
+item, and the number shown is what is **left**. Counted apart from quests and the hideout.
 
 **Click a waypoint to read the quest.** What it wants, which step this pin serves, and the wiki's
-screenshots of the place — which is what turns "walk to this pin" into "find this door".
+screenshots of the place.
 
 **Marks of your own.** Click a spot on the map, name it, and it draws in raid from then on. They
-live per map rather than per plan, so they outlive every plan — and they can join one: on the Plan
-page they sit above the quest objectives, ticked and numbered in the same list.
+live per map, so they outlive every plan — and they can join one, ticked and numbered alongside
+the quest objectives.
 
 **Quest photos.** The wiki's screenshots for a quest, from the app — the ones showing which
 building and which door.
@@ -223,18 +206,16 @@ about 17 items rather than the several hundred an un-filtered list would give yo
 number shared by the Hideout page, the Items page and the overlay, so turning it anywhere turns it
 everywhere.
 
-**With a friend.** Export a plan, merge it with theirs. Nothing is dropped — every objective
-survives carrying its owner — and it flags what actually changes the raid: objectives to do
-together, items you are both hunting, and keys only one of you needs to carry.
+**With a friend.** Export a plan, merge it with theirs. Every objective survives carrying its
+owner, and it flags what changes the raid: objectives to do together, items you are both hunting,
+and keys only one of you needs to carry.
 
 ## The app
 
-Everything above, on a second screen or in the expanded overlay — the same app either way, so there
-is one place to learn rather than two.
+Everything above, on a second screen or in the expanded overlay — the same app either way.
 
 **Maps.** Every objective of every active quest, on the map, with extracts, place names and four
-levels of detail. **Coming soon** lists maps that have a drawing and are one position away from
-being finished; a map with no drawing anywhere is not listed and not promised.
+levels of detail. **Coming soon** lists maps that are one position fix away from being finished.
 
 ![The Maps page: Customs drawn with its objectives, extracts, transits and place names, and above it the draw, floor, quest, exit and waypoint controls](docs/app/maps.png)
 
@@ -249,35 +230,29 @@ buttons — with a link to the wiki and the wiki's own screenshots of the place.
 ![The Quests page: trader portraits with loyalty controls above a list of active quests, each with not-started, active, complete and failed controls](docs/app/quests.png)
 
 **Hideout.** What you could build now, then what one more upgrade unlocks, each module listing what
-it still takes. Found-in-raid marked in red, because those are the ones you cannot buy your way out
-of later.
+it still takes. Found-in-raid marked in red.
 
 ![The Hideout page: modules buildable now, each listing the items and roubles it still needs, with found-in-raid requirements marked](docs/app/hideout.png)
 
-**Plan.** Pick a map, then tick the objectives you are pushing. One strip that does not move says
-how many you have picked and what they need you to bring — keys in red, because a key is the one
-thing you cannot fix once you have queued — and the checklist beneath it is grouped by where things
-are, so a street is one glance rather than six. Your own marks sit at the top of the list, offered
-the same way — a run can be two quest steps and then the stash behind the garage, which is the only
-reason to put a mark in a plan rather than leave it drawn on the map. What you tick first is where
-you go first, and each tick shows the number that stop will carry.
+**Plan.** Pick a map, then tick the objectives you are pushing. A strip that does not move says how
+many you have picked and what to bring, keys in red. The checklist beneath it is grouped by place,
+with your own marks at the top. What you tick first is where you go first, and each tick shows the
+number that stop will carry.
 
 ![The Plan page while a plan is being built: Streets of Tarkov picked, a strip reading 6 objectives with an Iron gate key and a Relaxation room key to bring and Plan this raid beside them, then Your marks with Ammo Spawn and Car Batteries ticked first and second, then the quest objectives grouped by street with their ticks numbered three to six and the key each one needs beneath it](docs/app/plan-building.png)
 
 Once a plan exists the page folds down to it: the stops in order, **+ Add a stop to this plan** at
-the foot, and **End raid** on the strip. Ticking one off strikes it through and moves it to the
-bottom.
+the foot, and **End raid** on the strip.
 
 ![The Plan page with a raid planned: a strip reading 7 objectives and what to bring — an Iron gate key in red and 3× MS2000 Marker — with End raid beside it, and beneath it the seven stops in order, each naming its street and the quest it belongs to, with Quest done on every row and Add a stop to this plan at the foot](docs/app/plan.png)
 
 **On a phone or tablet, if you want it.** **Setup → Reach RatNav from a phone or tablet** makes the
-service answer on your machine's network address as well as its own, so an iPad on the same wifi
-can open it in a browser. Nothing is installed on the other device, and a plan you build there
-reaches the overlay in game immediately — both are looking at the same RatNav.
+service answer on your machine's network address, so an iPad on the same wifi can open it in a
+browser. Nothing is installed on the other device, and a plan you build there reaches the overlay
+immediately.
 
-It is off until you turn it on, and **nothing outside your network can reach it**: port forwarding
-is a router-to-internet thing and is not part of this. There is no password either, which Setup
-says out loud — anyone already on your wifi can open it.
+Off until you turn it on, and **nothing outside your network can reach it**. There is no password
+either, which Setup says out loud — anyone already on your wifi can open it.
 
 ## How position works
 
@@ -289,7 +264,7 @@ screenshot key **is** RatNav's "where am I" key:
 2. Tell RatNav which key that is, in Setup. It never presses it; it just names it in prompts.
 3. Tap it in raid.
 4. RatNav parses the filename, snaps your marker to that spot with your facing, and — in the
-   centred view — turns the map so what is in front of you is up the screen. The stops keep the
+   centered view — turns the map so what is in front of you is up the screen. The stops keep the
    order you gave them.
 
 Position updates when you tap, and only when you tap. There is no continuous tracking, because reading
@@ -305,9 +280,8 @@ ban-safe tool in this space works the same way.
 - **A map marked `[WIP]` is one still being worked on.** Those are not in a stable release.
 - **It tells you about updates, and does nothing about them.** Once a day RatNav asks GitHub
   whether there is a newer stable release and says so on **Setup**, with a link. It never
-  downloads or runs anything — a tool that reads the game's files has no business doing that on
-  its own. Turn the check off there, or press **Check now** whenever you like; the button works
-  with the daily check switched off.
+  downloads or runs anything. Turn the check off there, or press **Check now**, which works with
+  the daily check switched off.
 
 ## Hotkeys
 
@@ -316,7 +290,7 @@ ban-safe tool in this space works the same way.
 | *your in-game screenshot key* | take a position fix |
 | `F5` | show or hide the overlay |
 | `F6` | interact mode — let the mouse reach the overlay to move, resize, zoom and open the settings |
-| `F7` | switch between the corner panel and the centred map |
+| `F7` | switch between the corner panel and the centered map |
 | `F8` | follow you, or hold the map still |
 | `F9` | put the map back on you, without starting to follow |
 | `F10` | read the extract list the game is showing, and draw only those |
@@ -327,16 +301,13 @@ and tells you if another application already owns one.
 
 ### Identifying an item
 
-Hover an item so its tooltip is showing and press `F11`. RatNav reads the tooltip **off the
-screen** — the same pixels a screenshot tool sees, using the OCR built into Windows — and tells you
-which quests want it, which hideout station and level needs it, whether it opens a door, and which
-traders will take it in trade.
+Hover an item so its tooltip is showing and press `F11`. RatNav reads the tooltip off the screen
+with the OCR built into Windows, and tells you which quests want it, which hideout station needs
+it, whether it opens a door, and which traders take it in trade.
 
-It is a key rather than shift-click on purpose. Catching a mouse click over another application
-needs a system-wide mouse hook, which is the same machinery RatNav refuses to use for the keyboard,
-and for the same reason. A hotkey is registered with Windows the ordinary way and touches nothing.
-
-OCR misreads, so RatNav says how sure it is rather than presenting a guess as fact.
+A key rather than shift-click: catching a click over another application needs a system-wide mouse
+hook, which RatNav will not use. OCR misreads, so it says how sure it is rather than presenting a
+guess as fact.
 
 ## The map
 
@@ -345,36 +316,28 @@ the **gear** for the controls:
 
 | | |
 |---|---|
-| **Floor** | Every floor is drawn stacked unless you say otherwise. The dropdown on the quick panel lists **Stacked** first, then the map's own levels, and a position fix never changes it underneath you. |
-| **Draw** | `Graphical` uses the map's own palette, the way its author drew it. `Full`, `Structure` and `Outline` drop whole categories of detail rather than fading everything — which is what you want over a firefight. |
-| **Fade / Line** | How strongly the map is drawn over the game, and how heavy its strokes are. The controls stay solid whatever the map is set to. |
-| **Pins / Waypoints / Map labels / You** | Separate size dials for markers, the captions on stops and extracts, the map's own place names, and your own marker — with **Shrink** deciding how much they ease off as you zoom out. |
-| **Map** | `still` holds the map and lets your marker travel across it; `follows you` keeps you centred. |
-| **Exits** | `Both`, `PMC`, `Scav`, or `Off`. Shared extracts show under either. `F10` narrows it to the ones the game says are open this raid. |
-| **Transits** | On or off, separately from the above — anybody can take a transit whatever they queued as. Off by default, and drawn in their own colour with their own symbol so they are never mistaken for a way out with your loot. |
-| **Quests** | `Active` is your plan's stops; `All` adds every other started quest's objective on this map; `Off` leaves the map clean. |
-| **Coverage / Edge fade / Glow** | The centred view only — how much of the screen it takes, where the drawing dissolves, how much the lines bloom. |
-| **UI scale** | How large RatNav draws its own furniture — the controls, the drawers, the headings. Not the map, which has its own dials either side of this one. |
+| **Floor** | **Stacked** by default, then the map's own levels. A position fix never changes it underneath you. |
+| **Draw** | `Graphical` uses the map's own palette. `Full`, `Structure` and `Outline` drop whole categories of detail rather than fading everything. |
+| **Fade / Line** | How strongly the map is drawn over the game, and how heavy its strokes are. The controls stay solid either way. |
+| **Pins / Waypoints / Map labels / You** | Separate size dials, with **Shrink** deciding how much they ease off as you zoom out. |
+| **Map** | `still` holds the map and lets your marker travel across it; `follows you` keeps you centered. |
+| **Exits** | `Both`, `PMC`, `Scav`, or `Off`. `F10` narrows it to the ones the game says are open this raid. |
+| **Transits** | On or off, separately from Exits. Off by default, and drawn in their own color and symbol. |
+| **Quests** | `Active` is your plan's stops; `All` adds every other started quest's objective; `Off` leaves the map clean. |
+| **Coverage / Edge fade / Glow** | The centered view only — how much of the screen it takes, where the drawing dissolves, how much the lines bloom. |
+| **UI scale** | RatNav's own furniture — controls, drawers, headings. Not the map, which has its own dials. |
 
-These are the same controls under the same names as the app's Maps page, so what you can turn on
-and off reads the same in both places. The one difference is **Exits**: the overlay offers `Both`
-as well, where the app starts from `PMC`.
-
-**The centred view goes to full screen.** Turn **Coverage** to 100% and it becomes a HUD: glowing
-outlines over the game, dissolving toward the edges rather than stopping at a border, turned so
-what is in front of you is up the screen. Clicks pass straight through it except on a control, so
-it can be up while you play. The corner panel stays north-up and still, which is what a small map
-you glance at should be.
+The same controls under the same names as the app's Maps page. The one difference is **Exits**: the
+overlay offers `Both` as well, where the app starts from `PMC`.
 
 Three drawers open from the bottom-left: the **waypoints** list, the **items list**, and the
-**map** itself. Either list can swap sides, collapse, or tear off into its own window for a second
-monitor; folding the map leaves a narrow strip of just the two lists.
+**map** itself. Either list can swap sides, collapse, or tear off into its own window; folding the
+map leaves a narrow strip of just the two lists.
 
-The overlay shows itself when a raid starts and puts itself away when one ends, so it is not
-sitting over your stash while you sort inventory.
+The overlay shows itself when a raid starts and puts itself away when one ends.
 
-Everything here is remembered — placement, zoom and opacity per presentation, so setting up the
-corner box does not disturb the centred map.
+Placement, zoom and opacity are remembered per view, so setting up the corner box does not disturb
+the centered map.
 
 The full tour is in the **[guide](docs/GUIDE.md)**.
 
@@ -440,7 +403,7 @@ affiliation.
 Use it, change it, fork it, share your fork. What is not permitted is selling it, charging for
 access to it, or building a paid product on top of it.
 
-The **name "RatNav" and the mark** are not part of that licence — copyright licences never cover a
+The **name "RatNav" and the mark** are not part of that license — copyright licenses never cover a
 name — so please give your fork its own. Saying it is based on RatNav is accurate and welcome; being
 called RatNav Plus is not, because then nobody can tell which one they downloaded.
 

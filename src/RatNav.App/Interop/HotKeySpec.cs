@@ -45,7 +45,7 @@ public sealed record HotKeySpec(ModifierKeys Modifiers, Key Key)
 
                     if (!TryParseKey(part, out var parsed))
                     {
-                        problem = $"'{part}' is not a key RatNav recognises.";
+                        problem = $"'{part}' is not a key RatNav recognizes.";
                         return false;
                     }
 

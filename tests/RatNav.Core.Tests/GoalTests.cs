@@ -5,7 +5,7 @@ using RatNav.Core;
 using RatNav.Core.Tracking;
 
 /// <summary>
-/// Goals you name yourself, which replaced a searchable catalogue of every barter in the game.
+/// Goals you name yourself, which replaced a searchable catalog of every barter in the game.
 /// Picking one out of 789 meant knowing which of four Dorm 303 trades you meant; naming it "the
 /// document case" does not.
 /// </summary>

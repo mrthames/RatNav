@@ -16,7 +16,7 @@ public readonly record struct MapPoint(double X, double Y);
 /// two maps and was badly wrong on a third; docs/calibration.md has the full account.</para>
 ///
 /// <para>Bounds are corner pairs, not min/max. A map whose image runs opposite to the world axis
-/// has its first bound larger than its second, and the normalisation below honours that on its
+/// has its first bound larger than its second, and the normalization below honors that on its
 /// own — sorting them into min/max would mirror the map.</para>
 ///
 /// <para>Only the ground plane matters here. EFT's Y axis is vertical — which floor you are on —
@@ -81,7 +81,7 @@ public sealed class CoordinateTransform
     /// the image. Doing it this way means the cone cannot disagree with the pins — an earlier
     /// version kept a separate heading rule, and separate rules drift apart. The image's
     /// proportions are included, because an angle on a non-square image is not the same angle in
-    /// normalised space.</para>
+    /// normalized space.</para>
     /// </summary>
     public double ToImageHeading(double headingDegrees)
     {
@@ -101,7 +101,7 @@ public sealed class CoordinateTransform
         return ScreenshotFilename.Normalize(Math.Atan2(du, -dv) * 180.0 / Math.PI);
     }
 
-    /// <summary>Straight-line distance between two world positions on the ground plane, in metres.</summary>
+    /// <summary>Straight-line distance between two world positions on the ground plane, in meters.</summary>
     public static double GroundDistance(GamePosition a, GamePosition b)
     {
         var dx = a.X - b.X;

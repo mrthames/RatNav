@@ -17,7 +17,7 @@ namespace RatNav.Core.Data;
 ///   <item>Its Interchange map predates a whole area of the map that the game has had for a while,
 ///   and its image is square, which made the calibration ambiguous by construction.</item>
 ///   <item>Its Reserve bounds are simply wrong — the same image, but a vertical range about 140
-///   metres too tall, which put positions roughly 75 m out.</item>
+///   meters too tall, which put positions roughly 75 m out.</item>
 ///   <item>Its Factory bounds list the corners in the opposite order from every other map, which
 ///   made Factory look like it needed swapped axes when it did not.</item>
 /// </list>
@@ -112,7 +112,7 @@ public sealed partial class MapAssets(HttpClient http, string cacheDirectory)
     /// Floors, bottom to top, each with the world height band it covers.
     ///
     /// The height band is what lets RatNav pick the floor for you: a screenshot filename carries
-    /// the player's elevation, so the right level of a multi-storey map can be chosen without
+    /// the player's elevation, so the right level of a multi-story map can be chosen without
     /// anyone touching a control mid-raid.
     /// </summary>
     private static IReadOnlyList<MapFloor> ReadFloors(MapVariant variant)

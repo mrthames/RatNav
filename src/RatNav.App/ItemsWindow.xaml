@@ -37,7 +37,7 @@
         <!--
             A scroll bar that is nearly not there.
 
-            WPF's own is a chunky light-grey column with an arrow button at each end, which over a
+            WPF's own is a chunky light-gray column with an arrow button at each end, which over a
             dark translucent overlay reads as a control from another application dropped into it.
             Removing it entirely was the first instinct and is one thing short of right: without
             any mark at all a list that continues below the fold looks like a list that ends, and
@@ -81,7 +81,7 @@
                             <!--
                                 Clicking the empty part of the track still pages, as it always
                                 did. The buttons that do it are transparent and have no size of
-                                their own, so the behaviour survives without the furniture.
+                                their own, so the behavior survives without the furniture.
                             -->
                             <Track.IncreaseRepeatButton>
                                 <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0">
@@ -236,7 +236,7 @@
             BorderThickness="1"
             CornerRadius="2">
         <!--
-            The same handles the main overlay uses, in the same colour.
+            The same handles the main overlay uses, in the same color.
 
             This window had its own quieter versions of both — a faint strip to drag, and edges you
             could resize by if you found them — which made a panel that is meant to read as part of
@@ -279,9 +279,9 @@
             </Border>
 
             <!--
-                A legend, because the colours mean something and nothing said what.
+                A legend, because the colors mean something and nothing said what.
 
-                Only where a colour is actually being used. This window is both pop-outs, and the
+                Only where a color is actually being used. This window is both pop-outs, and the
                 waypoints one carries places to walk to rather than things to carry — so it was
                 explaining a red square that never appears in it.
             -->

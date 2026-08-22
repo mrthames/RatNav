@@ -39,7 +39,7 @@ public static class ItemMatcher
     ///
     /// <para><b>Full names only.</b> The game prints an abbreviation on each inventory cell and the
     /// real name in the tooltip under your cursor, and the capture contains both — along with the
-    /// abbreviations of every neighbouring cell. Matching abbreviations too meant a compass in a
+    /// abbreviations of every neighboring cell. Matching abbreviations too meant a compass in a
     /// backpack read as a golden neck chain, because six cells beside it said "GoldChain" and one
     /// truncated cell said "Compa". The tooltip said "EYE MK.2 professional hand-held compass", and
     /// that is the only thing in the picture that names the item you are pointing at.</para>

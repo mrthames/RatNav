@@ -56,7 +56,7 @@ Calibration is still solved per map rather than assumed, because a new map may a
 nobody has checked. Two independent signals:
 
 - **Aspect ratio** decides whether the axes are swapped. The world span on the image's width and
-  the span on its height must share a metres-per-pixel scale. Decisive on most maps; useless on a
+  the span on its height must share a meters-per-pixel scale. Decisive on most maps; useless on a
   square image.
 - **Extract positions** decide the signs. Published coordinates have to land on the map. Decisive
   where extracts hug the edges; useless where they sit comfortably inside, because flipping an axis
