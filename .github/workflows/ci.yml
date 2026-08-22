@@ -49,6 +49,13 @@ jobs:
           npm ci
           npm run build
 
+      # The web app is a third of what people use and had no tests at all until it did. Run here
+      # rather than only before a release: a failing test found on the pull request costs a
+      # rewrite of one change, and the same one found at release costs unpicking a version.
+      - name: Test the web app
+        working-directory: web
+        run: npm test
+
       - name: Build
         run: dotnet build --configuration Release
 

@@ -101,7 +101,11 @@ hits=$(find_in_tracked '(password|passwd|pwd|api[_-]?key|access[_-]?token|client
 
 # --- Personal data ----------------------------------------------------------------------------
 
-hits=$(find_in_tracked '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+# Lock files are generated, and what is in them belongs to whoever published the package: npm
+# records deprecation notices verbatim, and some of those carry the author's own address. Not ours
+# to police, and not removable without editing a file we do not write. Credentials in a lock file
+# are still caught — every check above reads them.
+hits=$(find_in_tracked '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'   | grep -vE '(package-lock|pnpm-lock|yarn\.lock|packages\.lock)\.?j?s?o?n?:')
 [ -n "$hits" ] && report "an email address" "$hits"
 
 # Separators are required, so that a version number, a timestamp or an item id is not read as a

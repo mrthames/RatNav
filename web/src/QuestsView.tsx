@@ -110,11 +110,21 @@ export function QuestsView() {
   // is nothing in particular in the new ones.
   useEffect(() => { setHighlighted(0) }, [tasks, trader, filter])
 
+  /**
+   * The row actually highlighted, which is not always the one asked for.
+   *
+   * <p>Narrowing a search shrinks the list, and an index past the end highlights nothing at all.
+   * The reset above fixes that a render later — which is a render where the list is on screen with
+   * no row marked, and where Enter would do nothing. Clamping here means there is no such render:
+   * the highlight is always a row that exists, by construction rather than by a follow-up.</p>
+   */
+  const at = Math.min(highlighted, Math.max(0, shown.length - 1))
+
   // Keep the highlighted row on screen. Without this, arrowing down walks off the bottom and the
   // row you are about to act on is the one you cannot see.
   useEffect(() => {
-    rows.current[highlighted]?.scrollIntoView({ block: 'nearest' })
-  }, [highlighted])
+    rows.current[at]?.scrollIntoView({ block: 'nearest' })
+  }, [at])
 
   /**
    * Marks the highlighted quest active, then clears the box.
@@ -124,7 +134,7 @@ export function QuestsView() {
    * enter, that difference is the whole feature. Type, Enter, type, Enter.</p>
    */
   async function activateHighlighted() {
-    const task = shown[highlighted]
+    const task = shown[at]
 
     if (!task) {
       setSaid(query ? `Nothing matches "${query}".` : 'Nothing to mark.')
@@ -152,13 +162,13 @@ export function QuestsView() {
   function onSearchKey(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'ArrowDown') {
       event.preventDefault()
-      setHighlighted((at) => Math.min(at + 1, shown.length - 1))
+      setHighlighted(Math.min(at + 1, shown.length - 1))
       return
     }
 
     if (event.key === 'ArrowUp') {
       event.preventDefault()
-      setHighlighted((at) => Math.max(at - 1, 0))
+      setHighlighted(Math.max(at - 1, 0))
       return
     }
 
@@ -210,7 +220,7 @@ export function QuestsView() {
           role="combobox"
           aria-expanded={shown.length > 0}
           aria-controls="quest-list"
-          aria-activedescendant={shown[highlighted] ? `quest-${shown[highlighted].id}` : undefined}
+          aria-activedescendant={shown[at] ? `quest-${shown[at].id}` : undefined}
           aria-label="Search quests. Enter marks the highlighted quest active."
           placeholder={filter === 'all' ? 'Search every quest…' : 'Quest or trader…'}
           className="min-w-48 flex-1 rounded-sm border border-line bg-panel px-3 py-1.5 text-sm
@@ -338,14 +348,14 @@ export function QuestsView() {
 
       {!loading && shown.length > 0 && (
         <ul id="quest-list" className="flex flex-col gap-px border border-line bg-line-soft">
-          {shown.map((task, at) => (
+          {shown.map((task, index) => (
             <li
               key={task.id}
               id={`quest-${task.id}`}
-              ref={(row) => { rows.current[at] = row }}
-              aria-selected={at === highlighted}
+              ref={(row) => { rows.current[index] = row }}
+              aria-selected={index === at}
               className={`flex flex-wrap items-center gap-3 px-3 py-2.5 ${
-                at === highlighted
+                index === at
                   ? 'bg-panel-hi ring-1 ring-inset ring-accent'
                   : 'bg-panel'
               }`}
