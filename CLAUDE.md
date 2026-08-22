@@ -24,16 +24,26 @@ If a task seems to need something on that list, stop and say so rather than find
 
 ## Nothing personal goes in the repository
 
-This is a public repository. Real names, contact addresses, developer machine paths (a real
-Windows profile directory), private network addresses, and credential shapes do not belong in it.
-`tools/check-for-personal-data.sh` runs in CI and will fail the build.
+This is a public repository. **No secrets and no personal data**, and the two fail for different
+reasons.
 
-The trap is that this is easy to do by accident: a path in an example, a name in a comment
-explaining who reported a bug, a screenshot of a settings page. Write "the maintainer" or "a
-tester", and a placeholder in place of a profile directory.
+**Secrets are an incident.** Keys, tokens, private keys, connection strings, passwords with a value
+beside them. A key that reaches a public repository is compromised the moment it lands — scrapers
+watch the event firehose — so rotation is the fix, not deletion. They go nowhere at all: not to a
+public repository, not to a private one.
 
-**Credentials go nowhere at all** — not to a public repo, not to a private one. Git history is
-permanent.
+**Personal data is somebody's, not the project's.** Email addresses, phone numbers, government or
+payment identifiers, anything from a real account, and the machine somebody works on — a real user
+profile directory, a private network address, an SSH login.
+
+**Names are the one place with a distinction.** People contributing here under their own GitHub
+account are named by git itself, and that is theirs to decide. Anybody who has not signed up for
+that — a tester, a bug reporter, somebody mentioned in passing — is not named. A regex cannot tell
+those apart, so `privacy-auditor` is the check for it.
+
+`tools/check-for-personal-data.sh` runs in CI and fails the build. It reads **tracked** files, so
+run it after `git add` — it will tell you what it did not check. It cannot read a screenshot at
+all, and a screenshot of the Setup page prints a profile directory in twelve-point type.
 
 ## Branches
 
