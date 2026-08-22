@@ -52,7 +52,9 @@ all, and a screenshot of the Setup page prints a profile directory in twelve-poi
 | `next` | Where work lands. Open a PR into it; merge your own once checks are green. |
 | `main` | What the world downloads. Only the maintainer merges here. |
 
-Never commit directly to either. Every change is a PR, and every PR into `next` needs a
+Never commit directly to either — promoting `next` to `main` is the maintainer's job, and
+releases happen only when an admin creates a `v*` tag. Every change is a PR, and every PR into
+`next` needs a
 **CHANGELOG.md** entry under **Unreleased** saying what a tester should go and look at — an alpha
 nobody knows how to test is an alpha nobody tests.
 
