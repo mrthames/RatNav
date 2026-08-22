@@ -63,8 +63,13 @@ has actually gone wrong here:
 | **`docs-truth-checker`** | Documentation describing the software that exists. The README once claimed a routing feature that had never been built, in six places. |
 | **`code-reviewer`** | The traps this codebase has actually shipped: display scaling, WPF resource ordering, migrations, test discipline. |
 
-**`review-coordinator` is the one to run.** It reads your diff, decides which of the four apply,
+**`review-coordinator` is the one to run**, or `/review`, which does the same and also runs every
+check that would block the merge. It reads your diff, decides which of the four auditors apply,
 runs them in parallel and reconciles the results into one ranked list.
+
+**Starting fresh?** `/onboard` reads the project, checks your toolchain, proves the build and tests
+pass, and puts you on a branch off `next`. Worth the two minutes on a machine you have not worked
+on here before — a broken baseline makes every later result meaningless.
 
 Put what it surfaced in the PR description, **including what you chose not to act on and why**.
 That half is the point: it is the difference between a decision somebody made and a thing nobody
