@@ -75,12 +75,17 @@ checks go green.
    Customs run and come back to find it as you left it.
 2. **Tick the objectives you are pushing.** They are grouped by the place players actually call it
    — Depot, Dorms, Old Construction — with the quest and trader under each.
-3. **Watch the panel on the right.** Stops run **in the order you ticked them**. Drag a row to
-   change it, or use the arrows. The number on each row is the number the overlay draws on the map.
-4. **Check the keys.** Any key an objective needs is named, red when you do not have one, with a
-   tick to say you do. This is the one thing you cannot fix once the raid starts.
-5. **Plan this raid.** The plan goes to the overlay and stays there until you clear it — it
-   survives closing the game, and closing RatNav.
+3. **Check what it wants carried.** The strip above the list says how many objectives you have
+   picked and what they need you to bring, counted — `3× MS2000 Marker` rather than a bare name —
+   with keys in red. This is the one thing you cannot fix once the raid starts.
+4. **Plan this raid.** The plan goes to the overlay and stays there until you clear it — it
+   survives closing the game, and closing RatNav. The page folds down to the plan itself: the
+   button becomes **End raid**, and **+ Add a stop to this plan** at the foot reopens the list.
+
+Stops run **in the order you ticked them**, and the number on each row is the number the overlay
+draws on the map. Once you are in the raid and have taken a position fix, the stops you have not
+reached re-order around where you actually are — so stop 1 is the one nearest you rather than the
+one you happened to tick first.
 
 Once you are in raid, the stops **you have not reached** re-order around wherever you actually are,
 the first time you take a position fix. Ones you have ticked off stay put.
@@ -137,10 +142,14 @@ first position lands.
 one and at no other time, and the line at the bottom says how long ago that was — because a marker
 that slid around pretending to know where you are is how an overlay gets someone killed.
 
-**Three drawers.** The buttons at the bottom-left open the **quest log** (your plan's quests,
-numbered as on the map) and the **items list**. Either can be moved to the other side, collapsed,
-or torn off into its own window for a second monitor. When they share a side the quest log sits on
-top, and the divider between them drags.
+**Three drawers.** The buttons at the bottom-left open the **waypoints** list (your plan's stops,
+numbered as on the map — quests and your own marks together) and the **items list**. Either can be
+moved to the other side, collapsed, or torn off into its own window for a second monitor. When they
+share a side the waypoints sit on top, and the divider between them drags.
+
+The waypoints panel opens by itself when a plan exists and closes when one does not, since a list
+of stops with no plan behind it is a heading over an empty box. The items list opens however you
+left it — it is the shopping list, and it is worth reading between raids.
 
 **map** is the third, and it folds the map itself away — leaving a narrow strip of just the two
 lists, for when you are standing still reading what you still need rather than navigating. Nothing
@@ -154,9 +163,15 @@ Every panel edge that meets the map is draggable, on both sides.
 
 ## Reading the map
 
-Press `F6` to let the mouse reach the overlay, then the **gear** for the settings. They stay
-folded until you ask: the interact key hands over the mouse and shows the handles, and a stack of
-map settings is a thing you go and get. Once opened it is remembered.
+Press `F6` to let the mouse reach the overlay, then the **gear** for the settings. They open in a
+window of their own — there is no room inside a small overlay for a panel that configures it, and
+out here the map stays fully visible while you turn a dial. Drag it by its heading, resize it from
+any edge, and close it with the ✕ or the gear. It never opens by itself.
+
+Everything is grouped: **sizes**, **the map**, **what to draw**, and **the window**. Every size
+dial reads `1.0×` on a fresh install and moves either way from there, because the numbers RatNav
+ships were measured on a real screen rather than guessed — a dial that starts at its own floor is
+not a default, it is a limit.
 
 | Control | What it does |
 |---|---|
@@ -165,10 +180,11 @@ map settings is a thing you go and get. Once opened it is remembered.
 | **Ghost / names / halo** | Whether other floors show through, whether place names are drawn, and whether text gets a dark backing. |
 | **Fade** | How strongly the map is drawn over the game. The controls stay solid whatever you set. |
 | **Line** | Stroke weight of the map itself. |
-| **Pins / Waypoints / Map labels / You** | Separate size dials for markers, the captions on stops and extracts, the map's own place names, and your own marker. |
+| **Waypoint pins / Waypoint labels / Map labels / You** | Separate size dials for the markers, the captions on stops and extracts, the map's own place names, and your own marker. |
+| **Edge arrows / Edge labels** | The arrows around the edge pointing at what is off the view, and their captions. Their own sizes: an edge arrow stands in for a place you cannot see, where a pin marks one you can. |
 | **Shrink** | How much all of those ease off as you zoom out. At zero they stay the size you set; at one they scale with the map. |
-| **Map** | `still` holds the map and lets your marker travel across it. `follows you` keeps you centred. A recentre button appears once you have dragged away. |
-| **Exits** | `PMC`, `Scav`, `Both`, or `Off`. Shared extracts show under either faction. |
+| **Map** | `still` holds the map and lets your marker travel across it. `follows you` keeps you centred — and in the centred view it is also what lets the map turn, since the turn pivots on the middle of the view and that is only *you* while it follows. |
+| **Exits** | `Both`, `PMC`, `Scav`, or `Off`. Shared extracts show under either faction. Beside it, **transits** are their own on/off — anybody can take a transit whatever they queued as, so whose extracts you want has nothing to say about them. |
 | **Quests** | `Active` is your plan's stops. `All` adds every other started quest's objective on this map, drawn hollow and unnumbered. `Off` leaves the map clean. |
 | **Coverage / Edge fade / Glow** | The centred view only. How much of the screen it takes, where the drawing starts dissolving, and how much the lines bloom. |
 
@@ -221,11 +237,9 @@ reads as a quest objective, and its own shape, because colour alone fails for an
 separate the hues and a navigation overlay is a bad place to learn that. It appears on the overlay
 from then on.
 
-**Give one a note.** The chips under the map list every mark on it — that is where you rename,
-annotate and delete them. A label has to be short because it is drawn over a game; a note is read
-standing still and can be a sentence. "Car batteries" says where; "third shelf, behind the crates"
-says the thing you cannot remember at the time, and it shows on the pin and against the stop in the
-overlay's quest log once the mark joins a plan.
+**Name it and nothing else.** The chips under the map list every mark on it — that is where you
+rename and delete them. A label has to be short because it is drawn over a game, and short turned
+out to be all anybody wanted to say: "Car batteries" says where, which is the whole job.
 
 Marks live per map and draw whenever that map is on screen, whether or not a plan is loaded — "car
 batteries behind the garage" is true every raid.
@@ -280,8 +294,10 @@ Escape from Tarkov gives you a PvE character, a PvP character, and a seasonal Pv
 nothing — different quests accepted, different hideout, different trader loyalty, different level —
 so RatNav keeps a separate set of everything for each.
 
-Switch between them from the **menu at the right of the top navigation**. RatNav opens on whichever
-you chose last.
+The header says which one you are looking at — **RatNav — PvP Seasonal** — and the caret beside it
+switches. That answer changes what every page shows, so it is said rather than hidden behind an
+icon. A fresh install opens on the seasonal character, since a season is the current wipe; after
+that RatNav opens on whichever you chose last, and remembers it across updates.
 
 What is shared, because none of it belongs to a character: where the game is installed, your
 hotkeys, your screenshot key, and the cached copy of the game's data.

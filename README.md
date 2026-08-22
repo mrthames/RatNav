@@ -324,9 +324,12 @@ what is in front of you is up the screen. Clicks pass straight through it except
 it can be up while you play. The corner panel stays north-up and still, which is what a small map
 you glance at should be.
 
-Three drawers open from the bottom-left: the **quest log**, the **items list**, and the **map**
-itself. Either list can swap sides, collapse, or tear off into its own window for a second monitor;
-folding the map leaves a narrow strip of just the two lists.
+Three drawers open from the bottom-left: the **waypoints** list, the **items list**, and the
+**map** itself. Either list can swap sides, collapse, or tear off into its own window for a second
+monitor; folding the map leaves a narrow strip of just the two lists.
+
+The overlay shows itself when a raid starts and puts itself away when one ends, so it is not
+sitting over your stash while you sort inventory.
 
 Everything here is remembered — placement, zoom and opacity per presentation, so setting up the
 corner box does not disturb the centred map.
