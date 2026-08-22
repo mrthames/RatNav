@@ -16,6 +16,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The tag is the single source of truth for what this build calls itself, so it is checked first,
+      # before a toolchain is installed or a line is compiled. A tag nobody validated is how RatNav-0.2.0-setup.exe was
+      # published twice: once as the stable release and once as the v0.2.0-alpha.1 build, because
+      # the pattern here captured only the numeric part and silently dropped "-alpha.1".
+      #
+      # Three values come out of it, and they are not interchangeable:
+      #
+      #   full      0.4.0-alpha.1   what the build calls itself, and what every file is named
+      #   numeric   0.4.0           AssemblyVersion, which cannot hold a suffix
+      #   prerelease true           whether GitHub marks it a prerelease
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+
+          # MAJOR.MINOR.PATCH, optionally -alpha.N, -beta.N or -rc.N. Anything else is a mistake
+          # that would otherwise ship as 0.0.0 and claim to be older than every real release.
+          if ($tag -notmatch '^v(\d+\.\d+\.\d+)(-(alpha|beta|rc)\.\d+)?$') {
+            Write-Host "::error::Tag '$tag' is not a version this project releases."
+            Write-Host "::error::Use vMAJOR.MINOR.PATCH, or vMAJOR.MINOR.PATCH-alpha.N for a prerelease."
+            exit 1
+          }
+
+          $numeric = $Matches[1]
+          $full = $tag.Substring(1)
+          $prerelease = if ($Matches[2]) { "true" } else { "false" }
+
+          # Every release has to say what changed. A build nobody can read notes for is a build
+          # nobody can decide whether to install, and that is most of the point of an alpha.
+          $changelog = Get-Content CHANGELOG.md -Raw
+          # Single-quoted and concatenated, so PowerShell reads no $( or $) of its own, and so a
+          # stable 0.4.0 is not satisfied by an existing 0.4.0-alpha.1 heading.
+          $heading = '(?m)^##[ ]+' + [regex]::Escape($full) + '([ ]|$)'
+          if ($changelog -notmatch $heading) {
+            Write-Host "::error::CHANGELOG.md has no '## $full' section."
+            Write-Host "::error::Rename the Unreleased heading to '## $full' and date it before tagging."
+            exit 1
+          }
+
+          "full=$full" >> $env:GITHUB_OUTPUT
+          "numeric=$numeric" >> $env:GITHUB_OUTPUT
+          "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
@@ -66,50 +110,6 @@ jobs:
       # A tag with a suffix — v0.3.0-alpha.1 — is a prerelease. GitHub keeps prereleases out of
       # "Latest", so the download button on the repository goes on pointing at the last stable
       # build until one is deliberately promoted.
-      # The tag is the single source of truth for what this build calls itself, so it is checked
-      # before anything is compiled. A tag nobody validated is how RatNav-0.2.0-setup.exe was
-      # published twice: once as the stable release and once as the v0.2.0-alpha.1 build, because
-      # the pattern here captured only the numeric part and silently dropped "-alpha.1".
-      #
-      # Three values come out of it, and they are not interchangeable:
-      #
-      #   full      0.4.0-alpha.1   what the build calls itself, and what every file is named
-      #   numeric   0.4.0           AssemblyVersion, which cannot hold a suffix
-      #   prerelease true           whether GitHub marks it a prerelease
-      - name: Version
-        id: version
-        shell: pwsh
-        run: |
-          $tag = "${{ github.ref_name }}"
-
-          # MAJOR.MINOR.PATCH, optionally -alpha.N, -beta.N or -rc.N. Anything else is a mistake
-          # that would otherwise ship as 0.0.0 and claim to be older than every real release.
-          if ($tag -notmatch '^v(\d+\.\d+\.\d+)(-(alpha|beta|rc)\.\d+)?$') {
-            Write-Host "::error::Tag '$tag' is not a version this project releases."
-            Write-Host "::error::Use vMAJOR.MINOR.PATCH, or vMAJOR.MINOR.PATCH-alpha.N for a prerelease."
-            exit 1
-          }
-
-          $numeric = $Matches[1]
-          $full = $tag.Substring(1)
-          $prerelease = if ($Matches[2]) { "true" } else { "false" }
-
-          # Every release has to say what changed. A build nobody can read notes for is a build
-          # nobody can decide whether to install, and that is most of the point of an alpha.
-          $changelog = Get-Content CHANGELOG.md -Raw
-          # Single-quoted and concatenated, so PowerShell reads no $( or $) of its own, and so a
-          # stable 0.4.0 is not satisfied by an existing 0.4.0-alpha.1 heading.
-          $heading = '(?m)^##[ ]+' + [regex]::Escape($full) + '([ ]|$)'
-          if ($changelog -notmatch $heading) {
-            Write-Host "::error::CHANGELOG.md has no '## $full' section."
-            Write-Host "::error::Rename the Unreleased heading to '## $full' and date it before tagging."
-            exit 1
-          }
-
-          "full=$full" >> $env:GITHUB_OUTPUT
-          "numeric=$numeric" >> $env:GITHUB_OUTPUT
-          "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
-
       # Stamped with the tag, so the app can say what it is. The update check compares this
       # against GitHub's latest release — unstamped it reads 1.0.0, which is not any release and
       # would have every build claiming to be newer than every release forever.

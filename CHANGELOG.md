@@ -40,6 +40,10 @@ to try, and nothing to update for.*
   check. Both artifacts are now `RatNav-<version>-<kind>` with the same version. A tag that is not
   `vMAJOR.MINOR.PATCH[-alpha.N]` fails the build, as does a release whose version has no
   `CHANGELOG.md` section, or any test that is skipped rather than passing.
+- **A bad release tag fails in seconds, not minutes.** Tag validation and the changelog check ran
+  after the web build and the whole test suite, so a malformed tag burned a full build before
+  being rejected — and the comment above them claimed otherwise. They now run straight after
+  checkout, which is what the comment always said.
 - **`tools/check-the-safety-line.sh`**, which fails the build on any API that would read game
   memory, hook input or rendering, or send input to the game, and on any native call that is not
   on its allowlist. The promise on the front page is now checked rather than remembered.
