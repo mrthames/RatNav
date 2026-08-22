@@ -14,13 +14,90 @@ RatNav is one person's side project, kept free under [PolyForm Noncommercial](LI
 incorrectly — those are worth knowing about, and an issue is the way to say so. A reply is not
 guaranteed and a fix is not promised, which is the honest position for a project of one.
 
-**There is no review queue.** Pull requests are not the way in, and feature requests are not being
-gathered. A PR opened here is **closed automatically**, with a note saying why — which is a worse
-welcome than a reply, and a better one than silence for six months. If you want RatNav to do
-something it does not, the [license](LICENSE) lets you fork it for anything noncommercial — give
-your version its own name.
+**Pull requests come from invited collaborators only.** There is no open review queue, and a PR
+from anyone else is **closed automatically** with a note saying why — a worse welcome than a
+reply, and a better one than silence for six months. If you want RatNav to do something it does
+not, the [license](LICENSE) lets you fork it for anything noncommercial — give your version its
+own name.
 
-The rest of this file is for anyone building it themselves.
+If you have been invited, the section below is yours. The rest of the file is for anyone building
+it themselves.
+
+## If you have commit access
+
+Two branches, and the difference between them is who decides.
+
+| | |
+|---|---|
+| **`next`** | Where work lands. Open a PR into it, and merge your own once the checks are green. |
+| **`main`** | What the world downloads. Only the maintainer merges here, and that is the whole point of the split. |
+
+**Nothing goes to `main` directly.** It reaches `main` when `next` is promoted, which is a
+deliberate act rather than a consequence of merging.
+
+### Getting a change in
+
+1. **Branch off `next`.**
+2. **Test it.** `dotnet test` has to pass, and `npm run build` in `web/` if you touched the app.
+   Run it against a real map or a real raid if that is what it touches — the tests cover the
+   parsing and the maths, not whether a pin lands on the right building.
+3. **Run `review-coordinator`.** See [the review below](#the-review).
+4. **Add a changelog entry** under **Unreleased** in [CHANGELOG.md](CHANGELOG.md). This is a
+   required check, and it is required for a reason: an alpha is only worth installing if the
+   person installing it can see what changed and knows what to go and look at. Say what a tester
+   should try, not just what you did.
+5. **Open the PR into `next`.** CI runs, the changelog check runs.
+6. **Merge it yourself** once both are green. No approval needed — the gate is on `main`, not
+   here.
+
+### The review
+
+Everyone working on RatNav uses AI assistance, so the review is written for that rather than
+around it. Four auditors live in [`.claude/agents/`](.claude/agents), each owning one thing that
+has actually gone wrong here:
+
+| | |
+|---|---|
+| **`safety-auditor`** | The promise that RatNav never touches the game. Also reads every new dependency, because a package can cross the line on your behalf. |
+| **`privacy-auditor`** | Personal data staying out of a public repository — including the screenshots, which no text search can read. |
+| **`docs-truth-checker`** | Documentation describing the software that exists. The README once claimed a routing feature that had never been built, in six places. |
+| **`code-reviewer`** | The traps this codebase has actually shipped: display scaling, WPF resource ordering, migrations, test discipline. |
+
+**`review-coordinator` is the one to run.** It reads your diff, decides which of the four apply,
+runs them in parallel and reconciles the results into one ranked list.
+
+Put what it surfaced in the PR description, **including what you chose not to act on and why**.
+That half is the point: it is the difference between a decision somebody made and a thing nobody
+noticed. The auditors deliberately cannot edit anything — they report, you decide.
+
+None of this replaces the checks that block the merge. `dotnet test`, the web build,
+`tools/check-for-personal-data.sh`, `tools/check-the-safety-line.sh` and the changelog all run in
+CI and are not opinions. The auditors exist for what a script cannot check: whether a claim is
+true, whether a screenshot leaks a name, whether the obvious fix is the one that shipped a crash
+last time.
+
+Read [`CLAUDE.md`](CLAUDE.md) first, whatever you are doing. It is the context every agent working
+on this repository starts from.
+
+If a change genuinely has nothing to tell a tester — a typo in a comment, a CI tweak — label the
+PR `no changelog` and say why in the description. It is a label rather than a silent exception so
+that skipping it is visible.
+
+### How a change reaches people
+
+```
+your PR ──▶ next ──▶ alpha (v0.4.0-alpha.1, a prerelease)
+                       │
+                       └──▶ main ──▶ stable (v0.4.0)
+```
+
+Alphas are cut from `next` whenever there is something worth trying, and are marked prerelease on
+GitHub — the front page keeps pointing at the last stable one, so nobody gets an alpha by
+accident. A stable release happens when the maintainer decides `next` is ready, which is the one
+step that is not automatic and is not meant to be.
+
+So a merge to `next` is not a small thing: people install alphas. But it is also not the last
+word, which is why you can merge your own.
 
 ## Getting it running
 
@@ -68,8 +145,47 @@ evidence was wrong.
 
 Work is grouped into a **version**, not shipped a commit at a time.
 
-- **Alphas are tagged with a suffix** — `v0.3.0-alpha.1` — and GitHub marks them prerelease. They do
-  not become "Latest", so the download on the front page keeps pointing at the last stable build.
+### Version numbers
+
+`MAJOR.MINOR.PATCH`, and each part means something:
+
+| | |
+|---|---|
+| **MAJOR** | A break. Somebody's saved plans, settings or progress do not survive the update, or the way RatNav is used changes shape. Still `0` — everything below is pre-1.0 and says so. |
+| **MINOR** | A feature, or a change somebody would notice and might have to be told about. |
+| **PATCH** | A fix. Nothing new, nothing moved. |
+
+**Prereleases add `-alpha.N`**, counting from 1 for each version: `v0.4.0-alpha.1`, then
+`-alpha.2`. `-beta.N` and `-rc.N` are accepted by the same rules if a version ever needs them.
+
+**The tag is the only source of truth.** The build reads its version from the tag and stamps it
+into the binary, both filenames and the release notes. Nothing is typed anywhere twice, and a tag
+that does not match the shape above **fails the release build before anything is compiled** —
+which is how a stable and an alpha once shipped installers with the same filename.
+
+### Cutting a release
+
+1. **Move the changelog on.** Rename `## Unreleased` to `## 0.4.0-alpha.1` — or the stable version —
+   and date it. Add a fresh empty `## Unreleased` above it. The release build **fails if
+   `CHANGELOG.md` has no section matching the tag**, because a build nobody can read notes for is
+   a build nobody can decide whether to install.
+2. **Tag it.** `git tag v0.4.0-alpha.1 && git push origin v0.4.0-alpha.1`, from `next` for an
+   alpha, from `main` for a stable release.
+3. **The build does the rest**: runs the tests, refuses to ship past a failing *or skipped* one,
+   builds the installer and the portable zip, and publishes the release — marked prerelease if the
+   tag has a suffix.
+4. **For a stable release, run the Latest stable workflow** afterwards. It updates the README's
+   install line, and it cannot fire on its own.
+
+Both artifacts are named `RatNav-<version>-setup.exe` and `RatNav-<version>-win-x64.zip`, with the
+same version in both, suffix included.
+
+### How this appears to people
+
+- **Alphas are cut from `next`** and marked prerelease. They never become "Latest", so the download
+  on the front page keeps pointing at the last stable build and nobody gets an alpha by accident.
+  Releases are driven by the tag rather than the branch, so an alpha can come off `next` at any
+  point without disturbing `main`.
 - **Promotion to stable is a decision, not a step.** When a version has been tried properly, it is
   promoted deliberately, because that changes what everybody downloads.
 - **The README names the latest stable release**, updated by a workflow when one is promoted. A
@@ -80,6 +196,12 @@ Work is grouped into a **version**, not shipped a commit at a time.
 
 **Tests describe behavior, not methods.** `Replaying_the_logs_cannot_undo_a_correction` says what
 must remain true. `TestProgressStore3` does not.
+
+**A skipped test is not a passing test.** If a test is no longer needed, delete it — git remembers
+it, and a skipped test reads as coverage that is not there. The release build refuses to ship with
+any test skipped, for the same reason it refuses to ship with one failing. Every test in
+`tests/` runs on every pull request; they are the shared safety net, and adding to them is how a
+bug stays fixed.
 
 **Test against reality where reality is available.** The log parser is tested with a notification
 copied verbatim from a live client rather than one written to match the parser. A test written

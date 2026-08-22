@@ -346,6 +346,9 @@ The full tour is in the **[guide](docs/GUIDE.md)**.
 See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: `npm run build` in `web/`, then
 `dotnet run --project src/RatNav.App`.
 
+Pull requests come from invited collaborators only; anyone else is welcome to fork it. Both are in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 
 ## Answers to the first questions people ask
 

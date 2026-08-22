@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, next]
   pull_request:
 
 jobs:
@@ -19,6 +19,12 @@ jobs:
       - name: Nothing personal in the repository
         shell: bash
         run: tools/check-for-personal-data.sh
+
+      # The promise on the front page, checked rather than remembered. It reads the source for the
+      # APIs that would cross it, and for any native call nobody has agreed to.
+      - name: The safety line holds
+        shell: bash
+        run: tools/check-the-safety-line.sh
 
       - uses: actions/setup-dotnet@v4
         with:

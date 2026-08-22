@@ -2,6 +2,29 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
+## Unreleased
+
+What has landed on `next` and has not been released yet. Anything merged here adds a line, so that
+somebody running an alpha can see what changed and knows what to go and look at.
+
+<!-- Add yours here. Say what changed, and what a tester should try. -->
+
+- **The repository is open to invited collaborators**, working on `next`. Stable releases still
+  come only from `main`. Nothing changes for anyone downloading RatNav.
+- **Review personas for AI-assisted work** in `.claude/agents/`, and a `CLAUDE.md` giving every
+  agent the same starting context. Four auditors — safety, privacy, docs truth, code — with
+  `review-coordinator` running whichever apply to a diff.
+- **Releases are named consistently, and the tag is checked before anything is built.** An alpha
+  used to publish an installer with the stable release's filename, because the version pattern
+  captured only the numeric part and dropped `-alpha.1` — so the two were indistinguishable in a
+  downloads folder, and the alpha's binary reported itself as the stable version to the update
+  check. Both artifacts are now `RatNav-<version>-<kind>` with the same version. A tag that is not
+  `vMAJOR.MINOR.PATCH[-alpha.N]` fails the build, as does a release whose version has no
+  `CHANGELOG.md` section, or any test that is skipped rather than passing.
+- **`tools/check-the-safety-line.sh`**, which fails the build on any API that would read game
+  memory, hook input or rendering, or send input to the game, and on any native call that is not
+  on its allowlist. The promise on the front page is now checked rather than remembered.
+
 ## 0.3.0 — 2026-08-21
 
 **Stable.** A day of using RatNav in live raids at 1080p rather than looking at it on a desktop,
