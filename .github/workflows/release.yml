@@ -32,8 +32,30 @@ jobs:
           npm ci
           npm run build
 
+      # A skipped test is not a passing test, and a release is the wrong moment to find out which
+      # one you had. A test that is no longer needed is deleted — git remembers it — rather than
+      # left skipped, where it reads as coverage that is not there.
       - name: Test before shipping
-        run: dotnet test --configuration Release
+        shell: pwsh
+        run: |
+          $output = dotnet test --configuration Release 2>&1 | Tee-Object -Variable lines
+          $output | ForEach-Object { Write-Host $_ }
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::Tests failed. A release is not cut over a failing test."
+            exit 1
+          }
+
+          $skipped = 0
+          foreach ($line in $lines) {
+            if ($line -match 'Skipped:\s+(\d+)') { $skipped += [int]$Matches[1] }
+          }
+
+          if ($skipped -gt 0) {
+            Write-Host "::error::$skipped test(s) skipped. A skipped test is not a passing test."
+            Write-Host "::error::Delete it if it is no longer needed, or fix it. Do not ship past it."
+            exit 1
+          }
 
       # Self-contained, so there is no runtime to install first — someone downloading a Tarkov
       # tool should not have to read about .NET before they can use it.
@@ -44,16 +66,48 @@ jobs:
       # A tag with a suffix — v0.3.0-alpha.1 — is a prerelease. GitHub keeps prereleases out of
       # "Latest", so the download button on the repository goes on pointing at the last stable
       # build until one is deliberately promoted.
+      # The tag is the single source of truth for what this build calls itself, so it is checked
+      # before anything is compiled. A tag nobody validated is how RatNav-0.2.0-setup.exe was
+      # published twice: once as the stable release and once as the v0.2.0-alpha.1 build, because
+      # the pattern here captured only the numeric part and silently dropped "-alpha.1".
+      #
+      # Three values come out of it, and they are not interchangeable:
+      #
+      #   full      0.4.0-alpha.1   what the build calls itself, and what every file is named
+      #   numeric   0.4.0           AssemblyVersion, which cannot hold a suffix
+      #   prerelease true           whether GitHub marks it a prerelease
       - name: Version
         id: version
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          $version = if ($tag -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.0" }
-          $prerelease = if ($tag -match '^v\d+\.\d+\.\d+-') { "true" } else { "false" }
 
-          "version=$version" >> $env:GITHUB_OUTPUT
-          "name=$tag" >> $env:GITHUB_OUTPUT
+          # MAJOR.MINOR.PATCH, optionally -alpha.N, -beta.N or -rc.N. Anything else is a mistake
+          # that would otherwise ship as 0.0.0 and claim to be older than every real release.
+          if ($tag -notmatch '^v(\d+\.\d+\.\d+)(-(alpha|beta|rc)\.\d+)?$') {
+            Write-Host "::error::Tag '$tag' is not a version this project releases."
+            Write-Host "::error::Use vMAJOR.MINOR.PATCH, or vMAJOR.MINOR.PATCH-alpha.N for a prerelease."
+            exit 1
+          }
+
+          $numeric = $Matches[1]
+          $full = $tag.Substring(1)
+          $prerelease = if ($Matches[2]) { "true" } else { "false" }
+
+          # Every release has to say what changed. A build nobody can read notes for is a build
+          # nobody can decide whether to install, and that is most of the point of an alpha.
+          $changelog = Get-Content CHANGELOG.md -Raw
+          # Single-quoted and concatenated, so PowerShell reads no $( or $) of its own, and so a
+          # stable 0.4.0 is not satisfied by an existing 0.4.0-alpha.1 heading.
+          $heading = '(?m)^##[ ]+' + [regex]::Escape($full) + '([ ]|$)'
+          if ($changelog -notmatch $heading) {
+            Write-Host "::error::CHANGELOG.md has no '## $full' section."
+            Write-Host "::error::Rename the Unreleased heading to '## $full' and date it before tagging."
+            exit 1
+          }
+
+          "full=$full" >> $env:GITHUB_OUTPUT
+          "numeric=$numeric" >> $env:GITHUB_OUTPUT
           "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
 
       # Stamped with the tag, so the app can say what it is. The update check compares this
@@ -66,8 +120,8 @@ jobs:
           --runtime win-x64
           --self-contained true
           --output publish
-          -p:Version=${{ steps.version.outputs.version }}
-          -p:InformationalVersion=${{ steps.version.outputs.version }}
+          -p:Version=${{ steps.version.outputs.numeric }}
+          -p:InformationalVersion=${{ steps.version.outputs.full }}
 
       - name: Check the web app shipped
         shell: pwsh
@@ -84,11 +138,11 @@ jobs:
           if (-not (Test-Path $iscc)) {
             choco install innosetup --no-progress -y
           }
-          & $iscc installer/RatNav.iss "/DAppVersion=${{ steps.version.outputs.version }}"
+          & $iscc installer/RatNav.iss "/DAppVersion=${{ steps.version.outputs.full }}"
 
       - name: Package the portable build
         shell: pwsh
-        run: Compress-Archive -Path publish/* -DestinationPath "RatNav-${{ steps.version.outputs.name }}-win-x64.zip"
+        run: Compress-Archive -Path publish/* -DestinationPath "RatNav-${{ steps.version.outputs.full }}-win-x64.zip"
 
       # A release published here is created with GITHUB_TOKEN, and GitHub does not raise workflow
       # events for those — so "Latest stable" will not fire on its own and the README will go on
@@ -107,16 +161,16 @@ jobs:
         with:
           prerelease: ${{ steps.version.outputs.prerelease }}
           files: |
-            installer-output/RatNav-${{ steps.version.outputs.version }}-setup.exe
-            RatNav-${{ steps.version.outputs.name }}-win-x64.zip
+            installer-output/RatNav-${{ steps.version.outputs.full }}-setup.exe
+            RatNav-${{ steps.version.outputs.full }}-win-x64.zip
           generate_release_notes: true
           body: |
             ${{ steps.version.outputs.prerelease == 'true' && '> **This is an alpha.** It is not the latest stable release, and the download on the repository front page still points at that one. Try it if you want what is new; wait if you would rather it settled first.' || '' }}
-            **Install:** download `RatNav-${{ steps.version.outputs.version }}-setup.exe` and run it.
+            **Install:** download `RatNav-${{ steps.version.outputs.full }}-setup.exe` and run it.
             It installs for your user only — no administrator prompt — and puts RatNav in your
             Start Menu. Nothing else needs installing; the .NET runtime is included.
 
-            **Portable:** `RatNav-${{ steps.version.outputs.name }}-win-x64.zip`, if you would
+            **Portable:** `RatNav-${{ steps.version.outputs.full }}-win-x64.zip`, if you would
             rather unzip it and run `RatNav.exe` yourself.
 
             RatNav reads Escape from Tarkov's log files and the coordinates the game writes into

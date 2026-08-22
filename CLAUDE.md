@@ -93,6 +93,8 @@ Long-form, and deliberately so — see `CONTRIBUTING.md`.
 - **Comments explain why, not what.** The code says what. Comments carry the reason, especially
   where the obvious approach was tried and failed.
 - **Tests describe behavior.** `Replaying_the_logs_cannot_undo_a_correction`, not `TestStore3`.
+- **A skipped test is not a passing test.** Delete one that is no longer needed rather than
+  skipping it; the release build refuses to ship with any test skipped.
 - **Test against reality.** The log parser is tested with a notification copied verbatim from a
   live client. A test written from the implementation only proves the implementation agrees with
   itself.

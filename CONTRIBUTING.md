@@ -145,10 +145,47 @@ evidence was wrong.
 
 Work is grouped into a **version**, not shipped a commit at a time.
 
-- **Alphas are cut from `next` and tagged with a suffix** — `v0.3.0-alpha.1` — and GitHub marks them
-  prerelease. They do not become "Latest", so the download on the front page keeps pointing at the
-  last stable build. Releases are driven by the tag, not the branch, so an alpha can come off
-  `next` at any point without disturbing `main`.
+### Version numbers
+
+`MAJOR.MINOR.PATCH`, and each part means something:
+
+| | |
+|---|---|
+| **MAJOR** | A break. Somebody's saved plans, settings or progress do not survive the update, or the way RatNav is used changes shape. Still `0` — everything below is pre-1.0 and says so. |
+| **MINOR** | A feature, or a change somebody would notice and might have to be told about. |
+| **PATCH** | A fix. Nothing new, nothing moved. |
+
+**Prereleases add `-alpha.N`**, counting from 1 for each version: `v0.4.0-alpha.1`, then
+`-alpha.2`. `-beta.N` and `-rc.N` are accepted by the same rules if a version ever needs them.
+
+**The tag is the only source of truth.** The build reads its version from the tag and stamps it
+into the binary, both filenames and the release notes. Nothing is typed anywhere twice, and a tag
+that does not match the shape above **fails the release build before anything is compiled** —
+which is how a stable and an alpha once shipped installers with the same filename.
+
+### Cutting a release
+
+1. **Move the changelog on.** Rename `## Unreleased` to `## 0.4.0-alpha.1` — or the stable version —
+   and date it. Add a fresh empty `## Unreleased` above it. The release build **fails if
+   `CHANGELOG.md` has no section matching the tag**, because a build nobody can read notes for is
+   a build nobody can decide whether to install.
+2. **Tag it.** `git tag v0.4.0-alpha.1 && git push origin v0.4.0-alpha.1`, from `next` for an
+   alpha, from `main` for a stable release.
+3. **The build does the rest**: runs the tests, refuses to ship past a failing *or skipped* one,
+   builds the installer and the portable zip, and publishes the release — marked prerelease if the
+   tag has a suffix.
+4. **For a stable release, run the Latest stable workflow** afterwards. It updates the README's
+   install line, and it cannot fire on its own.
+
+Both artifacts are named `RatNav-<version>-setup.exe` and `RatNav-<version>-win-x64.zip`, with the
+same version in both, suffix included.
+
+### How this appears to people
+
+- **Alphas are cut from `next`** and marked prerelease. They never become "Latest", so the download
+  on the front page keeps pointing at the last stable build and nobody gets an alpha by accident.
+  Releases are driven by the tag rather than the branch, so an alpha can come off `next` at any
+  point without disturbing `main`.
 - **Promotion to stable is a decision, not a step.** When a version has been tried properly, it is
   promoted deliberately, because that changes what everybody downloads.
 - **The README names the latest stable release**, updated by a workflow when one is promoted. A
@@ -159,6 +196,12 @@ Work is grouped into a **version**, not shipped a commit at a time.
 
 **Tests describe behavior, not methods.** `Replaying_the_logs_cannot_undo_a_correction` says what
 must remain true. `TestProgressStore3` does not.
+
+**A skipped test is not a passing test.** If a test is no longer needed, delete it — git remembers
+it, and a skipped test reads as coverage that is not there. The release build refuses to ship with
+any test skipped, for the same reason it refuses to ship with one failing. Every test in
+`tests/` runs on every pull request; they are the shared safety net, and adding to them is how a
+bug stays fixed.
 
 **Test against reality where reality is available.** The log parser is tested with a notification
 copied verbatim from a live client rather than one written to match the parser. A test written
