@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type TaskSummary, type Trader, type WikiImage } from './api'
 
 /**
@@ -41,6 +41,32 @@ export function QuestsView() {
   const [tasks, setTasks] = useState<TaskSummary[]>([])
   const [loading, setLoading] = useState(true)
 
+  /**
+   * Which row the keyboard is on.
+   *
+   * <p>Setting up a fresh install means marking fifty or more quests active, read off the game on
+   * the other monitor. Done with the mouse that is fifty round trips of type, let go of the
+   * keyboard, aim at a small button, come back — before you have seen a single thing RatNav is
+   * good for. So the whole job is done from the search box: type part of a name, press Enter.</p>
+   *
+   * <p>An index rather than an id, because the list is re-fetched as you type and an id would
+   * point at a row that is no longer shown.</p>
+   */
+  const [highlighted, setHighlighted] = useState(0)
+
+  /**
+   * Said out loud after a keystroke does something.
+   *
+   * <p>The row often scrolls out of view the moment it changes state, and a change you cannot see
+   * is one you do not trust — so you reach for the mouse to check, which is the thing this exists
+   * to avoid. Read by screen readers through aria-live, and shown next to the box for everybody
+   * else.</p>
+   */
+  const [said, setSaid] = useState('')
+
+  const searchBox = useRef<HTMLInputElement>(null)
+  const rows = useRef<(HTMLLIElement | null)[]>([])
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -80,6 +106,77 @@ export function QuestsView() {
     load()
   }
 
+  // The highlight follows the list. Re-fetching on every keystroke means row 4 of the old results
+  // is nothing in particular in the new ones.
+  useEffect(() => { setHighlighted(0) }, [tasks, trader, filter])
+
+  // Keep the highlighted row on screen. Without this, arrowing down walks off the bottom and the
+  // row you are about to act on is the one you cannot see.
+  useEffect(() => {
+    rows.current[highlighted]?.scrollIntoView({ block: 'nearest' })
+  }, [highlighted])
+
+  /**
+   * Marks the highlighted quest active, then clears the box.
+   *
+   * <p>The clearing is the point. Typing a name, pressing Enter and then having to select and
+   * delete what you typed is three actions where there should be one — and with fifty quests to
+   * enter, that difference is the whole feature. Type, Enter, type, Enter.</p>
+   */
+  async function activateHighlighted() {
+    const task = shown[highlighted]
+
+    if (!task) {
+      setSaid(query ? `Nothing matches "${query}".` : 'Nothing to mark.')
+      return
+    }
+
+    if (task.state === 'Active') {
+      // Not an error and not silence. Saying so is what stops somebody typing it again.
+      setSaid(`${task.name} was already active.`)
+      setQuery('')
+      return
+    }
+
+    await setState(task, 'Active')
+    setSaid(`${task.name} is now active.`)
+    setQuery('')
+  }
+
+  /**
+   * The search box is the whole interface, so it carries the keys.
+   *
+   * <p>Arrows move the highlight without the caret leaving the text, which is what lets you narrow
+   * a search and pick from what is left without your hands moving.</p>
+   */
+  function onSearchKey(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setHighlighted((at) => Math.min(at + 1, shown.length - 1))
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setHighlighted((at) => Math.max(at - 1, 0))
+      return
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      void activateHighlighted()
+      return
+    }
+
+    // Escape empties the box rather than blurring it. Somebody who mistypes a name wants to type
+    // the next one, not to find their way back to the field.
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      setQuery('')
+      setSaid('')
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {showing && <Photos task={showing} onClose={() => setShowing(null)} />}
@@ -101,9 +198,20 @@ export function QuestsView() {
           ))}
         </div>
 
+        {/*
+          A combobox over the list below, so a screen reader announces which row Enter would act
+          on rather than leaving the highlight as something only sighted users can see.
+        */}
         <input
+          ref={searchBox}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={onSearchKey}
+          role="combobox"
+          aria-expanded={shown.length > 0}
+          aria-controls="quest-list"
+          aria-activedescendant={shown[highlighted] ? `quest-${shown[highlighted].id}` : undefined}
+          aria-label="Search quests. Enter marks the highlighted quest active."
           placeholder={filter === 'all' ? 'Search every quest…' : 'Quest or trader…'}
           className="min-w-48 flex-1 rounded-sm border border-line bg-panel px-3 py-1.5 text-sm
                      text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-accent"
@@ -113,6 +221,28 @@ export function QuestsView() {
           {shown.length} quests
           {failed > 0 && <span className="text-need"> · {failed} failed</span>}
         </p>
+      </div>
+
+      {/*
+        What the keys do, and what the last one did.
+
+        The hint is here rather than in the guide because somebody setting up for the first time is
+        looking at this page, not reading documentation — and this is the page where the shortcut
+        saves an hour.
+
+        aria-live is polite: it waits for a pause rather than interrupting, which is right for
+        somebody typing quickly through a list of fifty.
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-3 font-mono text-[11px]">
+        <p className="text-muted">
+          <kbd className="text-ink">Enter</kbd> marks the highlighted quest active
+          {' · '}
+          <kbd className="text-ink">↑</kbd> <kbd className="text-ink">↓</kbd> move
+          {' · '}
+          <kbd className="text-ink">Esc</kbd> clears
+        </p>
+
+        <p aria-live="polite" className="text-accent">{said}</p>
       </div>
 
       {/*
@@ -207,9 +337,19 @@ export function QuestsView() {
       )}
 
       {!loading && shown.length > 0 && (
-        <ul className="flex flex-col gap-px border border-line bg-line-soft">
-          {shown.map((task) => (
-            <li key={task.id} className="flex flex-wrap items-center gap-3 bg-panel px-3 py-2.5">
+        <ul id="quest-list" className="flex flex-col gap-px border border-line bg-line-soft">
+          {shown.map((task, at) => (
+            <li
+              key={task.id}
+              id={`quest-${task.id}`}
+              ref={(row) => { rows.current[at] = row }}
+              aria-selected={at === highlighted}
+              className={`flex flex-wrap items-center gap-3 px-3 py-2.5 ${
+                at === highlighted
+                  ? 'bg-panel-hi ring-1 ring-inset ring-accent'
+                  : 'bg-panel'
+              }`}
+            >
               <div className="min-w-56 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={

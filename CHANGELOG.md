@@ -16,8 +16,19 @@ user reads to decide whether to update.
 
 <!-- Add anything a person running RatNav would notice. Say what to go and try. -->
 
-*Nothing yet. Everything below is about how RatNav is built, not what it does — so there is nothing
-to try, and nothing to update for.*
+- **Mark a quest active without touching the mouse.** On the Quests page, type part of a name and
+  press **Enter**. The box clears itself, so the next name can be typed straight away — type,
+  Enter, type, Enter. **↑** and **↓** move the highlight without leaving the box, **Esc** clears
+  it, and what just happened is said next to the search so you do not have to go looking for the
+  row to check.
+
+  Setting up a fresh install means marking fifty or more quests active, read off the game on the
+  other monitor. Done with the mouse that is fifty round trips before you have seen a single thing
+  RatNav is good for.
+
+  *To try: open Quests, switch to **All**, type part of a quest name, press Enter. It should turn
+  active, the box should empty, and the line beside the search should say which one it was. Then
+  try arrowing down to the second match before pressing Enter.*
 
 ### Repository and process
 
