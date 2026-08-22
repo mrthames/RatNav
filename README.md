@@ -86,7 +86,7 @@ order, collects the keys to bring, and assembles the shopping list. There is a t
 
 ## Install
 
-<!-- latest-stable --> Latest stable release: **[v0.3.0](https://github.com/mrthames/RatNav/releases/latest)** — download `RatNav-0.3.0-setup.exe`.
+<!-- latest-stable --> Latest stable release: **[v0.4.0](https://github.com/mrthames/RatNav/releases/latest)** — download `RatNav-0.4.0-setup.exe`.
 
 1. Download the setup executable from the
    [latest release](https://github.com/mrthames/RatNav/releases/latest) and run it.
