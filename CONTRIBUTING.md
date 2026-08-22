@@ -42,10 +42,17 @@ deliberate act rather than a consequence of merging.
    Run it against a real map or a real raid if that is what it touches — the tests cover the
    parsing and the maths, not whether a pin lands on the right building.
 3. **Run `review-coordinator`.** See [the review below](#the-review).
-4. **Add a changelog entry** under **Unreleased** in [CHANGELOG.md](CHANGELOG.md). This is a
-   required check, and it is required for a reason: an alpha is only worth installing if the
-   person installing it can see what changed and knows what to go and look at. Say what a tester
-   should try, not just what you did.
+4. **Add a changelog entry** under **Unreleased** in [CHANGELOG.md](CHANGELOG.md), in whichever
+   of its two sections fits:
+
+   - **Changed for you** — anything a person running RatNav would notice. Say what to go and try,
+     not just what you did.
+   - **Repository and process** — build, CI, docs, tooling. Real work, but nobody installs it.
+
+   This is a required check, and it is required for a reason: an alpha is only worth installing if
+   the person installing it can see what changed and knows what to look at. The split exists
+   because those two lists are read by different people, and a user scanning for "should I
+   update?" should not have to wade through CI changes to find out.
 5. **Open the PR into `next`.** CI runs, the changelog check runs.
 6. **Merge it yourself** once both are green. No approval needed — the gate is on `main`, not
    here.

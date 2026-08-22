@@ -4,10 +4,22 @@ Notable changes to RatNav. Versions follow [semantic versioning](https://semver.
 
 ## Unreleased
 
-What has landed on `next` and has not been released yet. Anything merged here adds a line, so that
-somebody running an alpha can see what changed and knows what to go and look at.
+What has landed on `next` and has not been released yet, in two parts, because they are read by
+different people.
 
-<!-- Add yours here. Say what changed, and what a tester should try. -->
+**Everything that changes RatNav** goes first, written for somebody about to install an alpha:
+what changed, and what to go and try. **Repository and process** goes second, for anybody working
+on it. Both are required — every pull request adds a line — but only the first belongs in what a
+user reads to decide whether to update.
+
+### Changed for you
+
+<!-- Add anything a person running RatNav would notice. Say what to go and try. -->
+
+*Nothing yet. Everything below is about how RatNav is built, not what it does — so there is nothing
+to try, and nothing to update for.*
+
+### Repository and process
 
 - **The repository is open to invited collaborators**, working on `next`. Stable releases still
   come only from `main`. Nothing changes for anyone downloading RatNav.
