@@ -16,6 +16,22 @@ user reads to decide whether to update.
 
 <!-- Add anything a person running RatNav would notice. Say what to go and try. -->
 
+*Nothing yet.*
+
+### Repository and process
+
+<!-- Build, CI, docs, tooling. Real work, but nobody installs it. -->
+
+*Nothing yet.*
+
+## 0.4.1 — 2026-08-22
+
+**Stable.** Nothing RatNav does has changed. What changed is that it now says what running it
+means, on the page you are looking at while you install it, rather than in a document you would
+have to go and find.
+
+### Changed for you
+
 - **Setup says what you are accepting by running RatNav**, in plain words, on the page you are
   looking at while you install it. Battlestate have not approved it and have not been asked to;
   avoiding the things anti-cheat looks for is not the same as being allowed; the uncertainty is
@@ -34,8 +50,6 @@ user reads to decide whether to update.
   reachable from the line at the top afterwards.*
 
 ### Repository and process
-
-<!-- Build, CI, docs, tooling. Real work, but nobody installs it. -->
 
 - **The README's version line is updated when a version is closed, not after it ships.** A workflow
   used to rewrite it once a release was published. It cannot any more: `main` is protected, and
