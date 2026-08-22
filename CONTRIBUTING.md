@@ -15,8 +15,10 @@ incorrectly — those are worth knowing about, and an issue is the way to say so
 guaranteed and a fix is not promised, which is the honest position for a project of one.
 
 **There is no review queue.** Pull requests are not the way in, and feature requests are not being
-gathered. If you want RatNav to do something it does not, the [license](LICENSE) lets you fork it
-for anything noncommercial — give your version its own name.
+gathered. A PR opened here is **closed automatically**, with a note saying why — which is a worse
+welcome than a reply, and a better one than silence for six months. If you want RatNav to do
+something it does not, the [license](LICENSE) lets you fork it for anything noncommercial — give
+your version its own name.
 
 The rest of this file is for anyone building it themselves.
 

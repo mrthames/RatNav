@@ -1,0 +1,41 @@
+# Closes pull requests, because RatNav does not take them.
+#
+# The policy is in CONTRIBUTING.md and has been for a while; this is the part that enforces it.
+# Without it a stranger writes a patch, waits, and hears nothing — which is a worse answer than
+# being told no straight away.
+#
+# Forking stays allowed on purpose: the license invites it, and the README says so out loud. The
+# way in is a fork with its own name, not a patch to this one.
+name: No pull requests
+
+# pull_request_target, not pull_request: a fork's own GITHUB_TOKEN is read-only, so a workflow
+# triggered by pull_request cannot comment or close. This never checks out the PR's code, which is
+# the thing that makes pull_request_target dangerous.
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  close:
+    # The owner can still open one — sometimes a PR is a useful place to watch CI run.
+    if: github.event.pull_request.user.login != github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say why, then close
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr comment "$PR" --body "Thanks for taking the time to write this.
+
+          **RatNav does not take pull requests**, so this is closed automatically. It is not a judgment on the change — there is no review queue here, and leaving a patch open for months would be a worse answer than saying no now.
+
+          - **Found a bug?** An [issue](https://github.com/mrthames/RatNav/issues) is the way, and those are read.
+          - **Want RatNav to do something it does not?** The [license](https://github.com/mrthames/RatNav/blob/main/LICENSE) lets you fork it for anything noncommercial. Give your version its own name and it is yours.
+
+          See [CONTRIBUTING.md](https://github.com/mrthames/RatNav/blob/main/CONTRIBUTING.md)."
+
+          gh pr close "$PR"
