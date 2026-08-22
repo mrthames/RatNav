@@ -126,7 +126,14 @@ hits=$(find_in_tracked '[A-Za-z]:\\Users\\|[A-Za-z]:/Users/|/home/[a-z]|/Users/[
 
 # A whole dotted quad: "10.0.19041" is a Windows version, and matching it made this shout about
 # every project file in the repository.
-hits=$(find_in_tracked '\b192\.168\.[0-9]{1,3}\.[0-9]{1,3}\b|\b10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\b|\b172\.(1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3}\b|\b[A-Za-z0-9-]+\.local\b')
+# A whole dotted quad: "10.0.19041" is a Windows version, and matching it made this shout about
+# every project file in the repository.
+#
+# LanBoundaryTests is excluded, and only from this check. It asserts that an address on the local
+# network is refused the run of the machine, which it cannot do without naming some — and the ones
+# it names are invented. Every other check still reads that file.
+hits=$(find_in_tracked '\b192\.168\.[0-9]{1,3}\.[0-9]{1,3}\b|\b10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\b|\b172\.(1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3}\b|\b[A-Za-z0-9-]+\.local\b' \
+  | grep -v 'LanBoundaryTests\.cs:')
 [ -n "$hits" ] && report "an address on a private network" "$hits"
 
 hits=$(find_in_tracked 'ssh +[a-z_][a-z0-9_-]*@|scp +[^ ]+ +[a-z_][a-z0-9_-]*@')

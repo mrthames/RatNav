@@ -48,6 +48,45 @@ overlay says how long ago that was.
 over another application needs a system-wide mouse hook, which is the same machinery RatNav refuses
 to use for the keyboard. A hotkey is registered with Windows and touches nothing.
 
+## The local service, and the network
+
+RatNav runs a small web service so that one app can serve the overlay, the browser page and the
+expanded panel. That is a real thing to have running, so here is exactly what it is.
+
+**It listens on `127.0.0.1` and nothing else, until you say otherwise.** Loopback is not reachable
+from your network, let alone the internet. Nothing has to be opened for RatNav to work, and the
+default install never touches your firewall.
+
+**Network access is one switch on the Setup page, off until you turn it on.** It exists so a tablet
+on the sofa can read a plan. When it is on, RatNav answers on your machine's local address as well
+— and there is no password. **The network is the whole boundary**, which the Setup page says out
+loud rather than burying.
+
+**What the network can reach is deliberately not everything.** Reading your quests, items and maps,
+and building a plan — yes, because that is the feature. These are refused to anything that is not
+the machine RatNav is running on, whether or not the switch is on:
+
+| | |
+|---|---|
+| Changing settings | A tablet is here to read a plan, not to repoint RatNav at a folder that does not exist |
+| Wiping a character | It deletes progress |
+| Quitting RatNav | Closing somebody's overlay from another device is not a feature |
+| The folder picker | It puts a window on your screen |
+| Turning network access on or off | A device that came through the door does not get to widen it |
+
+That is enforced in one place — `LanAccess.FromThisMachine` — and tested, so a new endpoint is a
+deliberate decision about which side of the line it sits on rather than an accident.
+
+**Nothing outside your network can reach it either way.** Reaching a machine from the internet
+needs a port forwarded on your router. RatNav does not do that, cannot do that, and does not ask.
+
+**The firewall rule.** Windows blocks the port until a rule allows it, so Setup offers to add one.
+It runs `netsh advfirewall firewall add rule` — the exact command is printed next to the button so
+you can run it yourself — and it raises a Windows permission prompt, because opening a port always
+does. RatNav cannot do it silently, and it is only ever offered from the machine itself, never over
+the network. It is one inbound rule for one TCP port, and removing it is the same command with
+`delete` in place of `add`.
+
 ## Why this is the established way to do it
 
 Everything above amounts to one rule: **RatNav treats Escape from Tarkov as something to read files
