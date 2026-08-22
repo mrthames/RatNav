@@ -14,6 +14,9 @@ somebody running an alpha can see what changed and knows what to go and look at.
 - **Review personas for AI-assisted work** in `.claude/agents/`, and a `CLAUDE.md` giving every
   agent the same starting context. Four auditors — safety, privacy, docs truth, code — with
   `review-coordinator` running whichever apply to a diff.
+- **`/onboard` and `/review`**, two commands in `.claude/commands/`. `CLAUDE.md` can only be read;
+  these do the things a file cannot — check the toolchain, prove the build and tests pass, run the
+  auditors, and run every check that would block a merge before the pull request is opened.
 - **The release list is tidied.** `v0.1.0` and `v0.2.0-alpha.1` are gone — neither had ever been
   downloaded, and the alpha shipped an installer with the stable release's exact filename. Their
   git tags are kept, so the history is still navigable. `v0.3.0` remains the current release and

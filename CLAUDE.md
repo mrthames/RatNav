@@ -58,14 +58,33 @@ releases happen only when an admin creates a `v*` tag. Every change is a PR, and
 **CHANGELOG.md** entry under **Unreleased** saying what a tester should go and look at — an alpha
 nobody knows how to test is an alpha nobody tests.
 
+## Two commands
+
+- **`/onboard`** — run it at the start of a session on a machine you have not worked on here
+  before. It reads the project, checks the toolchain, proves the build and tests pass, and gets
+  you onto a branch off `next`.
+- **`/review`** — run it before opening a pull request. It runs the auditors that apply to your
+  diff and every check that would block the merge, and hands you the text for the PR description.
+
 ## Before you open a PR
 
-Run the review personas in `.claude/agents/`. `review-coordinator` reads the diff and runs the ones
-that apply; the others can be summoned directly when you know what you are touching. Put what they
-surface in the PR description — including the things you decided not to act on, and why.
+`/review` does this, but the shape of it: run the review personas in `.claude/agents/`.
+`review-coordinator` reads the diff and runs the ones that apply; the others can be summoned
+directly when you know what you are touching. Put what they surface in the PR description —
+including the things you decided not to act on, and why.
 
 The deterministic checks (`dotnet test`, the web build, the two `tools/` scripts, the changelog)
 run in CI and block the merge. The personas catch what a script cannot.
+
+## If `next` is missing
+
+It can be deleted after a promotion. Recreate it from `main` — it is never a long-lived fork, and
+never holds anything `main` will not eventually get:
+
+```
+git checkout -B next origin/main
+git push -u origin next
+```
 
 ## What will bite you
 
