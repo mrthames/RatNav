@@ -12,7 +12,9 @@ import { MapPicker } from './MapPicker'
 
 /**
  * The pre-raid ritual, in the order it is actually done: pick a map, tick the objectives you are
- * pushing, and get a route with the keys you need to bring.
+ * pushing in the order you mean to walk them, and get them numbered that way with the keys you
+ * need to bring. Nothing here works a route out — see RaidPlanner for why the order you chose is
+ * the order that ships.
  */
 export function PlanView({ maps, raid }: { maps: MapSummary[]; raid: RaidView | null }) {
   /*

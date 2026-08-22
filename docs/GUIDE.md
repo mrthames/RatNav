@@ -83,19 +83,18 @@ checks go green.
    button becomes **End raid**, and **+ Add a stop to this plan** at the foot reopens the list.
 
 Stops run **in the order you ticked them**, and the number on each row is the number the overlay
-draws on the map. Once you are in the raid and have taken a position fix, the stops you have not
-reached re-order around where you actually are — so stop 1 is the one nearest you rather than the
-one you happened to tick first.
+draws on the map. Nothing re-orders them: RatNav does not work out a route, because the order you
+chose already carries what a solver cannot know — which end is quiet, what you want done early,
+which two are on the way to a third. Change your mind and you change the ticks.
 
-Once you are in raid, the stops **you have not reached** re-order around wherever you actually are,
-the first time you take a position fix. Ones you have ticked off stay put.
+A position fix in raid moves your marker and drops the stops you have marked done. It leaves the
+rest in the order you gave them.
 
 ### Finishing things
 
 - **Quest done** marks the whole quest complete. It retires the quest's item needs *and* its
-  stops — including objectives you never planned, so the next plan does not route you back through
-  them. It asks first, because that is not a thing you want to do by accident, and un-marking the
-  quest puts everything back.
+  stops — including objectives you never planned, so the next plan does not send you back through
+  them. It does not ask: it is one click to undo, and un-marking the quest puts everything back.
 - **There is no tick on a stop.** Ticking one meant alt-tabbing out of a raid to do it, so nobody
   did and the plan stayed lit through raids it had nothing to do with. Reconciling afterwards, from
   the quest, is the move that actually gets made. Ticking belongs where you *choose* — the list you
@@ -245,11 +244,11 @@ Marks live per map and draw whenever that map is on screen, whether or not a pla
 batteries behind the garage" is true every raid.
 
 They can also **join a plan**. On the Plan page they sit above the quest objectives under *Your
-marks*, and tick, number and reorder in the same list, so a run can be "this quest step, then my
-stash, then that one".
+marks*, and tick and number in the same list, so a run can be "this quest step, then my stash,
+then that one".
 
-The Maps page also has **search** — type a place name and it takes you there — the same ink and
-floor controls the overlay has, and every quest objective and extract for the map.
+The Maps page has the same ink and floor controls the overlay has, and draws every quest
+objective and extract for the map.
 
 ---
 
@@ -344,8 +343,6 @@ unfiltered list gives you.
 
 It is one setting with three dials on it — the hideout page, the items page and the overlay all
 read and write the same number, so turning it anywhere turns it everywhere.
-
-Star the upgrades you actually want and the list narrows to those.
 
 ---
 

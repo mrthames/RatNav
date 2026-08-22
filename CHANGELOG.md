@@ -58,11 +58,12 @@ keeps the size it draws at if you had chosen one.
 - **In the order the work happens**: pick a map, see what it will cost you, then the plan, then the
   list you pick from. The plan used to sit above the thing that builds it.
 - **It folds down to the plan once one exists**, with **+ Add a stop to this plan** at the foot and
-  **End raid** on the bar. Updating mid-raid re-plans from where you are, so the overlay follows.
+  **End raid** on the bar. Updating mid-raid rebuilds the plan from what is ticked, so the overlay
+  follows.
 - **Quest done no longer asks**, and now does both halves of "done" — the stop strikes through and
   moves to the bottom, and undoing puts it back where it was.
 - **No map preview and no drag-to-reorder list.** The Maps page is where a map is looked at, and
-  ordering is the order you tick things in until the raid re-orders it around you.
+  the order is the order you tick things in — nothing re-orders it afterwards.
 
 ### Fixed
 

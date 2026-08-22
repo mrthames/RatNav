@@ -4,13 +4,39 @@
 
 A raid planner and navigation overlay for Escape from Tarkov.
 
-Plan your raid before you queue — pick the map, check off the quest objectives you're pushing, and RatNav
-builds a route with the keys you need to bring and the items you're hunting. In raid, a hotkey-toggled
-overlay draws that route on the map, numbered in the order to walk it, and re-plans from wherever you
-actually are.
+Plan your raid before you queue — pick the map, tick the quest objectives you are pushing, and RatNav
+numbers them in the order you ticked, works out which keys you have to bring, and assembles the
+shopping list. In raid, a hotkey-toggled overlay draws those stops on the real map, with you among
+them.
+
+Free, and deliberately small. It keeps the notes and draws the map; working the raid out is still
+your job, and that is the point.
 
 [![Latest release](https://img.shields.io/github/v/release/mrthames/RatNav?display_name=tag&label=latest&color=8ec8ff)](https://github.com/mrthames/RatNav/releases/latest)
 [![Licence](https://img.shields.io/badge/licence-PolyForm%20Noncommercial-8ec8ff)](LICENSE)
+
+## Deliberately small
+
+RatNav is a notepad and a map, not a system you have to live inside. It is free — no account, no
+ads, no telemetry, no paid tier, nothing to sign up for.
+
+There are things it does not do, on purpose:
+
+- **It does not work out your route.** You tick objectives in the order you mean to walk them, and
+  that is the order it draws. A solver knows distances and nothing else: not which end of the map
+  is quiet, not what you want done before a raid heats up, not that two of them are on the way to
+  a third. You know that. It does not.
+- **It does not follow you around.** Your position updates when you tap your screenshot key, and
+  only then. Anything continuous would mean reading the game's memory, which is what anti-cheat
+  exists to catch.
+- **It does not read your stash, your level, or your trader loyalty.** You tell it once and
+  correct it when it drifts. Nothing here wants your account password.
+- **It does not play for you.** No automation, no input sent to the game, nothing clicked on your
+  behalf.
+
+Learning the maps, finding the door, judging what a raid is worth — that is the game, and the game
+is what you came for. RatNav takes the bookkeeping: which quest wanted this, which key opens that,
+how many you still need, and where on the map the stop you picked actually is.
 
 ## Alpha
 
@@ -66,8 +92,8 @@ it can stay up while you play.
 
 ![RatNav's centred view over a raid on Streets of Tarkov: building outlines drawn as glowing blue lines over the game with street and shop names on them, a red quest waypoint and a green extract marked, all above the player's weapon and the game's own interface](docs/screenshot-hud.jpg)
 
-**Before you queue**, the app: tick the objectives you are pushing and it builds the route, works
-out which keys you have to bring, and assembles the shopping list. There is a tour of every page
+**Before you queue**, the app: tick the objectives you are pushing and it numbers them in that
+order, works out which keys you have to bring, and assembles the shopping list. There is a tour of every page
 [further down](#the-app).
 
 ## Install
@@ -121,8 +147,9 @@ touch.
 **Quit RatNav first**, from the tray icon or **Setup → Quit RatNav**. An installer cannot replace
 files that a running program has open.
 
-There is no automatic update check yet. Watch the repository, or check the
-[releases page](https://github.com/mrthames/RatNav/releases).
+Once a day RatNav asks GitHub whether there is a newer stable release and says so on **Setup**,
+with a link. It never downloads or runs anything itself. Turn the check off there if you would
+rather watch the [releases page](https://github.com/mrthames/RatNav/releases) yourself.
 
 ## Is this safe to use?
 
@@ -158,13 +185,13 @@ community map image hosts.
 
 **Before the raid.** Pick a map. RatNav lists the objectives of your active quests, grouped by the
 place players actually call it — Depot, Dorms, Old Construction — with the quest and trader for
-each. Tick what you are pushing and it builds a route, aggregates the keys you need to bring, and
-assembles the shopping list.
+each. Tick what you are pushing, in the order you mean to walk it, and it numbers the stops that
+way, aggregates the keys you need to bring, and assembles the shopping list.
 
-**During the raid.** A hotkey-toggled overlay shows the route and your position on the real map —
+**During the raid.** A hotkey-toggled overlay shows your stops and your position on the real map —
 either as a small panel in a corner or as a full-screen HUD turned to face the way you are. Tap
-your screenshot key and the marker snaps, the route re-orders from where you actually are, and the
-screenshot is archived so the folder never fills up.
+your screenshot key and the marker snaps, the centred view turns to face the way you were looking,
+and the screenshot is archived so the folder never fills up.
 
 **Between raids.** What every active quest needs, minus what you have, with a watchlist for
 anything else worth remembering — filtered to found-in-raid, or keys, or whatever a trade is
@@ -183,7 +210,8 @@ a barter is two reasons, not a single ten.
 screenshots of the place — which is what turns "walk to this pin" into "find this door".
 
 **Marks of your own.** Click a spot on the map, name it, and it draws in raid from then on. They
-are not part of a plan, so they outlive every plan.
+live per map rather than per plan, so they outlive every plan — and they can join one: on the Plan
+page they sit above the quest objectives, ticked and numbered in the same list.
 
 **Quest photos.** The wiki's screenshots for a quest, from the app — the ones showing which
 building and which door.
@@ -191,8 +219,9 @@ building and which door.
 **The hideout, as a build order.** Tell RatNav where each station is and it works out what that
 makes reachable next, following the game's own prerequisites. A **Look ahead** control decides how
 far past today: 0 is what you could build tonight, 2 is what to stop vendoring. On a fresh hideout that is
-about 17 items rather than the several hundred an un-filtered list would give you. Star the
-upgrades you actually want and the list narrows to those.
+about 17 items rather than the several hundred an un-filtered list would give you. It is one
+number shared by the Hideout page, the Items page and the overlay, so turning it anywhere turns it
+everywhere.
 
 **With a friend.** Export a plan, merge it with theirs. Nothing is dropped — every objective
 survives carrying its owner — and it flags what actually changes the raid: objectives to do
@@ -259,8 +288,9 @@ screenshot key **is** RatNav's "where am I" key:
    works well — it is reachable without letting go of movement. Steam users should avoid `F12`.
 2. Tell RatNav which key that is, in Setup. It never presses it; it just names it in prompts.
 3. Tap it in raid.
-4. RatNav parses the filename, snaps your marker to that spot with your facing, and re-plans the
-   remaining route from where you now stand.
+4. RatNav parses the filename, snaps your marker to that spot with your facing, and — in the
+   centred view — turns the map so what is in front of you is up the screen. The stops keep the
+   order you gave them.
 
 Position updates when you tap, and only when you tap. There is no continuous tracking, because reading
 position continuously would require reading game memory — which is what anti-cheat exists to catch. Every
@@ -327,7 +357,8 @@ the **gear** for the controls:
 | **UI scale** | How large RatNav draws its own furniture — the controls, the drawers, the headings. Not the map, which has its own dials either side of this one. |
 
 These are the same controls under the same names as the app's Maps page, so what you can turn on
-and off reads the same in both places.
+and off reads the same in both places. The one difference is **Exits**: the overlay offers `Both`
+as well, where the app starts from `PMC`.
 
 **The centred view goes to full screen.** Turn **Coverage** to 100% and it becomes a HUD: glowing
 outlines over the game, dissolving toward the edges rather than stopping at a border, turned so
@@ -379,8 +410,8 @@ Nothing needs to be installed alongside it — no .NET runtime, no OCR download,
 
 ## Support it
 
-RatNav is free, has no ads, no accounts, and nothing that phones home. It is built and maintained
-by one person on his own time.
+RatNav is free, has no ads, no accounts, and nothing that phones home. There is no paid tier and
+there is not going to be one. It is built and maintained by one person on his own time.
 
 ☕ **[Buy me a coffee](https://buymeacoffee.com/thames_)** — it keeps this and the other things I
 make free for everyone.

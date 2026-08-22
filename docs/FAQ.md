@@ -66,7 +66,8 @@ links from the Escape from Tarkov Wiki.
 
 ## Does it cost anything? Is there an account?
 
-No, and no. There is no telemetry, no account, no server of ours, and nothing phones home. The
+No, and no. RatNav is free, there is no paid tier, and there is not going to be one. There is no
+telemetry, no account, no server of ours, and nothing phones home. The
 service it runs binds to `127.0.0.1` — your own machine — and nothing else can reach it unless you
 turn on [network access](#can-i-see-it-on-my-phone-or-tablet), which is off until you do and reaches
 your local network only.
@@ -80,9 +81,9 @@ to catch. Every tool in this space that is safe to use works the same way — in
 ones.
 
 So the design leans into it: one thumb button, and every press does as much as possible. Your
-marker snaps, the remaining route re-orders from where you actually are, and — in the centred view
-— the map turns to face the way you were looking. Between presses nothing moves, and the overlay
-says how old the reading is rather than pretending.
+marker snaps, the stops you have marked done drop off, and — in the centred view — the map turns to
+face the way you were looking. Between presses nothing moves, and the overlay says how old the
+reading is rather than pretending.
 
 ## Nothing appears over the game
 
@@ -314,8 +315,10 @@ tarkov.dev's data are cleared, and both come back on their own.
 If you use the portable `.zip` instead: quit RatNav, unzip the new one over the old folder, and
 start it again. Same data, same place.
 
-**There is no automatic update check yet.** Watch the repository on GitHub to be told about new
-releases, or look at the releases page when you think of it.
+**RatNav checks once a day** whether there is a newer stable release, and says so on Setup with a
+link. It never downloads or installs anything — a tool that reads the game's files has no business
+doing that on its own. Turn the check off on Setup if you would rather watch the releases page
+yourself; **Check now** still works with it off.
 
 ## How do I move to a new PC?
 
