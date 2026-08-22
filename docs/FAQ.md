@@ -276,9 +276,13 @@ Three things worth knowing:
   default, and opening it to the network is a deliberate change.
 - **Nothing outside your network can reach it.** Port forwarding is a router-to-internet thing and
   is not part of this. Without it, your router is still the wall, whatever RatNav is doing.
-- **There is no password.** Anyone already on your wifi can open RatNav and change its settings.
-  On a home network that is you and your own devices; on a shared or building-wide network, think
-  about whether that is what you want.
+- **There is no password.** Anyone already on your wifi can open RatNav, read your quests and
+  items, and build a plan. On a home network that is you and your own devices; on a shared or
+  building-wide network, think about whether that is what you want.
+- **They cannot touch the machine, though.** Changing settings, wiping a character, quitting
+  RatNav, opening the folder picker and turning this switch off again are all refused to anything
+  that is not the PC RatNav is running on. Reading and planning is the bargain; reaching back out
+  of the browser is not part of it.
 
 Windows Firewall will usually block the port until you allow it. Setup notices, offers to add the
 rule — which needs a permission prompt, because opening a port always does — and prints the command

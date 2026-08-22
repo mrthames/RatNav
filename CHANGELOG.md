@@ -16,7 +16,20 @@ user reads to decide whether to update.
 
 <!-- Add anything a person running RatNav would notice. Say what to go and try. -->
 
-*Nothing yet.*
+- **Network access can no longer reach back out of the browser.** RatNav can answer on your local
+  network so a tablet can read a plan, and there is no password — the network is the whole
+  boundary, which Setup says out loud. That is a fair bargain for reading a quest list. It was
+  also, until now, enough to change your settings, wipe a character, quit RatNav, or put a folder
+  picker on your screen from another device.
+
+  Those five are now refused to anything that is not the machine RatNav is running on, whether or
+  not network access is switched on. Reading and planning are unchanged, because that is what the
+  feature is for.
+
+  Raised by a reader of a post about RatNav, and they were right.
+
+  *To try: nothing changes unless you use **Setup → Reach RatNav from a phone or tablet**. If you
+  do, the tablet should still build plans and mark quests, and Setup's Save should refuse.*
 
 ### Repository and process
 

@@ -24,6 +24,30 @@ public static class LanAccess
     private const string RuleName = "RatNav";
 
     /// <summary>
+    /// Whether a request came from the machine RatNav is running on.
+    ///
+    /// <para>Turning on network access is a deliberate act, and what it is for is reading RatNav
+    /// and building a plan from a tablet on the sofa. It is not for anything that reaches back out
+    /// of the browser and does something to the machine.</para>
+    ///
+    /// <para>There is no password — the Setup page says so out loud — so the network is the whole
+    /// boundary. That is a fair bargain for "look at my quest list" and a poor one for "wipe my
+    /// progress", "close the app" or "put a folder picker on my screen". Those stay here whether
+    /// or not network access is on.</para>
+    ///
+    /// <para>Loopback is checked rather than a subnet: what is being asked is "did this come from
+    /// this machine", and that is exactly what loopback means. A device that reached RatNav over
+    /// the network is not this machine however friendly its address looks.</para>
+    /// </summary>
+    public static bool FromThisMachine(Microsoft.AspNetCore.Http.HttpContext http)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+
+        // No remote address at all is not a reason to trust it.
+        return http.Connection.RemoteIpAddress is { } from && IPAddress.IsLoopback(from);
+    }
+
+    /// <summary>
     /// This machine's addresses on the local network, as a phone would have to type them.
     ///
     /// <para>Every operational interface rather than a guess at the right one: a machine with

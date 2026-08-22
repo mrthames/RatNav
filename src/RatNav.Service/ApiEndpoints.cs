@@ -820,9 +820,15 @@ public static class ApiEndpoints
             }));
 
         api.MapPost("/settings", (
+            HttpContext http,
             RatNavSettings settings, RatNavState state, ProgressStore progress, RaidHost host,
             SettingsUpdate update) =>
         {
+            // Settings are about this machine: where the game is installed, which keys are bound,
+            // where screenshots land. A tablet is here to read a plan, not to repoint RatNav at a
+            // folder that does not exist and leave somebody wondering why nothing works.
+            if (!LanAccess.FromThisMachine(http)) return Results.Json(NotFromHere, statusCode: 403);
+
             // A folder that is not an install is worth refusing rather than accepting quietly:
             // the symptom of a wrong path is an overlay that shows nothing, which looks identical
             // to RatNav being broken.
@@ -927,8 +933,11 @@ public static class ApiEndpoints
         //
         // The answer goes out before the process goes down, so the page can say what happened
         // rather than showing a failed request.
-        api.MapPost("/quit", () =>
+        api.MapPost("/quit", (HttpContext http) =>
         {
+            // Closing somebody's overlay from another device is not a feature.
+            if (!LanAccess.FromThisMachine(http)) return Results.Json(NotFromHere, statusCode: 403);
+
             _ = Task.Run(async () =>
             {
                 await Task.Delay(250);
@@ -1074,8 +1083,12 @@ public static class ApiEndpoints
             });
         });
 
-        api.MapPost("/lan", (RatNavSettings settings, LanRequest request) =>
+        api.MapPost("/lan", (HttpContext http, RatNavSettings settings, LanRequest request) =>
         {
+            // Whether RatNav answers on the network, decided only from the machine it runs on.
+            // A device that got in through the door does not get to widen it.
+            if (!LanAccess.FromThisMachine(http)) return Results.Json(NotFromHere, statusCode: 403);
+
             if (request.Port is { } port && port != 0 && (port < 1024 || port > 65535))
                 return Results.BadRequest(new { error = "Pick a port between 1024 and 65535." });
 
@@ -1098,8 +1111,7 @@ public static class ApiEndpoints
         // from another device is a different kind of thing, and there is no reason to allow it.
         api.MapPost("/lan/firewall", (HttpContext http) =>
         {
-            if (http.Connection.RemoteIpAddress is not { } from || !System.Net.IPAddress.IsLoopback(from))
-                return Results.StatusCode(403);
+            if (!LanAccess.FromThisMachine(http)) return Results.Json(NotFromHere, statusCode: 403);
 
             var added = LanAccess.AddRule(ServiceHost.Port, out var problem);
 
@@ -1129,8 +1141,11 @@ public static class ApiEndpoints
 
         // Back to a fresh character. Genuinely destructive, so the caller has to name the profile
         // it means rather than being handed "the current one" by default.
-        api.MapPost("/profiles/{id}/wipe", (RatNavProfile profile, string id) =>
+        api.MapPost("/profiles/{id}/wipe", (HttpContext http, RatNavProfile profile, string id) =>
         {
+            // A wipe deletes a character's progress. Nothing on the network gets to do that.
+            if (!LanAccess.FromThisMachine(http)) return Results.Json(NotFromHere, statusCode: 403);
+
             if (!RatNavProfile.IsKnown(id))
                 return Results.NotFound(new { error = $"No profile '{id}'." });
 
@@ -1745,8 +1760,12 @@ public static class ApiEndpoints
         // Detection handles the ordinary install. This is for the drive you keep games on, where
         // typing the path is the step people get subtly wrong and the failure arrives later as an
         // overlay that never notices a raid.
-        api.MapPost("/settings/browse", (BrowseRequest request) =>
+        api.MapPost("/settings/browse", (HttpContext http, BrowseRequest request) =>
         {
+            // This opens a folder picker on the machine's own screen. Anything that makes a window
+            // appear in front of somebody is loopback-only by default.
+            if (!LanAccess.FromThisMachine(http)) return Results.Json(NotFromHere, statusCode: 403);
+
             if (BrowseForFolder is not { } browse)
                 return Results.BadRequest(new { error = "No window to open a picker in." });
 
@@ -1966,6 +1985,9 @@ public static class ApiEndpoints
     /// Whether a map can be drawn and trusted: it has a drawing, and the drawing's orientation was
     /// either checked in game or established from the data rather than guessed at.
     /// </summary>
+    private static readonly object NotFromHere =
+        new { error = "This can only be done on the machine RatNav is running on." };
+
     private static bool Trustworthy(MapDef map) =>
         map.Image is { } image
         && image.Confidence is CalibrationConfidence.Verified or CalibrationConfidence.Derived
