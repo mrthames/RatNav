@@ -16,6 +16,22 @@ user reads to decide whether to update.
 
 <!-- Add anything a person running RatNav would notice. Say what to go and try. -->
 
+*Nothing yet.*
+
+### Repository and process
+
+<!-- Build, CI, docs, tooling. Real work, but nobody installs it. -->
+
+*Nothing yet.*
+
+## 0.4.0-alpha.1 — 2026-08-22
+
+**An alpha.** One thing changed for the person using RatNav, and a great deal changed underneath it
+— the repository opened to contributors, the web app got tests for the first time, and the release
+machinery stopped being able to publish two different builds under one filename.
+
+### Changed for you
+
 - **Mark a quest active without touching the mouse.** On the Quests page, type part of a name and
   press **Enter**. The box clears itself, so the next name can be typed straight away — type,
   Enter, type, Enter. **↑** and **↓** move the highlight without leaving the box, **Esc** clears
