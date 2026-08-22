@@ -228,7 +228,12 @@ of later.
 **Plan.** Pick a map, then tick the objectives you are pushing. One strip that does not move says
 how many you have picked and what they need you to bring — keys in red, because a key is the one
 thing you cannot fix once you have queued — and the checklist beneath it is grouped by where things
-are, so a street is one glance rather than six.
+are, so a street is one glance rather than six. Your own marks sit at the top of the list, offered
+the same way — a run can be two quest steps and then the stash behind the garage, which is the only
+reason to put a mark in a plan rather than leave it drawn on the map. What you tick first is where
+you go first, and each tick shows the number that stop will carry.
+
+![The Plan page while a plan is being built: Streets of Tarkov picked, a strip reading 6 objectives with an Iron gate key and a Relaxation room key to bring and Plan this raid beside them, then Your marks with Ammo Spawn and Car Batteries ticked first and second, then the quest objectives grouped by street with their ticks numbered three to six and the key each one needs beneath it](docs/app/plan-building.png)
 
 Once a plan exists the page folds down to it: the stops in order, **+ Add a stop to this plan** at
 the foot, and **End raid** on the strip. Ticking one off strikes it through and moves it to the
