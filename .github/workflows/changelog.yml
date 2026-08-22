@@ -48,7 +48,12 @@ jobs:
 
           echo "::error::This PR does not touch CHANGELOG.md."
           echo ""
-          echo "Add an entry under the unreleased heading saying what changed and what a tester"
-          echo "should look at. If this change has nothing to tell a tester, label the PR"
-          echo "'no changelog' and say why in the description."
+          echo "Add an entry under Unreleased, in whichever section fits:"
+          echo ""
+          echo "  Changed for you        - anything a person running RatNav would notice."
+          echo "                           Say what to go and try."
+          echo "  Repository and process - build, CI, docs, tooling."
+          echo ""
+          echo "If this change has nothing to record at all, label the PR 'no changelog'"
+          echo "and say why in the description."
           exit 1
