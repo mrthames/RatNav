@@ -181,13 +181,20 @@ which is how a stable and an alpha once shipped installers with the same filenam
    and date it. Add a fresh empty `## Unreleased` above it. The release build **fails if
    `CHANGELOG.md` has no section matching the tag**, because a build nobody can read notes for is
    a build nobody can decide whether to install.
+
+   **For a stable release, update the README's `latest-stable` line in the same pull request.**
+   It names the version and the installer filename, and it is what somebody downloading today
+   reads. A workflow used to rewrite it afterwards; it cannot any more, because `main` is
+   protected and GitHub will not let a workflow bypass a ruleset on a personal repository. The
+   **Latest stable** workflow now checks the line instead of fixing it, and says so if it is
+   stale.
 2. **Tag it.** `git tag v0.4.0-alpha.1 && git push origin v0.4.0-alpha.1`, from `next` for an
    alpha, from `main` for a stable release.
 3. **The build does the rest**: runs the tests, refuses to ship past a failing *or skipped* one,
    builds the installer and the portable zip, and publishes the release — marked prerelease if the
    tag has a suffix.
-4. **For a stable release, run the Latest stable workflow** afterwards. It updates the README's
-   install line, and it cannot fire on its own.
+4. **For a stable release**, the **Latest stable** workflow confirms the README's install line
+   names the release. It runs on publish and weekly; run it by hand if you want the answer now.
 
 **Promoting `next` to `main` is the maintainer's, and only theirs.** A pull request into `main`
 requires their review — [CODEOWNERS](.github/CODEOWNERS) says so and a ruleset enforces it — so a
@@ -210,9 +217,10 @@ same version in both, suffix included.
   point without disturbing `main`.
 - **Promotion to stable is a decision, not a step.** When a version has been tried properly, it is
   promoted deliberately, because that changes what everybody downloads.
-- **The README names the latest stable release**, updated by a workflow when one is promoted. A
-  version written by hand goes stale in two releases, and a stale install step is worse than none —
-  it sends somebody looking for a file that is not there.
+- **The README names the latest stable release**, updated in the pull request that closes the
+  version. A stale install line is worse than none — it sends somebody looking for a file that is
+  not there — so the **Latest stable** workflow checks it and fails loudly rather than fixing it
+  quietly.
 
 ## House style
 

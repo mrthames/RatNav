@@ -22,7 +22,12 @@ user reads to decide whether to update.
 
 <!-- Build, CI, docs, tooling. Real work, but nobody installs it. -->
 
-*Nothing yet.*
+- **The README's version line is updated when a version is closed, not after it ships.** A workflow
+  used to rewrite it once a release was published. It cannot any more: `main` is protected, and
+  GitHub will not let a workflow bypass a ruleset on a personal repository — "the Actions
+  integration must be part of the ruleset source or owner organization". So the push was refused
+  and the front page went on naming the previous version. **Latest stable** now checks the line
+  and fails loudly if it is stale, which is the useful half of what it was doing.
 
 ## 0.4.0 — 2026-08-22
 

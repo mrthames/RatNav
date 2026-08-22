@@ -1,34 +1,35 @@
 name: Latest stable
 
-# Keeps the repository describing what somebody downloading today actually gets.
+# Checks that the README's install line names the release people actually get.
 #
-# The README's install steps name a version. Left to a human that line goes stale within two
-# releases, and a stale install step is worse than none — it tells somebody to look for a file that
-# is not there. So promoting a release to stable updates it, and nothing has to be remembered.
+# It used to fix it: commit the new version and push. That cannot work any more, and the reason is
+# worth writing down. `main` is protected, and a workflow pushing to it needs bypass — which on a
+# personal repository GitHub will not grant, because the Actions integration "must be part of the
+# ruleset source or owner organization". So the push is refused, and a workflow that silently
+# cannot do its job is worse than no workflow.
 #
-# Runs when a release stops being a prerelease, which is exactly the moment "latest stable" changes.
+# The README line is updated by hand now, in the same pull request that closes a version in the
+# CHANGELOG. That is one step in one place, reviewed like anything else — and this exists to say so
+# out loud if it was forgotten, because a stale install line sends somebody looking for a file that
+# is not there.
 #
-# It also has to be reachable by hand, and that is not belt-and-braces. A release published by the
-# Release workflow is created with GITHUB_TOKEN, and GitHub deliberately does not raise workflow
-# events for anything a GITHUB_TOKEN does — otherwise workflows would trigger each other forever.
-# So cutting a release the normal way, by pushing a tag, does *not* fire the trigger below.
-#
-# It happened on v0.1.0: the release published correctly and the README went on advertising the
-# previous version, which by then had been deleted, so the front page pointed at a 404.
-#
-# **After publishing a release, run this workflow.** The Release workflow's summary says so too.
+# It only reads. Nothing here needs write access, which is the point.
 
 on:
   release:
     types: [released, edited]
 
+  schedule:
+    # Weekly, so a line that goes stale between releases is still noticed.
+    - cron: '0 9 * * 1'
+
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  update:
+  check:
     runs-on: ubuntu-latest
 
     steps:
@@ -36,59 +37,22 @@ jobs:
         with:
           ref: main
 
-      - name: Find the latest stable release
-        id: stable
+      - name: Does the README name the latest release?
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # --exclude-pre-releases is what makes this "stable" rather than "newest".
-          tag=$(gh release list --limit 30 --exclude-pre-releases --exclude-drafts \
-                  --json tagName --jq '.[0].tagName // ""')
+          latest=$(gh release view --json tagName --jq .tagName)
+          version=${latest#v}
 
-          if [ -z "$tag" ]; then
-            echo "No stable release yet — nothing to point at."
-            echo "found=false" >> "$GITHUB_OUTPUT"
+          line=$(grep -m1 'latest-stable' README.md || true)
+          echo "latest release: $latest"
+          echo "README says:    $line"
+
+          if echo "$line" | grep -q "$latest" && echo "$line" | grep -q "RatNav-$version-setup.exe"; then
+            echo "The README names $latest."
             exit 0
           fi
 
-          echo "found=true" >> "$GITHUB_OUTPUT"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Point the README at it
-        if: steps.stable.outputs.found == 'true'
-        run: |
-          # One line, marked so it can be found and replaced without a templating language.
-          marker='<!-- latest-stable -->'
-          line="$marker Latest stable release: **[${{ steps.stable.outputs.tag }}](https://github.com/${{ github.repository }}/releases/latest)** — download \`RatNav-${{ steps.stable.outputs.version }}-setup.exe\`."
-
-          if grep -q "$marker" README.md; then
-            python3 - "$line" <<'PY'
-          import pathlib, sys
-
-          line = sys.argv[1]
-          path = pathlib.Path("README.md")
-          out = []
-
-          for existing in path.read_text(encoding="utf-8").split("\n"):
-              out.append(line if existing.startswith("<!-- latest-stable -->") else existing)
-
-          path.write_text("\n".join(out), encoding="utf-8")
-          PY
-          else
-            echo "No marker in README.md — nothing to update."
-          fi
-
-      - name: Commit if it changed
-        if: steps.stable.outputs.found == 'true'
-        run: |
-          if git diff --quiet; then
-            echo "README already names the latest stable release."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git commit -am "Point the README at ${{ steps.stable.outputs.tag }}"
-          git push
+          echo "::error::README's install line does not name $latest."
+          echo "::error::Update the 'latest-stable' line in README.md to $latest and RatNav-$version-setup.exe."
+          exit 1
