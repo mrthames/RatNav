@@ -22,7 +22,13 @@ user reads to decide whether to update.
 
 <!-- Build, CI, docs, tooling. Real work, but nobody installs it. -->
 
-*Nothing yet.*
+- **`tools/make-dev-shortcut.ps1`** puts a **RatNav (dev)** shortcut on the Desktop and in the Start
+  Menu. A clone gives you source, not something you can click, and `dotnet run` holds a terminal
+  open. `/onboard` offers it now.
+
+  It warns when the build it points at is older than the source, which is the mistake the name
+  exists to prevent: once a release is installed too, there are two RatNavs on the machine, they
+  look identical in the Start Menu, and only one has your changes in it.
 
 ## 0.4.1 — 2026-08-22
 

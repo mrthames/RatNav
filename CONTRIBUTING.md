@@ -125,6 +125,12 @@ dotnet run --project src/RatNav.App                # the overlay, service and tr
 For UI work, `dotnet run --project src/RatNav.Service` and `npm run dev` in `web/` gives you hot
 reload against a live service.
 
+On Windows, `pwsh tools/make-dev-shortcut.ps1` puts a **RatNav (dev)** shortcut on the Desktop and
+in the Start Menu, so running your working copy is a click rather than a command. The name matters:
+once you have also installed a release there are two RatNavs on the machine, they look the same,
+and only one of them has your changes in it. The script warns when the build it points at is older
+than the source.
+
 `RATNAV_DATA_DIR` overrides where cached data, plans and settings go, which keeps experiments away
 from your real progress.
 
