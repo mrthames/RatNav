@@ -177,6 +177,16 @@ which is how a stable and an alpha once shipped installers with the same filenam
 4. **For a stable release, run the Latest stable workflow** afterwards. It updates the README's
    install line, and it cannot fire on its own.
 
+**Promoting `next` to `main` is the maintainer's, and only theirs.** A pull request into `main`
+requires their review — [CODEOWNERS](.github/CODEOWNERS) says so and a ruleset enforces it — so a
+collaborator cannot put anything in front of users on their own. The maintainer promotes either by
+merging that pull request or by pushing `next` to `main` directly, which their admin bypass
+allows.
+
+Nothing ships from either branch until a `v*` tag exists, and **only an admin can create one**.
+That is the real gate: even something merged to `main` reaches nobody until it is tagged
+deliberately.
+
 Both artifacts are named `RatNav-<version>-setup.exe` and `RatNav-<version>-win-x64.zip`, with the
 same version in both, suffix included.
 

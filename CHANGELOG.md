@@ -14,6 +14,10 @@ somebody running an alpha can see what changed and knows what to go and look at.
 - **Review personas for AI-assisted work** in `.claude/agents/`, and a `CLAUDE.md` giving every
   agent the same starting context. Four auditors — safety, privacy, docs truth, code — with
   `review-coordinator` running whichever apply to a diff.
+- **The release list is tidied.** `v0.1.0` and `v0.2.0-alpha.1` are gone — neither had ever been
+  downloaded, and the alpha shipped an installer with the stable release's exact filename. Their
+  git tags are kept, so the history is still navigable. `v0.3.0` remains the current release and
+  `v0.2.0` stays as a rollback.
 - **Releases are named consistently, and the tag is checked before anything is built.** An alpha
   used to publish an installer with the stable release's filename, because the version pattern
   captured only the numeric part and dropped `-alpha.1` — so the two were indistinguishable in a
