@@ -1,0 +1,10 @@
+# Who has to look at a change before it reaches `main`.
+#
+# `main` is what the world downloads. Everything in the repository is owned by the maintainer, so a
+# pull request into `main` needs their review — which is the gate, stated as a rule rather than
+# left as a convention people are expected to remember.
+#
+# This says nothing about `next`. Work lands there on its own steam: a collaborator opens a pull
+# request, the checks run, and they merge it themselves. The gate is promotion, not contribution.
+
+* @mrthames
