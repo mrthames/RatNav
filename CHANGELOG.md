@@ -2,6 +2,91 @@
 
 Notable changes to RatNav. Versions follow [semantic versioning](https://semver.org).
 
+## 0.3.0 — 2026-08-21
+
+**Stable.** A day of using RatNav in live raids at 1080p rather than looking at it on a desktop,
+and fixing what that turned up. The overlay follows the raid now instead of being told about it,
+the Plan page is in the order the work actually happens, and the sizes it ships with were measured
+in a raid rather than chosen.
+
+### The overlay follows the raid
+
+- **It shows itself when a raid starts and hides when one ends.** Between raids it was over the
+  stash, the flea and the traders, which is where you sort inventory and click through menus — and
+  it had nothing to say there anyway.
+- **The map draws itself.** *Show on overlay* is gone from the Maps page: a raid already names the
+  map it is loading, so the button covered a case that handles itself.
+- **The waypoints panel opens only when there is a plan.** With none it stays closed rather than
+  holding a side of the overlay for an empty box. The items list opens however you left it — it is
+  the shopping list, and it is worth reading between raids.
+- **The quest log is called WAYPOINTS**, because it stopped being only quests when marks of your
+  own could join a plan.
+
+### The sizes are measured
+
+Every size dial reads **1.0×** on a fresh install and moves either way from there. The settings
+hold a multiplier of a base that was tuned in a live raid, so "a bit smaller than default" is
+something you can express — where `0.75` told nobody anything, and a dial that started at its own
+floor was a limit rather than a default.
+
+Screens taller than 1080p scale by their real height ratio, floored at 1.0 and capped well short of
+double. An existing settings file comes onto the new numbers if it was on the old defaults, and
+keeps the size it draws at if you had chosen one.
+
+- **Edge arrows and their labels have their own sizes.** They followed the waypoint dials but not
+  the zoom shrink, so the two drifted apart and neither dial appeared to control them.
+- **The dials are named for what they draw** — waypoint pins, waypoint labels, map labels — rather
+  than for the machinery behind them, and step in tenths down to 0.25.
+
+### Added
+
+- **The settings are a window of their own**, grouped into sizes, the map, what to draw, and the
+  window. There is no room inside a small overlay for a panel that configures it: centred it
+  covered the map, and against an edge it collided with the quick controls.
+- **The centred view keeps a rectangle.** Size and place it where you like; the coverage dial still
+  puts a centred one back. Its default was measured rather than derived from the dial.
+- **Transits have their own on/off**, separate from whose extracts to show — anybody can take a
+  transit whatever they queued as.
+- **Bring lists say how many.** `3× MS2000 Marker` rather than a bare name, summed across the
+  objectives you picked. Keys stay uncounted: a key is one key however many doors it opens.
+- **The character is in the header** — *RatNav — PvP Seasonal* with a caret — rather than behind an
+  icon that gave no clue it was about that. A fresh install opens on the seasonal character.
+- **Resize the overlay from any edge or corner**, in both views.
+
+### The Plan page
+
+- **In the order the work happens**: pick a map, see what it will cost you, then the plan, then the
+  list you pick from. The plan used to sit above the thing that builds it.
+- **It folds down to the plan once one exists**, with **+ Add a stop to this plan** at the foot and
+  **End raid** on the bar. Updating mid-raid re-plans from where you are, so the overlay follows.
+- **Quest done no longer asks**, and now does both halves of "done" — the stop strikes through and
+  moves to the bottom, and undoing puts it back where it was.
+- **No map preview and no drag-to-reorder list.** The Maps page is where a map is looked at, and
+  ordering is the order you tick things in until the raid re-orders it around you.
+
+### Fixed
+
+- **A build nobody released claimed to be the newest release.** It read 1.0.0 — .NET's default for
+  an unstamped assembly, which is newer than every real release by every comparison — so Setup
+  said "you are on 1.0.0, which is the newest release". The version also came from the entry
+  assembly, which is the test runner under a test runner.
+- **The map zoomed and scrolled the page at once.** React registers its wheel listener passively
+  and a passive listener cannot cancel the event, so `preventDefault` was quietly ignored.
+- **The exits filter read backwards.** It said what pressing it would do while every neighbouring
+  control said what it *was*.
+- **Transits leaked into the list of extracts the game offered**, because the reader matched
+  OCR'd names against a list that now includes them.
+- **Edge labels fell off the bottom of the map.** They were always drawn below their arrow, which
+  is inside the view on the top edge and off the map on the bottom. They also had no backing, and
+  edge markers crowd by nature.
+- **The settings opened themselves** whenever you pressed the interact key, because the panel's
+  open state was being saved to disk.
+- **Closing a popped-out quest window took the app with it.**
+- **The centred view did not centre on you** after switching to it — the redraw ran before the
+  layout had settled, so the map was centred on a rectangle that no longer existed.
+- **Custom waypoints no longer ask for a note.** The name was all anybody wanted to say. Notes
+  already saved are untouched.
+
 ## 0.2.0 — 2026-08-21
 
 **Stable.** Everything from the 0.2.0 alpha, plus a day of sitting in front of the overlay at
