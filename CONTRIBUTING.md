@@ -41,13 +41,43 @@ deliberate act rather than a consequence of merging.
 2. **Test it.** `dotnet test` has to pass, and `npm run build` in `web/` if you touched the app.
    Run it against a real map or a real raid if that is what it touches — the tests cover the
    parsing and the maths, not whether a pin lands on the right building.
-3. **Add a changelog entry** under **Unreleased** in [CHANGELOG.md](CHANGELOG.md). This is a
+3. **Run `review-coordinator`.** See [the review below](#the-review).
+4. **Add a changelog entry** under **Unreleased** in [CHANGELOG.md](CHANGELOG.md). This is a
    required check, and it is required for a reason: an alpha is only worth installing if the
    person installing it can see what changed and knows what to go and look at. Say what a tester
    should try, not just what you did.
-4. **Open the PR into `next`.** CI runs, the changelog check runs.
-5. **Merge it yourself** once both are green. No approval needed — the gate is on `main`, not
+5. **Open the PR into `next`.** CI runs, the changelog check runs.
+6. **Merge it yourself** once both are green. No approval needed — the gate is on `main`, not
    here.
+
+### The review
+
+Everyone working on RatNav uses AI assistance, so the review is written for that rather than
+around it. Four auditors live in [`.claude/agents/`](.claude/agents), each owning one thing that
+has actually gone wrong here:
+
+| | |
+|---|---|
+| **`safety-auditor`** | The promise that RatNav never touches the game. Also reads every new dependency, because a package can cross the line on your behalf. |
+| **`privacy-auditor`** | Personal data staying out of a public repository — including the screenshots, which no text search can read. |
+| **`docs-truth-checker`** | Documentation describing the software that exists. The README once claimed a routing feature that had never been built, in six places. |
+| **`code-reviewer`** | The traps this codebase has actually shipped: display scaling, WPF resource ordering, migrations, test discipline. |
+
+**`review-coordinator` is the one to run.** It reads your diff, decides which of the four apply,
+runs them in parallel and reconciles the results into one ranked list.
+
+Put what it surfaced in the PR description, **including what you chose not to act on and why**.
+That half is the point: it is the difference between a decision somebody made and a thing nobody
+noticed. The auditors deliberately cannot edit anything — they report, you decide.
+
+None of this replaces the checks that block the merge. `dotnet test`, the web build,
+`tools/check-for-personal-data.sh`, `tools/check-the-safety-line.sh` and the changelog all run in
+CI and are not opinions. The auditors exist for what a script cannot check: whether a claim is
+true, whether a screenshot leaks a name, whether the obvious fix is the one that shipped a crash
+last time.
+
+Read [`CLAUDE.md`](CLAUDE.md) first, whatever you are doing. It is the context every agent working
+on this repository starts from.
 
 If a change genuinely has nothing to tell a tester — a typo in a comment, a CI tweak — label the
 PR `no changelog` and say why in the description. It is a label rather than a silent exception so

@@ -9,6 +9,15 @@ somebody running an alpha can see what changed and knows what to go and look at.
 
 <!-- Add yours here. Say what changed, and what a tester should try. -->
 
+- **The repository is open to invited collaborators**, working on `next`. Stable releases still
+  come only from `main`. Nothing changes for anyone downloading RatNav.
+- **Review personas for AI-assisted work** in `.claude/agents/`, and a `CLAUDE.md` giving every
+  agent the same starting context. Four auditors — safety, privacy, docs truth, code — with
+  `review-coordinator` running whichever apply to a diff.
+- **`tools/check-the-safety-line.sh`**, which fails the build on any API that would read game
+  memory, hook input or rendering, or send input to the game, and on any native call that is not
+  on its allowlist. The promise on the front page is now checked rather than remembered.
+
 ## 0.3.0 — 2026-08-21
 
 **Stable.** A day of using RatNav in live raids at 1080p rather than looking at it on a desktop,
