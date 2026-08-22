@@ -76,6 +76,10 @@ jobs:
           npm ci
           npm run build
 
+      - name: Test the web app
+        working-directory: web
+        run: npm test
+
       # A skipped test is not a passing test, and a release is the wrong moment to find out which
       # one you had. A test that is no longer needed is deleted — git remembers it — rather than
       # left skipped, where it reads as coverage that is not there.

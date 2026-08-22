@@ -20,4 +20,5 @@ export default defineConfig({
       '/api': { target: SERVICE, changeOrigin: true },
     },
   },
+
 })

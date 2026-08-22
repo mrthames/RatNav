@@ -883,22 +883,38 @@ function Row({
     }
   }
 
-  const adjust = async (delta: number) => {
+  /**
+   * Runs one of the little row actions, and survives it failing.
+   *
+   * <p>These were `try`/`finally` with no `catch`, which unsets the busy flag and then lets the
+   * rejection out into nowhere. The row went back to looking ready while the count had not moved
+   * — so the honest reading of the screen was that the click had not registered, and the next
+   * click did the same thing again.</p>
+   *
+   * <p>Swallowing it is the right amount of handling here: the count is re-read from the service
+   * on the next load, and a row that quietly declines to change is a far smaller problem than a
+   * page-wide error for a mis-click on a plus button.</p>
+   */
+  const attempt = async (change: () => Promise<TrackedItem>) => {
     setBusy(true)
-    try { onChange(await api.setHave(row.id, { delta })) } finally { setBusy(false) }
+    try {
+      onChange(await change())
+    } catch {
+      // Left as it was. The next load says what the service actually thinks.
+    } finally {
+      setBusy(false)
+    }
   }
+
+  const adjust = (delta: number) => attempt(() => api.setHave(row.id, { delta }))
 
   const setExact = async (value: string) => {
     const count = Number.parseInt(value, 10)
     if (Number.isNaN(count) || count === row.have) return
-    setBusy(true)
-    try { onChange(await api.setHave(row.id, { count })) } finally { setBusy(false) }
+    await attempt(() => api.setHave(row.id, { count }))
   }
 
-  const toggleWatch = async () => {
-    setBusy(true)
-    try { onChange(await api.setWatch(row.id, !row.watched)) } finally { setBusy(false) }
-  }
+  const toggleWatch = () => attempt(() => api.setWatch(row.id, !row.watched))
 
   return (
     <>

@@ -14,8 +14,23 @@ export function HideoutView() {
   const [state, setState] = useState<HideoutState | null>(null)
   const [busy, setBusy] = useState(false)
 
+  /**
+   * Why there is nothing to show, when there is nothing to show.
+   *
+   * <p>This used to have no catch at all: a service that refused left the promise rejecting into
+   * nowhere and the page saying "loading hideout…" for as long as anybody was willing to wait.
+   * Waiting forever is the one answer that tells you nothing — not whether it is slow, not whether
+   * it is broken, not whether to reload.</p>
+   */
+  const [failed, setFailed] = useState(false)
+
   const load = useCallback(async (lookAhead?: number) => {
-    setState(await api.hideout(lookAhead))
+    try {
+      setState(await api.hideout(lookAhead))
+      setFailed(false)
+    } catch {
+      setFailed(true)
+    }
   }, [])
 
   useEffect(() => { void load() }, [load])
@@ -33,6 +48,15 @@ export function HideoutView() {
   async function setLevel(stationId: string, level: number) {
     await api.setHideoutLevel(stationId, level)
     await load()
+  }
+
+  if (failed && !state) {
+    return (
+      <p className="font-mono text-xs text-muted">
+        The hideout could not be read. RatNav may still be starting, or the game data may be
+        mid-refresh — the Setup page says which.
+      </p>
+    )
   }
 
   if (!state) return <p className="font-mono text-xs text-muted">loading hideout…</p>

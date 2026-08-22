@@ -116,6 +116,9 @@ Long-form, and deliberately so — see `CONTRIBUTING.md`.
 - **Tests describe behavior.** `Replaying_the_logs_cannot_undo_a_correction`, not `TestStore3`.
 - **A skipped test is not a passing test.** Delete one that is no longer needed rather than
   skipping it; the release build refuses to ship with any test skipped.
+- **Two suites.** `dotnet test` for the service, `npm test` in `web/` for the app. Both run on
+  every pull request. Web tests build on `src/test/service.ts` — `serve()` for the service,
+  `fails()` for when it refuses, and fixtures that carry every field the app reads.
 - **Test against reality.** The log parser is tested with a notification copied verbatim from a
   live client. A test written from the implementation only proves the implementation agrees with
   itself.

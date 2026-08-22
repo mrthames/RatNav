@@ -221,9 +221,26 @@ must remain true. `TestProgressStore3` does not.
 
 **A skipped test is not a passing test.** If a test is no longer needed, delete it — git remembers
 it, and a skipped test reads as coverage that is not there. The release build refuses to ship with
-any test skipped, for the same reason it refuses to ship with one failing. Every test in
-`tests/` runs on every pull request; they are the shared safety net, and adding to them is how a
-bug stays fixed.
+any test skipped, for the same reason it refuses to ship with one failing.
+
+**Two suites, both run on every pull request.** `dotnet test` covers the service and the parsing;
+`npm test` in `web/` covers the app people click. They are the shared safety net, and adding to
+them is how a bug stays fixed.
+
+**Writing a web test.** `src/test/service.ts` is the vocabulary: `serve({...})` stands in for the
+RatNav service and records what was asked of it, `fails(500)` makes it refuse, and the fixtures —
+`aQuest`, `aTrackedItem`, `anUpgrade`, `aMap`, `noRaid` — carry **every** field the app reads.
+Build on those rather than hand-rolling an object: a view that maps over a field your fixture left
+out throws during render, React unmounts the subtree, and what you see is an empty page and an
+assertion failure that says nothing about the cause.
+
+Anything not stubbed throws by name, on purpose — a view that quietly grows a new call should
+break the test that did not know about it, rather than reaching a service that happens to be
+running on your machine.
+
+Two of these tests found real bugs while being written: the Hideout page had no error handling at
+all and sat on "loading" forever when the service refused, and the Items row actions let a failed
+save escape as an unhandled rejection. Both had been there for months.
 
 **Test against reality where reality is available.** The log parser is tested with a notification
 copied verbatim from a live client rather than one written to match the parser. A test written

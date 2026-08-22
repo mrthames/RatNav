@@ -51,6 +51,16 @@ user reads to decide whether to update.
   check. Both artifacts are now `RatNav-<version>-<kind>` with the same version. A tag that is not
   `vMAJOR.MINOR.PATCH[-alpha.N]` fails the build, as does a release whose version has no
   `CHANGELOG.md` section, or any test that is skipped rather than passing.
+- **The web app has tests.** 67 of them, across the Quests keyboard flow, onboarding and the setup
+  gate, Setup's saving, the Plan page, Items, the Hideout and the API layer — where before there
+  were none, and the app is a third of what people use. They run on every pull request and again
+  before a release. `src/test/service.ts` holds the shared vocabulary so a contributor writes a
+  test rather than a fixture.
+
+  Writing them found two bugs that had been there for months: **the Hideout page had no error
+  handling at all** and sat on "loading hideout…" forever when the service refused, and **a failed
+  item count escaped as an unhandled rejection**, leaving the row looking ready while nothing had
+  changed — so the honest reading was that the click had not registered.
 - **A bad release tag fails in seconds, not minutes.** Tag validation and the changelog check ran
   after the web build and the whole test suite, so a malformed tag burned a full build before
   being rejected — and the comment above them claimed otherwise. They now run straight after
