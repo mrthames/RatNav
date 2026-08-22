@@ -107,6 +107,8 @@ out which keys you have to bring, and assembles the shopping list. There is a to
 Setup re-checks itself every few seconds, so you can leave it open, launch the game, and watch the
 checks go green.
 
+![The Setup page: six checks — game found, reading the game's logs, screenshot folder, screenshot key bound, game data and game running — each with a light and a line saying what it found, and beneath them the settings for the game folder, the screenshot folder and the in-game screenshot key](docs/app/setup.png)
+
 Nothing is hardcoded. Every path is either detected or set by you, and RatNav says which.
 
 ### Updating
@@ -205,12 +207,12 @@ is one place to learn rather than two.
 levels of detail. **Coming soon** lists maps that have a drawing and are one position away from
 being finished; a map with no drawing anywhere is not listed and not promised.
 
-![The Maps page: Customs drawn with its objectives, extracts and place names, the draw and floor controls above it, and a Coming soon list beneath](docs/app/maps.png)
+![The Maps page: Customs drawn with its objectives, extracts, transits and place names, and above it the draw, floor, quest, exit and waypoint controls](docs/app/maps.png)
 
 **Items.** What every active quest and reachable hideout upgrade wants, minus what you have, with
 what each one is *for* on the line beneath it. Filter to found-in-raid, or keys, or the hideout.
 
-![The Items page: needed items with their icons, found-in-raid flags, and what each one is for](docs/app/items.png)
+![The Items page: needed items with their icons, found-in-raid flags and what each one is for, above them the Needed, Watchlist and Custom scopes and a running count of items, how many are still needed and how many must be found in raid](docs/app/items.png)
 
 **Quests.** Every trader with their portrait and loyalty level, and each quest's state as four
 buttons — with a link to the wiki and the wiki's own screenshots of the place.
@@ -228,7 +230,11 @@ how many you have picked and what they need you to bring — keys in red, becaus
 thing you cannot fix once you have queued — and the checklist beneath it is grouped by where things
 are, so a street is one glance rather than six.
 
-![The Plan page: Streets of Tarkov selected, a strip showing six objectives picked and an MS2000 Marker to bring, then your own marks and the quest checklist grouped by street, with two quests showing the keys they need in red](docs/app/plan.png)
+Once a plan exists the page folds down to it: the stops in order, **+ Add a stop to this plan** at
+the foot, and **End raid** on the strip. Ticking one off strikes it through and moves it to the
+bottom.
+
+![The Plan page with a raid planned: a strip reading 7 objectives and what to bring — an Iron gate key in red and 3× MS2000 Marker — with End raid beside it, and beneath it the seven stops in order, each naming its street and the quest it belongs to, with Quest done on every row and Add a stop to this plan at the foot](docs/app/plan.png)
 
 **On a phone or tablet, if you want it.** **Setup → Reach RatNav from a phone or tablet** makes the
 service answer on your machine's network address as well as its own, so an iPad on the same wifi
