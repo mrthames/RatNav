@@ -225,9 +225,11 @@ what each one is *for* on the line beneath it. Filter to found-in-raid, or keys,
 ![The Items page: needed items with their icons, found-in-raid flags and what each one is for, above them the Needed, Watchlist and Custom scopes and a running count of items, how many are still needed and how many must be found in raid](docs/app/items.png)
 
 **Quests.** Every trader with their portrait and loyalty level, and each quest's state as four
-buttons — with a link to the wiki and the wiki's own screenshots of the place.
+buttons — with a link to the wiki and the wiki's own screenshots of the place. Setting up is done
+from the keyboard: type part of a name, press **Enter** to mark it active, and the box clears
+itself for the next one.
 
-![The Quests page: trader portraits with loyalty controls above a list of active quests, each with not-started, active, complete and failed controls](docs/app/quests.png)
+![The Quests page: a search box with a line beneath it saying Enter marks the highlighted quest active, arrows move and Esc clears, then trader portraits with loyalty controls, then a list of active quests with the first row highlighted, each row carrying not-started, active, complete and failed controls](docs/app/quests.png)
 
 **Hideout.** What you could build now, then what one more upgrade unlocks, each module listing what
 it still takes. Found-in-raid marked in red.

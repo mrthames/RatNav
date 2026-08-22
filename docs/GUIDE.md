@@ -351,6 +351,27 @@ read and write the same number, so turning it anywhere turns it everywhere.
 **Quests** has three tabs — **Active**, **Complete**, and **All** — plus a search that reaches
 every quest in the game.
 
+### Setting up, without the mouse
+
+The first thing a new install asks of you is marking every quest you have accepted as active, read
+off the game. That is fifty or more, and doing it by hand is fifty round trips between keyboard and
+mouse.
+
+So the search box does the whole job. Switch to **All**, then:
+
+| | |
+|---|---|
+| type | narrows the list — part of a name is enough |
+| **Enter** | marks the highlighted quest active, and **empties the box** |
+| **↑** **↓** | move the highlight without the caret leaving the text |
+| **Esc** | clears the box |
+
+The box emptying itself is the part that matters: type, Enter, type, Enter, without ever looking
+down. What just happened is said beside the search, because the row usually scrolls out of view as
+it changes and a change you cannot see is one you reach for the mouse to check.
+
+A quest that is already active says so rather than doing nothing quietly.
+
 Every quest carries all four states: not started, active, complete, failed. Failed is a finished
 state like complete, but it is tagged and counted separately, because a failed quest that reads as
 done is one you never go back and look at.
