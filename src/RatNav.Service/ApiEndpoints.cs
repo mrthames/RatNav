@@ -1794,19 +1794,28 @@ public static class ApiEndpoints
 
         // The maps that are coming, and what each is waiting on.
         //
-        // A map with no community drawing is not on this list, and that is the whole rule. Labs,
-        // Labyrinth and Icebreaker have no drawing anywhere in the sources RatNav reads — the
+        // A map with no community drawing is not on this list, and that is the whole rule. The Lab,
+        // The Labyrinth and Icebreaker have no drawing anywhere in the sources RatNav reads — the
         // published files for them are flat pictures with no coordinate projection, which cannot
         // put a marker anywhere. Listing them as "coming soon" would be a promise resting on
         // somebody else drawing something, and if that never happens the promise never comes
         // good. So they are simply absent, and the FAQ answers why for anyone who wonders.
         //
-        // What is left is a real queue: a drawing exists, and the only thing missing is which way
-        // round it goes, which one position settles.
+        // Nor is a map the game has not released yet. Terminal has a drawing and zero extract
+        // positions, which is what a map looks like before it exists to play: the data is published
+        // ahead of the map so tools can be ready, and RatNav reading it as "coming soon" promises
+        // something no amount of playing can bring forward. Extracts are the tell — every map you
+        // can actually raid has them, and one you cannot has none.
+        //
+        // It comes back on its own the day the map ships and its extracts appear. Nothing to
+        // remember, and no name hardcoded here to go stale.
+        //
+        // What is left is a real queue: a drawing exists, the map exists, and the only thing
+        // missing is which way round it goes, which one position settles.
         api.MapGet("/maps/held-back", (RatNavState state) =>
             Results.Ok(
                 from map in state.Cache.Current?.Maps ?? []
-                where !Trustworthy(map) && map.Image is not null
+                where !Trustworthy(map) && map.Image is not null && map.Extracts.Count > 0
                 orderby map.Name
                 select new
                 {

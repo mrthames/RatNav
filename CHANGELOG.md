@@ -16,7 +16,14 @@ user reads to decide whether to update.
 
 <!-- Add anything a person running RatNav would notice. Say what to go and try. -->
 
-*Nothing yet.*
+- **Factory and Reserve are in.** Both had a drawing and no settled orientation; both are now
+  positioned and verified. **Nine maps** draw your position.
+- **A map the game has not released yet is no longer listed as coming soon.** Terminal has a
+  drawing and no extract positions, which is what a map looks like when its data is published ahead
+  of the map itself. It comes back on its own the day the map ships.
+
+  *To try: Maps. Factory and Reserve should be pickable and should put you in the right place.
+  Terminal should be absent from **Coming soon**.*
 
 ### Repository and process
 

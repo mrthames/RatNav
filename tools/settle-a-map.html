@@ -1,0 +1,274 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Settle a map — RatNav</title>
+
+<!--
+  Settling a held-back map, by standing somewhere and pointing at it.
+
+  A map is held back when its extracts all sit comfortably inside its border. Mirroring the layout
+  then moves nothing off the edge, so no amount of arithmetic distinguishes the mirror from the
+  truth and RatNav refuses to draw a pin it cannot stand behind. One marked position settles it
+  outright.
+
+  **This is a maintainer's tool and is deliberately not part of the app.** Somebody who installed
+  RatNav should get a map that already works, not a calibration chore — the reasoning is in
+  HeldBack.tsx and it is the reason a page like this was removed once before. It lives here instead
+  of in web/ so that it cannot end up in a release build: nothing here is compiled, bundled or
+  shipped.
+
+  It talks to the running service over its own API, so there is nothing to build and nothing to
+  restart. Open it in a browser with RatNav running:
+
+      tools/settle-a-map.html
+
+  It must be opened THROUGH the service, not from disk: every call it makes is relative, and a
+  page loaded from file:// has no service to be relative to.
+-->
+
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 20px;
+    background: #0b0f13; color: #e6edf3;
+    font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+  }
+  h1 { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+  .muted { color: #8b98a5; font-size: 12px; }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
+  button, select {
+    background: #161b22; color: #e6edf3; border: 1px solid #30363d;
+    border-radius: 3px; padding: 6px 12px; font: inherit; cursor: pointer;
+  }
+  button:hover { border-color: #8ec8ff; }
+  button:disabled { opacity: .4; cursor: default; }
+  /* As large as the window allows. The click has to land within a few percent of the map, and a
+     thumbnail makes that a matter of luck.
+
+     Driven by height rather than max-width, and that is the whole trick: these SVGs carry a real
+     intrinsic size — Factory declares 130.8 x 141.2 — so an img renders them about 130px across
+     and a max-width only ever caps that. It never enlarges. Setting height outright overrides the
+     intrinsic size, and width:auto keeps the aspect from the viewBox. */
+  #stage { position: relative; display: inline-block; border: 1px solid #30363d; background: #05080a; }
+  #map { display: block; height: min(78vh, 900px); width: auto; cursor: crosshair; }
+  #stage.big #map { height: 2200px; }
+  #pin {
+    position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+    border: 2px solid #ff6b47; border-radius: 50%; display: none; pointer-events: none;
+    box-shadow: 0 0 0 1px #0b0f13;
+  }
+  .note { border-left: 2px solid #30363d; padding: 8px 12px; margin: 12px 0; }
+  .good { border-color: #3fb950; }
+  .bad { border-color: #f85149; }
+  .warn { border-color: #d29922; }
+  #settle { border-color: #3fb950; }
+  #coords { min-width: 190px; display: inline-block; }
+</style>
+
+<h1>Settle a map</h1>
+<p class="muted">
+  Take a position fix in game <b>near an edge of the map</b>, then click where you actually are on
+  the picture. A position near the middle cannot tell a mirrored layout from a correct one, and the
+  solver will say so rather than guess.
+</p>
+
+<div class="row">
+  <select id="maps"><option>loading…</option></select>
+  <button id="refresh">Re-read my position</button>
+  <select id="ink">
+    <option value="graphical">Graphical</option>
+    <option value="full">Full</option>
+    <option value="structure">Structure</option>
+    <option value="outline">Outline</option>
+  </select>
+  <button id="zoom">Bigger</button>
+  <span id="coords" class="mono muted"></span>
+</div>
+
+<div class="row">
+  <button id="settle" disabled>Settle here</button>
+  <span class="muted">Click the map to place the pin. Nothing is saved until you press this.</span>
+</div>
+
+<div id="position" class="note mono">no position yet</div>
+
+<div id="stage">
+  <img id="map" alt="The map, to click on">
+  <div id="pin"></div>
+</div>
+
+<div id="result"></div>
+
+<script>
+// Relative, deliberately. The page is served by RatNav itself, so every call is same-origin
+// whichever way you reached it. Naming the host breaks it: a page opened on localhost calling
+// 127.0.0.1 is a cross-origin request, the service sends no CORS headers, and the browser blocks
+// it with "failed to fetch" while both addresses point at the same machine.
+const SERVICE = ''
+
+const el = (id) => document.getElementById(id)
+const say = (html, kind = '') => { el('result').innerHTML = `<div class="note ${kind}">${html}</div>` }
+
+let fix = null      // the world position of the last screenshot
+let placed = null   // where on the picture you say that is
+let held = []       // maps still waiting to be settled
+
+async function api(path, options) {
+  const response = await fetch(SERVICE + path, options)
+  if (!response.ok) throw new Error(`${response.status} from ${path}`)
+  return response.status === 204 ? null : response.json()
+}
+
+/* The maps worth offering: the ones RatNav is holding back. Anything already settled is not a
+   candidate, and offering it would invite somebody to overwrite a good answer with a worse one. */
+async function loadMaps() {
+  held = await api('/api/maps/held-back')
+  const maps = el('maps')
+
+  if (held.length === 0) {
+    maps.innerHTML = '<option>nothing held back</option>'
+    say('Every map with a drawing is settled. Nothing to do.', 'good')
+    return
+  }
+
+  maps.innerHTML = held
+    .map((m) => `<option value="${m.id}">${m.name} — ${m.confidence}</option>`)
+    .join('')
+
+  showMap()
+}
+
+function showMap() {
+  const id = el('maps').value
+  // Graphical, the way the map's author drew it. Finding the exact spot you are standing means
+  // recognising a building or a road, and the outline render strips out most of what you would
+  // recognise it by.
+  el('map').src = `/api/maps/${encodeURIComponent(id)}/image?ink=${el('ink').value}&opacity=1`
+  el('pin').style.display = 'none'
+  placed = null
+  el('settle').disabled = true
+}
+
+/* The world position of the last screenshot. RatNav reads it out of the filename, so this is
+   whatever the game itself recorded — not something this page works out. */
+async function readPosition() {
+  const raid = await api('/api/raid')
+
+  if (raid.worldX === null || raid.worldZ === null) {
+    fix = null
+    el('position').textContent =
+      raid.inRaid
+        ? `in ${raid.mapName ?? 'a raid'}, but no position fix yet — press your screenshot key`
+        : 'not in a raid, and no position fix to use'
+    return
+  }
+
+  fix = { x: raid.worldX, y: 0, z: raid.worldZ }
+
+  /* Whether this position can settle anything, before you spend a click finding out.
+     The four candidates are sign flips, so each axis has exactly two answers and they sit mirrored
+     about the middle. The gap between them is 2 x the distance from the midline, and a settle needs
+     the runner-up at least 0.25 away — so a position within 0.125 of the middle on an axis cannot
+     decide that axis no matter how accurately you click. That is a fact about where you stood, not
+     about your aim, and it is worth saying before rather than after. */
+  const judge = (v, axis) => {
+    if (v === null || v === undefined) return `${axis}: unknown`
+    const gap = 2 * Math.abs(v - 0.5)
+    return gap >= 0.25
+      ? `${axis} ${v.toFixed(2)} — decisive (mirror ${(gap * 100).toFixed(0)}% away)`
+      : `${axis} ${v.toFixed(2)} — TOO CENTRAL, mirror only ${(gap * 100).toFixed(0)}% away, needs 25%`
+  }
+
+  el('position').innerHTML =
+    `${raid.mapName}: world x ${fix.x.toFixed(1)}, z ${fix.z.toFixed(1)}` +
+    ` <span class="muted">(fixed ${raid.fixedAt ?? 'just now'})</span><br>` +
+    `${judge(raid.x, 'across')}<br>${judge(raid.y, 'down')}`
+
+  // Preselect the map the fix came from, so the obvious mistake is harder to make.
+  if (raid.mapId && held.some((m) => m.id === raid.mapId)) {
+    el('maps').value = raid.mapId
+    showMap()
+  }
+}
+
+/* Placing the pin and committing it are two acts on purpose.
+   A click that lands badly can still come out decisive, and a decisive wrong answer is written to
+   settings and mirrors the map for good. Two steps costs a second and makes that impossible to do
+   by accident. */
+function place(event) {
+  const box = el('map').getBoundingClientRect()
+  placed = {
+    imageX: (event.clientX - box.left) / box.width,
+    imageY: (event.clientY - box.top) / box.height,
+  }
+
+  el('pin').style.left = `${event.clientX - box.left}px`
+  el('pin').style.top = `${event.clientY - box.top}px`
+  el('pin').style.display = 'block'
+  el('settle').disabled = !fix
+  el('coords').textContent = `pin ${placed.imageX.toFixed(3)}, ${placed.imageY.toFixed(3)}`
+
+  if (!fix) say('Pin placed, but there is no position fix yet. Press your screenshot key in game.', 'warn')
+}
+
+el('map').addEventListener('click', place)
+
+el('settle').addEventListener('click', async () => {
+  if (!fix) { say('Take a position fix in game first.', 'bad'); return }
+  if (!placed) { say('Click the map to say where you are.', 'bad'); return }
+
+  const id = el('maps').value
+  el('settle').disabled = true
+  say('solving…')
+
+  try {
+    const answer = await api(`/api/maps/${encodeURIComponent(id)}/calibrate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ...fix, imageX: placed.imageX, imageY: placed.imageY }),
+    })
+
+    if (answer.settled) {
+      say(
+        `<b>Settled.</b> Mapping <span class="mono">${answer.mapping}</span>.<br>` +
+        `Missed by ${(answer.miss * 100).toFixed(1)}% of the map; the runner-up missed by ` +
+        `${(answer.runnerUpMiss * 100).toFixed(1)}%. That gap is what makes it decisive.` +
+        `<br><br>Saved. The map should appear in RatNav now.`,
+        'good',
+      )
+      placed = null
+      el('pin').style.display = 'none'
+      loadMaps()
+    } else {
+      say(`<b>Not settled, and nothing was saved.</b> ${answer.reason}<br>` +
+          `<span class="mono">closest ${(answer.miss * 100).toFixed(1)}%, ` +
+          `runner-up ${(answer.runnerUpMiss * 100).toFixed(1)}%</span><br>` +
+          `Move the pin and try again.`, 'warn')
+      el('settle').disabled = false
+    }
+  } catch (e) {
+    say(`Could not reach RatNav: ${e.message}`, 'bad')
+    el('settle').disabled = false
+  }
+})
+
+el('zoom').addEventListener('click', () => {
+  const on = el('stage').classList.toggle('big')
+  el('zoom').textContent = on ? 'Fit to window' : 'Bigger'
+  // The pin is positioned in pixels against the old size, so it no longer means anything.
+  el('pin').style.display = 'none'
+  placed = null
+  el('settle').disabled = true
+  el('coords').textContent = ''
+})
+
+el('maps').addEventListener('change', showMap)
+el('ink').addEventListener('change', showMap)
+el('refresh').addEventListener('click', () => readPosition().catch((e) => say(e.message, 'bad')))
+
+loadMaps().catch((e) => say(
+  `Could not reach RatNav. Open this page <b>through RatNav</b>, not from the file system:<br>` +
+  `<span class="mono">http://localhost:8722/settle-a-map.html</span><br><br>(${e.message})`, 'bad'))
+readPosition().catch(() => {})
+setInterval(() => readPosition().catch(() => {}), 3000)
+</script>
