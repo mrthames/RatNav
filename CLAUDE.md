@@ -24,13 +24,13 @@ If a task seems to need something on that list, stop and say so rather than find
 
 ## Nothing personal goes in the repository
 
-This is a public repository. Real names, contact addresses, developer machine paths
-(`C:\Users\<someone>`), private network addresses, and credential shapes do not belong in it.
+This is a public repository. Real names, contact addresses, developer machine paths (a real
+Windows profile directory), private network addresses, and credential shapes do not belong in it.
 `tools/check-for-personal-data.sh` runs in CI and will fail the build.
 
 The trap is that this is easy to do by accident: a path in an example, a name in a comment
-explaining who reported a bug, a screenshot of a settings page. Write "the maintainer", "a tester",
-`C:\Users\You`.
+explaining who reported a bug, a screenshot of a settings page. Write "the maintainer" or "a
+tester", and a placeholder in place of a profile directory.
 
 **Credentials go nowhere at all** — not to a public repo, not to a private one. Git history is
 permanent.

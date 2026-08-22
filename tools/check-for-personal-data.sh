@@ -28,9 +28,19 @@ report() {
 # Both are public on purpose.
 allowed='mrthames/RatNav|buymeacoffee\.com/thames_|check-for-personal-data|AppPublisher=|Users.(someone|you|user|player)'
 
+# git grep reads what is tracked. A new file that has not been added yet is invisible to every
+# check below, so running this before `git add` reports success on a file nobody looked at — which
+# is exactly how a Windows profile path reached CI once. Say so rather than passing quietly.
+untracked=$(git ls-files --others --exclude-standard 2>/dev/null || true)
+if [ -n "$untracked" ]; then
+  echo "NOTE: these files are untracked and were NOT checked. 'git add' them and run again:"
+  echo "$untracked" | sed 's/^/  /'
+  echo
+fi
+
 find_in_tracked() {
   git grep -n -I -i -E "$1" -- . ':!tools/check-for-personal-data.sh' ':!LICENSE' 2>/dev/null \
-    | grep -vE "$allowed" || true
+    | grep -viE "$allowed" || true
 }
 
 # --- A name or a contact address.
