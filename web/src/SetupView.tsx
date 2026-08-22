@@ -42,6 +42,8 @@ export function SetupView() {
 
   return (
     <div className="flex flex-col gap-5">
+      <WhatYouAreAccepting />
+
       <ul className="flex flex-col gap-px border border-line bg-line-soft">
         {state.checks.map((check) => (
           <li key={check.name} className="flex items-start gap-3 bg-panel px-3 py-2.5">
@@ -75,6 +77,100 @@ export function SetupView() {
         maintained by one person on his own time.
       </p>
     </div>
+  )
+}
+
+/**
+ * The risks, on the page somebody is looking at while they set RatNav up.
+ *
+ * <p>All of this was already written down, in the README and in docs/SAFETY.md. That is not the
+ * same as somebody having read it: a person who has just run an installer is here, not on GitHub,
+ * and "it is in the documentation" is how you end up with users who never agreed to anything
+ * because they never knew what there was to agree to.</p>
+ *
+ * <p>Collapsed after the first look, because a warning that cannot be dismissed stops being read
+ * within a week and takes the rest of the page down with it. Open the first time, and one click
+ * away for ever after.</p>
+ */
+function WhatYouAreAccepting() {
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem('ratnav.readTheRisks') !== 'yes'
+    } catch {
+      // Private windows and locked-down browsers throw rather than returning null. Showing it is
+      // the safe way to be wrong.
+      return true
+    }
+  })
+
+  function close() {
+    setOpen(false)
+    try { localStorage.setItem('ratnav.readTheRisks', 'yes') } catch { /* it will show again */ }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="self-start font-mono text-[11px] uppercase tracking-wider text-muted
+                   transition-colors hover:text-ink
+                   focus-visible:outline-2 focus-visible:outline-accent"
+      >
+        What you are accepting by running this
+      </button>
+    )
+  }
+
+  return (
+    <section className="flex flex-col gap-3 border border-warn/40 bg-warn/5 px-4 py-4">
+      <p className="font-mono text-[11px] uppercase tracking-wider text-warn">
+        What you are accepting by running this
+      </p>
+
+      <p className="text-sm">
+        <b>Battlestate Games have not approved RatNav, and have not been asked to.</b> It never
+        reads the game&rsquo;s memory, injects code, hooks rendering or your keyboard, changes a
+        game file, or sends input to the game. But avoiding the things anti-cheat looks for is not
+        the same as being allowed. Battlestate set the rules for their own game and can change
+        them, and nobody outside Battlestate can tell you where they land on this.{' '}
+        <b>That uncertainty is yours, and so is your account.</b>
+      </p>
+
+      <p className="text-sm text-muted">
+        It reads two things already on your disk, and only reads them: the game&rsquo;s log files,
+        and the coordinates Tarkov writes into every screenshot&rsquo;s filename. Nothing is sent
+        anywhere, there is no account and no telemetry. The service below answers on this machine
+        only, unless you turn on network access yourself.
+      </p>
+
+      <p className="text-sm text-muted">
+        It is alpha, and it is one person&rsquo;s side project. If that is more than you want to
+        take on, that is a fair place to land.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={close}
+          className="rounded-sm border border-line bg-panel px-3 py-1.5 text-sm
+                     transition-colors hover:text-ink
+                     focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          Understood
+        </button>
+
+        <a
+          href="https://github.com/mrthames/RatNav/blob/main/docs/SAFETY.md"
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono text-[11px] uppercase tracking-wider text-muted
+                     transition-colors hover:text-ink"
+        >
+          The long version ↗
+        </a>
+      </div>
+    </section>
   )
 }
 

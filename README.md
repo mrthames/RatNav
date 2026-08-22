@@ -15,6 +15,36 @@ your job, and that is the point.
 [![Latest release](https://img.shields.io/github/v/release/mrthames/RatNav?display_name=tag&label=latest&color=8ec8ff)](https://github.com/mrthames/RatNav/releases/latest)
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-8ec8ff)](LICENSE)
 
+## Read this before you install it
+
+Plainly, so you can decide rather than assume. None of it is buried anywhere else.
+
+**Battlestate Games have not approved this, and I have not asked them to.** RatNav does not touch
+the game: it never reads the game's memory, injects code, hooks rendering or the keyboard, changes
+any game file, or sends input to the game. That is the line every tool that is safe to run stays
+behind, and here it is enforced by a check that fails the build rather than by my word for it.
+
+But **avoiding the techniques anti-cheat looks for is not the same as being permitted.** Battlestate
+set the rules for their own game, those rules cover more than cheating software, and they can change
+them whenever they like. Nobody outside Battlestate can tell you where they land on a tool that
+turns coordinates the game itself writes into a position on a map. Anyone who sounds certain either
+way is guessing, me included. **You are accepting that uncertainty, and it is your account.**
+
+**What it reads:** the game's log files, and the coordinates Tarkov writes into the filename of
+every screenshot you take. Both already on your disk, both read-only. Nothing is sent anywhere.
+There is no account, no telemetry and no server of mine.
+
+**What it runs:** a small web service on your own machine, so one app can serve the overlay and the
+browser page. It answers on `127.0.0.1` only, unless you turn on network access yourself. If you
+do, there is no password: anything on your wifi can read your plan. It cannot change your settings,
+wipe your progress or close the app, but read that switch's description before you use it.
+
+**It is alpha, and it is one person's side project.** Expect rough edges.
+
+If any of that is more than you want to take on, that is a reasonable place to land. The maps and
+quest sites everybody already uses will not get you banned, and learning the maps is most of the
+game.
+
 ## Deliberately small
 
 A notepad and a map, not a system to live inside. Free — no account, no ads, no telemetry, no paid

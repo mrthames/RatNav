@@ -155,3 +155,32 @@ describe('when saving fails', () => {
     })
   })
 })
+
+describe('what you are accepting', () => {
+  it('says it plainly, the first time', async () => {
+    open()
+
+    await screen.findByText(/What you are accepting/i)
+
+    // The two things somebody has to actually decide about: no approval, and their account.
+    expect(screen.getByText(/have not been asked to/i)).toBeInTheDocument()
+    expect(screen.getByText(/so is your account/i)).toBeInTheDocument()
+  })
+
+  it('folds away once read, and stays reachable', async () => {
+    const user = userEvent.setup()
+    open()
+
+    await user.click(await screen.findByRole('button', { name: 'Understood' }))
+
+    // A warning that cannot be dismissed stops being read within a week and takes the rest of the
+    // page down with it. One click away for ever after is the trade.
+    await waitFor(() => expect(screen.queryByText(/so is your account/i)).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /What you are accepting/i })).toBeInTheDocument()
+  })
+
+  it('shows again on a machine that has not seen it', async () => {
+    open()
+    await screen.findByText(/so is your account/i)
+  })
+})

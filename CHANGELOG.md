@@ -16,7 +16,22 @@ user reads to decide whether to update.
 
 <!-- Add anything a person running RatNav would notice. Say what to go and try. -->
 
-*Nothing yet.*
+- **Setup says what you are accepting by running RatNav**, in plain words, on the page you are
+  looking at while you install it. Battlestate have not approved it and have not been asked to;
+  avoiding the things anti-cheat looks for is not the same as being allowed; the uncertainty is
+  yours and so is your account. Also what it reads, that nothing is sent anywhere, and that it is
+  alpha.
+
+  All of this was already written down, in the README and in `docs/SAFETY.md`. That is not the same
+  as anybody having read it — somebody who has just run an installer is on the Setup page, not on
+  GitHub. It folds away once read and stays one click from the top, because a warning that cannot
+  be dismissed stops being read within a week.
+
+  Raised by a reader of a post about RatNav, who pointed out that most people installing it will
+  not audit anything and that assuming otherwise is the author's problem, not theirs. Fair.
+
+  *To try: open Setup. It should be there and open the first time, gone after **Understood**, and
+  reachable from the line at the top afterwards.*
 
 ### Repository and process
 
